@@ -1,0 +1,35 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "book-1",
+      "description": "Educational book cover",
+      "imageUrl": "https://picsum.photos/seed/book1/400/600",
+      "imageHint": "educational book"
+    },
+    {
+      "id": "book-2",
+      "description": "Science fiction novel cover",
+      "imageUrl": "https://picsum.photos/seed/book2/400/600",
+      "imageHint": "science fiction"
+    },
+    {
+      "id": "book-3",
+      "description": "Mathematics textbook",
+      "imageUrl": "https://picsum.photos/seed/book3/400/600",
+      "imageHint": "mathematics book"
+    },
+    {
+      "id": "library-hero",
+      "description": "Modern library interior",
+      "imageUrl": "https://picsum.photos/seed/library/1200/600",
+      "imageHint": "modern library"
+    },
+    {
+      "id": "avatar-student",
+      "description": "Student avatar",
+      "imageUrl": "https://picsum.photos/seed/student/200/200",
+      "imageHint": "student person"
+    }
+  ]
+}
