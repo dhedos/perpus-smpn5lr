@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -17,20 +17,20 @@ import {
   Search, 
   Edit, 
   Trash2, 
-  MoreVertical,
-  Loader2,
-  Phone,
-  GraduationCap,
-  School
+  MoreVertical, 
+  Loader2, 
+  Phone, 
+  GraduationCap, 
+  School 
 } from "lucide-react"
 import { 
   Dialog, 
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogFooter,
-  DialogDescription,
-  DialogTrigger
+  DialogFooter, 
+  DialogDescription, 
+  DialogTrigger 
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { 
@@ -57,7 +57,7 @@ import {
   useMemoFirebase,
   errorEmitter 
 } from '@/firebase'
-import { collection, addDoc, deleteDoc, doc } from 'firebase/firestore'
+import { collection, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore'
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors'
 
 export default function MembersPage() {
@@ -85,6 +85,32 @@ export default function MembersPage() {
 
   const { data: members = [], loading } = useCollection(membersCollectionRef)
 
+  // Logic to find the next available ID (sequential, reusing gaps)
+  const nextAvailableId = useMemo(() => {
+    if (loading) return ""
+    const ids = members
+      .map(m => parseInt(m.memberId))
+      .filter(id => !isNaN(id))
+      .sort((a, b) => a - b)
+    
+    let candidate = 1
+    for (const id of ids) {
+      if (id === candidate) {
+        candidate++
+      } else if (id > candidate) {
+        break
+      }
+    }
+    return candidate.toString().padStart(4, '0')
+  }, [members, loading])
+
+  // Update formData when nextAvailableId changes or dialog opens
+  useEffect(() => {
+    if (isOpen && nextAvailableId) {
+      setFormData(prev => ({ ...prev, memberId: nextAvailableId }))
+    }
+  }, [isOpen, nextAvailableId])
+
   const filteredMembers = useMemo(() => {
     return members.filter(m => 
       (m.name?.toLowerCase() || "").includes(search.toLowerCase()) || 
@@ -95,7 +121,7 @@ export default function MembersPage() {
   const handleSaveMember = () => {
     if (!db || !membersCollectionRef) return
     if (!formData.name || !formData.memberId) {
-      toast({ title: "Data Belum Lengkap", description: "Nama dan ID Anggota wajib diisi.", variant: "destructive" })
+      toast({ title: "Data Belum Lengkap", description: "Nama wajib diisi.", variant: "destructive" })
       return
     }
 
@@ -103,9 +129,9 @@ export default function MembersPage() {
     
     addDoc(membersCollectionRef, {
       ...formData,
-      createdAt: new Date().toISOString()
+      createdAt: serverTimestamp()
     }).then(() => {
-      toast({ title: "Berhasil!", description: "Anggota baru telah ditambahkan." })
+      toast({ title: "Berhasil!", description: `Anggota baru dengan ID ${formData.memberId} telah ditambahkan.` })
       setIsOpen(false)
       setFormData({
         memberId: "",
@@ -127,11 +153,13 @@ export default function MembersPage() {
     })
   }
 
-  const handleDeleteMember = (id: string) => {
+  const handleDeleteMember = (id: string, name: string) => {
     if (!db) return
     const memberDocRef = doc(db, 'members', id)
     
-    deleteDoc(memberDocRef).catch(async (error) => {
+    deleteDoc(memberDocRef).then(() => {
+      toast({ title: "Dihapus", description: `Anggota ${name} telah dihapus. ID-nya kini dapat digunakan kembali.` })
+    }).catch(async (error) => {
        const permissionError = new FirestorePermissionError({
         path: memberDocRef.path,
         operation: 'delete',
@@ -158,17 +186,17 @@ export default function MembersPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Daftarkan Anggota Baru</DialogTitle>
-              <DialogDescription>Lengkapi data diri anggota sesuai kartu identitas sekolah.</DialogDescription>
+              <DialogDescription>ID Anggota diatur secara otomatis berdasarkan urutan ketersediaan.</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="memberId">ID Anggota (NIS/NIP)</Label>
+                  <Label htmlFor="memberId">ID Anggota (Otomatis)</Label>
                   <Input 
                     id="memberId" 
-                    placeholder="2024001" 
                     value={formData.memberId}
-                    onChange={(e) => setFormData({ ...formData, memberId: e.target.value })}
+                    readOnly
+                    className="bg-muted font-mono font-bold text-primary"
                   />
                 </div>
                 <div className="space-y-2">
@@ -264,12 +292,12 @@ export default function MembersPage() {
                   <p className="text-sm text-muted-foreground">Tidak ada anggota ditemukan.</p>
                 </TableCell>
               </TableRow>
-            ) : filteredMembers.map((member) => (
+            ) : filteredMembers.sort((a,b) => a.memberId.localeCompare(b.memberId)).map((member) => (
               <TableRow key={member.id}>
                 <TableCell>
                   <div className="flex flex-col">
                     <span className="font-semibold">{member.name}</span>
-                    <span className="text-xs text-muted-foreground font-mono">{member.memberId}</span>
+                    <span className="text-xs text-muted-foreground font-mono font-bold text-primary">{member.memberId}</span>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -299,7 +327,7 @@ export default function MembersPage() {
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         className="gap-2 text-destructive"
-                        onClick={() => handleDeleteMember(member.id)}
+                        onClick={() => handleDeleteMember(member.id, member.name)}
                       >
                         <Trash2 className="h-4 w-4" /> Hapus
                       </DropdownMenuItem>

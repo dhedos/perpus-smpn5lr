@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -81,8 +81,33 @@ export default function TransactionsPage() {
   const booksRef = useMemoFirebase(() => db ? collection(db, 'books') : null, [db])
   const transRef = useMemoFirebase(() => db ? collection(db, 'transactions') : null, [db])
 
-  const { data: members = [] } = useCollection(membersRef)
+  const { data: members = [], loading: membersLoading } = useCollection(membersRef)
   const { data: books = [] } = useCollection(booksRef)
+
+  // Auto-ID Logic (sequential, reusable)
+  const nextAvailableId = useMemo(() => {
+    if (membersLoading) return ""
+    const ids = members
+      .map(m => parseInt(m.memberId))
+      .filter(id => !isNaN(id))
+      .sort((a, b) => a - b)
+    
+    let candidate = 1
+    for (const id of ids) {
+      if (id === candidate) {
+        candidate++
+      } else if (id > candidate) {
+        break
+      }
+    }
+    return candidate.toString().padStart(4, '0')
+  }, [members, membersLoading])
+
+  useEffect(() => {
+    if (isMemberDialogOpen && nextAvailableId) {
+      setNewMemberData(prev => ({ ...prev, memberId: nextAvailableId }))
+    }
+  }, [isMemberDialogOpen, nextAvailableId])
 
   const foundMembers = useMemo(() => {
     if (!memberSearch) return []
@@ -108,7 +133,7 @@ export default function TransactionsPage() {
   const handleAddNewMember = () => {
     if (!db || !membersRef) return
     if (!newMemberData.name || !newMemberData.memberId) {
-      toast({ title: "Data Belum Lengkap", description: "Nama dan ID Anggota wajib diisi.", variant: "destructive" })
+      toast({ title: "Data Belum Lengkap", description: "Nama wajib diisi.", variant: "destructive" })
       return
     }
 
@@ -119,7 +144,7 @@ export default function TransactionsPage() {
       createdAt: serverTimestamp()
     }).then((docRef) => {
       const createdMember = { ...newMemberData, id: docRef.id };
-      toast({ title: "Berhasil!", description: "Anggota baru telah ditambahkan." })
+      toast({ title: "Berhasil!", description: `Anggota baru dengan ID ${newMemberData.memberId} telah ditambahkan.` })
       setIsMemberDialogOpen(false)
       
       // Auto select the newly created member
@@ -302,17 +327,17 @@ export default function TransactionsPage() {
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Daftarkan Anggota Baru</DialogTitle>
-                        <DialogDescription>Lengkapi data anggota untuk melanjutkan peminjaman.</DialogDescription>
+                        <DialogDescription>ID Anggota diatur otomatis berdasarkan ketersediaan.</DialogDescription>
                       </DialogHeader>
                       <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label htmlFor="memberId">ID Anggota (NIS/NIP)</Label>
+                            <Label htmlFor="memberId">ID Anggota (Otomatis)</Label>
                             <Input 
                               id="memberId" 
-                              placeholder="2024001" 
                               value={newMemberData.memberId}
-                              onChange={(e) => setNewMemberData({ ...newMemberData, memberId: e.target.value })}
+                              readOnly
+                              className="bg-muted font-mono font-bold text-primary"
                             />
                           </div>
                           <div className="space-y-2">
