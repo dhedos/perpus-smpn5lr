@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress"
 import { Database, CloudUpload, CloudDownload, RefreshCw, CheckCircle2, AlertTriangle } from "lucide-react"
 import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
+import { Badge } from "@/components/ui/badge"
 
 export default function SyncPage() {
   const { toast } = useToast()
