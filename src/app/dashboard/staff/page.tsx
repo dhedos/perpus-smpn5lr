@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -22,7 +22,8 @@ import {
   Edit, 
   Trash2,
   UserCheck,
-  UserX
+  UserX,
+  Loader2
 } from "lucide-react"
 import { 
   Dialog, 
@@ -50,31 +51,55 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-
-interface StaffMember {
-  id: string
-  staffId: string
-  name: string
-  email: string
-  role: "Admin" | "Staff"
-  status: "Active" | "Inactive"
-}
-
-const MOCK_STAFF: StaffMember[] = [
-  { id: "1", staffId: "ADM001", name: "Budi Santoso", email: "budi@sekolah.sch.id", role: "Admin", status: "Active" },
-  { id: "2", staffId: "STF001", name: "Siti Rahma", email: "siti@sekolah.sch.id", role: "Staff", status: "Active" },
-  { id: "3", staffId: "STF002", name: "Andi Wijaya", email: "andi@sekolah.sch.id", role: "Staff", status: "Inactive" },
-]
+import { useFirestore, useCollection, useMemoFirebase, errorEmitter } from "@/firebase"
+import { collection, doc, deleteDoc, updateDoc } from "firebase/firestore"
+import { FirestorePermissionError, type SecurityRuleContext } from "@/firebase/errors"
 
 export default function StaffPage() {
-  const [staff, setStaff] = useState<StaffMember[]>(MOCK_STAFF)
+  const db = useFirestore()
   const [search, setSearch] = useState("")
 
-  const filteredStaff = staff.filter(s => 
-    s.name.toLowerCase().includes(search.toLowerCase()) || 
-    s.staffId.toLowerCase().includes(search.toLowerCase()) ||
-    s.email.toLowerCase().includes(search.toLowerCase())
-  )
+  const staffCollectionRef = useMemoFirebase(() => {
+    if (!db) return null
+    return collection(db, 'staff')
+  }, [db])
+
+  const { data: staff = [], loading } = useCollection(staffCollectionRef)
+
+  const filteredStaff = useMemo(() => {
+    return staff.filter(s => 
+      (s.name?.toLowerCase() || "").includes(search.toLowerCase()) || 
+      (s.staffId?.toLowerCase() || "").includes(search.toLowerCase()) ||
+      (s.email?.toLowerCase() || "").includes(search.toLowerCase())
+    )
+  }, [staff, search])
+
+  const toggleStatus = (staffId: string, currentStatus: string) => {
+    if (!db) return
+    const staffDocRef = doc(db, 'staff', staffId)
+    const newStatus = currentStatus === "Active" ? "Inactive" : "Active"
+    
+    updateDoc(staffDocRef, { status: newStatus }).catch(async (error) => {
+       const permissionError = new FirestorePermissionError({
+        path: staffDocRef.path,
+        operation: 'update',
+        requestResourceData: { status: newStatus }
+      } satisfies SecurityRuleContext);
+      errorEmitter.emit('permission-error', permissionError);
+    })
+  }
+
+  const handleDeleteStaff = (staffId: string) => {
+    if (!db) return
+    const staffDocRef = doc(db, 'staff', staffId)
+    deleteDoc(staffDocRef).catch(async (error) => {
+       const permissionError = new FirestorePermissionError({
+        path: staffDocRef.path,
+        operation: 'delete',
+      } satisfies SecurityRuleContext);
+      errorEmitter.emit('permission-error', permissionError);
+    })
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -93,39 +118,14 @@ export default function StaffPage() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Tambah Petugas Baru</DialogTitle>
-              <DialogDescription>Daftarkan petugas baru untuk mengelola operasional perpustakaan.</DialogDescription>
+              <DialogTitle>Pendaftaran Petugas</DialogTitle>
+              <DialogDescription>
+                Catatan: Pendaftaran petugas baru dilakukan melalui Firebase Console atau fungsi khusus admin untuk keamanan kredensial.
+              </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">Nama Lengkap</Label>
-                <Input id="name" placeholder="Masukkan nama petugas..." />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="staffId">NIP / ID Petugas</Label>
-                <Input id="staffId" placeholder="Contoh: STF003" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="petugas@sekolah.sch.id" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="role">Hak Akses (Role)</Label>
-                <Select defaultValue="Staff">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih Role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Admin">Admin (Full Akses)</SelectItem>
-                    <SelectItem value="Staff">Staff (Operasional)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="py-4 text-sm text-muted-foreground">
+              Petugas yang sudah memiliki akun di Firebase Auth akan otomatis tampil di sini jika sudah ditambahkan ke koleksi 'staff' di Firestore.
             </div>
-            <DialogFooter>
-              <Button variant="outline">Batal</Button>
-              <Button>Simpan Petugas</Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
@@ -155,7 +155,19 @@ export default function StaffPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredStaff.map((person) => (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-10">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+                </TableCell>
+              </TableRow>
+            ) : filteredStaff.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
+                  Tidak ada petugas ditemukan.
+                </TableCell>
+              </TableRow>
+            ) : filteredStaff.map((person) => (
               <TableRow key={person.id}>
                 <TableCell>
                   <div className="font-semibold">{person.name}</div>
@@ -191,20 +203,15 @@ export default function StaffPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem className="gap-2">
-                        <Edit className="h-4 w-4" /> Ubah Data
+                      <DropdownMenuItem className="gap-2" onClick={() => toggleStatus(person.id, person.status)}>
+                        {person.status === "Active" ? (
+                          <><UserX className="h-4 w-4 text-destructive" /> Nonaktifkan</>
+                        ) : (
+                          <><UserCheck className="h-4 w-4 text-green-600" /> Aktifkan</>
+                        )}
                       </DropdownMenuItem>
-                      {person.status === "Active" ? (
-                        <DropdownMenuItem className="gap-2 text-destructive">
-                          <UserX className="h-4 w-4" /> Nonaktifkan
-                        </DropdownMenuItem>
-                      ) : (
-                        <DropdownMenuItem className="gap-2 text-green-600">
-                          <UserCheck className="h-4 w-4" /> Aktifkan Kembali
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem className="gap-2 text-destructive">
-                        <Trash2 className="h-4 w-4" /> Hapus Permanen
+                      <DropdownMenuItem className="gap-2 text-destructive" onClick={() => handleDeleteStaff(person.id)}>
+                        <Trash2 className="h-4 w-4" /> Hapus
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

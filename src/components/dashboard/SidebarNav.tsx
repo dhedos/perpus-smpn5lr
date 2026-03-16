@@ -2,7 +2,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -18,6 +18,8 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { useAuth, useUser } from "@/firebase"
+import { signOut } from "firebase/auth"
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
@@ -27,7 +29,7 @@ const menuItems = [
   { icon: BarChart3, label: "Laporan", href: "/dashboard/reports" },
 ]
 
-const adminItems = [
+const adminOnlyItems = [
   { icon: UserCog, label: "Petugas Perpustakaan", href: "/dashboard/staff" },
   { icon: Database, label: "Backup & Sync", href: "/dashboard/sync" },
   { icon: Settings, label: "Pengaturan", href: "/dashboard/settings" },
@@ -35,6 +37,16 @@ const adminItems = [
 
 export function SidebarNav() {
   const pathname = usePathname()
+  const router = useRouter()
+  const auth = useAuth()
+  const { isAdmin } = useUser()
+
+  const handleLogout = async () => {
+    if (auth) {
+      await signOut(auth)
+      router.push("/")
+    }
+  }
 
   return (
     <div className="flex h-full flex-col border-r bg-card text-card-foreground">
@@ -62,27 +74,35 @@ export function SidebarNav() {
           </Link>
         ))}
 
-        <div className="mt-8 mb-2 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          Administrasi
-        </div>
-        {adminItems.map((item) => (
-          <Link key={item.href} href={item.href}>
-            <Button
-              variant="ghost"
-              className={cn(
-                "w-full justify-start gap-3 rounded-lg px-3 py-2 transition-all duration-200 hover:bg-accent hover:text-accent-foreground",
-                pathname === item.href ? "bg-accent text-accent-foreground font-medium shadow-sm" : "text-muted-foreground"
-              )}
-            >
-              <item.icon className={cn("h-5 w-5", pathname === item.href ? "text-primary" : "")} />
-              {item.label}
-            </Button>
-          </Link>
-        ))}
+        {isAdmin && (
+          <>
+            <div className="mt-8 mb-2 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Administrasi
+            </div>
+            {adminOnlyItems.map((item) => (
+              <Link key={item.href} href={item.href}>
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "w-full justify-start gap-3 rounded-lg px-3 py-2 transition-all duration-200 hover:bg-accent hover:text-accent-foreground",
+                    pathname === item.href ? "bg-accent text-accent-foreground font-medium shadow-sm" : "text-muted-foreground"
+                  )}
+                >
+                  <item.icon className={cn("h-5 w-5", pathname === item.href ? "text-primary" : "")} />
+                  {item.label}
+                </Button>
+              </Link>
+            ))}
+          </>
+        )}
       </div>
 
       <div className="border-t p-4">
-        <Button variant="ghost" className="w-full justify-start gap-3 text-destructive hover:bg-destructive/10 hover:text-destructive">
+        <Button 
+          variant="ghost" 
+          className="w-full justify-start gap-3 text-destructive hover:bg-destructive/10 hover:text-destructive"
+          onClick={handleLogout}
+        >
           <LogOut className="h-5 w-5" />
           Keluar
         </Button>
