@@ -1,8 +1,7 @@
 
 "use client"
 
-import { useState } from "react"
-import { MOCK_BOOKS, Book } from "@/lib/mock-data"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -20,9 +19,9 @@ import {
   Trash2, 
   Sparkles, 
   ScanBarcode, 
-  Download, 
   FileSpreadsheet,
-  MoreVertical
+  MoreVertical,
+  Loader2
 } from "lucide-react"
 import { 
   Dialog, 
@@ -46,26 +45,55 @@ import {
 import { generateBookDescription } from "@/ai/flows/generate-book-description-flow"
 import { useToast } from "@/hooks/use-toast"
 
+// Firebase imports
+import { 
+  useFirestore, 
+  useCollection, 
+  useMemoFirebase,
+  errorEmitter 
+} from '@/firebase'
+import { collection, addDoc, deleteDoc, doc } from 'firebase/firestore'
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors'
+
 export default function BooksPage() {
-  const [books, setBooks] = useState<Book[]>(MOCK_BOOKS)
+  const db = useFirestore()
+  const { toast } = useToast()
+  
   const [search, setSearch] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
-  const [newBook, setNewBook] = useState<Partial<Book>>({
+  const [isSaving, setIsSaving] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
+  
+  const [formData, setFormData] = useState({
+    code: "",
     title: "",
     author: "",
     isbn: "",
+    category: "",
+    rackLocation: "",
+    totalStock: 1,
+    availableStock: 1,
     description: ""
   })
-  const { toast } = useToast()
 
-  const filteredBooks = books.filter(b => 
-    b.title.toLowerCase().includes(search.toLowerCase()) || 
-    b.author.toLowerCase().includes(search.toLowerCase()) ||
-    b.code.toLowerCase().includes(search.toLowerCase())
-  )
+  // Get books from Firestore
+  const booksCollectionRef = useMemoFirebase(() => {
+    if (!db) return null
+    return collection(db, 'books')
+  }, [db])
+
+  const { data: books = [], loading } = useCollection(booksCollectionRef)
+
+  const filteredBooks = useMemo(() => {
+    return books.filter(b => 
+      (b.title?.toLowerCase() || "").includes(search.toLowerCase()) || 
+      (b.author?.toLowerCase() || "").includes(search.toLowerCase()) ||
+      (b.code?.toLowerCase() || "").includes(search.toLowerCase())
+    )
+  }, [books, search])
 
   const handleGenerateDescription = async () => {
-    if (!newBook.title) {
+    if (!formData.title) {
       toast({ title: "Judul Kosong", description: "Harap isi judul buku terlebih dahulu.", variant: "destructive" })
       return
     }
@@ -73,17 +101,70 @@ export default function BooksPage() {
     setIsGenerating(true)
     try {
       const result = await generateBookDescription({
-        title: newBook.title,
-        author: newBook.author,
-        isbn: newBook.isbn
+        title: formData.title,
+        author: formData.author,
+        isbn: formData.isbn
       })
-      setNewBook(prev => ({ ...prev, description: result.description }))
+      setFormData(prev => ({ ...prev, description: result.description }))
       toast({ title: "Berhasil!", description: "Deskripsi buku telah dibuat oleh AI." })
     } catch (error) {
       toast({ title: "Gagal", description: "Gagal membuat deskripsi. Coba lagi nanti.", variant: "destructive" })
     } finally {
       setIsGenerating(false)
     }
+  }
+
+  const handleSaveBook = () => {
+    if (!db || !booksCollectionRef) return
+    if (!formData.title || !formData.code) {
+      toast({ title: "Data Belum Lengkap", description: "Judul dan Kode Buku wajib diisi.", variant: "destructive" })
+      return
+    }
+
+    setIsSaving(true)
+    
+    addDoc(booksCollectionRef, {
+      ...formData,
+      totalStock: Number(formData.totalStock),
+      availableStock: Number(formData.availableStock),
+      createdAt: new Date().toISOString()
+    }).then(() => {
+      toast({ title: "Berhasil!", description: "Buku baru telah ditambahkan ke koleksi." })
+      setIsOpen(false)
+      setFormData({
+        code: "",
+        title: "",
+        author: "",
+        isbn: "",
+        category: "",
+        rackLocation: "",
+        totalStock: 1,
+        availableStock: 1,
+        description: ""
+      })
+    }).catch(async (error) => {
+      const permissionError = new FirestorePermissionError({
+        path: booksCollectionRef.path,
+        operation: 'create',
+        requestResourceData: formData,
+      } satisfies SecurityRuleContext);
+      errorEmitter.emit('permission-error', permissionError);
+    }).finally(() => {
+      setIsSaving(false)
+    })
+  }
+
+  const handleDeleteBook = (bookId: string) => {
+    if (!db) return
+    const bookDocRef = doc(db, 'books', bookId)
+    
+    deleteDoc(bookDocRef).catch(async (error) => {
+       const permissionError = new FirestorePermissionError({
+        path: bookDocRef.path,
+        operation: 'delete',
+      } satisfies SecurityRuleContext);
+      errorEmitter.emit('permission-error', permissionError);
+    })
   }
 
   return (
@@ -99,26 +180,35 @@ export default function BooksPage() {
             <FileSpreadsheet className="h-4 w-4" />
             Import Excel
           </Button>
-          <Dialog>
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
                 Tambah Buku
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Tambah Koleksi Baru</DialogTitle>
                 <DialogDescription>Gunakan AI untuk membantu mengisi deskripsi buku secara otomatis.</DialogDescription>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-4 py-4">
                 <div className="space-y-2">
+                  <Label htmlFor="code">Kode Buku</Label>
+                  <Input 
+                    id="code" 
+                    placeholder="B001" 
+                    value={formData.code}
+                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="title">Judul Buku</Label>
                   <Input 
                     id="title" 
                     placeholder="Contoh: Laskar Pelangi" 
-                    value={newBook.title}
-                    onChange={(e) => setNewBook({ ...newBook, title: e.target.value })}
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
@@ -126,8 +216,8 @@ export default function BooksPage() {
                   <Input 
                     id="author" 
                     placeholder="Andrea Hirata" 
-                    value={newBook.author}
-                    onChange={(e) => setNewBook({ ...newBook, author: e.target.value })}
+                    value={formData.author}
+                    onChange={(e) => setFormData({ ...formData, author: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
@@ -135,13 +225,45 @@ export default function BooksPage() {
                   <Input 
                     id="isbn" 
                     placeholder="978-..." 
-                    value={newBook.isbn}
-                    onChange={(e) => setNewBook({ ...newBook, isbn: e.target.value })}
+                    value={formData.isbn}
+                    onChange={(e) => setFormData({ ...formData, isbn: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="category">Kategori</Label>
-                  <Input id="category" placeholder="Fiksi / Pelajaran" />
+                  <Input 
+                    id="category" 
+                    placeholder="Fiksi / Pelajaran" 
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rack">Lokasi Rak</Label>
+                  <Input 
+                    id="rack" 
+                    placeholder="A-1" 
+                    value={formData.rackLocation}
+                    onChange={(e) => setFormData({ ...formData, rackLocation: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="totalStock">Total Stok</Label>
+                  <Input 
+                    id="totalStock" 
+                    type="number" 
+                    value={formData.totalStock}
+                    onChange={(e) => setFormData({ ...formData, totalStock: Number(e.target.value) })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="availableStock">Stok Tersedia</Label>
+                  <Input 
+                    id="availableStock" 
+                    type="number" 
+                    value={formData.availableStock}
+                    onChange={(e) => setFormData({ ...formData, availableStock: Number(e.target.value) })}
+                  />
                 </div>
                 <div className="col-span-2 space-y-2">
                   <div className="flex items-center justify-between">
@@ -162,14 +284,17 @@ export default function BooksPage() {
                     id="description" 
                     placeholder="Tulis deskripsi atau gunakan tombol AI di atas..." 
                     className="min-h-[120px]"
-                    value={newBook.description}
-                    onChange={(e) => setNewBook({ ...newBook, description: e.target.value })}
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   />
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline">Batal</Button>
-                <Button>Simpan Koleksi</Button>
+                <Button variant="outline" onClick={() => setIsOpen(false)}>Batal</Button>
+                <Button onClick={handleSaveBook} disabled={isSaving}>
+                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Simpan Koleksi
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -205,7 +330,20 @@ export default function BooksPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredBooks.map((book) => (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-10">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground mt-2">Memuat data...</p>
+                </TableCell>
+              </TableRow>
+            ) : filteredBooks.length === 0 ? (
+               <TableRow>
+                <TableCell colSpan={6} className="text-center py-10">
+                  <p className="text-sm text-muted-foreground">Tidak ada buku ditemukan.</p>
+                </TableCell>
+              </TableRow>
+            ) : filteredBooks.map((book) => (
               <TableRow key={book.id}>
                 <TableCell className="font-medium">{book.code}</TableCell>
                 <TableCell>
@@ -215,12 +353,12 @@ export default function BooksPage() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline">{book.category}</Badge>
+                  <Badge variant="outline">{book.category || 'N/A'}</Badge>
                 </TableCell>
-                <TableCell>Rak {book.rackLocation}</TableCell>
+                <TableCell>Rak {book.rackLocation || '-'}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <span className={book.availableStock <= 2 ? "text-destructive font-bold" : ""}>
+                    <span className={Number(book.availableStock) <= 2 ? "text-destructive font-bold" : ""}>
                       {book.availableStock}
                     </span>
                     <span className="text-muted-foreground">/ {book.totalStock}</span>
@@ -240,7 +378,10 @@ export default function BooksPage() {
                       <DropdownMenuItem className="gap-2">
                         <ScanBarcode className="h-4 w-4" /> Label Barcode
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="gap-2 text-destructive">
+                      <DropdownMenuItem 
+                        className="gap-2 text-destructive"
+                        onClick={() => handleDeleteBook(book.id)}
+                      >
                         <Trash2 className="h-4 w-4" /> Hapus
                       </DropdownMenuItem>
                     </DropdownMenuContent>
