@@ -1,15 +1,83 @@
 
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Library, Bell, Shield, Smartphone, Save } from "lucide-react"
+import { Library, Bell, Shield, Smartphone, Save, Loader2 } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+
+// Firebase
+import { 
+  useFirestore, 
+  useDoc, 
+  errorEmitter 
+} from '@/firebase'
+import { doc, setDoc } from 'firebase/firestore'
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors'
 
 export default function SettingsPage() {
+  const db = useFirestore()
+  const { toast } = useToast()
+  const [isSaving, setIsSaving] = useState(false)
+
+  // Settings State
+  const [settings, setSettings] = useState({
+    libraryName: "Pustaka Nusantara",
+    schoolName: "SMA Negeri 1 Indonesia",
+    loanPeriod: 7,
+    fineAmount: 500,
+    whatsappReminder: true,
+    emailReport: true,
+    digitalCatalog: true
+  })
+
+  // Fetch settings from Firestore
+  const settingsDocRef = db ? doc(db, 'settings', 'general') : null
+  const { data: remoteSettings, loading } = useDoc(settingsDocRef)
+
+  useEffect(() => {
+    if (remoteSettings) {
+      setSettings(prev => ({ 
+        ...prev, 
+        ...remoteSettings,
+        // Ensure numbers are handled correctly
+        loanPeriod: Number(remoteSettings.loanPeriod || 7),
+        fineAmount: Number(remoteSettings.fineAmount || 500)
+      }))
+    }
+  }, [remoteSettings])
+
+  const handleSaveSettings = () => {
+    if (!db || !settingsDocRef) return
+
+    setIsSaving(true)
+    
+    // Non-blocking Firestore mutation as per guidelines
+    setDoc(settingsDocRef, settings, { merge: true })
+      .then(() => {
+        toast({
+          title: "Berhasil Disimpan",
+          description: "Pengaturan sistem telah diperbarui.",
+        })
+      })
+      .catch(async (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: settingsDocRef.path,
+          operation: 'write',
+          requestResourceData: settings,
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => {
+        setIsSaving(false)
+      })
+  }
+
   return (
     <div className="max-w-4xl space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div>
@@ -34,25 +102,45 @@ export default function SettingsPage() {
             <CardContent className="space-y-4">
               <div className="grid gap-2">
                 <Label htmlFor="lib-name">Nama Perpustakaan</Label>
-                <Input id="lib-name" defaultValue="Pustaka Nusantara" />
+                <Input 
+                  id="lib-name" 
+                  value={settings.libraryName} 
+                  onChange={(e) => setSettings({ ...settings, libraryName: e.target.value })}
+                  placeholder="Masukkan nama perpustakaan..."
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="school-name">Nama Sekolah</Label>
-                <Input id="school-name" defaultValue="SMA Negeri 1 Indonesia" />
+                <Input 
+                  id="school-name" 
+                  value={settings.schoolName}
+                  onChange={(e) => setSettings({ ...settings, schoolName: e.target.value })}
+                  placeholder="Masukkan nama sekolah..."
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="loan-period">Batas Pinjam (Hari)</Label>
-                  <Input id="loan-period" type="number" defaultValue="7" />
+                  <Input 
+                    id="loan-period" 
+                    type="number" 
+                    value={settings.loanPeriod}
+                    onChange={(e) => setSettings({ ...settings, loanPeriod: Number(e.target.value) })}
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="fine-amount">Denda per Hari (Rp)</Label>
-                  <Input id="fine-amount" type="number" defaultValue="500" />
+                  <Input 
+                    id="fine-amount" 
+                    type="number" 
+                    value={settings.fineAmount}
+                    onChange={(e) => setSettings({ ...settings, fineAmount: Number(e.target.value) })}
+                  />
                 </div>
               </div>
               <div className="pt-4">
-                <Button className="gap-2">
-                  <Save className="h-4 w-4" />
+                <Button className="gap-2" onClick={handleSaveSettings} disabled={isSaving || loading}>
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                   Simpan Perubahan
                 </Button>
               </div>
@@ -72,14 +160,26 @@ export default function SettingsPage() {
                   <Label>WhatsApp Pengingat</Label>
                   <p className="text-xs text-muted-foreground">Kirim pesan otomatis 1 hari sebelum jatuh tempo.</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch 
+                  checked={settings.whatsappReminder} 
+                  onCheckedChange={(v) => setSettings({ ...settings, whatsappReminder: v })}
+                />
               </div>
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Email Laporan Mingguan</Label>
                   <p className="text-xs text-muted-foreground">Kirim ringkasan statistik ke Admin setiap Senin.</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch 
+                  checked={settings.emailReport} 
+                  onCheckedChange={(v) => setSettings({ ...settings, emailReport: v })}
+                />
+              </div>
+              <div className="pt-4">
+                <Button className="gap-2" onClick={handleSaveSettings} disabled={isSaving}>
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Simpan Notifikasi
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -103,13 +203,22 @@ export default function SettingsPage() {
               <CardTitle>Aplikasi Mobile Anggota</CardTitle>
               <CardDescription>Aktifkan akses scan kartu anggota digital.</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Akses Katalog Digital</Label>
                   <p className="text-xs text-muted-foreground">Siswa dapat melihat ketersediaan buku dari HP.</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch 
+                  checked={settings.digitalCatalog} 
+                  onCheckedChange={(v) => setSettings({ ...settings, digitalCatalog: v })}
+                />
+              </div>
+              <div className="pt-4">
+                <Button className="gap-2" onClick={handleSaveSettings} disabled={isSaving}>
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Simpan Akses
+                </Button>
               </div>
             </CardContent>
           </Card>
