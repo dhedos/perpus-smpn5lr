@@ -13,7 +13,8 @@ import {
   Settings,
   Database,
   LogOut,
-  Library
+  Library,
+  UserCog
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -24,10 +25,10 @@ const menuItems = [
   { icon: Users, label: "Keanggotaan", href: "/dashboard/members" },
   { icon: ArrowLeftRight, label: "Transaksi", href: "/dashboard/transactions" },
   { icon: BarChart3, label: "Laporan", href: "/dashboard/reports" },
-  { icon: Printer, label: "Cetak & Label", href: "/dashboard/print" },
 ]
 
 const adminItems = [
+  { icon: UserCog, label: "Petugas Perpustakaan", href: "/dashboard/staff" },
   { icon: Database, label: "Backup & Sync", href: "/dashboard/sync" },
   { icon: Settings, label: "Pengaturan", href: "/dashboard/settings" },
 ]
@@ -62,7 +63,7 @@ export function SidebarNav() {
         ))}
 
         <div className="mt-8 mb-2 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          Sistem
+          Administrasi
         </div>
         {adminItems.map((item) => (
           <Link key={item.href} href={item.href}>

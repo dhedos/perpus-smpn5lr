@@ -1,0 +1,66 @@
+
+{
+  "entities": {
+    "Book": {
+      "title": "Book",
+      "description": "A book in the library collection",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "title": { "type": "string" },
+        "author": { "type": "string" },
+        "category": { "type": "string" },
+        "isbn": { "type": "string" },
+        "rackLocation": { "type": "string" },
+        "totalStock": { "type": "number" },
+        "availableStock": { "type": "number" },
+        "description": { "type": "string" }
+      },
+      "required": ["code", "title", "author"]
+    },
+    "Member": {
+      "title": "Member",
+      "description": "A library member (student or teacher)",
+      "type": "object",
+      "properties": {
+        "memberId": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["Student", "Teacher"] },
+        "classOrSubject": { "type": "string" },
+        "phone": { "type": "string" },
+        "joinDate": { "type": "string", "format": "date" }
+      },
+      "required": ["memberId", "name", "type"]
+    },
+    "Staff": {
+      "title": "Staff",
+      "description": "Library personnel managed by the Admin",
+      "type": "object",
+      "properties": {
+        "staffId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["Admin", "Staff"] },
+        "status": { "type": "string", "enum": ["Active", "Inactive"] }
+      },
+      "required": ["staffId", "name", "email", "role"]
+    }
+  },
+  "auth": {
+    "providers": ["password"]
+  },
+  "firestore": {
+    "/books/{bookId}": {
+      "schema": "Book",
+      "description": "Collection of library books"
+    },
+    "/members/{memberId}": {
+      "schema": "Member",
+      "description": "Collection of library members"
+    },
+    "/staff/{staffUid}": {
+      "schema": "Staff",
+      "description": "Collection of library staff members"
+    }
+  }
+}
