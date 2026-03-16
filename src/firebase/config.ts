@@ -6,7 +6,7 @@ import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 
 // Configuration will be populated by Firebase Studio
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "REPLACE_WITH_API_KEY",
   authDomain: "REPLACE_WITH_AUTH_DOMAIN",
   projectId: "REPLACE_WITH_PROJECT_ID",

@@ -23,7 +23,8 @@ import {
   Trash2,
   UserCheck,
   UserX,
-  Loader2
+  Loader2,
+  Lock
 } from "lucide-react"
 import { 
   Dialog, 
@@ -52,12 +53,29 @@ import {
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection, useMemoFirebase, errorEmitter } from "@/firebase"
-import { collection, doc, deleteDoc, updateDoc } from "firebase/firestore"
+import { collection, doc, deleteDoc, updateDoc, setDoc } from "firebase/firestore"
 import { FirestorePermissionError, type SecurityRuleContext } from "@/firebase/errors"
+import { useToast } from "@/hooks/use-toast"
+
+// Firebase Auth logic for Admin adding users
+import { initializeApp, deleteApp } from "firebase/app"
+import { getAuth, createUserWithEmailAndPassword } from "firebase/auth"
+import { firebaseConfig } from "@/firebase/config"
 
 export default function StaffPage() {
   const db = useFirestore()
+  const { toast } = useToast()
   const [search, setSearch] = useState("")
+  const [isOpen, setIsOpen] = useState(false)
+  const [isRegistering, setIsRegistering] = useState(false)
+
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    staffId: "",
+    role: "Staff" as "Admin" | "Staff"
+  })
 
   const staffCollectionRef = useMemoFirebase(() => {
     if (!db) return null
@@ -74,9 +92,59 @@ export default function StaffPage() {
     )
   }, [staff, search])
 
-  const toggleStatus = (staffId: string, currentStatus: string) => {
+  const handleRegisterStaff = async () => {
     if (!db) return
-    const staffDocRef = doc(db, 'staff', staffId)
+    if (!formData.name || !formData.email || !formData.password || !formData.staffId) {
+      toast({ title: "Data Belum Lengkap", variant: "destructive" })
+      return
+    }
+
+    setIsRegistering(true)
+    const secondaryApp = initializeApp(firebaseConfig, 'Secondary')
+    const secondaryAuth = getAuth(secondaryApp)
+
+    try {
+      // 1. Create user in Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(
+        secondaryAuth, 
+        formData.email, 
+        formData.password
+      )
+      const uid = userCredential.user.uid
+
+      // 2. Save user profile & role to Firestore
+      const staffDocRef = doc(db, 'staff', uid)
+      await setDoc(staffDocRef, {
+        name: formData.name,
+        email: formData.email,
+        staffId: formData.staffId,
+        role: formData.role,
+        status: "Active",
+        createdAt: new Date().toISOString()
+      })
+
+      toast({ 
+        title: "Berhasil!", 
+        description: `Petugas ${formData.name} telah didaftarkan sebagai ${formData.role}.` 
+      })
+      
+      setIsOpen(false)
+      setFormData({ name: "", email: "", password: "", staffId: "", role: "Staff" })
+    } catch (error: any) {
+      toast({ 
+        title: "Pendaftaran Gagal", 
+        description: error.message || "Pastikan email belum terdaftar.", 
+        variant: "destructive" 
+      })
+    } finally {
+      await deleteApp(secondaryApp)
+      setIsRegistering(false)
+    }
+  }
+
+  const toggleStatus = (id: string, currentStatus: string) => {
+    if (!db) return
+    const staffDocRef = doc(db, 'staff', id)
     const newStatus = currentStatus === "Active" ? "Inactive" : "Active"
     
     updateDoc(staffDocRef, { status: newStatus }).catch(async (error) => {
@@ -89,9 +157,9 @@ export default function StaffPage() {
     })
   }
 
-  const handleDeleteStaff = (staffId: string) => {
+  const handleDeleteStaff = (id: string) => {
     if (!db) return
-    const staffDocRef = doc(db, 'staff', staffId)
+    const staffDocRef = doc(db, 'staff', id)
     deleteDoc(staffDocRef).catch(async (error) => {
        const permissionError = new FirestorePermissionError({
         path: staffDocRef.path,
@@ -105,27 +173,99 @@ export default function StaffPage() {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold font-headline tracking-tight">Petugas Perpustakaan</h1>
-          <p className="text-muted-foreground text-sm">Kelola akun dan hak akses petugas perpustakaan.</p>
+          <h1 className="text-2xl font-bold font-headline tracking-tight text-primary">Petugas Perpustakaan</h1>
+          <p className="text-muted-foreground text-sm">Hanya Admin yang dapat mendaftarkan petugas baru.</p>
         </div>
         
-        <Dialog>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button className="gap-2">
               <UserPlus className="h-4 w-4" />
-              Tambah Petugas
+              Daftarkan Petugas
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Pendaftaran Petugas</DialogTitle>
+              <DialogTitle>Pendaftaran Petugas Baru</DialogTitle>
               <DialogDescription>
-                Catatan: Pendaftaran petugas baru dilakukan melalui Firebase Console atau fungsi khusus admin untuk keamanan kredensial.
+                Akun ini akan langsung aktif dan bisa digunakan untuk login.
               </DialogDescription>
             </DialogHeader>
-            <div className="py-4 text-sm text-muted-foreground">
-              Petugas yang sudah memiliki akun di Firebase Auth akan otomatis tampil di sini jika sudah ditambahkan ke koleksi 'staff' di Firestore.
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nama Lengkap</Label>
+                <Input 
+                  id="name" 
+                  placeholder="Nama Lengkap..." 
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="staffId">ID Petugas / NIP</Label>
+                  <Input 
+                    id="staffId" 
+                    placeholder="P001" 
+                    value={formData.staffId}
+                    onChange={(e) => setFormData({ ...formData, staffId: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="role">Role Akses</Label>
+                  <Select 
+                    value={formData.role} 
+                    onValueChange={(v: any) => setFormData({ ...formData, role: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Staff">Petugas</SelectItem>
+                      <SelectItem value="Admin">Admin Utama</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Login</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    id="email" 
+                    type="email"
+                    placeholder="nama@smpn5.sch.id" 
+                    className="pl-10"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Kata Sandi Awal</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    id="password" 
+                    type="password"
+                    placeholder="Minimal 6 karakter" 
+                    className="pl-10"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  />
+                </div>
+              </div>
             </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsOpen(false)}>Batal</Button>
+              <Button onClick={handleRegisterStaff} disabled={isRegistering}>
+                {isRegistering ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Mendaftarkan...</>
+                ) : (
+                  "Konfirmasi Pendaftaran"
+                )}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
@@ -142,14 +282,13 @@ export default function StaffPage() {
         </div>
       </div>
 
-      <Card className="border-none shadow-sm">
+      <Card className="border-none shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="bg-muted/50">
               <TableHead>Petugas</TableHead>
-              <TableHead>ID Petugas</TableHead>
+              <TableHead>ID & Role</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
@@ -157,13 +296,13 @@ export default function StaffPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-10">
+                <TableCell colSpan={5} className="text-center py-10">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
                 </TableCell>
               </TableRow>
             ) : filteredStaff.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
+                <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
                   Tidak ada petugas ditemukan.
                 </TableCell>
               </TableRow>
@@ -173,18 +312,18 @@ export default function StaffPage() {
                   <div className="font-semibold">{person.name}</div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="secondary" className="font-mono">{person.staffId}</Badge>
+                  <div className="flex flex-col gap-1">
+                    <Badge variant="secondary" className="font-mono w-fit">{person.staffId}</Badge>
+                    <div className="flex items-center gap-1 text-[10px] text-primary font-bold">
+                      <Shield className="h-3 w-3" />
+                      {person.role.toUpperCase()}
+                    </div>
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Mail className="h-3 w-3" />
                     <span className="text-sm">{person.email}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Shield className={cn("h-4 w-4", person.role === "Admin" ? "text-primary" : "text-muted-foreground")} />
-                    <span className="text-sm">{person.role}</span>
                   </div>
                 </TableCell>
                 <TableCell>
