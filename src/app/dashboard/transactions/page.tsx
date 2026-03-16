@@ -18,11 +18,28 @@ import {
   CheckCircle,
   Users,
   GraduationCap,
-  School
+  School,
+  UserPlus
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter,
+  DialogDescription,
+  DialogTrigger
+} from "@/components/ui/dialog"
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select"
 
 // Firebase
 import { 
@@ -43,9 +60,21 @@ export default function TransactionsPage() {
   const [memberSearch, setMemberSearch] = useState("")
   const [bookSearch, setBookSearch] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isAddingMember, setIsAddingMember] = useState(false)
+  const [isMemberDialogOpen, setIsMemberDialogOpen] = useState(false)
   
   const [selectedMember, setSelectedMember] = useState<any>(null)
   const [selectedBook, setSelectedBook] = useState<any>(null)
+
+  // New Member Form Data
+  const [newMemberData, setNewMemberData] = useState({
+    memberId: "",
+    name: "",
+    type: "Student",
+    classOrSubject: "",
+    phone: "",
+    joinDate: new Date().toISOString().split('T')[0]
+  })
 
   // Collections
   const membersRef = useMemoFirebase(() => db ? collection(db, 'members') : null, [db])
@@ -64,7 +93,7 @@ export default function TransactionsPage() {
       
       if (borrowerType === "Siswa") return matchesSearch && m.type === "Student"
       if (borrowerType === "Guru") return matchesSearch && m.type === "Teacher"
-      if (borrowerType === "Kelas") return matchesSearch // Kelas bisa dicari berdasarkan nama siswa atau nama kelasnya
+      if (borrowerType === "Kelas") return matchesSearch 
       
       return matchesSearch
     })
@@ -75,6 +104,47 @@ export default function TransactionsPage() {
     const term = bookSearch.toLowerCase()
     return books.filter(b => b.title?.toLowerCase().includes(term) || b.code?.toLowerCase().includes(term))
   }, [books, bookSearch])
+
+  const handleAddNewMember = () => {
+    if (!db || !membersRef) return
+    if (!newMemberData.name || !newMemberData.memberId) {
+      toast({ title: "Data Belum Lengkap", description: "Nama dan ID Anggota wajib diisi.", variant: "destructive" })
+      return
+    }
+
+    setIsAddingMember(true)
+    
+    addDoc(membersRef, {
+      ...newMemberData,
+      createdAt: serverTimestamp()
+    }).then((docRef) => {
+      const createdMember = { ...newMemberData, id: docRef.id };
+      toast({ title: "Berhasil!", description: "Anggota baru telah ditambahkan." })
+      setIsMemberDialogOpen(false)
+      
+      // Auto select the newly created member
+      setSelectedMember(createdMember)
+      setMemberSearch(createdMember.name)
+      
+      setNewMemberData({
+        memberId: "",
+        name: "",
+        type: borrowerType === "Guru" ? "Teacher" : "Student",
+        classOrSubject: "",
+        phone: "",
+        joinDate: new Date().toISOString().split('T')[0]
+      })
+    }).catch(async (error) => {
+      const permissionError = new FirestorePermissionError({
+        path: membersRef.path,
+        operation: 'create',
+        requestResourceData: newMemberData,
+      } satisfies SecurityRuleContext);
+      errorEmitter.emit('permission-error', permissionError);
+    }).finally(() => {
+      setIsAddingMember(false)
+    })
+  }
 
   const handleProcessBorrow = () => {
     if (!db || !transRef || !selectedMember || !selectedBook) {
@@ -90,15 +160,14 @@ export default function TransactionsPage() {
     setIsProcessing(true)
 
     const dueDate = new Date()
-    // Guru & Kelas biasanya punya waktu pinjam lebih lama (misal 14 hari), Siswa 7 hari
-    const days = borrowerType === "Siswa" ? 7 : 14
+    const days = selectedMember.type === "Teacher" || borrowerType === "Kelas" ? 14 : 7
     dueDate.setDate(dueDate.getDate() + days)
 
     const transactionData = {
       memberId: selectedMember.memberId,
       memberName: selectedMember.name,
       memberType: selectedMember.type,
-      borrowerCategory: borrowerType, // Siswa Pribadi, Guru, Kelas
+      borrowerCategory: borrowerType,
       classOrSubject: selectedMember.classOrSubject,
       bookId: selectedBook.id,
       bookTitle: selectedBook.title,
@@ -175,6 +244,7 @@ export default function TransactionsPage() {
                     setBorrowerType(v)
                     setSelectedMember(null)
                     setMemberSearch("")
+                    setNewMemberData(prev => ({ ...prev, type: v === "Guru" ? "Teacher" : "Student" }))
                   }}
                   className="grid grid-cols-3 gap-4"
                 >
@@ -217,11 +287,78 @@ export default function TransactionsPage() {
 
             <div className="grid gap-6 md:grid-cols-2">
               <Card className="border-none shadow-sm h-full">
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <User className="h-5 w-5 text-primary" />
                     Pilih Peminjam
                   </CardTitle>
+                  <Dialog open={isMemberDialogOpen} onOpenChange={setIsMemberDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="sm" className="text-primary gap-1 h-8">
+                        <UserPlus className="h-3.5 w-3.5" />
+                        Tambah Baru
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Daftarkan Anggota Baru</DialogTitle>
+                        <DialogDescription>Lengkapi data anggota untuk melanjutkan peminjaman.</DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="memberId">ID Anggota (NIS/NIP)</Label>
+                            <Input 
+                              id="memberId" 
+                              placeholder="2024001" 
+                              value={newMemberData.memberId}
+                              onChange={(e) => setNewMemberData({ ...newMemberData, memberId: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="type">Tipe</Label>
+                            <Select 
+                              value={newMemberData.type} 
+                              onValueChange={(v) => setNewMemberData({ ...newMemberData, type: v })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Student">Siswa</SelectItem>
+                                <SelectItem value="Teacher">Guru</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="name">Nama Lengkap</Label>
+                          <Input 
+                            id="name" 
+                            placeholder="Nama Lengkap..." 
+                            value={newMemberData.name}
+                            onChange={(e) => setNewMemberData({ ...newMemberData, name: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="class">Kelas / Mapel</Label>
+                          <Input 
+                            id="class" 
+                            placeholder="Contoh: XI-IPA-1 atau Matematika" 
+                            value={newMemberData.classOrSubject}
+                            onChange={(e) => setNewMemberData({ ...newMemberData, classOrSubject: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsMemberDialogOpen(false)}>Batal</Button>
+                        <Button onClick={handleAddNewMember} disabled={isAddingMember}>
+                          {isAddingMember && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Daftar & Pilih
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="relative">
@@ -233,7 +370,7 @@ export default function TransactionsPage() {
                       onChange={(e) => setMemberSearch(e.target.value)}
                     />
                     {foundMembers.length > 0 && !selectedMember && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-xl max-h-52 overflow-y-auto">
+                      <div className="absolute z-20 w-full mt-1 bg-white border rounded-lg shadow-xl max-h-52 overflow-y-auto">
                         {foundMembers.map(m => (
                           <div 
                             key={m.id} 
@@ -244,7 +381,7 @@ export default function TransactionsPage() {
                               <div className="font-bold">{m.name}</div>
                               <div className="text-xs text-muted-foreground">{m.memberId} • {m.classOrSubject}</div>
                             </div>
-                            <Badge variant="outline" className="text-[10px]">{m.type}</Badge>
+                            <Badge variant="outline" className="text-[10px]">{m.type === 'Teacher' ? 'Guru' : 'Siswa'}</Badge>
                           </div>
                         ))}
                       </div>
@@ -288,7 +425,7 @@ export default function TransactionsPage() {
                       onChange={(e) => setBookSearch(e.target.value)}
                     />
                     {foundBooks.length > 0 && !selectedBook && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-xl max-h-52 overflow-y-auto">
+                      <div className="absolute z-20 w-full mt-1 bg-white border rounded-lg shadow-xl max-h-52 overflow-y-auto">
                         {foundBooks.map(b => (
                           <div 
                             key={b.id} 
@@ -341,9 +478,9 @@ export default function TransactionsPage() {
                   <div>
                     <p className="text-white/80 text-sm font-medium uppercase tracking-wider">Durasi Peminjaman</p>
                     <p className="text-3xl font-black">
-                      {borrowerType === "Siswa" ? "7 HARI" : "14 HARI"}
+                      {selectedMember?.type === "Teacher" || borrowerType === "Kelas" ? "14 HARI" : "7 HARI"}
                     </p>
-                    <p className="text-xs text-white/60">Batas: {new Date(new Date().setDate(new Date().getDate() + (borrowerType === "Siswa" ? 7 : 14))).toLocaleDateString('id-ID')}</p>
+                    <p className="text-xs text-white/60">Batas: {new Date(new Date().setDate(new Date().getDate() + (selectedMember?.type === "Teacher" || borrowerType === "Kelas" ? 14 : 7))).toLocaleDateString('id-ID')}</p>
                   </div>
                 </div>
                 <Button 
