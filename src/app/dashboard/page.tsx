@@ -20,41 +20,7 @@ import {
   ResponsiveContainer,
   Cell
 } from "recharts"
-
-const stats = [
-  { 
-    title: "Total Buku", 
-    value: "2,450", 
-    desc: "12 buku baru minggu ini", 
-    icon: BookOpen, 
-    color: "text-primary",
-    bgColor: "bg-primary/10"
-  },
-  { 
-    title: "Anggota Aktif", 
-    value: "842", 
-    desc: "+5% dari bulan lalu", 
-    icon: Users, 
-    color: "text-secondary",
-    bgColor: "bg-secondary/10"
-  },
-  { 
-    title: "Peminjaman Aktif", 
-    value: "156", 
-    desc: "24 jatuh tempo besok", 
-    icon: Clock, 
-    color: "text-orange-500",
-    bgColor: "bg-orange-100"
-  },
-  { 
-    title: "Denda Belum Bayar", 
-    value: "Rp 125rb", 
-    desc: "Dari 12 transaksi", 
-    icon: AlertCircle, 
-    color: "text-destructive",
-    bgColor: "bg-destructive/10"
-  },
-]
+import { useUser } from "@/firebase"
 
 const borrowingData = [
   { name: "Sen", value: 12 },
@@ -74,11 +40,52 @@ const popularBooks = [
 ]
 
 export default function DashboardPage() {
+  const { user } = useUser()
+
+  const stats = [
+    { 
+      title: "Total Buku", 
+      value: "2,450", 
+      desc: "12 buku baru minggu ini", 
+      icon: BookOpen, 
+      color: "text-primary",
+      bgColor: "bg-primary/10"
+    },
+    { 
+      title: "Anggota Aktif", 
+      value: "842", 
+      desc: "+5% dari bulan lalu", 
+      icon: Users, 
+      color: "text-secondary",
+      bgColor: "bg-secondary/10"
+    },
+    { 
+      title: "Peminjaman Aktif", 
+      value: "156", 
+      desc: "24 jatuh tempo besok", 
+      icon: Clock, 
+      color: "text-orange-500",
+      bgColor: "bg-orange-100"
+    },
+    { 
+      title: "Denda Belum Bayar", 
+      value: "Rp 125rb", 
+      desc: "Dari 12 transaksi", 
+      icon: AlertCircle, 
+      color: "text-destructive",
+      bgColor: "bg-destructive/10"
+    },
+  ]
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div>
-        <h1 className="text-3xl font-bold font-headline tracking-tight">Selamat Datang, Admin</h1>
-        <p className="text-muted-foreground mt-1">Berikut adalah ringkasan aktivitas perpustakaan hari ini.</p>
+        <h1 className="text-3xl font-bold font-headline tracking-tight text-primary">
+          SMPN 5 LANGKE REMBONG
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Selamat datang, {user?.displayNameCustom || "Admin"}. Berikut ringkasan aktivitas perpustakaan hari ini.
+        </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -155,7 +162,7 @@ export default function DashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle>Transaksi Terbaru</CardTitle>
-              <CardDescription>Daftar aktivitas peminjaman dan pengembalian terakhir.</CardDescription>
+              <CardDescription>Aktivitas sirkulasi terakhir di SMPN 5.</CardDescription>
             </div>
             <button className="text-sm font-medium text-primary hover:underline">Lihat Semua</button>
           </CardHeader>
@@ -184,7 +191,7 @@ export default function DashboardPage() {
         <Card className="border-none shadow-sm">
           <CardHeader>
             <CardTitle>Jatuh Tempo</CardTitle>
-            <CardDescription>Anggota yang harus mengembalikan buku segera.</CardDescription>
+            <CardDescription>Siswa yang terlambat mengembalikan buku.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {[1, 2, 3].map((_, i) => (

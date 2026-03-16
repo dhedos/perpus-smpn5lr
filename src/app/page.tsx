@@ -1,7 +1,6 @@
-
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -27,7 +26,7 @@ export default function LoginPage() {
     setLoading(true)
     try {
       await signInWithEmailAndPassword(auth, email, password)
-      toast({ title: "Berhasil Masuk", description: "Selamat datang di Pustaka Nusantara." })
+      toast({ title: "Berhasil Masuk", description: "Selamat datang di Sistem Perpustakaan SMPN 5 Langke Rembong." })
       router.push("/dashboard")
     } catch (error: any) {
       toast({ 
@@ -41,21 +40,16 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
-      <div className="mb-8 flex flex-col items-center gap-2 animate-in fade-in slide-in-from-top-4 duration-700">
-        <div className="bg-primary p-3 rounded-2xl shadow-lg shadow-primary/20">
-          <Library className="h-10 w-10 text-white" />
-        </div>
-        <h1 className="text-3xl font-bold font-headline tracking-tight text-primary mt-2">
-          Pustaka<span className="text-secondary">Nusa</span>
-        </h1>
-        <p className="text-muted-foreground text-sm">Sistem Informasi Perpustakaan Sekolah</p>
-      </div>
-
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <Card className="w-full max-w-md shadow-2xl border-none p-2 bg-white animate-in zoom-in duration-500">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold font-headline">Masuk ke Sistem</CardTitle>
-          <CardDescription>Masukkan kredensial Admin atau Petugas.</CardDescription>
+        <CardHeader className="space-y-4 text-center">
+          <div className="mx-auto bg-primary p-3 rounded-2xl shadow-lg shadow-primary/20 w-fit">
+            <Library className="h-10 w-10 text-white" />
+          </div>
+          <div className="space-y-1">
+            <CardTitle className="text-2xl font-bold font-headline">SMPN 5 LANGKE REMBONG</CardTitle>
+            <CardDescription>Sistem Informasi Perpustakaan Sekolah</CardDescription>
+          </div>
         </CardHeader>
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4">
@@ -64,7 +58,7 @@ export default function LoginPage() {
               <Input 
                 id="email" 
                 type="email" 
-                placeholder="admin@sekolah.sch.id" 
+                placeholder="admin@smpn5langkerembong.sch.id" 
                 required 
                 className="bg-muted/30 h-12"
                 value={email}
@@ -87,13 +81,12 @@ export default function LoginPage() {
             <Button type="submit" className="w-full h-12 text-base font-bold shadow-lg" disabled={loading}>
               {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : "Masuk Sekarang"}
             </Button>
+            <p className="text-xs text-muted-foreground text-center">
+              &copy; 2024 Perpustakaan SMPN 5 Langke Rembong.
+            </p>
           </CardFooter>
         </form>
       </Card>
-      
-      <p className="mt-8 text-xs text-muted-foreground">
-        &copy; 2024 Pustaka Nusantara.
-      </p>
     </div>
   )
 }

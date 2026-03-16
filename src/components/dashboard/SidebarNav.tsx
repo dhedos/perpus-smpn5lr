@@ -1,4 +1,3 @@
-
 "use client"
 
 import Link from "next/link"
@@ -9,7 +8,6 @@ import {
   Users, 
   ArrowLeftRight, 
   BarChart3, 
-  Printer, 
   Settings,
   Database,
   LogOut,
@@ -52,7 +50,10 @@ export function SidebarNav() {
     <div className="flex h-full flex-col border-r bg-card text-card-foreground">
       <div className="flex h-16 items-center px-6 border-b">
         <Library className="h-8 w-8 text-primary mr-2" />
-        <span className="text-xl font-bold font-headline tracking-tight text-primary">Pustaka<span className="text-secondary">Nusa</span></span>
+        <div className="flex flex-col">
+          <span className="text-sm font-bold leading-tight text-primary">SMPN 5</span>
+          <span className="text-xs font-semibold leading-tight text-secondary">LANGKE REMBONG</span>
+        </div>
       </div>
       
       <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1">

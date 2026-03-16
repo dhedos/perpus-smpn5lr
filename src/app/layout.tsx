@@ -1,12 +1,11 @@
-
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 
 export const metadata: Metadata = {
-  title: 'Pustaka Nusantara - Sistem Informasi Perpustakaan Sekolah',
-  description: 'Pengelolaan perpustakaan sekolah modern dengan barcode, AI, dan sinkronisasi offline.',
+  title: 'Perpustakaan SMPN 5 LANGKE REMBONG',
+  description: 'Sistem Informasi Perpustakaan SMPN 5 Langke Rembong - Modern, AI, dan Sinkronisasi Cloud.',
 };
 
 export default function RootLayout({

@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -27,8 +26,8 @@ export default function SettingsPage() {
 
   // Settings State
   const [settings, setSettings] = useState({
-    libraryName: "Pustaka Nusantara",
-    schoolName: "SMA Negeri 1 Indonesia",
+    libraryName: "Perpustakaan SMPN 5",
+    schoolName: "SMPN 5 LANGKE REMBONG",
     loanPeriod: 7,
     fineAmount: 500,
     whatsappReminder: true,
@@ -45,7 +44,6 @@ export default function SettingsPage() {
       setSettings(prev => ({ 
         ...prev, 
         ...remoteSettings,
-        // Ensure numbers are handled correctly
         loanPeriod: Number(remoteSettings.loanPeriod || 7),
         fineAmount: Number(remoteSettings.fineAmount || 500)
       }))
@@ -57,7 +55,6 @@ export default function SettingsPage() {
 
     setIsSaving(true)
     
-    // Non-blocking Firestore mutation as per guidelines
     setDoc(settingsDocRef, settings, { merge: true })
       .then(() => {
         toast({
@@ -81,8 +78,8 @@ export default function SettingsPage() {
   return (
     <div className="max-w-4xl space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div>
-        <h1 className="text-2xl font-bold font-headline tracking-tight">Pengaturan Sistem</h1>
-        <p className="text-muted-foreground text-sm">Konfigurasi operasional dan profil perpustakaan.</p>
+        <h1 className="text-2xl font-bold font-headline tracking-tight text-primary">Pengaturan Sistem</h1>
+        <p className="text-muted-foreground text-sm">Konfigurasi profil SMPN 5 LANGKE REMBONG.</p>
       </div>
 
       <Tabs defaultValue="general" className="w-full">
@@ -96,8 +93,8 @@ export default function SettingsPage() {
         <TabsContent value="general" className="mt-6">
           <Card className="border-none shadow-sm">
             <CardHeader>
-              <CardTitle>Informasi Perpustakaan</CardTitle>
-              <CardDescription>Nama dan alamat yang tampil di kartu anggota & struk.</CardDescription>
+              <CardTitle>Informasi Sekolah</CardTitle>
+              <CardDescription>Nama sekolah yang tampil di aplikasi dan dokumen cetak.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-2">
@@ -106,7 +103,7 @@ export default function SettingsPage() {
                   id="lib-name" 
                   value={settings.libraryName} 
                   onChange={(e) => setSettings({ ...settings, libraryName: e.target.value })}
-                  placeholder="Masukkan nama perpustakaan..."
+                  placeholder="Contoh: Perpustakaan SMPN 5..."
                 />
               </div>
               <div className="grid gap-2">
@@ -115,7 +112,7 @@ export default function SettingsPage() {
                   id="school-name" 
                   value={settings.schoolName}
                   onChange={(e) => setSettings({ ...settings, schoolName: e.target.value })}
-                  placeholder="Masukkan nama sekolah..."
+                  placeholder="Contoh: SMPN 5 LANGKE REMBONG"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -152,13 +149,13 @@ export default function SettingsPage() {
           <Card className="border-none shadow-sm">
             <CardHeader>
               <CardTitle>Pengaturan Notifikasi</CardTitle>
-              <CardDescription>Atur pengingat otomatis untuk anggota.</CardDescription>
+              <CardDescription>Atur pengingat otomatis untuk siswa dan guru.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>WhatsApp Pengingat</Label>
-                  <p className="text-xs text-muted-foreground">Kirim pesan otomatis 1 hari sebelum jatuh tempo.</p>
+                  <p className="text-xs text-muted-foreground">Kirim pesan otomatis sebelum jatuh tempo.</p>
                 </div>
                 <Switch 
                   checked={settings.whatsappReminder} 
@@ -168,7 +165,7 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Email Laporan Mingguan</Label>
-                  <p className="text-xs text-muted-foreground">Kirim ringkasan statistik ke Admin setiap Senin.</p>
+                  <p className="text-xs text-muted-foreground">Kirim ringkasan statistik ke Admin.</p>
                 </div>
                 <Switch 
                   checked={settings.emailReport} 
@@ -189,10 +186,10 @@ export default function SettingsPage() {
           <Card className="border-none shadow-sm">
             <CardHeader>
               <CardTitle>Keamanan</CardTitle>
-              <CardDescription>Kelola verifikasi dua langkah dan akses API.</CardDescription>
+              <CardDescription>Kelola verifikasi dua langkah dan akses Admin.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button variant="outline">Ganti Password Admin</Button>
+              <Button variant="outline">Ganti Password Admin Sekolah</Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -200,14 +197,14 @@ export default function SettingsPage() {
         <TabsContent value="mobile" className="mt-6">
           <Card className="border-none shadow-sm">
             <CardHeader>
-              <CardTitle>Aplikasi Mobile Anggota</CardTitle>
-              <CardDescription>Aktifkan akses scan kartu anggota digital.</CardDescription>
+              <CardTitle>Aplikasi Mobile Siswa</CardTitle>
+              <CardDescription>Aktifkan akses scan kartu anggota digital SMPN 5.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Akses Katalog Digital</Label>
-                  <p className="text-xs text-muted-foreground">Siswa dapat melihat ketersediaan buku dari HP.</p>
+                  <p className="text-xs text-muted-foreground">Siswa dapat melihat stok buku dari smartphone.</p>
                 </div>
                 <Switch 
                   checked={settings.digitalCatalog} 
