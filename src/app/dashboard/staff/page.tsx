@@ -49,6 +49,7 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
 import { Card } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 
 interface StaffMember {
   id: string
