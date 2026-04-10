@@ -1,0 +1,169 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * SCHOOL LIBRARY SYSTEM SECURITY RULES
+     *
+     * CORE PHILOSOPHY:
+     * This ruleset implements a hybrid Role-Based Access Control (RBAC) and Ownership model.
+     * It prioritizes "Authorization Independence" by leveraging denormalized identifiers 
+     * (like userId and memberUserId) to permit high-performance security checks without 
+     * excessive cross-document lookups.
+     *
+     * DATA STRUCTURE:
+     * - /users: Root profiles linked to Firebase Auth UID.
+     * - /library_members: Detailed profiles linked to application users via 'userId'.
+     * - /books, /book_categories, /shelf_locations: Library inventory (Staff-managed, User-readable).
+     * - /borrowing_transactions, /overdue_notifications: Transactional data linked via 'memberUserId'.
+     * - /activity_logs: Audit trails created by users, readable by Admins.
+     *
+     * KEY SECURITY DECISIONS:
+     * 1. RELATIONAL INTEGRITY: For user-owned paths, we strictly enforce that the internal 
+     *    'id' or 'userId' field matches the authenticated user to prevent data spoofing.
+     * 2. STAFF OVERRIDE: Users with 'Admin' or 'Officer' roles are granted broad management 
+     *    powers over inventory and member transactions.
+     * 3. DENORMALIZATION: We rely on 'memberUserId' being present in transactions and 
+     *    notifications to allow members to securely access their own history.
+     * 4. IMMUTABILITY: Critical relational fields (like ownership links) are made 
+     *    immutable during updates to prevent users from transferring records between accounts.
+     */
+
+    // --- GLOBAL HELPER FUNCTIONS ---
+
+    /** @description Checks if the request is from an authenticated user. */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /** @description Checks if the provided ID matches the authenticated user's UID. */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /** @description Validates ownership for an existing document. */
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    /** @description Fetches the user's role from their profile document. */
+    function getRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    /** @description Checks if the authenticated user has a specific role. */
+    function hasRole(role) {
+      return isSignedIn() && getRole() == role;
+    }
+
+    /** @description Checks if the user is library staff (Admin or Officer). */
+    function isStaff() {
+      return hasRole('Admin') || hasRole('Officer');
+    }
+
+    // --- COLLECTION RULES ---
+
+    /**
+     * @description Rules for the User collection. Users manage their own profiles; Admins manage all.
+     * @path /users/{userId}
+     * @allow (create) User 'abc' creates document /users/abc.
+     * @deny (create) User 'abc' attempts to create document /users/xyz.
+     * @principle Self-creation and ownership validation.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isStaff();
+      allow list: if isStaff() || isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if false; // User accounts are managed via Auth/Staff; prevents accidental self-deletion.
+    }
+
+    /**
+     * @description Profiles for library members. Staff can manage all; members can read their own.
+     * @path /library_members/{memberId}
+     * @allow (get) Student reads their own profile where resource.data.userId == uid.
+     * @deny (update) Student attempts to change their address without Staff role.
+     * @principle RBAC for management, Ownership field for self-access.
+     */
+    match /library_members/{memberId} {
+      allow get: if isStaff() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow list: if isStaff() || (isSignedIn() && request.query.limit <= 10); 
+      allow create, update, delete: if isStaff();
+    }
+
+    /**
+     * @description Library inventory categories.
+     * @path /book_categories/{categoryId}
+     * @allow (list) Any signed-in student browses categories.
+     * @deny (create) Student attempts to add a new category.
+     * @principle Staff management with authenticated public read.
+     */
+    match /book_categories/{categoryId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isStaff();
+    }
+
+    /**
+     * @description Physical locations of books.
+     * @path /shelf_locations/{locationId}
+     * @allow (get) Any signed-in user views location 'Rak A1'.
+     * @deny (delete) Officer attempts to delete a shelf without Admin role (if logic required it).
+     * @principle Staff management with authenticated public read.
+     */
+    match /shelf_locations/{locationId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isStaff();
+    }
+
+    /**
+     * @description The main book catalog.
+     * @path /books/{bookId}
+     * @allow (list) Student searches for a book by title.
+     * @deny (update) Anonymous user attempts to update stock levels.
+     * @principle Staff management with authenticated public read.
+     */
+    match /books/{bookId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isStaff();
+    }
+
+    /**
+     * @description Records of book borrowings.
+     * @path /borrowing_transactions/{transactionId}
+     * @allow (get) Member reads their own transaction via memberUserId.
+     * @deny (create) Student attempts to create their own transaction.
+     * @principle Ownership via denormalized userId field; Staff-only writes.
+     */
+    match /borrowing_transactions/{transactionId} {
+      allow get: if isStaff() || (isSignedIn() && resource.data.memberUserId == request.auth.uid);
+      allow list: if isStaff() || (isSignedIn() && request.query.limit <= 50);
+      allow create, update, delete: if isStaff();
+    }
+
+    /**
+     * @description System activity logs for auditing.
+     * @path /activity_logs/{logId}
+     * @allow (create) User 'abc' logs their own action 'BOOK_SEARCH'.
+     * @deny (get) Officer attempts to read log history (Admins only).
+     * @principle Open-write for actors, restricted read for Admins.
+     */
+    match /activity_logs/{logId} {
+      allow get, list: if hasRole('Admin');
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false; // Logs are immutable audit trails.
+    }
+
+    /**
+     * @description Notifications for overdue books.
+     * @path /overdue_notifications/{notificationId}
+     * @allow (get) Member reads a notification where memberUserId matches their UID.
+     * @deny (update) Member attempts to mark notification as 'Read' (managed by Staff or system).
+     * @principle Ownership via denormalized field; Staff management.
+     */
+    match /overdue_notifications/{notificationId} {
+      allow get: if isStaff() || (isSignedIn() && resource.data.memberUserId == request.auth.uid);
+      allow list: if isStaff() || (isSignedIn() && request.query.limit <= 20);
+      allow create, update, delete: if isStaff();
+    }
+  }
+}

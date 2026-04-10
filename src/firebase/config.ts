@@ -1,29 +1,8 @@
-
-'use client';
-
-import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
-import { getAuth, type Auth } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
-
-// Configuration will be populated by Firebase Studio
 export const firebaseConfig = {
-  apiKey: "REPLACE_WITH_API_KEY",
-  authDomain: "REPLACE_WITH_AUTH_DOMAIN",
-  projectId: "REPLACE_WITH_PROJECT_ID",
-  storageBucket: "REPLACE_WITH_STORAGE_BUCKET",
-  messagingSenderId: "REPLACE_WITH_MESSAGING_SENDER_ID",
-  appId: "REPLACE_WITH_APP_ID"
+  "projectId": "studio-6126048245-d2203",
+  "appId": "1:149906774770:web:6f08aa926138ceae374e6b",
+  "apiKey": "AIzaSyBob6UlrZSXovGa6XE3KwuruGwma0agUJI",
+  "authDomain": "studio-6126048245-d2203.firebaseapp.com",
+  "measurementId": "",
+  "messagingSenderId": "149906774770"
 };
-
-export function getFirebaseApp(): FirebaseApp {
-  const existingApp = getApps().at(0);
-  return existingApp || initializeApp(firebaseConfig);
-}
-
-export function getAuthService(): Auth {
-  return getAuth(getFirebaseApp());
-}
-
-export function getFirestoreService(): Firestore {
-  return getFirestore(getFirebaseApp());
-}
