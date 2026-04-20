@@ -97,7 +97,7 @@ export default function DashboardPage() {
         <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest opacity-80">
           Selamat Datang,
         </p>
-        <h1 className="text-2xl font-black tracking-tight text-primary leading-tight">
+        <h1 className="text-2xl font-bold tracking-tight text-primary leading-tight">
           {user?.displayNameCustom || "Petugas Perpustakaan"}
         </h1>
         <p className="text-muted-foreground text-xs mt-1">
