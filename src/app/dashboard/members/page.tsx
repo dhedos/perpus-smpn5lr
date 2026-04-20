@@ -237,15 +237,19 @@ export default function MembersPage() {
                 <Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label>
                 <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Masukkan nama lengkap" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas</Label>
-                  <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Contoh: VII" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-semibold text-xs uppercase text-muted-foreground">Mapel</Label>
-                  <Input value={formData.subjectPart ?? ""} onChange={e => setFormData({...formData, subjectPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Contoh: TIK" />
-                </div>
+              
+              <div className="grid grid-cols-1 gap-4">
+                {formData.type === 'Student' ? (
+                  <div className="space-y-2">
+                    <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas</Label>
+                    <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Contoh: VII A" />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label className="font-semibold text-xs uppercase text-muted-foreground">Mata Pelajaran (Mapel)</Label>
+                    <Input value={formData.subjectPart ?? ""} onChange={e => setFormData({...formData, subjectPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Contoh: Bahasa Inggris" />
+                  </div>
+                )}
               </div>
             </div>
             <DialogFooter><Button onClick={handleSaveMember} className="w-full sm:w-auto h-11 px-8 shadow-lg shadow-primary/20">Simpan Anggota</Button></DialogFooter>
@@ -363,15 +367,18 @@ export default function MembersPage() {
               <Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label>
               <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas</Label>
-                <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-semibold text-xs uppercase text-muted-foreground">Mapel</Label>
-                <Input value={formData.subjectPart ?? ""} onChange={e => setFormData({...formData, subjectPart: e.target.value})} className="bg-white border-slate-300 h-11" />
-              </div>
+            <div className="grid grid-cols-1 gap-4">
+               {formData.type === 'Student' ? (
+                  <div className="space-y-2">
+                    <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas</Label>
+                    <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label className="font-semibold text-xs uppercase text-muted-foreground">Mata Pelajaran (Mapel)</Label>
+                    <Input value={formData.subjectPart ?? ""} onChange={e => setFormData({...formData, subjectPart: e.target.value})} className="bg-white border-slate-300 h-11" />
+                  </div>
+                )}
             </div>
           </div>
           <DialogFooter><Button onClick={handleUpdateMember} className="w-full h-11">Simpan Perubahan</Button></DialogFooter>
