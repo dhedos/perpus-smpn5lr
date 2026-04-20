@@ -22,7 +22,9 @@ import {
   CalendarDays,
   Clock,
   Library,
-  ChevronRight
+  ChevronRight,
+  Minus,
+  Plus
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -73,6 +75,7 @@ export default function TransactionsPage() {
   
   const [selectedMember, setSelectedMember] = useState<any>(null)
   const [selectedBook, setSelectedBook] = useState<any>(null)
+  const [borrowQuantity, setBorrowQuantity] = useState(1)
 
   // Autocomplete suggestions
   const [showMemberSuggestions, setShowMemberSuggestions] = useState(false)
@@ -159,8 +162,8 @@ export default function TransactionsPage() {
     const book = books?.find(b => b.code?.toLowerCase() === text.toLowerCase() || b.isbn === text)
 
     if (activeTab === "borrow") {
-      if (member) { setSelectedMember(member); setMemberSearch(""); toast({ title: "Anggota Terpilih" }) }
-      else if (book) { setSelectedBook(book); setBookSearch(""); toast({ title: "Buku Terpilih" }) }
+      if (member) { setSelectedMember(member); setMemberSearch(""); setShowMemberSuggestions(false); toast({ title: "Anggota Terpilih" }) }
+      else if (book) { setSelectedBook(book); setBookSearch(""); setShowBookSuggestions(false); setBorrowQuantity(1); toast({ title: "Buku Terpilih" }) }
     } else {
       const trans = activeTrans?.find(t => { 
         const b = books?.find(bk => bk.id === t.bookId); 
@@ -222,13 +225,15 @@ export default function TransactionsPage() {
       if (bDoc.exists()) {
         const currentTotal = bDoc.data().totalStock || 0
         const currentAvail = bDoc.data().availableStock || 0
+        const transQty = Number(pendingReturnTrans.quantity || 1)
+        
         if (returnCondition === "lost") {
           updateDoc(bRef, { 
-            totalStock: Math.max(0, currentTotal - 1),
+            totalStock: Math.max(0, currentTotal - transQty),
             availableStock: currentAvail
           })
         } else {
-          updateDoc(bRef, { availableStock: currentAvail + 1 })
+          updateDoc(bRef, { availableStock: currentAvail + transQty })
         }
       }
       toast({ title: "Berhasil!", description: "Pengembalian buku telah dicatat." })
@@ -261,6 +266,16 @@ export default function TransactionsPage() {
 
   const handleProcessBorrow = () => {
     if (!db || !selectedMember || !selectedBook) return
+    
+    if (borrowQuantity > (selectedBook.availableStock || 0)) {
+      toast({ 
+        title: "Stok Tidak Cukup", 
+        description: `Stok tersedia hanya ${selectedBook.availableStock} unit.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
     const today = startOfDay(new Date());
     const finalDueDate = addDays(today, loanDays);
     setIsProcessing(true)
@@ -270,6 +285,7 @@ export default function TransactionsPage() {
       memberName: selectedMember.name, 
       bookId: selectedBook.id, 
       bookTitle: selectedBook.title, 
+      quantity: borrowQuantity,
       type: 'borrow', 
       status: 'active', 
       borrowDate: today.toISOString(), 
@@ -279,13 +295,14 @@ export default function TransactionsPage() {
 
     addDoc(collection(db, 'transactions'), newBorrow).then(() => {
       const avail = Number(selectedBook.availableStock ?? 1);
-      updateDoc(doc(db, 'books', selectedBook.id), { availableStock: Math.max(0, avail - 1) })
+      updateDoc(doc(db, 'books', selectedBook.id), { availableStock: Math.max(0, avail - borrowQuantity) })
       toast({ 
         title: "Peminjaman Berhasil", 
-        description: `Jatuh tempo: ${format(finalDueDate, 'dd MMMM yyyy', { locale: localeID })}.` 
+        description: `Buku: ${selectedBook.title} (${borrowQuantity} unit). Jatuh tempo: ${format(finalDueDate, 'dd MMMM yyyy', { locale: localeID })}.` 
       }); 
       setSelectedBook(null); 
       setSelectedMember(null);
+      setBorrowQuantity(1);
     }).finally(() => setIsProcessing(false))
   }
 
@@ -409,6 +426,7 @@ export default function TransactionsPage() {
                               setSelectedBook(b);
                               setBookSearch("");
                               setShowBookSuggestions(false);
+                              setBorrowQuantity(1);
                             }}
                           >
                             <div className="flex flex-col">
@@ -427,7 +445,7 @@ export default function TransactionsPage() {
                     )}
                   </div>
                   {selectedBook && (
-                    <div className="p-4 bg-secondary/5 rounded-xl border border-secondary/20 flex flex-col gap-2 animate-in slide-in-from-right-2">
+                    <div className="p-4 bg-secondary/5 rounded-xl border border-secondary/20 space-y-4 animate-in slide-in-from-right-2">
                       <div className="flex justify-between items-center">
                         <div className="flex-1">
                           <div className="font-bold text-secondary-foreground leading-tight">{selectedBook.title}</div>
@@ -435,6 +453,35 @@ export default function TransactionsPage() {
                         </div>
                         <Button variant="ghost" size="icon" onClick={() => setSelectedBook(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
                       </div>
+
+                      <div className="flex flex-col gap-2 pt-2 border-t border-secondary/10">
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Jumlah Buku yang Dipinjam</Label>
+                        <div className="flex items-center gap-4">
+                          <Button 
+                            variant="outline" 
+                            size="icon" 
+                            className="h-8 w-8 rounded-full"
+                            onClick={() => setBorrowQuantity(prev => Math.max(1, prev - 1))}
+                            disabled={borrowQuantity <= 1}
+                          >
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <span className="text-xl font-black w-8 text-center">{borrowQuantity}</span>
+                          <Button 
+                            variant="outline" 
+                            size="icon" 
+                            className="h-8 w-8 rounded-full"
+                            onClick={() => setBorrowQuantity(prev => Math.min(selectedBook.availableStock || 1, prev + 1))}
+                            disabled={borrowQuantity >= (selectedBook.availableStock || 0)}
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                          <div className="text-[10px] text-muted-foreground font-medium italic">
+                            Max: {selectedBook.availableStock || 0} unit
+                          </div>
+                        </div>
+                      </div>
+
                       <div className="pt-2 border-t border-secondary/10 flex items-center justify-between">
                          <div className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
                            <Clock className="h-3 w-3" /> Estimasi Jatuh Tempo:
@@ -502,9 +549,14 @@ export default function TransactionsPage() {
                               <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
                               <TableCell>
                                 <div className="space-y-0.5">
-                                  <div className="font-bold text-sm leading-tight">{t.bookTitle}</div>
+                                  <div className="font-bold text-sm leading-tight">
+                                    {t.bookTitle} 
+                                    {t.quantity && t.quantity > 1 && (
+                                      <span className="ml-2 text-primary font-black">({t.quantity} unit)</span>
+                                    )}
+                                  </div>
                                   <div className="flex items-center gap-2">
-                                    <div className="text-xs text-muted-foreground">{t.memberName}</div>
+                                    <span className="text-xs text-muted-foreground">{t.memberName}</span>
                                     <Badge variant="outline" className="text-[9px] h-4 py-0 px-1 border-primary/20 bg-primary/5 text-primary">
                                       {totalMemberLoans} Buku
                                     </Badge>
@@ -558,7 +610,12 @@ export default function TransactionsPage() {
                   <BookOpen className="h-4 w-4 text-primary mt-1" />
                   <div>
                     <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Informasi Buku</div>
-                    <div className="text-sm font-black">{pendingReturnTrans.bookTitle}</div>
+                    <div className="text-sm font-black">
+                      {pendingReturnTrans.bookTitle}
+                      {pendingReturnTrans.quantity && pendingReturnTrans.quantity > 1 && (
+                        <span className="ml-1 text-primary">({pendingReturnTrans.quantity} unit)</span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
