@@ -64,7 +64,6 @@ export default function SettingsPage() {
     setIsSaving(true)
     
     // Pastikan data numerik tersimpan sebagai number, bukan string
-    // Gunakan Math.max untuk mencegah angka 0 atau negatif jika tidak sengaja terinput
     const dataToSave = {
       ...settings,
       loanPeriod: Math.max(1, Number(settings.loanPeriod)),

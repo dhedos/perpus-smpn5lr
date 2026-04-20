@@ -52,7 +52,7 @@ import {
   useUser
 } from '@/firebase'
 import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc } from 'firebase/firestore'
-import { differenceInDays, parseISO, format, isAfter, addDays } from "date-fns"
+import { differenceInDays, parseISO, format, isAfter, addDays, startOfDay } from "date-fns"
 import { id as localeID } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 
@@ -115,10 +115,10 @@ export default function TransactionsPage() {
     )
   }, [activeTrans, returnSearch])
 
-  // Hitung estimasi jatuh tempo untuk peminjaman baru
+  // Hitung estimasi jatuh tempo untuk peminjaman baru (Dynamic based on settings)
   const estimatedDueDate = useMemo(() => {
-    const loanDays = Number(settings?.loanPeriod ?? 7);
-    return addDays(new Date(), loanDays);
+    const loanDays = settings?.loanPeriod ? Number(settings.loanPeriod) : 7;
+    return addDays(startOfDay(new Date()), loanDays);
   }, [settings?.loanPeriod]);
 
   const handleScanResult = (text: string) => {
@@ -140,8 +140,8 @@ export default function TransactionsPage() {
   }
 
   const prepareReturn = (trans: any) => {
-    const today = new Date();
-    const dueDate = parseISO(trans.dueDate);
+    const today = startOfDay(new Date());
+    const dueDate = startOfDay(parseISO(trans.dueDate));
     const diffDays = differenceInDays(today, dueDate);
     setLateDays(diffDays > 0 ? diffDays : 0);
     setPendingReturnTrans(trans);
@@ -230,9 +230,9 @@ export default function TransactionsPage() {
   const handleProcessBorrow = () => {
     if (!db || !selectedMember || !selectedBook) return
     
-    // Pastikan menggunakan loanPeriod terbaru dari settings
-    const loanDays = Number(settings?.loanPeriod ?? 7);
-    const today = new Date();
+    // Ambil loanPeriod terbaru saat klik, pastikan dikonversi ke Number
+    const loanDays = settings?.loanPeriod ? Number(settings.loanPeriod) : 7;
+    const today = startOfDay(new Date());
     const finalDueDate = addDays(today, loanDays);
 
     setIsProcessing(true)
@@ -257,17 +257,6 @@ export default function TransactionsPage() {
       setSelectedBook(null); 
       setSelectedMember(null);
     }).finally(() => setIsProcessing(false))
-  }
-
-  if (!isStaff && !user) {
-    return (
-      <div className="h-[60vh] flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-10 w-10 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">Memuat data akses...</p>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -343,7 +332,7 @@ export default function TransactionsPage() {
                       </div>
                       <div className="pt-2 border-t border-secondary/10 flex items-center justify-between">
                          <span className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
-                           <Clock className="h-3 w-3" /> Jatuh Tempo:
+                           <Clock className="h-3 w-3" /> Estimasi Jatuh Tempo:
                          </span>
                          <span className="text-xs font-bold text-primary">
                            {format(estimatedDueDate, 'EEEE, dd MMM yyyy', { locale: localeID })}
