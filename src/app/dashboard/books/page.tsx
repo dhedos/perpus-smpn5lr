@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo, useRef } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -28,7 +28,8 @@ import {
   Eye,
   Info,
   Calendar as CalendarIcon,
-  Filter
+  Filter,
+  ChevronDown
 } from "lucide-react"
 import { 
   Dialog, 
@@ -66,7 +67,7 @@ import {
   useCollection, 
   useMemoFirebase 
 } from '@/firebase'
-import { collection, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, addDoc, deleteDoc, doc, updateDoc, query, limit, orderBy } from 'firebase/firestore'
 
 export default function BooksPage() {
   const db = useFirestore()
@@ -75,6 +76,7 @@ export default function BooksPage() {
   const [search, setSearch] = useState("")
   const [filterCategory, setFilterCategory] = useState("all")
   const [filterYear, setFilterYear] = useState("all")
+  const [displayLimit, setDisplayLimit] = useState(50)
   
   const [isGenerating, setIsGenerating] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -105,31 +107,29 @@ export default function BooksPage() {
 
   const [editingBookId, setEditingBookId] = useState<string | null>(null)
 
-  const booksCollectionRef = useMemoFirebase(() => {
+  // Menggunakan limit untuk menghemat kuota pembacaan Firebase
+  const booksCollectionQuery = useMemoFirebase(() => {
     if (!db) return null
-    return collection(db, 'books')
-  }, [db])
+    return query(
+      collection(db, 'books'), 
+      orderBy('createdAt', 'desc'), 
+      limit(displayLimit)
+    )
+  }, [db, displayLimit])
 
-  const { data: books, loading } = useCollection(booksCollectionRef)
+  const { data: books, loading } = useCollection(booksCollectionQuery)
 
-  // Get unique categories for filter
   const categories = useMemo(() => {
     if (!books) return []
     const cats = books.map(b => b.category).filter(Boolean)
     return Array.from(new Set(cats))
   }, [books])
 
-  // Get unique years for filter
   const years = useMemo(() => {
     if (!books) return []
     const yrs = books.map(b => b.publicationYear?.toString()).filter(Boolean)
     return Array.from(new Set(yrs)).sort((a, b) => Number(b) - Number(a))
   }, [books])
-
-  const duplicateBookByCode = useMemo(() => {
-    if (!formData.code || !books) return null
-    return books.find(b => b.code?.toLowerCase() === formData.code.toLowerCase() && b.id !== editingBookId)
-  }, [formData.code, books, editingBookId])
 
   const filteredBooks = useMemo(() => {
     if (!books) return []
@@ -213,9 +213,9 @@ export default function BooksPage() {
   }
 
   const handleSaveBook = () => {
-    if (!db || !booksCollectionRef || duplicateBookByCode) return
+    if (!db) return
     setIsSaving(true)
-    addDoc(booksCollectionRef, { 
+    addDoc(collection(db, 'books'), { 
       ...formData, 
       createdAt: new Date().toISOString(), 
       updatedAt: new Date().toISOString() 
@@ -280,8 +280,8 @@ export default function BooksPage() {
               <DialogHeader><DialogTitle>Tambah Buku Baru</DialogTitle></DialogHeader>
               <div className="grid grid-cols-2 gap-4 py-4">
                 <div className="space-y-2">
-                  <Label className={cn("font-semibold", duplicateBookByCode && "text-destructive")}>Kode Buku</Label>
-                  <Input value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} className={cn("bg-white border-slate-300 h-11", duplicateBookByCode && "border-destructive")} />
+                  <Label className="font-semibold">Kode Buku</Label>
+                  <Input value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} className="bg-white border-slate-300 h-11" />
                 </div>
                 <div className="space-y-2">
                   <Label className="font-semibold">Judul Buku</Label>
@@ -310,7 +310,7 @@ export default function BooksPage() {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsOpen(false)}>Batal</Button>
-                <Button onClick={handleSaveBook} disabled={isSaving || !!duplicateBookByCode} className="px-8">Simpan Data</Button>
+                <Button onClick={handleSaveBook} disabled={isSaving} className="px-8">Simpan Data</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -396,6 +396,13 @@ export default function BooksPage() {
             ))}
           </TableBody>
         </Table>
+        {books && books.length >= displayLimit && (
+          <div className="p-4 text-center border-t bg-slate-50">
+            <Button variant="ghost" size="sm" onClick={() => setDisplayLimit(prev => prev + 50)} className="text-primary font-bold">
+              <ChevronDown className="h-4 w-4 mr-2" /> Muat Lebih Banyak
+            </Button>
+          </div>
+        )}
       </Card>
 
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>

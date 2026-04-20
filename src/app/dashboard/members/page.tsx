@@ -21,7 +21,7 @@ import {
   Loader2, 
   QrCode,
   Printer,
-  Download
+  ChevronDown
 } from "lucide-react"
 import { 
   Dialog, 
@@ -56,13 +56,14 @@ import {
   useCollection, 
   useMemoFirebase 
 } from '@/firebase'
-import { collection, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, addDoc, deleteDoc, doc, updateDoc, serverTimestamp, query, limit, orderBy } from 'firebase/firestore'
 
 export default function MembersPage() {
   const db = useFirestore()
   const { toast } = useToast()
   
   const [search, setSearch] = useState("")
+  const [displayLimit, setDisplayLimit] = useState(50)
   const [isSaving, setIsSaving] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -80,12 +81,17 @@ export default function MembersPage() {
 
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
 
-  const membersCollectionRef = useMemoFirebase(() => {
+  // Optimasi kuota pembacaan dengan limit
+  const membersCollectionQuery = useMemoFirebase(() => {
     if (!db) return null
-    return collection(db, 'members')
-  }, [db])
+    return query(
+      collection(db, 'members'), 
+      orderBy('createdAt', 'desc'), 
+      limit(displayLimit)
+    )
+  }, [db, displayLimit])
 
-  const { data: members, loading } = useCollection(membersCollectionRef)
+  const { data: members, loading } = useCollection(membersCollectionQuery)
 
   const filteredMembers = useMemo(() => {
     if (!members) return []
@@ -96,9 +102,9 @@ export default function MembersPage() {
   }, [members, search])
 
   const handleSaveMember = () => {
-    if (!db || !membersCollectionRef) return
+    if (!db) return
     setIsSaving(true)
-    addDoc(membersCollectionRef, { ...formData, createdAt: serverTimestamp() })
+    addDoc(collection(db, 'members'), { ...formData, createdAt: serverTimestamp() })
       .then(() => {
         toast({ title: "Berhasil!", description: "Anggota ditambahkan." })
         setIsOpen(false)
@@ -200,6 +206,13 @@ export default function MembersPage() {
             ))}
           </TableBody>
         </Table>
+        {members && members.length >= displayLimit && (
+          <div className="p-4 text-center border-t bg-slate-50">
+            <Button variant="ghost" size="sm" onClick={() => setDisplayLimit(prev => prev + 50)} className="text-primary font-bold">
+              <ChevronDown className="h-4 w-4 mr-2" /> Muat Lebih Banyak
+            </Button>
+          </div>
+        )}
       </Card>
 
       <Dialog open={isQrOpen} onOpenChange={setIsQrOpen}>
