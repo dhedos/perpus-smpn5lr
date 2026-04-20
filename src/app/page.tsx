@@ -121,8 +121,8 @@ export default function LoginPage() {
             />
           </div>
           <div className="space-y-1">
-            <CardTitle className="text-2xl font-bold font-headline uppercase tracking-tight">SMPN 5 Langke Rembong</CardTitle>
-            <CardDescription className="font-medium text-primary/80">
+            <CardTitle className="text-2xl font-bold font-headline uppercase tracking-tight text-primary">SMPN 5 Langke Rembong</CardTitle>
+            <CardDescription className="font-medium text-secondary">
               {isSetupMode ? "Inisialisasi Sistem Baru" : "Sistem Informasi Perpustakaan"}
             </CardDescription>
           </div>
@@ -179,7 +179,7 @@ export default function LoginPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full h-12 text-base font-bold shadow-lg" disabled={loading || checkingUsers}>
+            <Button type="submit" className="w-full h-12 text-base font-bold shadow-lg bg-primary hover:bg-primary/90" disabled={loading || checkingUsers}>
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin mr-2" />
               ) : isSetupMode ? (

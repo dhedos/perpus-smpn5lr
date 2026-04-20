@@ -63,7 +63,7 @@ export function SidebarNav() {
         </div>
         <div className="flex flex-col">
           <span className="text-sm font-bold leading-tight text-primary">SMPN 5</span>
-          <span className="text-[10px] font-semibold leading-tight text-muted-foreground uppercase">Langke Rembong</span>
+          <span className="text-[10px] font-semibold leading-tight text-secondary uppercase">Langke Rembong</span>
         </div>
       </div>
       
