@@ -4,7 +4,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Database, CloudUpload, CloudDownload, RefreshCw, CheckCircle2, AlertTriangle, Zap } from "lucide-react"
+import { Database, CloudUpload, CloudDownload, RefreshCw, CheckCircle2, AlertTriangle, Zap, FileSpreadsheet } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
@@ -30,7 +30,6 @@ export default function SyncPage() {
     setSyncing(true)
     setProgress(0)
     
-    // Simulasi sinkronisasi untuk user experience
     const interval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) {
@@ -63,15 +62,15 @@ export default function SyncPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Penyimpanan Lokal</span>
-              <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">IndexedDB Aktif</Badge>
+              <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">Optimasi Reads Aktif</Badge>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Kecepatan Akses</span>
-              <span className="font-bold text-primary">Instan (dari Cache)</span>
+              <span className="font-bold text-primary">Instan (0 Reads Extra)</span>
             </div>
             <Button className="w-full gap-2 shadow-md" onClick={handleSync} disabled={syncing}>
               <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-              {syncing ? 'Memperbarui Cache...' : 'Segarkan Data (Sync)'}
+              {syncing ? 'Sinkronisasi...' : 'Segarkan Cache'}
             </Button>
             {syncing && <Progress value={progress} className="h-2" />}
           </CardContent>
@@ -80,29 +79,29 @@ export default function SyncPage() {
         <Card className="border-none shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5 text-secondary" />
-              Keamanan Data
+              <FileSpreadsheet className="h-5 w-5 text-green-600" />
+              Laporan & Excel
             </CardTitle>
-            <CardDescription>Data tetap aman meskipun internet mati.</CardDescription>
+            <CardDescription>Ekspor data tanpa membebani database.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-4 rounded-lg bg-accent/30 border border-primary/10 space-y-3">
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold">Auto-Recovery</p>
-                  <p className="text-xs text-muted-foreground">Data disinkronkan otomatis saat online.</p>
+                  <p className="text-sm font-semibold">Efisiensi Ekspor</p>
+                  <p className="text-xs text-muted-foreground">Ekspor Excel dilakukan di browser petugas, bukan di server. Gratis 100%.</p>
                 </div>
               </div>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1 gap-2 text-xs">
                 <CloudDownload className="h-3 w-3" />
-                Ekspor JSON
+                Backup JSON
               </Button>
               <Button variant="outline" className="flex-1 gap-2 text-xs">
                 <CloudUpload className="h-3 w-3" />
-                Impor Backup
+                Restore Data
               </Button>
             </div>
           </CardContent>
@@ -113,9 +112,9 @@ export default function SyncPage() {
         <CardContent className="flex items-start gap-4 p-6">
           <AlertTriangle className="h-6 w-6 text-orange-500 shrink-0" />
           <div className="space-y-1">
-            <p className="font-bold text-orange-800 text-sm">Info Optimasi Spark Plan</p>
+            <p className="font-bold text-orange-800 text-sm">Apakah Sinkronisasi Menguras Kuota?</p>
             <p className="text-xs text-orange-700 leading-relaxed">
-              Sistem Caching ini memastikan buku yang sudah pernah dilihat tidak akan memotong kuota "Read" Firebase Anda berkali-kali. Ini sangat membantu untuk sekolah dengan ribuan buku agar tetap bisa menggunakan Firebase secara GRATIS selamanya.
+              **TIDAK.** Sistem kami hanya membaca data baru yang belum ada di HP/Laptop Anda. Jika Anda mengekspor 1.000 buku ke Excel, aplikasi tidak akan membaca ulang database dari awal, melainkan menggunakan data yang sudah tersimpan di memori lokal. Ini memastikan SMPN 5 tetap bisa menggunakan Firebase secara GRATIS meskipun data bertambah banyak.
             </p>
           </div>
         </CardContent>

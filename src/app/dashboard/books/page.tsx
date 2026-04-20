@@ -147,8 +147,14 @@ export default function BooksPage() {
     })
   }, [books, search, filterCategory, filterYear])
 
+  // Fitur Export Excel yang hemat kuota (menggunakan data yang sudah ter-cache di browser)
   const handleExportExcel = async () => {
     try {
+      if (filteredBooks.length === 0) {
+        toast({ title: "Data Kosong", description: "Tidak ada data untuk diekspor." })
+        return
+      }
+
       const { utils, writeFile } = await import("xlsx")
       const dataToExport = filteredBooks.map((book, index) => ({
         "No": index + 1,
@@ -165,7 +171,7 @@ export default function BooksPage() {
       const workbook = utils.book_new()
       utils.book_append_sheet(workbook, worksheet, "Koleksi Buku")
       writeFile(workbook, "Koleksi_Buku_SMPN5.xlsx")
-      toast({ title: "Berhasil", description: "Daftar buku telah diunduh." })
+      toast({ title: "Berhasil", description: "Data diekspor menggunakan Cache (Hemat Kuota)." })
     } catch (error) {
       toast({ title: "Gagal", description: "Gagal mengekspor data.", variant: "destructive" })
     }
@@ -273,7 +279,7 @@ export default function BooksPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={handlePrintAllQrs} className="hidden md:flex"><Printer className="h-4 w-4 mr-2" />Cetak Semua QR</Button>
-          <Button variant="outline" size="sm" onClick={handleExportExcel}><FileDown className="h-4 w-4 mr-2" />Excel</Button>
+          <Button variant="outline" size="sm" onClick={handleExportExcel}><FileDown className="h-4 w-4 mr-2" />Excel (Hemat Kuota)</Button>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-2" />Tambah Buku</Button></DialogTrigger>
             <DialogContent className="max-w-2xl bg-slate-50">
