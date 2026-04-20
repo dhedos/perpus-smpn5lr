@@ -162,10 +162,10 @@ export function TopNav() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-12 flex items-center gap-3 px-2 hover:bg-transparent">
               <div className="hidden md:block text-right">
-                <p className="text-sm font-bold leading-none uppercase tracking-tight">
+                <p className="text-sm font-bold leading-none tracking-tight">
                   {user?.displayNameCustom || "Petugas"}
                 </p>
-                <p className="text-[10px] leading-none text-muted-foreground mt-1.5">
+                <p className="text-[10px] leading-none text-muted-foreground mt-1.5 uppercase">
                   {user?.role || "Staff"}
                 </p>
               </div>
@@ -178,7 +178,7 @@ export function TopNav() {
           <DropdownMenuContent className="w-64" align="end" forceMount>
             <DropdownMenuLabel className="font-normal p-4">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-bold leading-none uppercase">{user?.displayNameCustom}</p>
+                <p className="text-sm font-bold leading-none">{user?.displayNameCustom}</p>
                 <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
               </div>
             </DropdownMenuLabel>
