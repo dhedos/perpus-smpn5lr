@@ -564,7 +564,7 @@ export default function BooksPage() {
             </div>
             <div className="col-span-2 space-y-2">
               <div className="flex justify-between items-center">
-                <Label className="font-semibold text-xs uppercase text-muted-foreground">Deskripsi / Ringkasan</Label>
+                <Label className="font-semibold text-xs uppercase text-muted-foreground">Deskripsi / Ringkasan AI</Label>
                 <Button variant="ghost" type="button" size="sm" onClick={handleGenerateDescription} disabled={isGenerating} className="h-6 text-[10px] font-bold">
                   <Sparkles className="h-3 w-3 mr-1" />AI Deskripsi
                 </Button>

@@ -27,7 +27,8 @@ import {
   Plus,
   AlertTriangle,
   Home,
-  Users as UsersIcon
+  Users as UsersIcon,
+  Briefcase
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -140,11 +141,6 @@ export default function TransactionsPage() {
     ).slice(0, 5);
   }, [bookSearch, books]);
 
-  const selectedMemberActiveLoans = useMemo(() => {
-    if (!selectedMember || !activeTrans) return 0;
-    return activeTrans.filter(t => t.memberId === selectedMember.memberId).length;
-  }, [selectedMember, activeTrans]);
-
   const filteredActiveTrans = useMemo(() => {
     if (!activeTrans) return []
     const sorted = [...activeTrans].sort((a, b) => {
@@ -161,10 +157,6 @@ export default function TransactionsPage() {
       t.memberId?.toLowerCase().includes(s)
     )
   }, [activeTrans, returnSearch])
-
-  const estimatedDueDate = useMemo(() => {
-    return addDays(startOfDay(new Date()), loanDays);
-  }, [loanDays]);
 
   const handleLookup = (text: string) => {
     if (!text) return
@@ -230,10 +222,9 @@ export default function TransactionsPage() {
     let fine = 0;
     const finePerDay = Number(settings.fineAmount || 500);
     const lostFineBase = Number(settings.lostBookFine || 50000);
-    const totalQty = Number(pendingReturnTrans.quantity || 1);
 
     if (lateDays > 0) {
-      fine += lateDays * finePerDay * totalQty;
+      fine += lateDays * finePerDay * (returnNormalQty + returnDamagedQty);
     }
     
     fine += returnDamagedQty * (finePerDay * 10);
@@ -345,6 +336,7 @@ export default function TransactionsPage() {
     const newBorrow = {
       memberId: selectedMember.memberId, 
       memberName: selectedMember.name, 
+      memberType: selectedMember.type || "Student",
       bookId: selectedBook.id, 
       bookTitle: selectedBook.title, 
       quantity: borrowQuantity,
@@ -431,7 +423,7 @@ export default function TransactionsPage() {
                           >
                             <div className="flex flex-col">
                               <span className="font-bold text-sm">{m.name}</span>
-                              <span className="text-[10px] font-mono text-primary">{m.memberId}</span>
+                              <span className="text-[10px] font-mono text-primary">{m.memberId} / {m.classOrSubject}</span>
                             </div>
                             <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           </div>
@@ -445,6 +437,7 @@ export default function TransactionsPage() {
                         <div className="flex-1">
                           <div className="font-bold text-primary text-lg">{selectedMember.name}</div>
                           <div className="text-xs font-mono text-muted-foreground">{selectedMember.memberId} / {selectedMember.classOrSubject}</div>
+                          <Badge variant="outline" className="mt-1 text-[8px] h-4">{selectedMember.type === 'Teacher' ? 'GURU' : 'SISWA'}</Badge>
                         </div>
                         <Button variant="ghost" size="icon" onClick={() => setSelectedMember(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
                       </div>
@@ -598,7 +591,7 @@ export default function TransactionsPage() {
                         <TableRow>
                           <TableHead className="w-12 text-center">No.</TableHead>
                           <TableHead>Peminjam & Buku</TableHead>
-                          <TableHead className="w-32">Kategori</TableHead>
+                          <TableHead className="w-32">Status/Kat.</TableHead>
                           <TableHead className="w-32">Jatuh Tempo</TableHead>
                           <TableHead className="w-24 text-right">Aksi</TableHead>
                         </TableRow>
@@ -612,26 +605,29 @@ export default function TransactionsPage() {
                           const borrowDate = t.borrowDate ? parseISO(t.borrowDate) : new Date();
                           const effectiveDueDate = addDays(borrowDate, loanDays);
                           const isOverdue = isAfter(new Date(), effectiveDueDate);
+                          const isTeacher = t.memberType === 'Teacher';
                           
                           return (
-                            <TableRow key={t.id} className={cn(isOverdue && "bg-red-50/50")}>
+                            <TableRow key={t.id} className={cn(isOverdue && !isTeacher && "bg-red-50/50")}>
                               <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
                               <TableCell>
                                 <div className="space-y-1">
                                   <div className="font-bold text-sm leading-tight">
                                     {t.bookTitle} {t.quantity > 1 && `(${t.quantity} unit)`}
                                   </div>
-                                  <div className="text-xs font-semibold">{t.memberName}</div>
+                                  <div className="text-xs font-semibold">{t.memberName} <span className="text-muted-foreground font-normal">/ {t.memberId}</span></div>
                                 </div>
                               </TableCell>
                               <TableCell>
-                                <Badge variant="outline" className="text-[10px]">
-                                  {t.loanType === 'class' ? "Kolektif" : "Pribadi"}
-                                </Badge>
+                                <div className="flex flex-col gap-1">
+                                  <Badge variant={isTeacher ? "default" : "outline"} className="text-[8px] h-4 w-fit">
+                                    {isTeacher ? "PEGANGAN GURU" : (t.loanType === 'class' ? "Kolektif" : "Pribadi")}
+                                  </Badge>
+                                </div>
                               </TableCell>
                               <TableCell>
-                                <div className={cn("text-xs font-bold", isOverdue ? "text-destructive" : "text-muted-foreground")}>
-                                  {format(effectiveDueDate, 'dd/MM/yyyy')}
+                                <div className={cn("text-xs font-bold", isOverdue && !isTeacher ? "text-destructive" : "text-muted-foreground")}>
+                                  {isTeacher ? "-" : format(effectiveDueDate, 'dd/MM/yyyy')}
                                 </div>
                               </TableCell>
                               <TableCell className="text-right">
@@ -673,6 +669,9 @@ export default function TransactionsPage() {
                   <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Peminjam</div>
                   <div className="text-sm font-bold">{pendingReturnTrans.memberName}</div>
                   <div className="text-[10px] text-muted-foreground">ID: {pendingReturnTrans.memberId}</div>
+                  {pendingReturnTrans.memberType === 'Teacher' && (
+                    <Badge variant="secondary" className="mt-1 bg-primary/10 text-primary border-none text-[8px]">BUKU PEGANGAN GURU</Badge>
+                  )}
                 </div>
               </div>
 
@@ -709,6 +708,19 @@ export default function TransactionsPage() {
                   </div>
                 </div>
               </div>
+
+              {calculatedFine > 0 && (
+                <div className="p-4 bg-orange-50 rounded-xl border border-orange-200 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Coins className="h-5 w-5 text-orange-600" />
+                    <div>
+                      <div className="text-[10px] font-bold text-orange-800 uppercase">Total Denda</div>
+                      <div className="text-lg font-black text-orange-700">Rp {calculatedFine.toLocaleString('id-ID')}</div>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="border-orange-300 text-orange-700 text-[8px]">Tagihan Otomatis</Badge>
+                </div>
+              )}
             </div>
           )}
 
