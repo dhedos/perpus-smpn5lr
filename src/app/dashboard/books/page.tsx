@@ -523,7 +523,7 @@ export default function BooksPage() {
       </div>
 
       <Dialog open={isScannerOpen} onOpenChange={(open) => !open && stopScanner()}>
-        <DialogContent className="max-w-none w-screen h-[100dvh] p-0 border-none bg-black">
+        <DialogContent className="sm:max-w-3xl sm:h-[80vh] w-screen h-[100dvh] p-0 border-none bg-black overflow-hidden sm:rounded-2xl">
           <div className="absolute top-0 left-0 right-0 z-50 p-4 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-center">
             <div className="text-white">
               <DialogTitle className="text-lg font-bold">Pemindai Kamera</DialogTitle>

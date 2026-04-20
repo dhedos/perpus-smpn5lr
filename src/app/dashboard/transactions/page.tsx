@@ -457,7 +457,7 @@ export default function TransactionsPage() {
       </Tabs>
 
       <Dialog open={isScannerOpen} onOpenChange={(open) => !open && stopScanner()}>
-        <DialogContent className="max-w-none w-screen h-[100dvh] p-0 border-none bg-black">
+        <DialogContent className="sm:max-w-3xl sm:h-[80vh] w-screen h-[100dvh] p-0 border-none bg-black overflow-hidden sm:rounded-2xl">
           <div className="absolute top-0 left-0 right-0 z-50 p-4 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-center">
              <div className="text-white">
                 <DialogTitle className="text-lg font-bold">Multifungsi Scanner</DialogTitle>
@@ -468,7 +468,7 @@ export default function TransactionsPage() {
              </Button>
           </div>
           
-          <div className="relative w-full h-full bg-black">
+          <div className="relative w-full h-full bg-black flex items-center justify-center">
             <div id="qr-transaction-scanner" className="h-full w-full [&>video]:object-cover"></div>
             
             {hasCameraPermission === false && (
