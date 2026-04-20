@@ -21,7 +21,8 @@ import {
   Coins,
   Ghost,
   CalendarDays,
-  Clock
+  Clock,
+  Library
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -100,6 +101,18 @@ export default function TransactionsPage() {
 
   const loanDays = useMemo(() => settings?.loanPeriod ? Number(settings.loanPeriod) : 7, [settings]);
 
+  // Hitung jumlah buku yang sedang dipinjam oleh siswa terpilih
+  const selectedMemberActiveLoans = useMemo(() => {
+    if (!selectedMember || !activeTrans) return 0;
+    return activeTrans.filter(t => t.memberId === selectedMember.memberId).length;
+  }, [selectedMember, activeTrans]);
+
+  // Fungsi untuk mendapatkan jumlah pinjaman aktif per siswa untuk tabel
+  const getMemberLoanCount = (memberId: string) => {
+    if (!activeTrans) return 0;
+    return activeTrans.filter(t => t.memberId === memberId).length;
+  }
+
   const filteredActiveTrans = useMemo(() => {
     if (!activeTrans) return []
     const sorted = [...activeTrans].sort((a, b) => {
@@ -142,7 +155,6 @@ export default function TransactionsPage() {
 
   const prepareReturn = (trans: any) => {
     const today = startOfDay(new Date());
-    // Menghitung denda berdasarkan loanPeriod TERBARU dari Admin
     const borrowDate = startOfDay(parseISO(trans.borrowDate));
     const dynamicDueDate = addDays(borrowDate, loanDays);
     const diffDays = differenceInDays(today, dynamicDueDate);
@@ -303,12 +315,22 @@ export default function TransactionsPage() {
                     <Input placeholder="Ketik ID Anggota..." className="pl-10 h-12" value={memberSearch} onChange={e => setMemberSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleScanResult(memberSearch)} />
                   </div>
                   {selectedMember && (
-                    <div className="p-4 bg-primary/5 rounded-xl border border-primary/20 flex justify-between items-center animate-in slide-in-from-left-2">
-                      <div>
-                        <p className="font-bold text-primary">{selectedMember.name}</p>
-                        <p className="text-xs font-mono text-muted-foreground">{selectedMember.memberId}</p>
+                    <div className="p-4 bg-primary/5 rounded-xl border border-primary/20 flex flex-col gap-2 animate-in slide-in-from-left-2">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-bold text-primary text-lg">{selectedMember.name}</p>
+                          <p className="text-xs font-mono text-muted-foreground">{selectedMember.memberId}</p>
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => setSelectedMember(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
                       </div>
-                      <Button variant="ghost" size="icon" onClick={() => setSelectedMember(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
+                      <div className="pt-2 border-t border-primary/10 flex items-center justify-between">
+                         <span className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
+                           <Library className="h-3 w-3" /> Pinjaman Aktif Saat Ini:
+                         </span>
+                         <Badge variant={selectedMemberActiveLoans >= 3 ? "destructive" : "secondary"} className="font-bold">
+                           {selectedMemberActiveLoans} Buku
+                         </Badge>
+                      </div>
                     </div>
                   )}
                 </CardContent>
@@ -366,7 +388,7 @@ export default function TransactionsPage() {
                   <div className="flex justify-between items-center">
                     <div>
                       <CardTitle className="text-sm font-bold uppercase tracking-wider">Peminjaman Aktif</CardTitle>
-                      <CardDescription className="text-xs">Buku yang saat ini sedang dibawa siswa.</CardDescription>
+                      <CardDescription className="text-xs">Daftar sirkulasi buku yang sedang dipinjam.</CardDescription>
                     </div>
                     <Badge variant="secondary" className="font-bold">{activeTrans?.length || 0} Buku</Badge>
                   </div>
@@ -389,10 +411,10 @@ export default function TransactionsPage() {
                         ) : filteredActiveTrans.length === 0 ? (
                           <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground italic">Tidak ada peminjaman aktif{returnSearch && ' yang cocok'}.</TableCell></TableRow>
                         ) : filteredActiveTrans.map((t, index) => {
-                          // Menghitung jatuh tempo secara dinamis berdasarkan kebijakan terbaru Admin
                           const borrowDate = t.borrowDate ? parseISO(t.borrowDate) : new Date();
                           const effectiveDueDate = addDays(borrowDate, loanDays);
                           const isOverdue = isAfter(new Date(), effectiveDueDate);
+                          const totalMemberLoans = getMemberLoanCount(t.memberId);
                           
                           return (
                             <TableRow key={t.id} className={cn(isOverdue && "bg-red-50/50")}>
@@ -400,7 +422,12 @@ export default function TransactionsPage() {
                               <TableCell>
                                 <div className="space-y-0.5">
                                   <p className="font-bold text-sm leading-tight">{t.bookTitle}</p>
-                                  <p className="text-xs text-muted-foreground">{t.memberName} ({t.memberId})</p>
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-xs text-muted-foreground">{t.memberName}</p>
+                                    <Badge variant="outline" className="text-[9px] h-4 py-0 px-1 border-primary/20 bg-primary/5 text-primary">
+                                      {totalMemberLoans} Buku
+                                    </Badge>
+                                  </div>
                                 </div>
                               </TableCell>
                               <TableCell className="text-xs text-muted-foreground">
