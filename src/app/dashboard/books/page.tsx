@@ -29,7 +29,8 @@ import {
   Info,
   Calendar as CalendarIcon,
   Filter,
-  ChevronDown
+  ChevronDown,
+  RefreshCw
 } from "lucide-react"
 import { 
   Dialog, 
@@ -77,7 +78,7 @@ import {
   errorEmitter 
 } from '@/firebase'
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors'
-import { collection, addDoc, deleteDoc, doc, updateDoc, query, limit, orderBy } from 'firebase/firestore'
+import { collection, addDoc, deleteDoc, doc, updateDoc, query, limit, orderBy, where, getDocs } from 'firebase/firestore'
 
 const INITIAL_FORM_DATA = {
   code: "",
@@ -324,6 +325,28 @@ export default function BooksPage() {
     setTimeout(() => { setBookToDelete(null) }, 200)
   }
 
+  const handleSyncAvailability = (book: any) => {
+    if (!db) return
+    const transQuery = query(
+      collection(db, 'transactions'),
+      where('bookId', '==', book.id),
+      where('status', '==', 'active')
+    )
+    
+    getDocs(transQuery).then((snapshot) => {
+      const activeCount = snapshot.size
+      const newAvail = Math.max(0, Number(book.totalStock || 0) - activeCount)
+      
+      const docRef = doc(db, 'books', book.id)
+      updateDoc(docRef, { availableStock: newAvail })
+      
+      toast({ 
+        title: "Stok Disinkronkan", 
+        description: `Buku "${book.title}" sekarang memiliki ${newAvail} unit tersedia.` 
+      })
+    })
+  }
+
   const startScanner = async () => {
     setIsScannerOpen(true)
     try {
@@ -435,15 +458,17 @@ export default function BooksPage() {
                 <TableCell className="font-mono text-xs font-bold text-primary">{book.code}</TableCell>
                 <TableCell>
                   <div className="space-y-0.5">
-                    <p className="font-semibold leading-none">{book.title}</p>
-                    <p className="text-[10px] text-muted-foreground">{book.author}</p>
+                    <div className="font-semibold leading-none">{book.title}</div>
+                    <div className="text-[10px] text-muted-foreground">{book.author}</div>
                   </div>
                 </TableCell>
                 <TableCell className="text-xs">{book.publicationYear}</TableCell>
-                <TableCell className="text-xs font-medium">
-                   <Badge variant={book.availableStock === 0 ? "destructive" : "secondary"} className="h-5 px-1.5 text-[10px]">
-                    {book.availableStock}/{book.totalStock}
-                   </Badge>
+                <TableCell>
+                   <div className="flex items-center gap-1">
+                    <Badge variant={book.availableStock === 0 ? "destructive" : "secondary"} className="h-5 px-1.5 text-[10px]">
+                      {book.availableStock}/{book.totalStock}
+                    </Badge>
+                   </div>
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
@@ -461,6 +486,7 @@ export default function BooksPage() {
                           setIsQrOpen(true);
                         }, 0);
                       }}><QrCode className="h-4 w-4 mr-2" />Tampilkan QR</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => handleSyncAvailability(book)}><RefreshCw className="h-4 w-4 mr-2" />Sinkronkan Stok</DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => { 
                         setTimeout(() => {
                           setEditingBookId(book.id); 
