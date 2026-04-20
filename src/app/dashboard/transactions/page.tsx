@@ -199,7 +199,7 @@ export default function TransactionsPage() {
       const book = books?.find(b => b.code === decodedText || b.isbn === decodedText)
       if (book) {
         setSelectedBook(book); setBookSearch(book.title);
-        toast({ title: "Buku Terdeteksi", description: book.title })
+        toast({ title: "Buku Terpilih", description: book.title })
       } else {
         toast({ title: "Gagal", description: "Buku tidak ditemukan.", variant: "destructive" })
       }
@@ -210,9 +210,31 @@ export default function TransactionsPage() {
       })
       if (transaction) {
         setReturnSearch(transaction.bookTitle)
-        toast({ title: "Transaksi Ditemukan", description: `Buku: ${transaction.bookTitle}` })
+        toast({ title: "Peminjaman Ditemukan", description: `Buku: ${transaction.bookTitle}` })
       } else {
-        toast({ title: "Gagal", description: "Tidak ada peminjaman aktif buku ini.", variant: "destructive" })
+        toast({ title: "Gagal", description: "Buku ini tidak sedang dipinjam.", variant: "destructive" })
+      }
+    }
+  }
+
+  const handleBookKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      const exactBook = books?.find(b => b.code === bookSearch || b.isbn === bookSearch)
+      if (exactBook) {
+        setSelectedBook(exactBook)
+        setBookSearch(exactBook.title)
+        toast({ title: "Buku Terdeteksi", description: exactBook.title })
+      }
+    }
+  }
+
+  const handleMemberKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      const exactMember = members?.find(m => m.memberId === memberSearch)
+      if (exactMember) {
+        setSelectedMember(exactMember)
+        setMemberSearch(exactMember.name)
+        toast({ title: "Anggota Terdeteksi", description: exactMember.name })
       }
     }
   }
@@ -305,12 +327,18 @@ export default function TransactionsPage() {
             <div className="grid gap-6 md:grid-cols-2">
               <Card className="border-none shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm">Peminjam</CardTitle>
+                  <CardTitle className="text-sm">Peminjam (Siswa/Guru)</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Cari Anggota..." className="pl-10" value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} />
+                    <Input 
+                      placeholder="Input ID atau Nama..." 
+                      className="pl-10" 
+                      value={memberSearch} 
+                      onChange={(e) => setMemberSearch(e.target.value)}
+                      onKeyDown={handleMemberKeyDown}
+                    />
                     {foundMembers.length > 0 && !selectedMember && (
                       <div className="absolute z-20 w-full mt-1 bg-white border rounded-lg shadow-xl max-h-40 overflow-y-auto">
                         {foundMembers.map(m => (
@@ -333,15 +361,21 @@ export default function TransactionsPage() {
 
               <Card className="border-none shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm">Buku</CardTitle>
+                  <CardTitle className="text-sm">Buku (Gunakan Scanner)</CardTitle>
                   <Button variant="outline" size="sm" className="gap-2 h-8" onClick={() => startScanner("borrow")}>
-                    <QrCode className="h-3.5 w-3.5" /> Scan
+                    <QrCode className="h-3.5 w-3.5" /> Scan HP
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Cari Buku..." className="pl-10" value={bookSearch} onChange={(e) => setBookSearch(e.target.value)} />
+                    <Input 
+                      placeholder="Scan Barcode atau ketik Kode Buku..." 
+                      className="pl-10" 
+                      value={bookSearch} 
+                      onChange={(e) => setBookSearch(e.target.value)}
+                      onKeyDown={handleBookKeyDown}
+                    />
                     {foundBooks.length > 0 && !selectedBook && (
                       <div className="absolute z-20 w-full mt-1 bg-white border rounded-lg shadow-xl max-h-40 overflow-y-auto">
                         {foundBooks.map(b => (
@@ -365,7 +399,7 @@ export default function TransactionsPage() {
 
             <Button className="w-full h-14 text-lg font-bold" disabled={!selectedMember || !selectedBook || isProcessing} onClick={handleProcessBorrow}>
               {isProcessing ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle className="mr-2" />}
-              PINJAM BUKU
+              PROSES PINJAM
             </Button>
           </TabsContent>
 
@@ -373,10 +407,24 @@ export default function TransactionsPage() {
             <Card className="border-none shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-sm">Pengembalian</CardTitle>
-                <Button variant="secondary" className="gap-2" onClick={() => startScanner("return")}><ScanBarcode className="h-4 w-4" /> Scan QR</Button>
+                <Button variant="secondary" className="gap-2" onClick={() => startScanner("return")}><ScanBarcode className="h-4 w-4" /> Scan HP</Button>
               </CardHeader>
               <CardContent className="space-y-6">
-                <Input placeholder="Cari Peminjam/Buku..." className="h-12" value={returnSearch} onChange={(e) => setReturnSearch(e.target.value)} />
+                <Input 
+                  placeholder="Scan QR Buku atau cari Nama/Judul..." 
+                  className="h-12" 
+                  value={returnSearch} 
+                  onChange={(e) => setReturnSearch(e.target.value)} 
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const transaction = activeTrans?.find(t => {
+                        const book = books?.find(b => b.id === t.bookId)
+                        return book?.code === returnSearch || book?.isbn === returnSearch
+                      })
+                      if (transaction) handleProcessReturn(transaction)
+                    }
+                  }}
+                />
                 <div className="grid gap-3">
                   {foundActiveTrans.map(t => (
                     <div key={t.id} className="p-4 rounded-xl border flex items-center justify-between bg-card">

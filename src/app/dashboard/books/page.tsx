@@ -78,6 +78,7 @@ export default function BooksPage() {
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   const scannerInstanceRef = useRef<any>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState({
     code: "",
@@ -169,7 +170,6 @@ export default function BooksPage() {
     setIsScannerOpen(true)
     setHasCameraPermission(null)
     
-    // Ensure cleanup of any old instance
     if (scannerInstanceRef.current) {
       try { await scannerInstanceRef.current.stop() } catch (e) {}
     }
@@ -329,6 +329,13 @@ export default function BooksPage() {
     setIsEditOpen(true)
   }
 
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    // HID Scanner typically sends Enter after scanning
+    if (e.key === "Enter") {
+      toast({ title: "Scan Diterima", description: `Mencari: ${search}` })
+    }
+  }
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -419,11 +426,18 @@ export default function BooksPage() {
       <div className="flex flex-col sm:flex-row items-center gap-4 bg-card p-4 rounded-xl shadow-sm">
         <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Cari buku..." className="pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input 
+            ref={searchInputRef}
+            placeholder="Cari buku (bisa pakai alat scanner)..." 
+            className="pl-10" 
+            value={search} 
+            onChange={(e) => setSearch(e.target.value)} 
+            onKeyDown={handleSearchKeyDown}
+          />
         </div>
         <Button variant="secondary" className="gap-2 w-full sm:w-auto" onClick={() => startScanner("search")}>
           <ScanBarcode className="h-4 w-4" />
-          Scan Barcode
+          Scan HP
         </Button>
       </div>
 
@@ -431,7 +445,7 @@ export default function BooksPage() {
         <DialogContent className="sm:max-w-md p-0 overflow-hidden border-none bg-black">
           <div className="p-4 bg-background flex justify-between items-center">
             <div>
-              <DialogTitle className="text-base">Scanner Kamera</DialogTitle>
+              <DialogTitle className="text-base">Scanner Kamera HP</DialogTitle>
               <DialogDescription className="text-xs">Arahkan ke barcode/QR buku</DialogDescription>
             </div>
             <Button variant="ghost" size="icon" onClick={stopScanner}><X className="h-5 w-5" /></Button>
@@ -455,13 +469,9 @@ export default function BooksPage() {
                <div className="w-full h-full border-2 border-primary/50 rounded-lg shadow-[0_0_0_1000px_rgba(0,0,0,0.5)]"></div>
             </div>
           </div>
-          <div className="p-4 bg-background text-center text-xs text-muted-foreground">
-            Pastikan pencahayaan cukup dan barcode berada di dalam kotak.
-          </div>
         </DialogContent>
       </Dialog>
 
-      {/* QR Code Dialog */}
       <Dialog open={isQrOpen} onOpenChange={setIsQrOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>QR Code Buku</DialogTitle></DialogHeader>
