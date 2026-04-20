@@ -362,25 +362,31 @@ export default function TransactionsPage() {
                     <Table>
                       <TableHeader className="bg-slate-50/50 sticky top-0 z-10">
                         <TableRow>
+                          <TableHead className="w-12 text-center">No.</TableHead>
                           <TableHead>Peminjam & Buku</TableHead>
+                          <TableHead className="w-32">Tgl Pinjam</TableHead>
                           <TableHead className="w-32">Jatuh Tempo</TableHead>
                           <TableHead className="w-24 text-right">Aksi</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {loadingActive ? (
-                          <TableRow><TableCell colSpan={3} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+                          <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
                         ) : filteredActiveTrans.length === 0 ? (
-                          <TableRow><TableCell colSpan={3} className="text-center py-12 text-muted-foreground italic">Tidak ada peminjaman aktif{returnSearch && ' yang cocok'}.</TableCell></TableRow>
-                        ) : filteredActiveTrans.map((t) => {
+                          <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground italic">Tidak ada peminjaman aktif{returnSearch && ' yang cocok'}.</TableCell></TableRow>
+                        ) : filteredActiveTrans.map((t, index) => {
                           const isOverdue = t.dueDate ? isAfter(new Date(), parseISO(t.dueDate)) : false;
                           return (
                             <TableRow key={t.id} className={cn(isOverdue && "bg-red-50/50")}>
+                              <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
                               <TableCell>
                                 <div className="space-y-0.5">
                                   <p className="font-bold text-sm leading-tight">{t.bookTitle}</p>
                                   <p className="text-xs text-muted-foreground">{t.memberName} ({t.memberId})</p>
                                 </div>
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground">
+                                {t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yyyy') : '-'}
                               </TableCell>
                               <TableCell>
                                 <div className="space-y-1">
