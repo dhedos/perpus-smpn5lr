@@ -14,18 +14,12 @@ import {
   CheckCircle,
   ScanBarcode,
   X,
-  Sparkles,
-  RefreshCcw,
   User,
-  AlertCircle,
-  Clock,
-  Coins,
-  CalendarDays,
-  Ghost,
   ShieldAlert,
   ThumbsUp,
   ArrowRightLeft,
-  Calendar
+  Coins,
+  Ghost
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -52,14 +46,16 @@ import {
   useFirestore, 
   useCollection, 
   useMemoFirebase,
-  useDoc
+  useDoc,
+  useUser
 } from '@/firebase'
-import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc, orderBy } from 'firebase/firestore'
+import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc } from 'firebase/firestore'
 import { differenceInDays, parseISO, format, isAfter } from "date-fns"
 import { cn } from "@/lib/utils"
 
 export default function TransactionsPage() {
   const db = useFirestore()
+  const { user, isStaff } = useUser()
   const { toast } = useToast()
   
   const [activeTab, setActiveTab] = useState("borrow")
@@ -68,7 +64,6 @@ export default function TransactionsPage() {
   const [returnSearch, setReturnSearch] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null)
   
   const scannerInstanceRef = useRef<any>(null)
   
@@ -92,16 +87,26 @@ export default function TransactionsPage() {
   const { data: members } = useCollection(membersRef)
   const { data: books } = useCollection(booksRef)
 
-  const activeTransQuery = useMemoFirebase(() => 
-    db ? query(collection(db, 'transactions'), where('status', '==', 'active'), orderBy('createdAt', 'desc')) : null, 
-  [db])
+  // Query sederhana untuk menghindari masalah Index Komposit di awal
+  const activeTransQuery = useMemoFirebase(() => {
+    if (!db || !isStaff) return null;
+    return query(collection(db, 'transactions'), where('status', '==', 'active'));
+  }, [db, isStaff])
+
   const { data: activeTrans, isLoading: loadingActive } = useCollection(activeTransQuery)
 
   const filteredActiveTrans = useMemo(() => {
     if (!activeTrans) return []
-    if (!returnSearch) return activeTrans
+    // Urutkan secara lokal di memori klien untuk menghemat kuota dan menghindari index error
+    const sorted = [...activeTrans].sort((a, b) => {
+      const dateA = a.borrowDate ? new Date(a.borrowDate).getTime() : 0;
+      const dateB = b.borrowDate ? new Date(b.borrowDate).getTime() : 0;
+      return dateB - dateA;
+    });
+
+    if (!returnSearch) return sorted
     const search = returnSearch.toLowerCase()
-    return activeTrans.filter(t => 
+    return sorted.filter(t => 
       t.memberName?.toLowerCase().includes(search) || 
       t.bookTitle?.toLowerCase().includes(search) ||
       t.memberId?.toLowerCase().includes(search)
@@ -193,7 +198,6 @@ export default function TransactionsPage() {
 
   const startScanner = async () => {
     setIsScannerOpen(true); 
-    setHasCameraPermission(null)
     try {
       const { Html5Qrcode } = await import("html5-qrcode")
       setTimeout(async () => {
@@ -201,8 +205,7 @@ export default function TransactionsPage() {
           const scanner = new Html5Qrcode("smart-scanner")
           scannerInstanceRef.current = scanner
           await scanner.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (text) => handleScanResult(text), () => {})
-          setHasCameraPermission(true)
-        } catch (err) { setHasCameraPermission(false) }
+        } catch (err) {}
       }, 500)
     } catch (e) { setIsScannerOpen(false) }
   }
@@ -230,6 +233,17 @@ export default function TransactionsPage() {
       updateDoc(doc(db, 'books', selectedBook.id), { availableStock: Number(selectedBook.availableStock) - 1 })
       toast({ title: "Berhasil Meminjam" }); setSelectedBook(null); setSelectedMember(null);
     }).finally(() => setIsProcessing(false))
+  }
+
+  if (!isStaff) {
+    return (
+      <div className="h-[60vh] flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-10 w-10 animate-spin mx-auto text-primary" />
+          <p className="text-muted-foreground">Memverifikasi hak akses petugas...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -341,7 +355,7 @@ export default function TransactionsPage() {
                         ) : filteredActiveTrans.length === 0 ? (
                           <TableRow><TableCell colSpan={3} className="text-center py-12 text-muted-foreground italic">Tidak ada peminjaman aktif{returnSearch && ' yang cocok'}.</TableCell></TableRow>
                         ) : filteredActiveTrans.map((t) => {
-                          const isOverdue = isAfter(new Date(), parseISO(t.dueDate));
+                          const isOverdue = t.dueDate ? isAfter(new Date(), parseISO(t.dueDate)) : false;
                           return (
                             <TableRow key={t.id} className={cn(isOverdue && "bg-red-50/50")}>
                               <TableCell>
@@ -353,7 +367,7 @@ export default function TransactionsPage() {
                               <TableCell>
                                 <div className="space-y-1">
                                   <p className={cn("text-xs font-bold", isOverdue ? "text-destructive" : "text-muted-foreground")}>
-                                    {format(parseISO(t.dueDate), 'dd/MM/yyyy')}
+                                    {t.dueDate ? format(parseISO(t.dueDate), 'dd/MM/yyyy') : '-'}
                                   </p>
                                   {isOverdue && <Badge variant="destructive" className="text-[9px] h-4 px-1">Terlambat</Badge>}
                                 </div>

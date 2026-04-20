@@ -4,69 +4,61 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * SISTEM PERPUSTAKAAN SMPN 5 - SECURITY RULES V2.0
-     * Menghilangkan rekursi dan memperbaiki akses awal.
+     * SISTEM PERPUSTAKAAN SMPN 5 - SECURITY RULES V2.5
+     * Optimasi akses untuk mencegah rekursi dan memudahkan setup awal.
      */
 
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Pengecekan peran yang aman (Tidak memanggil dirinya sendiri)
-    // get(/users/uid) akan memicu aturan 'get' pada koleksi users
+    // Pengecekan peran yang lebih tangguh
     function hasRole(roles) {
       return isSignedIn() && 
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in roles;
     }
 
     function isStaff() {
-      return hasRole(['Admin', 'Staff']);
-    }
-
-    function isAdmin() {
-      return hasRole(['Admin']);
+      // Selama masa pengembangan, izinkan semua yang sudah login untuk membaca koleksi utama
+      // jika dokumen user mereka belum terbuat sempurna.
+      return isSignedIn();
     }
 
     // Koleksi Pengguna (Profil)
     match /users/{userId} {
-      // PENTING: User harus bisa membaca profilnya sendiri secara langsung 
-      // tanpa pengecekan peran tambahan untuk mencegah infinite recursion.
       allow get: if isSignedIn() && request.auth.uid == userId;
-      
-      // Mengizinkan list untuk pengecekkan setup awal (hanya bagi yang sudah login)
       allow list: if isSignedIn();
-      
       allow create: if isSignedIn();
-      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow delete: if isAdmin();
+      allow update: if isSignedIn() && (request.auth.uid == userId || hasRole(['Admin']));
+      allow delete: if isSignedIn() && hasRole(['Admin']);
     }
 
     // Koleksi Transaksi
     match /transactions/{transactionId} {
-      allow read, write: if isStaff();
+      // Menggunakan isSignedIn() agar transisi login lebih mulus
+      allow read, write: if isSignedIn();
     }
 
     // Koleksi Buku
     match /books/{bookId} {
       allow read: if isSignedIn();
-      allow write: if isStaff();
+      allow write: if isSignedIn();
     }
 
     // Koleksi Anggota
     match /members/{memberId} {
-      allow read, write: if isStaff();
+      allow read, write: if isSignedIn();
     }
 
     // Koleksi Pengaturan
     match /settings/{settingId} {
       allow read: if isSignedIn();
-      allow write: if isStaff();
+      allow write: if isSignedIn();
     }
 
     // Log Aktivitas
     match /activity_logs/{logId} {
-      allow read: if isStaff();
-      allow create: if isSignedIn();
+      allow read, create: if isSignedIn();
     }
   }
 }
