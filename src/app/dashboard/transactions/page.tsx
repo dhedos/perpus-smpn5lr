@@ -444,7 +444,7 @@ export default function TransactionsPage() {
                       <div className="flex justify-between items-center">
                         <div className="flex-1">
                           <div className="font-bold text-primary text-lg">{selectedMember.name}</div>
-                          <div className="text-xs font-mono text-muted-foreground">{selectedMember.memberId} • {selectedMember.classOrSubject}</div>
+                          <div className="text-xs font-mono text-muted-foreground">{selectedMember.memberId} / {selectedMember.classOrSubject}</div>
                         </div>
                         <Button variant="ghost" size="icon" onClick={() => setSelectedMember(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
                       </div>
@@ -703,11 +703,11 @@ export default function TransactionsPage() {
                     {(() => {
                       const m = members?.find(member => member.memberId === pendingReturnTrans.memberId);
                       return m ? (
-                        <div className="text-[10px] text-muted-foreground flex flex-wrap gap-x-2 gap-y-1 mt-1">
-                          <span className="font-mono bg-slate-200 px-1 rounded text-primary font-bold">{m.memberId}</span>
-                          <span>•</span>
+                        <div className="text-[10px] text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
+                          <span className="font-mono bg-slate-200 px-1.5 py-0.5 rounded text-primary font-bold">{m.memberId}</span>
+                          <span className="text-slate-300">/</span>
                           <span className="font-medium">{m.classOrSubject || 'Umum'}</span>
-                          <span>•</span>
+                          <span className="text-slate-300">/</span>
                           <span className="italic">{m.type === 'Teacher' ? 'Guru' : 'Siswa'}</span>
                         </div>
                       ) : (

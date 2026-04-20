@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo } from "react"
@@ -116,7 +115,9 @@ export default function MembersPage() {
 
   const forceUnlockUI = () => {
     setTimeout(() => {
-      document.body.style.pointerEvents = 'auto'
+      if (typeof document !== 'undefined') {
+        document.body.style.pointerEvents = 'auto'
+      }
     }, 100)
   }
 
@@ -242,7 +243,12 @@ export default function MembersPage() {
             ) : filteredMembers.map((member, index) => (
               <TableRow key={member.id}>
                 <TableCell className="text-center text-xs text-muted-foreground">{index + 1}</TableCell>
-                <TableCell><div><p className="font-semibold leading-tight">{member.name ?? ""}</p><p className="text-xs text-primary font-bold">{member.memberId ?? ""}</p></div></TableCell>
+                <TableCell>
+                  <div className="space-y-0.5">
+                    <div className="font-semibold leading-tight">{member.name ?? ""}</div>
+                    <div className="text-xs text-primary font-bold">{member.memberId ?? ""}</div>
+                  </div>
+                </TableCell>
                 <TableCell><Badge variant="outline" className="h-5 px-1.5 text-[10px] font-bold">{member.type === 'Teacher' ? 'GURU' : 'SISWA'}</Badge></TableCell>
                 <TableCell>{member.classOrSubject || '-'}</TableCell>
                 <TableCell className="text-right">
@@ -253,7 +259,7 @@ export default function MembersPage() {
                         setTimeout(() => {
                           setSelectedMemberQr(member); 
                           setIsQrOpen(true);
-                        }, 0);
+                        }, 10);
                       }}><QrCode className="h-4 w-4 mr-2" />Kartu QR</DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => { 
                         setTimeout(() => {
@@ -267,13 +273,13 @@ export default function MembersPage() {
                             joinDate: member.joinDate || new Date().toISOString().split('T')[0]
                           }); 
                           setIsEditOpen(true);
-                        }, 0);
+                        }, 10);
                       }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
                       <DropdownMenuItem className="text-destructive" onSelect={() => { 
                         setTimeout(() => {
                           setMemberToDelete(member.id); 
                           setIsDeleteDialogOpen(true);
-                        }, 0);
+                        }, 10);
                       }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
