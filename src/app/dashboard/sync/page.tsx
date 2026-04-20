@@ -4,7 +4,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Database, CloudUpload, CloudDownload, RefreshCw, CheckCircle2, AlertTriangle, Zap, FileSpreadsheet, Info } from "lucide-react"
+import { Database, CloudUpload, CloudDownload, RefreshCw, CheckCircle2, AlertTriangle, Zap, FileSpreadsheet, Info, History, ShieldCheck } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
@@ -108,28 +108,43 @@ export default function SyncPage() {
         </Card>
       </div>
 
-      <Card className="border-none shadow-sm border-blue-200 bg-blue-50/30">
-        <CardHeader>
-          <CardTitle className="text-sm flex items-center gap-2 text-blue-800">
-            <Info className="h-4 w-4" />
-            Penjelasan Ekspor & Google Sheets
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 text-xs text-blue-700 leading-relaxed">
-          <p>
-            **1. Apakah Data Akan Mendobel?** <br/>
-            Ekspor ke Excel bersifat **Snapshot (Tangkapan Layar)**. Aplikasi mengambil data yang ada di memori laptop/HP petugas saat itu. Jika Anda mengunggah file ini berkali-kali ke satu Google Sheet yang sama tanpa menghapus data lama, maka di Google Sheets akan terlihat ganda. **Solusinya:** Hapus data lama di Google Sheets sebelum menempelkan data baru hasil ekspor.
-          </p>
-          <p>
-            **2. Apakah Data di Aplikasi Akan Menimpa?** <br/>
-            **TIDAK.** Mengekspor data hanyalah "membaca" untuk dilihat. Ini tidak akan mengubah, menimpa, atau mendobelkan data asli yang ada di database Firebase sekolah. Database Anda tetap aman dan unik berdasarkan **Kode Buku**.
-          </p>
-          <p>
-            **3. Mengapa Menggunakan Excel?** <br/>
-            Dengan mengunduh file Excel, Anda bisa mengolah laporan dengan leluasa (grafik, cetak, dll) tanpa memakan kuota internet dan kuota database Firebase, karena semua proses hitung terjadi di komputer Anda sendiri.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card className="border-none shadow-sm border-blue-200 bg-blue-50/30">
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2 text-blue-800">
+              <Info className="h-4 w-4" />
+              Penjelasan Ekspor & Google Sheets
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-xs text-blue-700 leading-relaxed">
+            <p>
+              <strong>1. Apakah Data Akan Mendobel?</strong> <br/>
+              Ekspor ke Excel bersifat <strong>Snapshot</strong>. Jika Anda menempelkan data ini berulang kali ke Google Sheet tanpa menghapus data lama, maka akan terlihat ganda. <strong>Solusinya:</strong> Hapus data lama di Google Sheets sebelum menempelkan data baru.
+            </p>
+            <p>
+              <strong>2. Apakah Bisa Google Sheets Jadi Database?</strong> <br/>
+              Google Sheets <strong>tidak disarankan</strong> menjadi database "mesin" aplikasi karena tidak aman dan lambat. Gunakan Google Sheets hanya untuk <strong>Arsip & Backup</strong> jika database Firebase sudah sangat penuh (misal setelah 5-10 tahun penggunaan).
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-none shadow-sm border-purple-200 bg-purple-50/30">
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2 text-purple-800">
+              <ShieldCheck className="h-4 w-4" />
+              Strategi Keamanan 1.000+ Buku
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-xs text-purple-700 leading-relaxed">
+            <p>
+              Firestore (Firebase) sangat kuat untuk 1.000 bahkan 10.000 buku. Pembengkakan data (Storage) 1.000 buku hanya memakan sekitar 1-2 MB dari jatah 1.000 MB gratis Anda.
+            </p>
+            <p>
+              <strong>Tips Hemat:</strong> Lakukan pembersihan riwayat transaksi (sirkulasi) setiap akhir tahun ajaran dengan mengekspornya ke Excel terlebih dahulu sebagai arsip sekolah.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card className="border-none shadow-sm border-orange-200 bg-orange-50/50">
         <CardContent className="flex items-start gap-4 p-6">
@@ -137,7 +152,7 @@ export default function SyncPage() {
           <div className="space-y-1">
             <p className="font-bold text-orange-800 text-sm">Peringatan Kuota Reads</p>
             <p className="text-xs text-orange-700 leading-relaxed">
-              Sistem caching kami memastikan bahwa meskipun Anda memiliki 1.000 buku, aplikasi tidak akan membaca ulang database setiap saat. Penggunaan Firebase tetap **GRATIS** karena data yang sudah pernah dibuka akan disimpan di memori lokal petugas.
+              Sistem caching kami memastikan bahwa meskipun Anda memiliki 1.000 buku, aplikasi tidak akan membaca ulang database setiap saat. Penggunaan Firebase tetap <strong>GRATIS</strong> karena data yang sudah pernah dibuka akan disimpan di memori lokal petugas.
             </p>
           </div>
         </CardContent>
