@@ -255,12 +255,27 @@ export default function BooksPage() {
   }
 
   const handleUpdateBook = () => {
-    if (!db || !editingBookId) return
+    if (!db || !editingBookId || !books) return
     setIsSaving(true)
-    updateDoc(doc(db, 'books', editingBookId), { 
-      ...formData, 
-      updatedAt: new Date().toISOString() 
-    })
+
+    // Cari data buku lama untuk menghitung selisih stok
+    const originalBook = books.find(b => b.id === editingBookId)
+    if (!originalBook) {
+      setIsSaving(false)
+      return
+    }
+
+    // Hitung selisih stok: Stok Tersedia baru = Stok Tersedia lama + (Stok Total baru - Stok Total lama)
+    const stockDiff = formData.totalStock - (originalBook.totalStock || 0)
+    const newAvailableStock = (originalBook.availableStock || 0) + stockDiff
+
+    const updatedData = {
+      ...formData,
+      availableStock: Math.max(0, newAvailableStock),
+      updatedAt: new Date().toISOString()
+    }
+
+    updateDoc(doc(db, 'books', editingBookId), updatedData)
       .then(() => {
         setIsEditOpen(false)
         toast({ title: "Berhasil!", description: "Data diperbarui." })
@@ -528,10 +543,10 @@ export default function BooksPage() {
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Judul Buku</Label><Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Pengarang</Label><Input value={formData.author} onChange={e => setFormData({ ...formData, author: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Tahun Terbit</Label><Input type="number" value={formData.publicationYear} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300 h-11" /></div>
-            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Jumlah Stok</Label><Input type="number" value={formData.totalStock} onChange={e => setFormData({ ...formData, totalStock: Number(e.target.value) })} className="bg-white border-slate-300 h-11" /></div>
-            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Stok Tersedia</Label><Input type="number" value={formData.availableStock} onChange={e => setFormData({ ...formData, availableStock: Number(e.target.value) })} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Jumlah Stok Total</Label><Input type="number" value={formData.totalStock} onChange={e => setFormData({ ...formData, totalStock: Number(e.target.value) })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Tgl. Penerimaan</Label><Input type="date" value={formData.acquisitionDate} onChange={e => setFormData({ ...formData, acquisitionDate: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Jenis / Kategori</Label><Input value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Lokasi Rak</Label><Input value={formData.rackLocation} onChange={e => setFormData({ ...formData, rackLocation: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
             <div className="col-span-2 space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Deskripsi</Label><Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" /></div>
           </div>
           <DialogFooter>
