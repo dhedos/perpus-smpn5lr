@@ -210,11 +210,11 @@ export default function BooksPage() {
           </style>
         </head>
         <body onload="window.print(); window.close();">
-          ${filteredBooks.map(book => `
+          \${filteredBooks.map(book => `
             <div class="sticker">
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${book.code}" class="qr-img" />
-              <div class="title">${book.title}</div>
-              <div class="code">${book.code}</div>
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=\${book.code}" class="qr-img" />
+              <div class="title">\${book.title}</div>
+              <div class="code">\${book.code}</div>
             </div>
           `).join('')}
         </body>
@@ -299,7 +299,7 @@ export default function BooksPage() {
         await scannerInstanceRef.current.stop()
       }
       try {
-        scannerInstanceRef.current.clear()
+        await scannerInstanceRef.current.clear()
       } catch (e) {}
       scannerInstanceRef.current = null
     }
@@ -338,12 +338,20 @@ export default function BooksPage() {
                   <Input type="number" value={formData.publicationYear} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300 h-11" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-semibold">Tgl. Penerimaan</Label>
-                  <Input type="date" value={formData.acquisitionDate} onChange={e => setFormData({ ...formData, acquisitionDate: e.target.value })} className="bg-white border-slate-300 h-11" />
+                  <Label className="font-semibold">ISBN</Label>
+                  <Input value={formData.isbn} onChange={e => setFormData({ ...formData, isbn: e.target.value })} className="bg-white border-slate-300 h-11" />
                 </div>
                 <div className="space-y-2">
                   <Label className="font-semibold">Jenis / Kategori</Label>
                   <Input value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} placeholder="Fiksi, Sains, dll" className="bg-white border-slate-300 h-11" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-semibold">Jumlah Stok</Label>
+                  <Input type="number" value={formData.totalStock} onChange={e => setFormData({ ...formData, totalStock: Number(e.target.value), availableStock: Number(e.target.value) })} className="bg-white border-slate-300 h-11" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-semibold">Lokasi Rak</Label>
+                  <Input value={formData.rackLocation} onChange={e => setFormData({ ...formData, rackLocation: e.target.value })} className="bg-white border-slate-300 h-11" />
                 </div>
                 <div className="col-span-2 space-y-2">
                   <div className="flex justify-between items-center"><Label className="font-semibold">Deskripsi / Ringkasan</Label><Button variant="ghost" type="button" size="sm" onClick={handleGenerateDescription} disabled={isGenerating}><Sparkles className="h-3 w-3 mr-1" />AI Deskripsi</Button></div>
@@ -496,6 +504,8 @@ export default function BooksPage() {
             <div className="space-y-2"><Label className="font-semibold">Judul Buku</Label><Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold">Pengarang</Label><Input value={formData.author} onChange={e => setFormData({ ...formData, author: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold">Tahun Terbit</Label><Input type="number" value={formData.publicationYear} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold">Jumlah Stok</Label><Input type="number" value={formData.totalStock} onChange={e => setFormData({ ...formData, totalStock: Number(e.target.value) })} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold">Stok Tersedia</Label><Input type="number" value={formData.availableStock} onChange={e => setFormData({ ...formData, availableStock: Number(e.target.value) })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold">Tgl. Penerimaan</Label><Input type="date" value={formData.acquisitionDate} onChange={e => setFormData({ ...formData, acquisitionDate: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold">Jenis / Kategori</Label><Input value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
             <div className="col-span-2 space-y-2"><Label className="font-semibold">Deskripsi</Label><Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" /></div>
