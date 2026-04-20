@@ -23,8 +23,9 @@ import {
   MoreVertical,
   Loader2,
   Camera,
-  X,
-  Maximize2
+  QrCode,
+  Printer,
+  Download
 } from "lucide-react"
 import { 
   Dialog, 
@@ -48,6 +49,7 @@ import {
 import { generateBookDescription } from "@/ai/flows/generate-book-description-flow"
 import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import { QRCodeSVG } from "qrcode.react"
 
 // Firebase imports
 import { 
@@ -69,8 +71,10 @@ export default function BooksPage() {
   const [isOpen, setIsOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [isQrOpen, setIsQrOpen] = useState(false)
   const [scannerTarget, setScannerTarget] = useState<"search" | "isbn">("search")
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null)
+  const [selectedBookQr, setSelectedBookQr] = useState<any>(null)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   const scannerInstanceRef = useRef<any>(null)
@@ -170,7 +174,6 @@ export default function BooksPage() {
     
     const { Html5Qrcode } = await import("html5-qrcode")
 
-    // Wait for the container to be in DOM
     setTimeout(async () => {
       const container = document.getElementById("scanner-container")
       if (!container) return
@@ -335,6 +338,30 @@ export default function BooksPage() {
       description: book.description || ""
     })
     setIsEditOpen(true)
+  }
+
+  const openQrDialog = (book: any) => {
+    setSelectedBookQr(book)
+    setIsQrOpen(true)
+  }
+
+  const handlePrintQr = () => {
+    const printContent = document.getElementById("printable-qr");
+    if (!printContent) return;
+    
+    const windowPrint = window.open('', '', 'width=600,height=600');
+    if (!windowPrint) return;
+    
+    windowPrint.document.write('<html><head><title>Print QR Buku</title>');
+    windowPrint.document.write('<style>body{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;} .title{margin-top:20px;font-weight:bold;text-align:center;}</style>');
+    windowPrint.document.write('</head><body>');
+    windowPrint.document.write(printContent.innerHTML);
+    windowPrint.document.write('<div class="title">' + selectedBookQr.title + '<br>' + selectedBookQr.code + '</div>');
+    windowPrint.document.write('</body></html>');
+    windowPrint.document.close();
+    windowPrint.focus();
+    windowPrint.print();
+    windowPrint.close();
   }
 
   return (
@@ -581,6 +608,39 @@ export default function BooksPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          {/* QR Code Dialog */}
+          <Dialog open={isQrOpen} onOpenChange={setIsQrOpen}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>QR Code Buku</DialogTitle>
+                <DialogDescription>Tempelkan QR Code ini pada fisik buku untuk kemudahan sirkulasi.</DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col items-center justify-center p-6 space-y-4">
+                <div id="printable-qr" className="bg-white p-4 rounded-xl border-2 border-primary/20">
+                  {selectedBookQr && (
+                    <QRCodeSVG 
+                      value={selectedBookQr.code} 
+                      size={200}
+                      level="H"
+                      includeMargin={true}
+                    />
+                  )}
+                </div>
+                <div className="text-center">
+                  <p className="font-bold text-lg">{selectedBookQr?.title}</p>
+                  <p className="font-mono text-primary font-bold">{selectedBookQr?.code}</p>
+                </div>
+              </div>
+              <DialogFooter className="grid grid-cols-2 gap-2">
+                <Button variant="outline" onClick={() => setIsQrOpen(false)}>Tutup</Button>
+                <Button onClick={handlePrintQr} className="gap-2">
+                  <Printer className="h-4 w-4" />
+                  Cetak QR
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -604,7 +664,7 @@ export default function BooksPage() {
       <Dialog open={isScannerOpen} onOpenChange={(open) => !open && stopScanner()}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Scan Barcode Buku</DialogTitle>
+            <DialogTitle>Scan Barcode/QR Buku</DialogTitle>
             <DialogDescription>
               {scannerTarget === "search" 
                 ? "Arahkan kamera ke barcode untuk mencari buku." 
@@ -690,6 +750,9 @@ export default function BooksPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem className="gap-2" onClick={() => openQrDialog(book)}>
+                        <QrCode className="h-4 w-4" /> Lihat QR Code
+                      </DropdownMenuItem>
                       <DropdownMenuItem className="gap-2" onClick={() => openEditDialog(book)}>
                         <Edit className="h-4 w-4" /> Ubah
                       </DropdownMenuItem>

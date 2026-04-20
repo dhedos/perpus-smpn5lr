@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -20,7 +20,9 @@ import {
   GraduationCap,
   School,
   UserPlus,
-  ArrowDownLeft
+  ArrowDownLeft,
+  QrCode,
+  ScanBarcode
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -41,6 +43,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 
 // Firebase
 import { 
@@ -64,6 +67,11 @@ export default function TransactionsPage() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [isAddingMember, setIsAddingMember] = useState(false)
   const [isMemberDialogOpen, setIsMemberDialogOpen] = useState(false)
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [scannerTarget, setScannerTarget] = useState<"borrow" | "return">("borrow")
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null)
+  
+  const scannerInstanceRef = useRef<any>(null)
   
   const [selectedMember, setSelectedMember] = useState<any>(null)
   const [selectedBook, setSelectedBook] = useState<any>(null)
@@ -145,6 +153,82 @@ export default function TransactionsPage() {
     const term = bookSearch.toLowerCase()
     return books.filter(b => (b.title?.toLowerCase() || "").includes(term) || (b.code?.toLowerCase() || "").includes(term))
   }, [books, bookSearch])
+
+  // --- QR SCANNER LOGIC ---
+  const startScanner = async (target: "borrow" | "return") => {
+    setScannerTarget(target)
+    setIsScannerOpen(true)
+    setHasCameraPermission(null)
+    
+    const { Html5Qrcode } = await import("html5-qrcode")
+
+    setTimeout(async () => {
+      const container = document.getElementById("qr-transaction-scanner")
+      if (!container) return
+
+      try {
+        const scanner = new Html5Qrcode("qr-transaction-scanner")
+        scannerInstanceRef.current = scanner
+        
+        await scanner.start(
+          { facingMode: "environment" },
+          { 
+            fps: 10, 
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
+          },
+          (decodedText) => {
+            handleScanResult(decodedText, target)
+            stopScanner()
+          },
+          () => {}
+        )
+        setHasCameraPermission(true)
+      } catch (err) {
+        setHasCameraPermission(false)
+      }
+    }, 300)
+  }
+
+  const stopScanner = async () => {
+    if (scannerInstanceRef.current) {
+      try {
+        if (scannerInstanceRef.current.isScanning) {
+          await scannerInstanceRef.current.stop()
+        }
+      } catch (e) {
+        console.error("Error stopping scanner:", e)
+      }
+      scannerInstanceRef.current = null
+    }
+    setIsScannerOpen(false)
+  }
+
+  const handleScanResult = (decodedText: string, target: "borrow" | "return") => {
+    if (target === "borrow") {
+      const book = books?.find(b => b.code === decodedText || b.isbn === decodedText)
+      if (book) {
+        setSelectedBook(book)
+        setBookSearch(book.title)
+        toast({ title: "Buku Terdeteksi", description: book.title })
+      } else {
+        toast({ title: "Gagal", description: "Buku tidak ditemukan di katalog.", variant: "destructive" })
+      }
+    } else {
+      // Find active transaction for this book code
+      const transaction = activeTrans?.find(t => {
+        const book = books?.find(b => b.id === t.bookId)
+        return book?.code === decodedText || book?.isbn === decodedText
+      })
+
+      if (transaction) {
+        setReturnSearch(transaction.bookTitle)
+        toast({ title: "Transaksi Ditemukan", description: `Buku: ${transaction.bookTitle}` })
+      } else {
+        toast({ title: "Gagal", description: "Tidak ada peminjaman aktif untuk buku ini.", variant: "destructive" })
+      }
+    }
+  }
 
   const handleAddNewMember = () => {
     if (!db || !membersRef) return
@@ -231,7 +315,6 @@ export default function TransactionsPage() {
     setIsProcessing(true)
 
     try {
-      // 1. Update Transaction
       const tDoc = doc(db, 'transactions', transaction.id)
       await updateDoc(tDoc, {
         status: 'returned',
@@ -239,7 +322,6 @@ export default function TransactionsPage() {
         type: 'return'
       })
 
-      // 2. Update Book Stock
       const bDoc = doc(db, 'books', transaction.bookId)
       const bSnap = await getDoc(bDoc)
       if (bSnap.exists()) {
@@ -429,11 +511,15 @@ export default function TransactionsPage() {
               </Card>
 
               <Card className="border-none shadow-sm h-full">
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <BookOpen className="h-5 w-5 text-secondary" />
                     Pilih Buku
                   </CardTitle>
+                  <Button variant="outline" size="sm" className="gap-2 h-8" onClick={() => startScanner("borrow")}>
+                    <QrCode className="h-3.5 w-3.5" />
+                    Scan QR Buku
+                  </Button>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="relative">
@@ -492,9 +578,15 @@ export default function TransactionsPage() {
 
           <TabsContent value="return" className="space-y-6">
             <Card className="border-none shadow-sm">
-              <CardHeader>
-                <CardTitle>Cari Transaksi Aktif</CardTitle>
-                <CardDescription>Masukkan nama peminjam atau judul buku yang ingin dikembalikan.</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Cari Transaksi Aktif</CardTitle>
+                  <CardDescription>Scan QR buku atau masukkan nama untuk pengembalian cepat.</CardDescription>
+                </div>
+                <Button variant="secondary" className="gap-2" onClick={() => startScanner("return")}>
+                  <ScanBarcode className="h-4 w-4" />
+                  Scan QR Buku
+                </Button>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="relative">
@@ -536,6 +628,39 @@ export default function TransactionsPage() {
           </TabsContent>
         </div>
       </Tabs>
+
+      {/* QR Code Transaction Scanner Dialog */}
+      <Dialog open={isScannerOpen} onOpenChange={(open) => !open && stopScanner()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Scan QR Buku</DialogTitle>
+            <DialogDescription>
+              Arahkan kamera ke QR Code yang ditempel pada buku.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="relative aspect-square overflow-hidden rounded-xl bg-black flex items-center justify-center">
+            <div id="qr-transaction-scanner" className="h-full w-full"></div>
+            {hasCameraPermission === false && (
+              <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-white bg-black/80">
+                <Alert variant="destructive">
+                  <AlertTitle>Akses Kamera Dibutuhkan</AlertTitle>
+                  <AlertDescription>Harap izinkan akses kamera untuk memindai QR Code.</AlertDescription>
+                </Alert>
+              </div>
+            )}
+            {hasCameraPermission === null && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-white" />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={stopScanner} className="w-full">
+              Batal
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
