@@ -61,7 +61,7 @@ import { cn } from "@/lib/utils"
 
 export default function TransactionsPage() {
   const db = useFirestore()
-  const { user, isStaff } = useUser()
+  const { isStaff } = useUser()
   const { toast } = useToast()
   
   const [activeTab, setActiveTab] = useState("borrow")
@@ -291,8 +291,6 @@ export default function TransactionsPage() {
         const currentTotal = Number(bDoc.data().totalStock || 0)
         const currentAvail = Number(bDoc.data().availableStock || 0)
         
-        // Buku Normal & Rusak kembali ke ketersediaan (availableStock)
-        // Buku Hilang mengurangi stok total (totalStock)
         const backToShelf = returnNormalQty + returnDamagedQty;
         const permanentLoss = returnLostQty;
 
@@ -446,7 +444,7 @@ export default function TransactionsPage() {
                       <div className="flex justify-between items-center">
                         <div className="flex-1">
                           <div className="font-bold text-primary text-lg">{selectedMember.name}</div>
-                          <div className="text-xs font-mono text-muted-foreground">{selectedMember.memberId}</div>
+                          <div className="text-xs font-mono text-muted-foreground">{selectedMember.memberId} • {selectedMember.classOrSubject}</div>
                         </div>
                         <Button variant="ghost" size="icon" onClick={() => setSelectedMember(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
                       </div>
@@ -618,20 +616,26 @@ export default function TransactionsPage() {
                           const effectiveDueDate = addDays(borrowDate, loanDays);
                           const isOverdue = isAfter(new Date(), effectiveDueDate);
                           const totalMemberLoans = getMemberLoanCount(t.memberId);
+                          const memberData = members?.find(m => m.memberId === t.memberId);
                           
                           return (
                             <TableRow key={t.id} className={cn(isOverdue && "bg-red-50/50")}>
                               <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
                               <TableCell>
-                                <div className="space-y-0.5">
+                                <div className="space-y-1">
                                   <div className="font-bold text-sm leading-tight">
                                     {t.bookTitle} 
                                     {t.quantity && t.quantity > 1 && (
                                       <span className="ml-2 text-primary font-black">({t.quantity} unit)</span>
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-muted-foreground">{t.memberName}</span>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-xs font-semibold">{t.memberName}</span>
+                                    {memberData && (
+                                      <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 bg-slate-100 rounded">
+                                        {memberData.classOrSubject}
+                                      </span>
+                                    )}
                                     <Badge variant="outline" className="text-[9px] h-4 py-0 px-1 border-primary/20 bg-primary/5 text-primary">
                                       {totalMemberLoans} Buku
                                     </Badge>
@@ -680,7 +684,7 @@ export default function TransactionsPage() {
           
           {pendingReturnTrans && (
             <div className="space-y-6 py-4">
-              <div className="p-4 bg-slate-50 rounded-xl border space-y-2">
+              <div className="p-4 bg-slate-50 rounded-xl border space-y-3">
                 <div className="flex items-start gap-3">
                   <BookOpen className="h-4 w-4 text-primary mt-1" />
                   <div className="flex-1">
@@ -696,6 +700,20 @@ export default function TransactionsPage() {
                   <div className="flex-1">
                     <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Peminjam</div>
                     <div className="text-sm font-bold">{pendingReturnTrans.memberName}</div>
+                    {(() => {
+                      const m = members?.find(member => member.memberId === pendingReturnTrans.memberId);
+                      return m ? (
+                        <div className="text-[10px] text-muted-foreground flex flex-wrap gap-x-2 gap-y-1 mt-1">
+                          <span className="font-mono bg-slate-200 px-1 rounded text-primary font-bold">{m.memberId}</span>
+                          <span>•</span>
+                          <span className="font-medium">{m.classOrSubject || 'Umum'}</span>
+                          <span>•</span>
+                          <span className="italic">{m.type === 'Teacher' ? 'Guru' : 'Siswa'}</span>
+                        </div>
+                      ) : (
+                        <div className="text-[10px] text-muted-foreground mt-1">ID: {pendingReturnTrans.memberId}</div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
