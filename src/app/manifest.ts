@@ -12,7 +12,7 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: '#2E6ECE',
     icons: [
       {
-        src: 'https://picsum.photos/seed/smpn5logo/512/512',
+        src: 'https://picsum.photos/seed/smp5emblem/512/512',
         sizes: '512x512',
         type: 'image/png',
       },

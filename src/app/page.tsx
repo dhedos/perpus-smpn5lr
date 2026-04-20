@@ -117,7 +117,7 @@ export default function LoginPage() {
               fill 
               className="object-contain drop-shadow-md rounded-full border-4 border-primary/10"
               priority
-              data-ai-hint="school logo badge"
+              data-ai-hint="school logo"
             />
           </div>
           <div className="space-y-1">
