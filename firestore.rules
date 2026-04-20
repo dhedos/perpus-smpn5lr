@@ -4,7 +4,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * SCHOOL LIBRARY SYSTEM SECURITY RULES
+     * SISTEM PERPUSTAKAAN SMPN 5 - SECURITY RULES
      */
 
     function isSignedIn() {
@@ -15,11 +15,8 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isExistingOwner(userId) {
-      return resource != null && isOwner(userId);
-    }
-
     function getRole() {
+      // Mengambil role dari dokumen user itu sendiri
       return isSignedIn() ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role : null;
     }
 
@@ -28,67 +25,52 @@ service cloud.firestore {
     }
 
     function isStaff() {
-      return hasRole('Admin') || hasRole('Officer');
+      // Menyesuaikan dengan role yang digunakan di aplikasi (Admin & Staff)
+      return hasRole('Admin') || hasRole('Staff');
     }
 
+    function isAdmin() {
+      return hasRole('Admin');
+    }
+
+    // Koleksi Pengguna (Admin/Staff)
     match /users/{userId} {
       allow get: if isOwner(userId) || isStaff();
-      allow list: if true; 
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if false; 
+      allow list: if isStaff(); 
+      allow create: if isSignedIn(); // Izinkan inisialisasi admin pertama atau pendaftaran oleh admin lain
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
     }
 
-    match /library_members/{memberId} {
-      allow get: if isStaff() || (isSignedIn() && resource.data.userId == request.auth.uid);
-      allow list: if isStaff() || (isSignedIn() && request.query.limit <= 10); 
-      allow create, update, delete: if isStaff();
+    // Koleksi Anggota Perpustakaan
+    match /members/{memberId} {
+      allow read: if isStaff();
+      allow write: if isStaff();
     }
 
-    match /book_categories/{categoryId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isStaff();
-    }
-
-    match /shelf_locations/{locationId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isStaff();
-    }
-
+    // Koleksi Buku
     match /books/{bookId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isStaff();
-    }
-
-    match /borrowing_transactions/{transactionId} {
-      allow get: if isStaff() || (isSignedIn() && resource.data.memberUserId == request.auth.uid);
-      allow list: if isStaff() || (isSignedIn() && request.query.limit <= 50);
-      allow create, update, delete: if isStaff();
-    }
-
-    match /activity_logs/{logId} {
-      allow get, list: if isStaff();
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if false; 
-    }
-
-    match /overdue_notifications/{notificationId} {
-      allow get: if isStaff() || (isSignedIn() && resource.data.memberUserId == request.auth.uid);
-      allow list: if isStaff() || (isSignedIn() && request.query.limit <= 20);
-      allow create, update, delete: if isStaff();
-    }
-
-    match /settings/{settingId} {
       allow read: if isSignedIn();
       allow write: if isStaff();
     }
-    
-    match /members/{memberId} {
-      allow read, write: if isStaff();
+
+    // Koleksi Transaksi (Pinjam & Kembali)
+    match /transactions/{transactionId} {
+      allow read: if isStaff();
+      allow write: if isStaff();
     }
 
-    match /transactions/{transactionId} {
-      allow read, write: if isStaff();
+    // Koleksi Log Aktivitas (Audit & Stock Opname)
+    match /activity_logs/{logId} {
+      allow read: if isStaff();
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    // Koleksi Pengaturan (Denda, Batas Pinjam, dll)
+    match /settings/{settingId} {
+      allow read: if isSignedIn();
+      allow write: if isStaff();
     }
   }
 }
