@@ -112,7 +112,7 @@ export default function TransactionsPage() {
   const foundBooks = useMemo(() => {
     if (!bookSearch || !books) return []
     const term = bookSearch.toLowerCase()
-    return books.filter(b => (b.title?.toLowerCase() || "").includes(term) || (b.code?.toLowerCase() || "").includes(term))
+    return books.filter(b => (b.title?.toLowerCase() || "").includes(term) || (b.code?.toLowerCase() || "").includes(term) || (b.isbn || "").includes(term))
   }, [books, bookSearch])
 
   const startScanner = async (target: "borrow" | "return") => {
@@ -124,7 +124,7 @@ export default function TransactionsPage() {
       try { await scannerInstanceRef.current.stop() } catch (e) {}
     }
 
-    const { Html5Qrcode } = await import("html5-qrcode")
+    const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
 
     setTimeout(async () => {
       const container = document.getElementById("qr-transaction-scanner")
@@ -138,8 +138,18 @@ export default function TransactionsPage() {
           { facingMode: "environment" },
           { 
             fps: 15, 
-            qrbox: { width: 280, height: 280 },
-            aspectRatio: 1.0
+            qrbox: { width: 300, height: 180 }, // Fokus area lebar untuk barcode
+            aspectRatio: 1.0,
+            formatsToSupport: [ 
+              Html5QrcodeSupportedFormats.QR_CODE, 
+              Html5QrcodeSupportedFormats.EAN_13, 
+              Html5QrcodeSupportedFormats.EAN_8, 
+              Html5QrcodeSupportedFormats.CODE_128,
+              Html5QrcodeSupportedFormats.CODE_39,
+              Html5QrcodeSupportedFormats.UPC_A,
+              Html5QrcodeSupportedFormats.UPC_E,
+              Html5QrcodeSupportedFormats.ITF
+            ]
           },
           (decodedText) => {
             handleScanResult(decodedText, target)
@@ -182,10 +192,10 @@ export default function TransactionsPage() {
         setBookSearch(book.title)
         toast({ title: "Buku Terdeteksi", description: book.title })
       } else {
-        toast({ title: "Tidak Dikenali", description: "QR Code tidak terdaftar sebagai Anggota atau Buku.", variant: "destructive" })
+        toast({ title: "Tidak Dikenali", description: "Kode tidak terdaftar sebagai Anggota atau Buku.", variant: "destructive" })
       }
     } else {
-      // Return Scan: find transaction by book code
+      // Return Scan: find transaction by book code or ISBN
       const transaction = activeTrans?.find(t => {
         const book = books?.find(b => b.id === t.bookId)
         return book?.code === decodedText || book?.isbn === decodedText
@@ -193,7 +203,6 @@ export default function TransactionsPage() {
       if (transaction) {
         setReturnSearch(transaction.bookTitle)
         toast({ title: "Peminjaman Ditemukan", description: `Buku: ${transaction.bookTitle}` })
-        // Optional: auto-stop and process? Let's stop and let user confirm
         stopScanner()
       } else {
         toast({ title: "Gagal", description: "Buku ini tidak sedang dipinjam.", variant: "destructive" })
@@ -289,12 +298,12 @@ export default function TransactionsPage() {
                    <Sparkles className="h-5 w-5 text-primary" />
                    Smart Scan Multifungsi
                 </CardTitle>
-                <CardDescription>Scan QR Anggota ATAU QR Buku secara bergantian.</CardDescription>
+                <CardDescription>Scan Barcode/QR Anggota ATAU Buku secara bergantian.</CardDescription>
               </CardHeader>
               <CardContent className="flex justify-center pb-6">
                  <Button size="lg" className="h-16 px-10 gap-3 text-lg font-bold shadow-xl" onClick={() => startScanner("borrow")}>
                     <ScanBarcode className="h-6 w-6" />
-                    Buka Pemindai QR
+                    Buka Pemindai QR/Barcode
                  </Button>
               </CardContent>
             </Card>
@@ -360,7 +369,7 @@ export default function TransactionsPage() {
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
-                      placeholder="Cari Judul / Scan QR Buku..." 
+                      placeholder="Cari Judul / Scan Barcode Buku..." 
                       className="pl-10" 
                       value={bookSearch} 
                       onChange={(e) => setBookSearch(e.target.value)}
@@ -400,13 +409,13 @@ export default function TransactionsPage() {
             <Card className="border-none shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-sm">Pengembalian Cepat</CardTitle>
-                <Button variant="secondary" size="lg" className="gap-2 h-12 px-6" onClick={() => startScanner("return")}><ScanBarcode className="h-5 w-5" /> Scan QR Buku</Button>
+                <Button variant="secondary" size="lg" className="gap-2 h-12 px-6" onClick={() => startScanner("return")}><ScanBarcode className="h-5 w-5" /> Scan QR/Barcode Buku</Button>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input 
-                    placeholder="Scan QR Buku atau Ketik Judul..." 
+                    placeholder="Scan Barcode Buku atau Ketik Judul..." 
                     className="h-14 pl-12 text-lg" 
                     value={returnSearch} 
                     onChange={(e) => setReturnSearch(e.target.value)} 
@@ -456,12 +465,12 @@ export default function TransactionsPage() {
               <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-white bg-black/80">
                 <Alert variant="destructive" className="bg-destructive border-none text-white">
                   <AlertTitle>Izin Kamera Diperlukan</AlertTitle>
-                  <AlertDescription>Mohon "Allow" kamera di perangkat Anda agar bisa memindai QR.</AlertDescription>
+                  <AlertDescription>Mohon "Allow" kamera di perangkat Anda agar bisa memindai QR/Barcode.</AlertDescription>
                 </Alert>
               </div>
             )}
-            <div className="absolute inset-0 border-[40px] border-black/40 pointer-events-none">
-               <div className="w-full h-full border-4 border-primary/50 rounded-2xl shadow-[0_0_0_1000px_rgba(0,0,0,0.5)]"></div>
+            <div className="absolute inset-0 border-x-[20px] border-y-[80px] border-black/40 pointer-events-none flex items-center justify-center">
+               <div className="w-[300px] h-[180px] border-4 border-primary/70 rounded-2xl shadow-[0_0_0_1000px_rgba(0,0,0,0.5)]"></div>
             </div>
             <div className="absolute bottom-10 left-0 right-0 text-center text-white text-xs font-bold animate-pulse">
                Mencari Anggota / Buku...

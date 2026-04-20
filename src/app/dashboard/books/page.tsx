@@ -180,7 +180,7 @@ export default function BooksPage() {
     }
 
     try {
-      const { Html5Qrcode } = await import("html5-qrcode")
+      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
       setTimeout(async () => {
         const container = document.getElementById("scanner-container")
         if (!container) return
@@ -193,8 +193,18 @@ export default function BooksPage() {
             { facingMode: "environment" },
             { 
               fps: 15, 
-              qrbox: { width: 280, height: 280 },
-              aspectRatio: 1.0
+              qrbox: { width: 300, height: 180 }, // Lebar untuk menangkap barcode memanjang
+              aspectRatio: 1.0,
+              formatsToSupport: [ 
+                Html5QrcodeSupportedFormats.QR_CODE, 
+                Html5QrcodeSupportedFormats.EAN_13, 
+                Html5QrcodeSupportedFormats.EAN_8, 
+                Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.CODE_39,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.ITF
+              ]
             },
             (decodedText) => {
               if (target === "search") {
@@ -445,7 +455,7 @@ export default function BooksPage() {
                   <Input id="author" value={formData.author} onChange={(e) => setFormData({ ...formData, author: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="isbn">ISBN</Label>
+                  <Label htmlFor="isbn">ISBN / Barcode</Label>
                   <div className="flex gap-2">
                     <Input id="isbn" value={formData.isbn} className="flex-1" onChange={(e) => setFormData({ ...formData, isbn: e.target.value })} />
                     <Button variant="secondary" size="icon" onClick={() => startScanner("isbn")}>
@@ -533,8 +543,11 @@ export default function BooksPage() {
                 <Loader2 className="h-8 w-8 animate-spin text-white" />
               </div>
             )}
-            <div className="absolute inset-0 border-[40px] border-black/40 pointer-events-none">
-               <div className="w-full h-full border-2 border-primary/50 rounded-lg shadow-[0_0_0_1000px_rgba(0,0,0,0.5)]"></div>
+            <div className="absolute inset-0 border-x-[20px] border-y-[60px] border-black/40 pointer-events-none flex items-center justify-center">
+               <div className="w-[300px] h-[180px] border-2 border-primary/80 rounded-lg shadow-[0_0_0_1000px_rgba(0,0,0,0.5)]"></div>
+            </div>
+            <div className="absolute bottom-4 left-0 right-0 text-center text-white/70 text-[10px] uppercase tracking-widest">
+              Arahkan garis kotak ke barcode/QR
             </div>
           </div>
         </DialogContent>
@@ -584,8 +597,13 @@ export default function BooksPage() {
               <Input id="edit-author" value={formData.author} onChange={(e) => setFormData({ ...formData, author: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-isbn">ISBN</Label>
-              <Input id="edit-isbn" value={formData.isbn} onChange={(e) => setFormData({ ...formData, isbn: e.target.value })} />
+              <Label htmlFor="edit-isbn">ISBN / Barcode</Label>
+              <div className="flex gap-2">
+                <Input id="edit-isbn" value={formData.isbn} className="flex-1" onChange={(e) => setFormData({ ...formData, isbn: e.target.value })} />
+                <Button variant="secondary" size="icon" onClick={() => startScanner("isbn")}>
+                  <Camera className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-category">Kategori</Label>
