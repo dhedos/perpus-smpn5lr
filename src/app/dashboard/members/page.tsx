@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo } from "react"
@@ -47,6 +46,16 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
 import { QRCodeSVG } from "qrcode.react"
 
@@ -68,6 +77,8 @@ export default function MembersPage() {
   const [isOpen, setIsOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isQrOpen, setIsQrOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [memberToDelete, setMemberToDelete] = useState<string | null>(null)
   const [selectedMemberQr, setSelectedMemberQr] = useState<any>(null)
   
   const [formData, setFormData] = useState({
@@ -124,6 +135,16 @@ export default function MembersPage() {
       .finally(() => setIsSaving(false))
   }
 
+  const handleDeleteMember = () => {
+    if (!db || !memberToDelete) return
+    deleteDoc(doc(db, 'members', memberToDelete))
+      .then(() => {
+        setIsDeleteDialogOpen(false)
+        setMemberToDelete(null)
+        toast({ title: "Terhapus", description: "Anggota telah dihapus dari database." })
+      })
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -138,11 +159,11 @@ export default function MembersPage() {
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="font-semibold">ID Anggota</Label>
+                  <Label className="font-semibold text-xs uppercase text-muted-foreground">ID Anggota (NIS/NIP)</Label>
                   <Input value={formData.memberId} onChange={e => setFormData({...formData, memberId: e.target.value})} className="bg-white border-slate-300 h-11" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-semibold">Tipe</Label>
+                  <Label className="font-semibold text-xs uppercase text-muted-foreground">Tipe</Label>
                   <Select value={formData.type} onValueChange={v => setFormData({...formData, type: v})}>
                     <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
                     <SelectContent><SelectItem value="Student">Siswa</SelectItem><SelectItem value="Teacher">Guru</SelectItem></SelectContent>
@@ -150,15 +171,15 @@ export default function MembersPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="font-semibold">Nama Lengkap</Label>
+                <Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label>
                 <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" />
               </div>
               <div className="space-y-2">
-                <Label className="font-semibold">Kelas/Mapel</Label>
+                <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas/Mapel</Label>
                 <Input value={formData.classOrSubject} onChange={e => setFormData({...formData, classOrSubject: e.target.value})} className="bg-white border-slate-300 h-11" />
               </div>
             </div>
-            <DialogFooter><Button onClick={handleSaveMember} disabled={isSaving} className="w-full sm:w-auto h-11 px-8">Simpan</Button></DialogFooter>
+            <DialogFooter><Button onClick={handleSaveMember} disabled={isSaving} className="w-full sm:w-auto h-11 px-8 shadow-lg shadow-primary/20">Simpan</Button></DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
@@ -189,16 +210,16 @@ export default function MembersPage() {
             ) : filteredMembers.map((member, index) => (
               <TableRow key={member.id}>
                 <TableCell className="text-center text-xs text-muted-foreground">{index + 1}</TableCell>
-                <TableCell><div><p className="font-semibold">{member.name}</p><p className="text-xs text-primary font-bold">{member.memberId}</p></div></TableCell>
-                <TableCell><Badge variant="outline">{member.type === 'Teacher' ? 'Guru' : 'Siswa'}</Badge></TableCell>
+                <TableCell><div><p className="font-semibold leading-tight">{member.name}</p><p className="text-xs text-primary font-bold">{member.memberId}</p></div></TableCell>
+                <TableCell><Badge variant="outline" className="h-5 px-1.5 text-[10px] font-bold">{member.type === 'Teacher' ? 'GURU' : 'SISWA'}</Badge></TableCell>
                 <TableCell>{member.classOrSubject || '-'}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => { setSelectedMemberQr(member); setIsQrOpen(true); }}><QrCode className="h-4 w-4 mr-2" />QR Code</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => { setSelectedMemberQr(member); setIsQrOpen(true); }}><QrCode className="h-4 w-4 mr-2" />Kartu QR</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => { setEditingMemberId(member.id); setFormData({...member}); setIsEditOpen(true); }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onClick={() => { if(confirm("Hapus anggota ini?")) deleteDoc(doc(db, 'members', member.id)) }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive" onClick={() => { setMemberToDelete(member.id); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -217,10 +238,10 @@ export default function MembersPage() {
 
       <Dialog open={isQrOpen} onOpenChange={setIsQrOpen}>
         <DialogContent className="max-w-sm text-center">
-          <DialogHeader><DialogTitle>Kartu Digital</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Kartu Digital Anggota</DialogTitle></DialogHeader>
           <div className="bg-white p-6 rounded-xl border-2 border-primary/20 space-y-4">
             <div className="flex justify-center">{selectedMemberQr && <QRCodeSVG value={selectedMemberQr.memberId} size={250} level="H" includeMargin />}</div>
-            <div><p className="font-bold text-lg">{selectedMemberQr?.name}</p><p className="font-mono text-primary font-bold">{selectedMemberQr?.memberId}</p></div>
+            <div><p className="font-bold text-lg leading-tight">{selectedMemberQr?.name}</p><p className="font-mono text-primary font-bold">{selectedMemberQr?.memberId}</p></div>
           </div>
           <DialogFooter className="grid grid-cols-2 gap-2">
             <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" />Cetak</Button>
@@ -231,14 +252,27 @@ export default function MembersPage() {
 
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="bg-slate-50">
-          <DialogHeader><DialogTitle>Ubah Anggota</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Ubah Data Anggota</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="space-y-2"><Label className="font-semibold">Nama Lengkap</Label><Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300" /></div>
-            <div className="space-y-2"><Label className="font-semibold">Kelas/Mapel</Label><Input value={formData.classOrSubject} onChange={e => setFormData({...formData, classOrSubject: e.target.value})} className="bg-white border-slate-300" /></div>
+            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label><Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas/Mapel</Label><Input value={formData.classOrSubject} onChange={e => setFormData({...formData, classOrSubject: e.target.value})} className="bg-white border-slate-300 h-11" /></div>
           </div>
-          <DialogFooter><Button onClick={handleUpdateMember}>Simpan Perubahan</Button></DialogFooter>
+          <DialogFooter><Button onClick={handleUpdateMember} disabled={isSaving}>Simpan Perubahan</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Anggota?</AlertDialogTitle>
+            <AlertDialogDescription>Semua riwayat terkait anggota ini tidak akan dihapus, namun identitasnya akan hilang dari daftar aktif.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteMember} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Ya, Hapus</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
