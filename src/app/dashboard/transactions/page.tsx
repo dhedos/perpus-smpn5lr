@@ -22,7 +22,8 @@ import {
   UserPlus,
   ArrowDownLeft,
   QrCode,
-  ScanBarcode
+  ScanBarcode,
+  X
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -85,7 +86,6 @@ export default function TransactionsPage() {
     joinDate: new Date().toISOString().split('T')[0]
   })
 
-  // Collections
   const membersRef = useMemoFirebase(() => db ? collection(db, 'members') : null, [db])
   const booksRef = useMemoFirebase(() => db ? collection(db, 'books') : null, [db])
   const transRef = useMemoFirebase(() => db ? collection(db, 'transactions') : null, [db])
@@ -93,7 +93,6 @@ export default function TransactionsPage() {
   const { data: members, loading: membersLoading } = useCollection(membersRef)
   const { data: books } = useCollection(booksRef)
 
-  // Return logic queries
   const activeTransQuery = useMemoFirebase(() => 
     db ? query(collection(db, 'transactions'), where('status', '==', 'active')) : null, 
   [db])
@@ -111,18 +110,10 @@ export default function TransactionsPage() {
 
   const nextAvailableId = useMemo(() => {
     if (membersLoading || !members) return ""
-    const ids = members
-      .map(m => parseInt(m.memberId))
-      .filter(id => !isNaN(id))
-      .sort((a, b) => a - b)
-    
+    const ids = members.map(m => parseInt(m.memberId)).filter(id => !isNaN(id)).sort((a, b) => a - b)
     let candidate = 1
     for (const id of ids) {
-      if (id === candidate) {
-        candidate++
-      } else if (id > candidate) {
-        break
-      }
+      if (id === candidate) candidate++; else if (id > candidate) break;
     }
     return candidate.toString().padStart(4, '0')
   }, [members, membersLoading])
@@ -136,12 +127,8 @@ export default function TransactionsPage() {
   const foundMembers = useMemo(() => {
     if (!memberSearch || !members) return []
     const term = memberSearch.toLowerCase()
-    
     return members.filter(m => {
-      const matchesSearch = (m.name?.toLowerCase() || "").includes(term) || 
-                          (m.memberId || "").includes(term) || 
-                          (m.classOrSubject?.toLowerCase() || "").includes(term)
-      
+      const matchesSearch = (m.name?.toLowerCase() || "").includes(term) || (m.memberId || "").includes(term)
       if (borrowerType === "Siswa") return matchesSearch && m.type === "Student"
       if (borrowerType === "Guru") return matchesSearch && m.type === "Teacher"
       return matchesSearch
@@ -154,12 +141,15 @@ export default function TransactionsPage() {
     return books.filter(b => (b.title?.toLowerCase() || "").includes(term) || (b.code?.toLowerCase() || "").includes(term))
   }, [books, bookSearch])
 
-  // --- QR SCANNER LOGIC ---
   const startScanner = async (target: "borrow" | "return") => {
     setScannerTarget(target)
     setIsScannerOpen(true)
     setHasCameraPermission(null)
     
+    if (scannerInstanceRef.current) {
+      try { await scannerInstanceRef.current.stop() } catch (e) {}
+    }
+
     const { Html5Qrcode } = await import("html5-qrcode")
 
     setTimeout(async () => {
@@ -173,8 +163,8 @@ export default function TransactionsPage() {
         await scanner.start(
           { facingMode: "environment" },
           { 
-            fps: 10, 
-            qrbox: { width: 250, height: 250 },
+            fps: 15, 
+            qrbox: { width: 280, height: 280 },
             aspectRatio: 1.0
           },
           (decodedText) => {
@@ -187,7 +177,7 @@ export default function TransactionsPage() {
       } catch (err) {
         setHasCameraPermission(false)
       }
-    }, 300)
+    }, 500)
   }
 
   const stopScanner = async () => {
@@ -208,77 +198,48 @@ export default function TransactionsPage() {
     if (target === "borrow") {
       const book = books?.find(b => b.code === decodedText || b.isbn === decodedText)
       if (book) {
-        setSelectedBook(book)
-        setBookSearch(book.title)
+        setSelectedBook(book); setBookSearch(book.title);
         toast({ title: "Buku Terdeteksi", description: book.title })
       } else {
-        toast({ title: "Gagal", description: "Buku tidak ditemukan di katalog.", variant: "destructive" })
+        toast({ title: "Gagal", description: "Buku tidak ditemukan.", variant: "destructive" })
       }
     } else {
-      // Find active transaction for this book code
       const transaction = activeTrans?.find(t => {
         const book = books?.find(b => b.id === t.bookId)
         return book?.code === decodedText || book?.isbn === decodedText
       })
-
       if (transaction) {
         setReturnSearch(transaction.bookTitle)
         toast({ title: "Transaksi Ditemukan", description: `Buku: ${transaction.bookTitle}` })
       } else {
-        toast({ title: "Gagal", description: "Tidak ada peminjaman aktif untuk buku ini.", variant: "destructive" })
+        toast({ title: "Gagal", description: "Tidak ada peminjaman aktif buku ini.", variant: "destructive" })
       }
     }
   }
 
   const handleAddNewMember = () => {
     if (!db || !membersRef) return
-    if (!newMemberData.name || !newMemberData.memberId) {
-      toast({ title: "Data Belum Lengkap", description: "Nama wajib diisi.", variant: "destructive" })
-      return
-    }
-
+    if (!newMemberData.name || !newMemberData.memberId) return
     setIsAddingMember(true)
-    
-    addDoc(membersRef, {
-      ...newMemberData,
-      createdAt: serverTimestamp()
-    }).then((docRef) => {
-      const createdMember = { ...newMemberData, id: docRef.id };
-      toast({ title: "Berhasil!", description: `Anggota baru dengan ID ${newMemberData.memberId} telah ditambahkan.` })
+    addDoc(membersRef, { ...newMemberData, createdAt: serverTimestamp() }).then((docRef) => {
+      setSelectedMember({ ...newMemberData, id: docRef.id }); setMemberSearch(newMemberData.name);
       setIsMemberDialogOpen(false)
-      
-      setSelectedMember(createdMember)
-      setMemberSearch(createdMember.name)
-    }).catch(async () => {
-       toast({ title: "Gagal", description: "Gagal mendaftarkan anggota.", variant: "destructive" })
-    }).finally(() => {
-      setIsAddingMember(false)
-    })
+    }).finally(() => setIsAddingMember(false))
   }
 
   const handleProcessBorrow = () => {
-    if (!db || !transRef || !selectedMember || !selectedBook) {
-      toast({ title: "Data tidak lengkap", description: "Pilih peminjam dan buku terlebih dahulu.", variant: "destructive" })
-      return
-    }
-
+    if (!db || !transRef || !selectedMember || !selectedBook) return
     if (Number(selectedBook.availableStock) <= 0) {
-      toast({ title: "Stok Habis", description: "Buku ini sedang tidak tersedia untuk dipinjam.", variant: "destructive" })
-      return
+      toast({ title: "Stok Habis", variant: "destructive" }); return;
     }
-
     setIsProcessing(true)
-
     const dueDate = new Date()
     const days = selectedMember.type === "Teacher" || borrowerType === "Kelas" ? 14 : 7
     dueDate.setDate(dueDate.getDate() + days)
 
-    const transactionData = {
+    addDoc(transRef, {
       memberId: selectedMember.memberId,
       memberName: selectedMember.name,
-      memberType: selectedMember.type || borrowerType,
-      borrowerCategory: borrowerType,
-      classOrSubject: selectedMember.classOrSubject,
       bookId: selectedBook.id,
       bookTitle: selectedBook.title,
       type: 'borrow',
@@ -286,279 +247,115 @@ export default function TransactionsPage() {
       borrowDate: new Date().toISOString(),
       dueDate: dueDate.toISOString(),
       createdAt: serverTimestamp()
-    }
-
-    addDoc(transRef, transactionData).then(() => {
-      const bookDoc = doc(db, 'books', selectedBook.id)
-      updateDoc(bookDoc, {
-        availableStock: Number(selectedBook.availableStock) - 1
-      })
-
-      toast({ 
-        title: "Peminjaman Berhasil", 
-        description: `Buku ${selectedBook.title} dipinjam oleh ${selectedMember.name}.` 
-      })
-      
-      setSelectedBook(null)
-      setSelectedMember(null)
-      setMemberSearch("")
-      setBookSearch("")
-    }).catch(async () => {
-      toast({ title: "Gagal", description: "Gagal memproses transaksi.", variant: "destructive" })
-    }).finally(() => {
-      setIsProcessing(false)
-    })
+    }).then(() => {
+      updateDoc(doc(db, 'books', selectedBook.id), { availableStock: Number(selectedBook.availableStock) - 1 })
+      toast({ title: "Berhasil!", description: "Buku telah dipinjam." })
+      setSelectedBook(null); setSelectedMember(null); setMemberSearch(""); setBookSearch("");
+    }).finally(() => setIsProcessing(false))
   }
 
   const handleProcessReturn = async (transaction: any) => {
     if (!db) return
     setIsProcessing(true)
-
     try {
-      const tDoc = doc(db, 'transactions', transaction.id)
-      await updateDoc(tDoc, {
-        status: 'returned',
-        returnDate: new Date().toISOString(),
-        type: 'return'
+      await updateDoc(doc(db, 'transactions', transaction.id), {
+        status: 'returned', returnDate: new Date().toISOString(), type: 'return'
       })
-
-      const bDoc = doc(db, 'books', transaction.bookId)
-      const bSnap = await getDoc(bDoc)
-      if (bSnap.exists()) {
-        const currentStock = Number(bSnap.data().availableStock || 0)
-        await updateDoc(bDoc, {
-          availableStock: currentStock + 1
-        })
+      const bDoc = await getDoc(doc(db, 'books', transaction.bookId))
+      if (bDoc.exists()) {
+        await updateDoc(doc(db, 'books', transaction.bookId), { availableStock: (bDoc.data().availableStock || 0) + 1 })
       }
-
-      toast({ 
-        title: "Pengembalian Berhasil", 
-        description: `Buku ${transaction.bookTitle} telah dikembalikan oleh ${transaction.memberName}.` 
-      })
+      toast({ title: "Berhasil!", description: "Buku telah dikembalikan." })
       setReturnSearch("")
-    } catch (e) {
-      toast({ title: "Gagal", description: "Gagal memproses pengembalian.", variant: "destructive" })
-    } finally {
-      setIsProcessing(false)
-    }
+    } finally { setIsProcessing(false) }
   }
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-2xl font-bold font-headline tracking-tight text-primary">Layanan Sirkulasi</h1>
-          <p className="text-muted-foreground text-sm">Kelola peminjaman Siswa, Guru, dan Kolektif Kelas.</p>
+          <h1 className="text-2xl font-bold font-headline tracking-tight text-primary">Sirkulasi</h1>
+          <p className="text-muted-foreground text-sm">Peminjaman & Pengembalian Buku.</p>
         </div>
-        <Badge variant="outline" className="px-3 py-1 bg-white">
-          Sirkulasi Aktif
-        </Badge>
       </div>
 
       <Tabs defaultValue="borrow" className="w-full" onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2 h-14 bg-card border shadow-sm p-1 rounded-xl">
-          <TabsTrigger value="borrow" className="gap-2 text-base rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <ArrowRight className="h-5 w-5" />
-            Peminjaman Baru
-          </TabsTrigger>
-          <TabsTrigger value="return" className="gap-2 text-base rounded-lg data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground">
-            <RefreshCcw className="h-5 w-5" />
-            Proses Pengembalian
-          </TabsTrigger>
+          <TabsTrigger value="borrow" className="gap-2 text-base rounded-lg data-[state=active]:bg-primary">Pinjam</TabsTrigger>
+          <TabsTrigger value="return" className="gap-2 text-base rounded-lg data-[state=active]:bg-secondary">Kembali</TabsTrigger>
         </TabsList>
 
         <div className="mt-8">
           <TabsContent value="borrow" className="space-y-6">
-            <Card className="border-none shadow-sm overflow-hidden">
-              <CardHeader className="bg-primary/5 border-b">
-                <CardTitle className="text-lg">Tipe Peminjam</CardTitle>
-                <CardDescription>Pilih kategori peminjaman untuk menyesuaikan aturan durasi.</CardDescription>
-              </CardHeader>
+            <Card className="border-none shadow-sm">
               <CardContent className="pt-6">
-                <RadioGroup 
-                  defaultValue="Siswa" 
-                  value={borrowerType} 
-                  onValueChange={(v) => {
-                    setBorrowerType(v)
-                    setSelectedMember(null)
-                    setMemberSearch("")
-                  }}
-                  className="grid grid-cols-3 gap-4"
-                >
-                  <div>
-                    <RadioGroupItem value="Siswa" id="siswa" className="peer sr-only" />
-                    <Label
-                      htmlFor="siswa"
-                      className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
-                    >
-                      <GraduationCap className="mb-3 h-6 w-6" />
-                      <span className="font-bold">Siswa Pribadi</span>
-                      <span className="text-[10px] text-muted-foreground mt-1">Batas: 7 Hari</span>
-                    </Label>
-                  </div>
-                  <div>
-                    <RadioGroupItem value="Guru" id="guru" className="peer sr-only" />
-                    <Label
-                      htmlFor="guru"
-                      className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
-                    >
-                      <School className="mb-3 h-6 w-6" />
-                      <span className="font-bold">Guru</span>
-                      <span className="text-[10px] text-muted-foreground mt-1">Batas: 14 Hari</span>
-                    </Label>
-                  </div>
-                  <div>
-                    <RadioGroupItem value="Kelas" id="kelas" className="peer sr-only" />
-                    <Label
-                      htmlFor="kelas"
-                      className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
-                    >
-                      <Users className="mb-3 h-6 w-6" />
-                      <span className="font-bold">Pinjam Kelas</span>
-                      <span className="text-[10px] text-muted-foreground mt-1">Batas: 14 Hari</span>
-                    </Label>
-                  </div>
+                <RadioGroup defaultValue="Siswa" value={borrowerType} onValueChange={(v) => { setBorrowerType(v); setSelectedMember(null); setMemberSearch(""); }} className="grid grid-cols-3 gap-4">
+                  {['Siswa', 'Guru', 'Kelas'].map(t => (
+                    <div key={t}>
+                      <RadioGroupItem value={t} id={t} className="peer sr-only" />
+                      <Label htmlFor={t} className="flex flex-col items-center justify-center rounded-xl border-2 p-4 peer-data-[state=checked]:border-primary cursor-pointer">
+                        <span className="font-bold text-xs">{t}</span>
+                      </Label>
+                    </div>
+                  ))}
                 </RadioGroup>
               </CardContent>
             </Card>
 
             <div className="grid gap-6 md:grid-cols-2">
-              <Card className="border-none shadow-sm h-full">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <User className="h-5 w-5 text-primary" />
-                    Pilih Peminjam
-                  </CardTitle>
-                  <Dialog open={isMemberDialogOpen} onOpenChange={setIsMemberDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button variant="ghost" size="sm" className="text-primary gap-1 h-8">
-                        <UserPlus className="h-3.5 w-3.5" />
-                        Tambah Baru
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Daftarkan Anggota Baru</DialogTitle>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="memberId">ID Anggota</Label>
-                            <Input id="memberId" value={newMemberData.memberId} readOnly className="bg-muted" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="type">Tipe</Label>
-                            <Select value={newMemberData.type} onValueChange={(v) => setNewMemberData({...newMemberData, type: v})}>
-                              <SelectTrigger><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Student">Siswa</SelectItem>
-                                <SelectItem value="Teacher">Guru</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="name">Nama Lengkap</Label>
-                          <Input id="name" value={newMemberData.name} onChange={(e) => setNewMemberData({...newMemberData, name: e.target.value})} />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button onClick={handleAddNewMember} disabled={isAddingMember}>Simpan & Pilih</Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+              <Card className="border-none shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm">Peminjam</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      placeholder={`Cari ${borrowerType}...`} 
-                      className="pl-10" 
-                      value={memberSearch}
-                      onChange={(e) => setMemberSearch(e.target.value)}
-                    />
+                    <Input placeholder="Cari Anggota..." className="pl-10" value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} />
                     {foundMembers.length > 0 && !selectedMember && (
-                      <div className="absolute z-20 w-full mt-1 bg-white border rounded-lg shadow-xl max-h-52 overflow-y-auto">
+                      <div className="absolute z-20 w-full mt-1 bg-white border rounded-lg shadow-xl max-h-40 overflow-y-auto">
                         {foundMembers.map(m => (
-                          <div 
-                            key={m.id} 
-                            className="p-3 hover:bg-accent cursor-pointer text-sm border-b last:border-0 flex justify-between items-center"
-                            onClick={() => { setSelectedMember(m); setMemberSearch(m.name); }}
-                          >
-                            <div>
-                              <div className="font-bold">{m.name}</div>
-                              <div className="text-xs text-muted-foreground">{m.memberId} • {m.classOrSubject}</div>
-                            </div>
-                            <Badge variant="outline">{m.type === 'Teacher' ? 'Guru' : 'Siswa'}</Badge>
+                          <div key={m.id} className="p-3 hover:bg-accent cursor-pointer text-sm border-b" onClick={() => { setSelectedMember(m); setMemberSearch(m.name); }}>
+                            <div className="font-bold">{m.name}</div>
+                            <div className="text-[10px] text-muted-foreground">{m.memberId}</div>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
                   {selectedMember && (
-                    <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-primary p-2 rounded-full text-white"><User className="h-5 w-5" /></div>
-                        <div>
-                          <p className="font-bold">{selectedMember.name}</p>
-                          <p className="text-xs text-muted-foreground">{selectedMember.memberId}</p>
-                        </div>
-                      </div>
+                    <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 flex items-center justify-between">
+                      <div className="text-sm font-bold">{selectedMember.name}</div>
                       <Button variant="ghost" size="sm" onClick={() => setSelectedMember(null)}>Hapus</Button>
                     </div>
                   )}
                 </CardContent>
               </Card>
 
-              <Card className="border-none shadow-sm h-full">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <BookOpen className="h-5 w-5 text-secondary" />
-                    Pilih Buku
-                  </CardTitle>
+              <Card className="border-none shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm">Buku</CardTitle>
                   <Button variant="outline" size="sm" className="gap-2 h-8" onClick={() => startScanner("borrow")}>
-                    <QrCode className="h-3.5 w-3.5" />
-                    Scan QR Buku
+                    <QrCode className="h-3.5 w-3.5" /> Scan
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      placeholder="Cari Judul atau Kode Buku..." 
-                      className="pl-10" 
-                      value={bookSearch}
-                      onChange={(e) => setBookSearch(e.target.value)}
-                    />
+                    <Input placeholder="Cari Buku..." className="pl-10" value={bookSearch} onChange={(e) => setBookSearch(e.target.value)} />
                     {foundBooks.length > 0 && !selectedBook && (
-                      <div className="absolute z-20 w-full mt-1 bg-white border rounded-lg shadow-xl max-h-52 overflow-y-auto">
+                      <div className="absolute z-20 w-full mt-1 bg-white border rounded-lg shadow-xl max-h-40 overflow-y-auto">
                         {foundBooks.map(b => (
-                          <div 
-                            key={b.id} 
-                            className="p-3 hover:bg-accent cursor-pointer text-sm border-b last:border-0 flex justify-between items-center"
-                            onClick={() => { setSelectedBook(b); setBookSearch(b.title); }}
-                          >
-                            <div className="flex-1 mr-2">
-                              <div className="font-bold truncate">{b.title}</div>
-                              <div className="text-xs text-muted-foreground">{b.code}</div>
-                            </div>
-                            <Badge variant={Number(b.availableStock) > 0 ? "secondary" : "destructive"}>
-                              {b.availableStock}
-                            </Badge>
+                          <div key={b.id} className="p-3 hover:bg-accent cursor-pointer text-sm border-b flex justify-between" onClick={() => { setSelectedBook(b); setBookSearch(b.title); }}>
+                            <div className="font-bold truncate mr-2">{b.title}</div>
+                            <Badge variant="outline" className="text-[8px]">{b.availableStock}</Badge>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
                   {selectedBook && (
-                    <div className="p-4 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-secondary p-2 rounded-full text-white"><BookOpen className="h-5 w-5" /></div>
-                        <div>
-                          <p className="font-bold">{selectedBook.title}</p>
-                          <p className="text-xs text-muted-foreground">{selectedBook.code}</p>
-                        </div>
-                      </div>
+                    <div className="p-3 rounded-lg bg-secondary/10 border border-secondary/20 flex items-center justify-between">
+                      <div className="text-sm font-bold truncate flex-1 mr-2">{selectedBook.title}</div>
                       <Button variant="ghost" size="sm" onClick={() => setSelectedBook(null)}>Hapus</Button>
                     </div>
                   )}
@@ -566,60 +363,28 @@ export default function TransactionsPage() {
               </Card>
             </div>
 
-            <Button 
-              className="w-full h-16 text-xl font-bold" 
-              disabled={!selectedMember || !selectedBook || isProcessing}
-              onClick={handleProcessBorrow}
-            >
+            <Button className="w-full h-14 text-lg font-bold" disabled={!selectedMember || !selectedBook || isProcessing} onClick={handleProcessBorrow}>
               {isProcessing ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle className="mr-2" />}
-              KONFIRMASI PINJAM
+              PINJAM BUKU
             </Button>
           </TabsContent>
 
           <TabsContent value="return" className="space-y-6">
             <Card className="border-none shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Cari Transaksi Aktif</CardTitle>
-                  <CardDescription>Scan QR buku atau masukkan nama untuk pengembalian cepat.</CardDescription>
-                </div>
-                <Button variant="secondary" className="gap-2" onClick={() => startScanner("return")}>
-                  <ScanBarcode className="h-4 w-4" />
-                  Scan QR Buku
-                </Button>
+                <CardTitle className="text-sm">Pengembalian</CardTitle>
+                <Button variant="secondary" className="gap-2" onClick={() => startScanner("return")}><ScanBarcode className="h-4 w-4" /> Scan QR</Button>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Nama / Judul / ID Anggota..." 
-                    className="pl-10 h-12" 
-                    value={returnSearch}
-                    onChange={(e) => setReturnSearch(e.target.value)}
-                  />
-                </div>
-
-                <div className="grid gap-4">
-                  {!foundActiveTrans.length && returnSearch && (
-                    <div className="text-center py-10 text-muted-foreground">Tidak ada peminjaman aktif ditemukan.</div>
-                  )}
+                <Input placeholder="Cari Peminjam/Buku..." className="h-12" value={returnSearch} onChange={(e) => setReturnSearch(e.target.value)} />
+                <div className="grid gap-3">
                   {foundActiveTrans.map(t => (
-                    <div key={t.id} className="p-4 rounded-xl border flex items-center justify-between bg-card hover:shadow-md transition-shadow">
-                      <div className="flex items-center gap-4">
-                        <div className="bg-secondary/10 p-3 rounded-full text-secondary"><ArrowDownLeft className="h-6 w-6" /></div>
-                        <div>
-                          <p className="font-bold">{t.bookTitle}</p>
-                          <p className="text-sm text-muted-foreground">Dipinjam oleh: <span className="font-semibold text-primary">{t.memberName}</span></p>
-                          <p className="text-xs text-orange-600 font-bold uppercase mt-1">Jatuh Tempo: {new Date(t.dueDate).toLocaleDateString('id-ID')}</p>
-                        </div>
+                    <div key={t.id} className="p-4 rounded-xl border flex items-center justify-between bg-card">
+                      <div className="flex-1 mr-4">
+                        <p className="font-bold text-sm line-clamp-1">{t.bookTitle}</p>
+                        <p className="text-[10px] text-muted-foreground">Peminjam: {t.memberName}</p>
                       </div>
-                      <Button 
-                        variant="secondary" 
-                        onClick={() => handleProcessReturn(t)}
-                        disabled={isProcessing}
-                      >
-                        {isProcessing ? <Loader2 className="animate-spin" /> : "Proses Kembali"}
-                      </Button>
+                      <Button variant="secondary" size="sm" onClick={() => handleProcessReturn(t)} disabled={isProcessing}>Kembalikan</Button>
                     </div>
                   ))}
                 </div>
@@ -629,36 +394,26 @@ export default function TransactionsPage() {
         </div>
       </Tabs>
 
-      {/* QR Code Transaction Scanner Dialog */}
       <Dialog open={isScannerOpen} onOpenChange={(open) => !open && stopScanner()}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Scan QR Buku</DialogTitle>
-            <DialogDescription>
-              Arahkan kamera ke QR Code yang ditempel pada buku.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="relative aspect-square overflow-hidden rounded-xl bg-black flex items-center justify-center">
+        <DialogContent className="sm:max-w-md p-0 overflow-hidden border-none bg-black">
+          <div className="p-4 bg-background flex justify-between items-center">
+             <DialogTitle className="text-base">Scan QR Sirkulasi</DialogTitle>
+             <Button variant="ghost" size="icon" onClick={stopScanner}><X className="h-5 w-5" /></Button>
+          </div>
+          <div className="relative aspect-square w-full bg-black">
             <div id="qr-transaction-scanner" className="h-full w-full"></div>
             {hasCameraPermission === false && (
               <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-white bg-black/80">
-                <Alert variant="destructive">
-                  <AlertTitle>Akses Kamera Dibutuhkan</AlertTitle>
-                  <AlertDescription>Harap izinkan akses kamera untuk memindai QR Code.</AlertDescription>
+                <Alert variant="destructive" className="bg-destructive border-none text-white">
+                  <AlertTitle>Izin Kamera Diperlukan</AlertTitle>
+                  <AlertDescription>Mohon "Allow" kamera di HP Anda agar bisa memindai QR Buku.</AlertDescription>
                 </Alert>
               </div>
             )}
-            {hasCameraPermission === null && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-white" />
-              </div>
-            )}
+            <div className="absolute inset-0 border-[40px] border-black/40 pointer-events-none">
+               <div className="w-full h-full border-2 border-primary rounded-lg shadow-[0_0_0_1000px_rgba(0,0,0,0.5)]"></div>
+            </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={stopScanner} className="w-full">
-              Batal
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

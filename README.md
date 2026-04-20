@@ -1,22 +1,24 @@
+
 # Pustaka Nusantara - SMPN 5 LANGKE REMBONG
 
 Sistem Informasi Perpustakaan Modern dengan integrasi AI dan Cloud Sync.
 
-## Cara Memulai (Setup Admin Pertama)
+## Cara Memulai & Akses Mobile (HP)
 
-1. **Akses Aplikasi**: Buka URL preview yang disediakan oleh Firebase Studio (biasanya di port 9002).
-2. **Setup Admin**: Halaman utama (`/`) akan mendeteksi jika database masih kosong.
-3. **Inisialisasi**: Klik tombol **"Inisialisasi Admin Pertama"** yang muncul di bawah form login.
-4. **Daftar**: Masukkan Nama, Email, dan Password Admin Anda.
-5. **Masuk**: Setelah berhasil, Anda akan diarahkan ke Dashboard.
+1. **Akses Dashboard**: Buka URL preview yang disediakan.
+2. **Setup Admin**: Jika database kosong, gunakan tombol **"Inisialisasi Admin Pertama"** di halaman login.
+3. **Akses dari HP**: 
+   - Klik ikon **QR Code (Public Access)** di pojok kanan atas Firebase Studio.
+   - Scan QR tersebut dengan HP Anda.
+   - **PENTING**: Anda harus Login kembali di HP menggunakan akun Admin/Staff Anda.
+   - Pastikan HP terhubung ke internet dan URL dimulai dengan `https://`.
+4. **Izin Kamera**: Saat membuka fitur Scan di HP, pilih **"Allow"** (Izinkan) ketika browser meminta akses kamera.
 
 ## Fitur Utama
-- **Manajemen Buku**: Input katalog dengan bantuan AI untuk deskripsi.
-- **Keanggotaan**: Pendaftaran Siswa & Guru dengan ID otomatis.
-- **Sirkulasi**: Peminjaman Pribadi, Guru, dan Kolektif Kelas.
-- **Manajemen Petugas**: Admin dapat mendaftarkan akun petugas (Staff) melalui Dashboard.
-- **Laporan**: Statistik visual peminjaman dan kategori buku.
-- **Sync**: Mendukung sinkronisasi data cloud dan lokal.
+- **QR Code per Buku**: Cetak dan tempel QR Code pada buku untuk sirkulasi instan.
+- **Sirkulasi Mobile**: Pinjam dan kembalikan buku tinggal scan QR menggunakan kamera HP.
+- **AI Deskripsi**: Buat ringkasan buku otomatis dengan Google Gemini AI.
+- **Sync & Backup**: Data tersimpan aman di cloud dan dapat diakses dari mana saja.
 
 ---
 &copy; 2024 SMPN 5 LANGKE REMBONG.
