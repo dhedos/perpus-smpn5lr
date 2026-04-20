@@ -333,7 +333,7 @@ export default function TransactionsPage() {
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
-                      placeholder="Input ID atau Nama..." 
+                      placeholder="Input ID (HP/Alat scanner)..." 
                       className="pl-10" 
                       value={memberSearch} 
                       onChange={(e) => setMemberSearch(e.target.value)}
@@ -361,16 +361,16 @@ export default function TransactionsPage() {
 
               <Card className="border-none shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm">Buku (Gunakan Scanner)</CardTitle>
+                  <CardTitle className="text-sm">Buku</CardTitle>
                   <Button variant="outline" size="sm" className="gap-2 h-8" onClick={() => startScanner("borrow")}>
-                    <QrCode className="h-3.5 w-3.5" /> Scan HP
+                    <QrCode className="h-3.5 w-3.5" /> Scan
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
-                      placeholder="Scan Barcode atau ketik Kode Buku..." 
+                      placeholder="Scan QR (HP/Alat scanner)..." 
                       className="pl-10" 
                       value={bookSearch} 
                       onChange={(e) => setBookSearch(e.target.value)}
@@ -407,11 +407,11 @@ export default function TransactionsPage() {
             <Card className="border-none shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-sm">Pengembalian</CardTitle>
-                <Button variant="secondary" className="gap-2" onClick={() => startScanner("return")}><ScanBarcode className="h-4 w-4" /> Scan HP</Button>
+                <Button variant="secondary" className="gap-2" onClick={() => startScanner("return")}><ScanBarcode className="h-4 w-4" /> Scan</Button>
               </CardHeader>
               <CardContent className="space-y-6">
                 <Input 
-                  placeholder="Scan QR Buku atau cari Nama/Judul..." 
+                  placeholder="Scan QR (HP/Alat scanner)..." 
                   className="h-12" 
                   value={returnSearch} 
                   onChange={(e) => setReturnSearch(e.target.value)} 
@@ -454,7 +454,7 @@ export default function TransactionsPage() {
               <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-white bg-black/80">
                 <Alert variant="destructive" className="bg-destructive border-none text-white">
                   <AlertTitle>Izin Kamera Diperlukan</AlertTitle>
-                  <AlertDescription>Mohon "Allow" kamera di HP Anda agar bisa memindai QR Buku.</AlertDescription>
+                  <AlertDescription>Mohon "Allow" kamera di perangkat Anda agar bisa memindai QR Buku.</AlertDescription>
                 </Alert>
               </div>
             )}

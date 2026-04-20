@@ -428,7 +428,7 @@ export default function BooksPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
             ref={searchInputRef}
-            placeholder="Cari buku (bisa pakai alat scanner)..." 
+            placeholder="Cari buku (bisa pakai HP/alat scanner)..." 
             className="pl-10" 
             value={search} 
             onChange={(e) => setSearch(e.target.value)} 
@@ -437,7 +437,7 @@ export default function BooksPage() {
         </div>
         <Button variant="secondary" className="gap-2 w-full sm:w-auto" onClick={() => startScanner("search")}>
           <ScanBarcode className="h-4 w-4" />
-          Scan HP
+          Scan
         </Button>
       </div>
 
@@ -445,7 +445,7 @@ export default function BooksPage() {
         <DialogContent className="sm:max-w-md p-0 overflow-hidden border-none bg-black">
           <div className="p-4 bg-background flex justify-between items-center">
             <div>
-              <DialogTitle className="text-base">Scanner Kamera HP</DialogTitle>
+              <DialogTitle className="text-base">Scanner Kamera</DialogTitle>
               <DialogDescription className="text-xs">Arahkan ke barcode/QR buku</DialogDescription>
             </div>
             <Button variant="ghost" size="icon" onClick={stopScanner}><X className="h-5 w-5" /></Button>
@@ -456,7 +456,7 @@ export default function BooksPage() {
               <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-white">
                 <Alert variant="destructive" className="bg-destructive text-white border-none">
                   <AlertTitle>Akses Kamera Gagal</AlertTitle>
-                  <AlertDescription>Harap aktifkan izin kamera di pengaturan browser HP Anda agar bisa memindai.</AlertDescription>
+                  <AlertDescription>Harap aktifkan izin kamera di pengaturan browser agar bisa memindai.</AlertDescription>
                 </Alert>
               </div>
             )}
