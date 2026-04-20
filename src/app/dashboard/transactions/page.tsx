@@ -145,11 +145,6 @@ export default function TransactionsPage() {
     return activeTrans.filter(t => t.memberId === selectedMember.memberId).length;
   }, [selectedMember, activeTrans]);
 
-  const getMemberLoanCount = (memberId: string) => {
-    if (!activeTrans) return 0;
-    return activeTrans.filter(t => t.memberId === memberId).length;
-  }
-
   const filteredActiveTrans = useMemo(() => {
     if (!activeTrans) return []
     const sorted = [...activeTrans].sort((a, b) => {
@@ -221,7 +216,6 @@ export default function TransactionsPage() {
     setLateDays(diffDays > 0 ? diffDays : 0);
     setPendingReturnTrans(trans);
     
-    // Inisialisasi jumlah: default semua normal
     const totalQty = Number(trans.quantity || 1);
     setReturnNormalQty(totalQty);
     setReturnDamagedQty(0);
@@ -238,26 +232,22 @@ export default function TransactionsPage() {
     const lostFineBase = Number(settings.lostBookFine || 50000);
     const totalQty = Number(pendingReturnTrans.quantity || 1);
 
-    // Denda keterlambatan (berlaku untuk seluruh unit)
     if (lateDays > 0) {
       fine += lateDays * finePerDay * totalQty;
     }
     
-    // Denda kerusakan (per unit)
     fine += returnDamagedQty * (finePerDay * 10);
-    
-    // Denda kehilangan (per unit)
     fine += returnLostQty * lostFineBase;
     
     setCalculatedFine(fine);
   }, [pendingReturnTrans, lateDays, settings, returnNormalQty, returnDamagedQty, returnLostQty]);
 
   const forceUnlockUI = () => {
-    setTimeout(() => {
-      if (typeof document !== 'undefined') {
+    if (typeof document !== 'undefined') {
+      setTimeout(() => {
         document.body.style.pointerEvents = 'auto'
-      }
-    }, 100)
+      }, 100)
+    }
   }
 
   const handleConfirmReturn = () => {
@@ -383,15 +373,14 @@ export default function TransactionsPage() {
     <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-primary flex items-center gap-2"><ArrowRightLeft className="h-6 w-6" /> Sirkulasi & Kondisi Buku</h1>
-          <p className="text-sm text-muted-foreground">Proses peminjaman dan pengembalian sesuai kebijakan sekolah.</p>
+          <h1 className="text-2xl font-bold text-primary flex items-center gap-2"><ArrowRightLeft className="h-6 w-6" /> Sirkulasi Buku</h1>
+          <p className="text-sm text-muted-foreground">Proses peminjaman dan pengembalian koleksi perpustakaan.</p>
         </div>
         <div className="text-right flex flex-col items-end gap-1">
           <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold gap-2 py-1.5 px-3">
             <CalendarDays className="h-4 w-4" />
             Batas Pinjam: {loanDays} Hari
           </Badge>
-          {loadingSettings && <p className="text-[10px] text-muted-foreground animate-pulse">Menghubungkan kebijakan...</p>}
         </div>
       </div>
 
@@ -459,14 +448,6 @@ export default function TransactionsPage() {
                         </div>
                         <Button variant="ghost" size="icon" onClick={() => setSelectedMember(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
                       </div>
-                      <div className="pt-2 border-t border-primary/10 flex items-center justify-between">
-                         <div className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
-                           <Library className="h-3 w-3" /> Pinjaman Aktif:
-                         </div>
-                         <Badge variant={selectedMemberActiveLoans >= 3 ? "destructive" : "secondary"} className="font-bold">
-                           {selectedMemberActiveLoans} Buku
-                         </Badge>
-                      </div>
                     </div>
                   )}
                 </CardContent>
@@ -474,7 +455,7 @@ export default function TransactionsPage() {
 
               <Card className="border-none shadow-sm relative">
                 <CardHeader className="bg-slate-50/50 pb-4 border-b">
-                  <CardTitle className="text-sm flex items-center gap-2 text-secondary uppercase tracking-wider font-bold"><BookOpen className="h-4 w-4" /> Data Buku & Kategori</CardTitle>
+                  <CardTitle className="text-sm flex items-center gap-2 text-secondary uppercase tracking-wider font-bold"><BookOpen className="h-4 w-4" /> Data Buku</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6 space-y-4">
                   <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
@@ -518,7 +499,6 @@ export default function TransactionsPage() {
                               setSelectedBook(b);
                               setBookSearch("");
                               setShowBookSuggestions(false);
-                              setBorrowQuantity(loanType === "class" ? Math.min(b.availableStock || 1, 20) : 1);
                             }}
                           >
                             <div className="flex flex-col">
@@ -547,7 +527,7 @@ export default function TransactionsPage() {
                       </div>
 
                       <div className="flex flex-col gap-2 pt-2 border-t border-secondary/10">
-                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Jumlah Buku yang Dipinjam</Label>
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Jumlah Pinjam</Label>
                         <div className="flex items-center gap-4">
                           <Button 
                             variant="outline" 
@@ -579,19 +559,7 @@ export default function TransactionsPage() {
                           >
                             <Plus className="h-3 w-3" />
                           </Button>
-                          <div className="text-[10px] text-muted-foreground font-medium italic">
-                            Max: {selectedBook.availableStock || 0} unit
-                          </div>
                         </div>
-                      </div>
-
-                      <div className="pt-2 border-t border-secondary/10 flex items-center justify-between">
-                         <div className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
-                           <Clock className="h-3 w-3" /> Estimasi Jatuh Tempo:
-                         </div>
-                         <div className="text-xs font-bold text-primary">
-                           {format(estimatedDueDate, 'EEEE, dd MMM yyyy', { locale: localeID })}
-                         </div>
                       </div>
                     </div>
                   )}
@@ -599,7 +567,7 @@ export default function TransactionsPage() {
               </Card>
             </div>
 
-            <Button className="w-full h-16 text-lg font-black shadow-lg shadow-primary/20 mt-4" disabled={!selectedMember || !selectedBook || isProcessing || loadingSettings} onClick={handleProcessBorrow}>
+            <Button className="w-full h-16 text-lg font-black shadow-lg shadow-primary/20 mt-4" disabled={!selectedMember || !selectedBook || isProcessing} onClick={handleProcessBorrow}>
               {isProcessing ? <Loader2 className="animate-spin h-6 w-6" /> : "KONFIRMASI PEMINJAMAN"}
             </Button>
           </TabsContent>
@@ -621,7 +589,6 @@ export default function TransactionsPage() {
                       <CardTitle className="text-sm font-bold uppercase tracking-wider">Peminjaman Aktif</CardTitle>
                       <CardDescription className="text-xs">Daftar sirkulasi buku yang sedang dipinjam.</CardDescription>
                     </div>
-                    <Badge variant="secondary" className="font-bold">{activeTrans?.length || 0} Buku</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -640,12 +607,11 @@ export default function TransactionsPage() {
                         {loadingActive ? (
                           <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
                         ) : filteredActiveTrans.length === 0 ? (
-                          <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground italic">Tidak ada peminjaman aktif{returnSearch && ' yang cocok'}.</TableCell></TableRow>
+                          <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground italic">Tidak ada peminjaman aktif.</TableCell></TableRow>
                         ) : filteredActiveTrans.map((t, index) => {
                           const borrowDate = t.borrowDate ? parseISO(t.borrowDate) : new Date();
                           const effectiveDueDate = addDays(borrowDate, loanDays);
                           const isOverdue = isAfter(new Date(), effectiveDueDate);
-                          const memberData = members?.find(m => m.memberId === t.memberId);
                           
                           return (
                             <TableRow key={t.id} className={cn(isOverdue && "bg-red-50/50")}>
@@ -653,37 +619,23 @@ export default function TransactionsPage() {
                               <TableCell>
                                 <div className="space-y-1">
                                   <div className="font-bold text-sm leading-tight">
-                                    {t.bookTitle} 
-                                    {t.quantity && t.quantity > 1 && (
-                                      <span className="ml-2 text-primary font-black">({t.quantity} unit)</span>
-                                    )}
+                                    {t.bookTitle} {t.quantity > 1 && `(${t.quantity} unit)`}
                                   </div>
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <span className="text-xs font-semibold">{t.memberName}</span>
-                                    {memberData && (
-                                      <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 bg-slate-100 rounded">
-                                        {memberData.classOrSubject}
-                                      </span>
-                                    )}
-                                  </div>
+                                  <div className="text-xs font-semibold">{t.memberName}</div>
                                 </div>
                               </TableCell>
                               <TableCell>
-                                <Badge variant="outline" className={cn("text-[10px] gap-1", t.loanType === 'class' ? "border-blue-200 bg-blue-50 text-blue-700" : "border-slate-200 bg-slate-50 text-slate-700")}>
-                                  {t.loanType === 'class' ? <UsersIcon className="h-3 w-3" /> : <Home className="h-3 w-3" />}
+                                <Badge variant="outline" className="text-[10px]">
                                   {t.loanType === 'class' ? "Kolektif" : "Pribadi"}
                                 </Badge>
                               </TableCell>
                               <TableCell>
-                                <div className="space-y-1">
-                                  <div className={cn("text-xs font-bold", isOverdue ? "text-destructive" : "text-muted-foreground")}>
-                                    {format(effectiveDueDate, 'dd/MM/yyyy')}
-                                  </div>
-                                  {isOverdue && <Badge variant="destructive" className="text-[9px] h-4 px-1">Terlambat</Badge>}
+                                <div className={cn("text-xs font-bold", isOverdue ? "text-destructive" : "text-muted-foreground")}>
+                                  {format(effectiveDueDate, 'dd/MM/yyyy')}
                                 </div>
                               </TableCell>
                               <TableCell className="text-right">
-                                <Button size="sm" variant="outline" className="h-8 text-xs font-bold hover:bg-primary hover:text-white" onClick={() => prepareReturn(t)}>
+                                <Button size="sm" variant="outline" className="h-8 text-xs font-bold" onClick={() => prepareReturn(t)}>
                                   Kembali
                                 </Button>
                               </TableCell>
@@ -704,60 +656,32 @@ export default function TransactionsPage() {
         <DialogContent className="max-w-md bg-white">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-primary font-bold">
-              <CheckCircle className="h-5 w-5" /> Konfirmasi & Kondisi Buku
+              <CheckCircle className="h-5 w-5" /> Konfirmasi Pengembalian
             </DialogTitle>
-            <DialogDescription>
-              Tentukan rincian kondisi buku yang dikembalikan.
-            </DialogDescription>
           </DialogHeader>
           
           {pendingReturnTrans && (
             <div className="space-y-6 py-4">
               <div className="p-4 bg-slate-50 rounded-xl border space-y-3">
-                <div className="flex items-start gap-3">
-                  <BookOpen className="h-4 w-4 text-primary mt-1" />
-                  <div className="flex-1">
-                    <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Informasi Buku</div>
-                    <div className="text-sm font-black">
-                      {pendingReturnTrans.bookTitle} 
-                      <span className="ml-1 text-primary">({pendingReturnTrans.quantity} unit)</span>
-                    </div>
+                <div className="flex-1">
+                  <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Informasi Buku</div>
+                  <div className="text-sm font-black">
+                    {pendingReturnTrans.bookTitle} ({pendingReturnTrans.quantity} unit)
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <User className="h-4 w-4 text-primary mt-1" />
-                  <div className="flex-1">
-                    <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Peminjam</div>
-                    <div className="text-sm font-bold">{pendingReturnTrans.memberName}</div>
-                    {(() => {
-                      const m = members?.find(member => member.memberId === pendingReturnTrans.memberId);
-                      return m ? (
-                        <div className="text-[10px] text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
-                          <span className="font-mono bg-slate-200 px-1.5 py-0.5 rounded text-primary font-bold">{m.memberId}</span>
-                          <span className="text-slate-300">/</span>
-                          <span className="font-medium">{m.classOrSubject || 'Umum'}</span>
-                          <span className="text-slate-300">/</span>
-                          <span className="italic">{m.type === 'Teacher' ? 'Guru' : 'Siswa'}</span>
-                        </div>
-                      ) : (
-                        <div className="text-[10px] text-muted-foreground mt-1">ID: {pendingReturnTrans.memberId}</div>
-                      );
-                    })()}
-                  </div>
+                <div className="flex-1 pt-2 border-t">
+                  <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Peminjam</div>
+                  <div className="text-sm font-bold">{pendingReturnTrans.memberName}</div>
+                  <div className="text-[10px] text-muted-foreground">ID: {pendingReturnTrans.memberId}</div>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                  <ShieldAlert className="h-3 w-3" /> Input Rincian Kondisi
-                </div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Input Rincian Kondisi</div>
                 
                 <div className="grid gap-3">
                   <div className="flex items-center justify-between p-3 rounded-xl border bg-green-50/50">
-                    <div className="flex items-center gap-2">
-                      <ThumbsUp className="h-4 w-4 text-green-600" />
-                      <Label className="font-bold text-sm">Kembali Normal</Label>
-                    </div>
+                    <Label className="font-bold text-sm">Kembali Normal</Label>
                     <Input 
                       type="number" 
                       className="w-16 h-8 text-center font-bold"
@@ -765,12 +689,8 @@ export default function TransactionsPage() {
                       onChange={(e) => setReturnNormalQty(Number(e.target.value))}
                     />
                   </div>
-
                   <div className="flex items-center justify-between p-3 rounded-xl border bg-orange-50/50">
-                    <div className="flex items-center gap-2">
-                      <ShieldAlert className="h-4 w-4 text-orange-600" />
-                      <Label className="font-bold text-sm">Rusak (Denda)</Label>
-                    </div>
+                    <Label className="font-bold text-sm">Rusak</Label>
                     <Input 
                       type="number" 
                       className="w-16 h-8 text-center font-bold"
@@ -778,12 +698,8 @@ export default function TransactionsPage() {
                       onChange={(e) => setReturnDamagedQty(Number(e.target.value))}
                     />
                   </div>
-
                   <div className="flex items-center justify-between p-3 rounded-xl border bg-red-50/50">
-                    <div className="flex items-center gap-2">
-                      <Ghost className="h-4 w-4 text-red-600" />
-                      <Label className="font-bold text-sm">Hilang (Ganti)</Label>
-                    </div>
+                    <Label className="font-bold text-sm">Hilang</Label>
                     <Input 
                       type="number" 
                       className="w-16 h-8 text-center font-bold"
@@ -792,36 +708,15 @@ export default function TransactionsPage() {
                     />
                   </div>
                 </div>
-
-                <div className={cn(
-                  "p-2 text-center rounded-lg text-[10px] font-bold",
-                  (returnNormalQty + returnDamagedQty + returnLostQty) === Number(pendingReturnTrans.quantity) 
-                    ? "bg-green-100 text-green-700" 
-                    : "bg-red-100 text-red-700"
-                )}>
-                  TOTAL UNIT: {returnNormalQty + returnDamagedQty + returnLostQty} / {pendingReturnTrans.quantity}
-                </div>
               </div>
-
-              {calculatedFine > 0 && (
-                <div className="p-5 bg-orange-50 border-2 border-orange-200 rounded-2xl space-y-2 animate-in zoom-in-95">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-black text-orange-800 uppercase tracking-widest flex items-center gap-2"><Coins className="h-4 w-4" /> Tagihan Denda</span>
-                    <span className="text-2xl font-black text-orange-600">Rp{calculatedFine.toLocaleString()}</span>
-                  </div>
-                  <div className="text-[10px] text-orange-700 font-medium leading-relaxed opacity-80 pt-2 border-t border-orange-200">
-                    {lateDays > 0 && <div className="flex justify-between"><span>• Terlambat {lateDays} hari ({pendingReturnTrans.quantity} unit)</span> <span>Rp{(lateDays * Number(settings?.fineAmount || 500) * Number(pendingReturnTrans.quantity)).toLocaleString()}</span></div>}
-                    {returnDamagedQty > 0 && <div className="flex justify-between"><span>• Denda Kerusakan ({returnDamagedQty} unit)</span> <span>Rp{(returnDamagedQty * Number(settings?.fineAmount || 500) * 10).toLocaleString()}</span></div>}
-                    {returnLostQty > 0 && <div className="flex justify-between"><span>• Denda Kehilangan ({returnLostQty} unit)</span> <span>Rp{(returnLostQty * Number(settings?.lostBookFine || 50000)).toLocaleString()}</span></div>}
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setIsReturnConfirmOpen(false)} disabled={isProcessing} className="flex-1">Batal</Button>
-            <Button onClick={handleConfirmReturn} disabled={isProcessing || (returnNormalQty + returnDamagedQty + returnLostQty) !== Number(pendingReturnTrans?.quantity)} className="flex-1 shadow-lg shadow-primary/20">{isProcessing ? <Loader2 className="animate-spin" /> : "Simpan Data"}</Button>
+            <Button onClick={handleConfirmReturn} disabled={isProcessing} className="flex-1 shadow-lg shadow-primary/20">
+              {isProcessing ? <Loader2 className="animate-spin" /> : "Simpan Data"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

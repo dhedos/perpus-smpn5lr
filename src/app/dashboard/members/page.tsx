@@ -74,7 +74,6 @@ const INITIAL_MEMBER_DATA = {
   name: "",
   type: "Student",
   classPart: "",
-  subjectPart: "",
   phone: "",
   joinDate: new Date().toISOString().split('T')[0]
 }
@@ -115,24 +114,21 @@ export default function MembersPage() {
   }, [members, search])
 
   const forceUnlockUI = () => {
-    setTimeout(() => {
-      if (typeof document !== 'undefined') {
+    if (typeof document !== 'undefined') {
+      setTimeout(() => {
         document.body.style.pointerEvents = 'auto'
-      }
-    }, 100)
+      }, 100)
+    }
   }
 
   const handleSaveMember = () => {
     if (!db) return
     
-    // Gabungkan Kelas dan Mapel sesuai tipe
-    const infoValue = formData.type === 'Student' ? formData.classPart : formData.subjectPart;
-
     const dataToSave = { 
       memberId: formData.memberId,
       name: formData.name,
       type: formData.type,
-      classOrSubject: infoValue || "",
+      classOrSubject: formData.classPart || "",
       phone: formData.phone,
       joinDate: formData.joinDate,
       createdAt: serverTimestamp() 
@@ -157,14 +153,12 @@ export default function MembersPage() {
   const handleUpdateMember = () => {
     if (!db || !editingMemberId) return
     
-    const infoValue = formData.type === 'Student' ? formData.classPart : formData.subjectPart;
-
     const docRef = doc(db, 'members', editingMemberId)
     const dataToUpdate = { 
       memberId: formData.memberId,
       name: formData.name,
       type: formData.type,
-      classOrSubject: infoValue || "",
+      classOrSubject: formData.classPart || "",
       phone: formData.phone,
       joinDate: formData.joinDate,
       updatedAt: serverTimestamp() 
@@ -233,19 +227,9 @@ export default function MembersPage() {
                 <Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label>
                 <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Nama lengkap" />
               </div>
-              
-              <div className="grid grid-cols-1 gap-4">
-                {formData.type === 'Student' ? (
-                  <div className="space-y-2">
-                    <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas</Label>
-                    <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Contoh: VII A" />
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Label className="font-semibold text-xs uppercase text-muted-foreground">Mata Pelajaran (Mapel)</Label>
-                    <Input value={formData.subjectPart ?? ""} onChange={e => setFormData({...formData, subjectPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Contoh: Bahasa Inggris" />
-                  </div>
-                )}
+              <div className="space-y-2">
+                <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas / Unit</Label>
+                <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Contoh: VII A atau Guru Mapel" />
               </div>
             </div>
             <DialogFooter><Button onClick={handleSaveMember} className="w-full sm:w-auto h-11 px-8 shadow-lg shadow-primary/20">Simpan Anggota</Button></DialogFooter>
@@ -267,7 +251,7 @@ export default function MembersPage() {
               <TableHead className="w-12 text-center">No.</TableHead>
               <TableHead>Identitas</TableHead>
               <TableHead>Tipe</TableHead>
-              <TableHead>Kelas / Mapel</TableHead>
+              <TableHead>Kelas</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
@@ -302,13 +286,11 @@ export default function MembersPage() {
                       <DropdownMenuItem onSelect={() => { 
                         setTimeout(() => {
                           setEditingMemberId(member.id); 
-                          const isStudent = member.type === 'Student';
                           setFormData({
                             memberId: member.memberId || "",
                             name: member.name || "",
                             type: (member.type as any) || "Student",
-                            classPart: isStudent ? member.classOrSubject : "",
-                            subjectPart: !isStudent ? member.classOrSubject : "",
+                            classPart: member.classOrSubject || "",
                             phone: member.phone || "",
                             joinDate: member.joinDate || new Date().toISOString().split('T')[0]
                           }); 
@@ -363,18 +345,9 @@ export default function MembersPage() {
               <Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label>
               <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" />
             </div>
-            <div className="grid grid-cols-1 gap-4">
-               {formData.type === 'Student' ? (
-                  <div className="space-y-2">
-                    <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas</Label>
-                    <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" />
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Label className="font-semibold text-xs uppercase text-muted-foreground">Mata Pelajaran (Mapel)</Label>
-                    <Input value={formData.subjectPart ?? ""} onChange={e => setFormData({...formData, subjectPart: e.target.value})} className="bg-white border-slate-300 h-11" />
-                  </div>
-                )}
+            <div className="space-y-2">
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas / Unit</Label>
+              <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" />
             </div>
           </div>
           <DialogFooter><Button onClick={handleUpdateMember} className="w-full h-11">Simpan Perubahan</Button></DialogFooter>
