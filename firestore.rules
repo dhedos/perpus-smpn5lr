@@ -6,6 +6,7 @@ service cloud.firestore {
     /**
      * SISTEM PERPUSTAKAAN SMPN 5 - SECURITY RULES FINAL
      * Memperbaiki rekursi dan memberikan akses yang tepat bagi petugas.
+     * Update: 2024-03-20 - Menambah fleksibilitas akses anggota dan buku.
      */
 
     function isSignedIn() {
@@ -13,9 +14,9 @@ service cloud.firestore {
     }
 
     // Koleksi Pengguna (Profil)
-    // Diizinkan membaca profil sendiri tanpa rekursi pengecekan peran
+    // Diizinkan membaca profil sendiri atau profil petugas lain jika sudah login
     match /users/{userId} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || exists(/databases/$(database)/documents/users/$(request.auth.uid)));
+      allow read: if isSignedIn();
       allow write: if isSignedIn() && (request.auth.uid == userId || exists(/databases/$(database)/documents/users/$(request.auth.uid)));
     }
 
