@@ -236,8 +236,6 @@ export default function BooksPage() {
 
   const handleSaveBook = () => {
     if (!db) return
-    
-    // Validasi sederhana
     if (!formData.title || !formData.code) {
       toast({ title: "Gagal", description: "Judul dan Kode Buku wajib diisi.", variant: "destructive" })
       return
@@ -249,10 +247,7 @@ export default function BooksPage() {
       updatedAt: new Date().toISOString() 
     }
 
-    // TUTUP DIALOG SEGERA untuk melepaskan UI
     setIsOpen(false)
-    
-    // Kirim ke database (non-blocking)
     addDoc(collection(db, 'books'), newBook)
       .catch(async (error) => {
         const permissionError = new FirestorePermissionError({
@@ -264,27 +259,17 @@ export default function BooksPage() {
       });
     
     toast({ title: "Berhasil!", description: "Buku telah didaftarkan." })
-    
-    // Pembersihan state setelah UI tertutup
-    setTimeout(() => {
-      setFormData(INITIAL_FORM_DATA)
-    }, 200)
+    setTimeout(() => { setFormData(INITIAL_FORM_DATA) }, 200)
   }
 
   const handleUpdateBook = () => {
     if (!db || !editingBookId || !books) return
-
     const originalBook = books.find(b => b.id === editingBookId)
-    if (!originalBook) {
-      setIsEditOpen(false)
-      return
-    }
+    if (!originalBook) { setIsEditOpen(false); return; }
 
-    // Hitung perubahan stok secara cerdas
     const currentTotal = Number(originalBook.totalStock || 0)
     const newTotal = Number(formData.totalStock || 0)
     const currentAvail = Number(originalBook.availableStock || 0)
-    
     const diff = newTotal - currentTotal
     const calculatedAvail = Math.max(0, currentAvail + diff)
 
@@ -296,10 +281,7 @@ export default function BooksPage() {
     }
 
     const docRef = doc(db, 'books', editingBookId)
-    
-    // TUTUP SEGERA
     setIsEditOpen(false)
-
     updateDoc(docRef, updatedData)
       .catch(async (error) => {
         const permissionError = new FirestorePermissionError({
@@ -311,21 +293,13 @@ export default function BooksPage() {
       });
     
     toast({ title: "Berhasil!", description: "Data buku telah diperbarui." })
-
-    // Pembersihan state
-    setTimeout(() => {
-      setEditingBookId(null)
-      setFormData(INITIAL_FORM_DATA)
-    }, 200)
+    setTimeout(() => { setEditingBookId(null); setFormData(INITIAL_FORM_DATA); }, 200)
   }
 
   const handleDeleteBook = () => {
     if (!db || !bookToDelete) return
     const docRef = doc(db, 'books', bookToDelete)
-
-    // TUTUP SEGERA
     setIsDeleteDialogOpen(false)
-
     deleteDoc(docRef)
       .catch(async (error) => {
         const permissionError = new FirestorePermissionError({
@@ -334,12 +308,8 @@ export default function BooksPage() {
         } satisfies SecurityRuleContext);
         errorEmitter.emit('permission-error', permissionError);
       });
-
     toast({ title: "Terhapus", description: "Buku dihapus dari koleksi." })
-    
-    setTimeout(() => {
-      setBookToDelete(null)
-    }, 200)
+    setTimeout(() => { setBookToDelete(null) }, 200)
   }
 
   const startScanner = async () => {
@@ -372,6 +342,7 @@ export default function BooksPage() {
       scannerInstanceRef.current = null
     }
     setIsScannerOpen(false)
+    document.body.style.pointerEvents = 'auto'
   }
 
   return (
@@ -402,7 +373,7 @@ export default function BooksPage() {
           <Input 
             placeholder="Cari Judul, Kode, Pengarang..." 
             className="pl-10 bg-white border-slate-300 h-11" 
-            value={search} 
+            value={search ?? ""} 
             onChange={e => setSearch(e.target.value)} 
           />
         </div>
@@ -466,9 +437,9 @@ export default function BooksPage() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => { setSelectedBookDetail(book); setIsDetailOpen(true); }}><Eye className="h-4 w-4 mr-2" />Lihat Detail</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => { setSelectedBookQr(book); setIsQrOpen(true); }}><QrCode className="h-4 w-4 mr-2" />Tampilkan QR</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => { 
+                      <DropdownMenuItem onSelect={() => { setSelectedBookDetail(book); setIsDetailOpen(true); }}><Eye className="h-4 w-4 mr-2" />Lihat Detail</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => { setSelectedBookQr(book); setIsQrOpen(true); }}><QrCode className="h-4 w-4 mr-2" />Tampilkan QR</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => { 
                         setEditingBookId(book.id); 
                         setFormData({
                           code: book.code || "",
@@ -486,7 +457,7 @@ export default function BooksPage() {
                         }); 
                         setIsEditOpen(true); 
                       }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onClick={() => { setBookToDelete(book.id); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive" onSelect={() => { setBookToDelete(book.id); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -504,7 +475,7 @@ export default function BooksPage() {
       </Card>
 
       {/* DIALOG TAMBAH */}
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) document.body.style.pointerEvents = 'auto'; }}>
         <DialogContent className="max-w-2xl bg-slate-50">
           <DialogHeader>
             <DialogTitle>Tambah Buku Baru</DialogTitle>
@@ -562,7 +533,7 @@ export default function BooksPage() {
       </Dialog>
 
       {/* DIALOG UBAH */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+      <Dialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); if(!v) document.body.style.pointerEvents = 'auto'; }}>
         <DialogContent className="max-w-2xl bg-slate-50">
           <DialogHeader>
             <DialogTitle>Ubah Data Buku</DialogTitle>
@@ -588,7 +559,7 @@ export default function BooksPage() {
       </Dialog>
 
       {/* DIALOG SCANNER */}
-      <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
+      <Dialog open={isScannerOpen} onOpenChange={(v) => { if(!v) stopScanner(); }}>
         <DialogContent className="sm:max-w-2xl p-0 border-none bg-black h-[100dvh] sm:h-auto overflow-hidden">
           <DialogHeader className="sr-only">
             <DialogTitle>Pemindai QR Code Buku</DialogTitle>
@@ -599,7 +570,7 @@ export default function BooksPage() {
       </Dialog>
 
       {/* DIALOG DETAIL */}
-      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+      <Dialog open={isDetailOpen} onOpenChange={(v) => { setIsDetailOpen(v); if(!v) document.body.style.pointerEvents = 'auto'; }}>
         <DialogContent className="max-w-2xl bg-white">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-primary"><Info className="h-5 w-5" />Informasi Detail Buku</DialogTitle>
@@ -623,7 +594,7 @@ export default function BooksPage() {
       </Dialog>
 
       {/* DIALOG QR */}
-      <Dialog open={isQrOpen} onOpenChange={setIsQrOpen}>
+      <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) document.body.style.pointerEvents = 'auto'; }}>
         <DialogContent className="max-w-sm text-center">
           <DialogHeader>
             <DialogTitle>QR Code Buku</DialogTitle>
@@ -640,7 +611,7 @@ export default function BooksPage() {
       </Dialog>
 
       {/* ALERT DIALOG HAPUS */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={(v) => { setIsDeleteDialogOpen(v); if(!v) document.body.style.pointerEvents = 'auto'; }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Buku?</AlertDialogTitle>
@@ -655,3 +626,4 @@ export default function BooksPage() {
     </div>
   )
 }
+    

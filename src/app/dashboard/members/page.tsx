@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo } from "react"
@@ -116,11 +117,7 @@ export default function MembersPage() {
   const handleSaveMember = () => {
     if (!db) return
     const dataToSave = { ...formData, createdAt: serverTimestamp() }
-
-    // NON-BLOCKING: Tutup UI segera
     setIsOpen(false)
-    setFormData(INITIAL_MEMBER_DATA)
-
     addDoc(collection(db, 'members'), dataToSave)
       .catch(async (error) => {
         const permissionError = new FirestorePermissionError({
@@ -130,20 +127,15 @@ export default function MembersPage() {
         } satisfies SecurityRuleContext);
         errorEmitter.emit('permission-error', permissionError);
       });
-    
     toast({ title: "Berhasil!", description: "Anggota baru sedang didaftarkan." })
+    setTimeout(() => { setFormData(INITIAL_MEMBER_DATA) }, 200)
   }
 
   const handleUpdateMember = () => {
     if (!db || !editingMemberId) return
     const docRef = doc(db, 'members', editingMemberId)
     const dataToUpdate = { ...formData, updatedAt: serverTimestamp() }
-
-    // NON-BLOCKING: Tutup UI segera
     setIsEditOpen(false)
-    setEditingMemberId(null)
-    setFormData(INITIAL_MEMBER_DATA)
-
     updateDoc(docRef, dataToUpdate)
       .catch(async (error) => {
         const permissionError = new FirestorePermissionError({
@@ -153,18 +145,14 @@ export default function MembersPage() {
         } satisfies SecurityRuleContext);
         errorEmitter.emit('permission-error', permissionError);
       });
-    
     toast({ title: "Berhasil!", description: "Data anggota telah diperbarui." })
+    setTimeout(() => { setEditingMemberId(null); setFormData(INITIAL_MEMBER_DATA); }, 200)
   }
 
   const handleDeleteMember = () => {
     if (!db || !memberToDelete) return
     const docRef = doc(db, 'members', memberToDelete)
-
-    // NON-BLOCKING: Tutup UI segera
     setIsDeleteDialogOpen(false)
-    setMemberToDelete(null)
-
     deleteDoc(docRef)
       .catch(async (error) => {
         const permissionError = new FirestorePermissionError({
@@ -173,8 +161,8 @@ export default function MembersPage() {
         } satisfies SecurityRuleContext);
         errorEmitter.emit('permission-error', permissionError);
       });
-
-    toast({ title: "Terhapus", description: "Anggota sedang dihapus dari database." })
+    toast({ title: "Terhapus", description: "Anggota sedang dihapus." })
+    setTimeout(() => { setMemberToDelete(null) }, 200)
   }
 
   return (
@@ -184,7 +172,7 @@ export default function MembersPage() {
           <h1 className="text-2xl font-bold font-headline text-primary">Daftar Anggota</h1>
           <p className="text-muted-foreground text-sm">Kelola data siswa dan guru yang terdaftar.</p>
         </div>
-        <Dialog open={isOpen} onOpenChange={(o) => { if(!o) setFormData(INITIAL_MEMBER_DATA); setIsOpen(o); }}>
+        <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) { setFormData(INITIAL_MEMBER_DATA); document.body.style.pointerEvents = 'auto'; } }}>
           <DialogTrigger asChild><Button className="gap-2"><UserPlus className="h-4 w-4" />Tambah Anggota</Button></DialogTrigger>
           <DialogContent className="bg-slate-50">
             <DialogHeader><DialogTitle>Daftarkan Anggota Baru</DialogTitle></DialogHeader>
@@ -192,7 +180,7 @@ export default function MembersPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="font-semibold text-xs uppercase text-muted-foreground">ID Anggota (NIS/NIP)</Label>
-                  <Input value={formData.memberId} onChange={e => setFormData({...formData, memberId: e.target.value})} className="bg-white border-slate-300 h-11" />
+                  <Input value={formData.memberId ?? ""} onChange={e => setFormData({...formData, memberId: e.target.value})} className="bg-white border-slate-300 h-11" />
                 </div>
                 <div className="space-y-2">
                   <Label className="font-semibold text-xs uppercase text-muted-foreground">Tipe</Label>
@@ -204,11 +192,11 @@ export default function MembersPage() {
               </div>
               <div className="space-y-2">
                 <Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label>
-                <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" />
+                <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" />
               </div>
               <div className="space-y-2">
                 <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas/Mapel</Label>
-                <Input value={formData.classOrSubject} onChange={e => setFormData({...formData, classOrSubject: e.target.value})} className="bg-white border-slate-300 h-11" />
+                <Input value={formData.classOrSubject ?? ""} onChange={e => setFormData({...formData, classOrSubject: e.target.value})} className="bg-white border-slate-300 h-11" />
               </div>
             </div>
             <DialogFooter><Button onClick={handleSaveMember} className="w-full sm:w-auto h-11 px-8 shadow-lg shadow-primary/20">Simpan</Button></DialogFooter>
@@ -219,7 +207,7 @@ export default function MembersPage() {
       <div className="bg-card p-4 rounded-xl shadow-sm">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Cari anggota berdasarkan nama atau ID..." className="pl-10 bg-white" value={search} onChange={e => setSearch(e.target.value)} />
+          <Input placeholder="Cari anggota berdasarkan nama atau ID..." className="pl-10 bg-white" value={search ?? ""} onChange={e => setSearch(e.target.value)} />
         </div>
       </div>
 
@@ -249,9 +237,9 @@ export default function MembersPage() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => { setSelectedMemberQr(member); setIsQrOpen(true); }}><QrCode className="h-4 w-4 mr-2" />Kartu QR</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => { setEditingMemberId(member.id); setFormData({...member}); setIsEditOpen(true); }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onClick={() => { setMemberToDelete(member.id); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => { setSelectedMemberQr(member); setIsQrOpen(true); }}><QrCode className="h-4 w-4 mr-2" />Kartu QR</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => { setEditingMemberId(member.id); setFormData({...member}); setIsEditOpen(true); }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive" onSelect={() => { setMemberToDelete(member.id); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -268,7 +256,7 @@ export default function MembersPage() {
         )}
       </Card>
 
-      <Dialog open={isQrOpen} onOpenChange={setIsQrOpen}>
+      <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) document.body.style.pointerEvents = 'auto'; }}>
         <DialogContent className="max-w-sm text-center">
           <DialogHeader><DialogTitle>Kartu Digital Anggota</DialogTitle></DialogHeader>
           <div className="bg-white p-6 rounded-xl border-2 border-primary/20 space-y-4">
@@ -282,18 +270,18 @@ export default function MembersPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isEditOpen} onOpenChange={(o) => { if(!o) { setFormData(INITIAL_MEMBER_DATA); setEditingMemberId(null); } setIsEditOpen(o); }}>
+      <Dialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); if(!v) { setFormData(INITIAL_MEMBER_DATA); setEditingMemberId(null); document.body.style.pointerEvents = 'auto'; } }}>
         <DialogContent className="bg-slate-50">
           <DialogHeader><DialogTitle>Ubah Data Anggota</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label><Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" /></div>
-            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas/Mapel</Label><Input value={formData.classOrSubject} onChange={e => setFormData({...formData, classOrSubject: e.target.value})} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label><Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas/Mapel</Label><Input value={formData.classOrSubject ?? ""} onChange={e => setFormData({...formData, classOrSubject: e.target.value})} className="bg-white border-slate-300 h-11" /></div>
           </div>
           <DialogFooter><Button onClick={handleUpdateMember}>Simpan Perubahan</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={(v) => { setIsDeleteDialogOpen(v); if(!v) document.body.style.pointerEvents = 'auto'; }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Anggota?</AlertDialogTitle>
@@ -308,3 +296,4 @@ export default function MembersPage() {
     </div>
   )
 }
+    
