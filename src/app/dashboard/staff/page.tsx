@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo } from "react"
@@ -23,7 +24,9 @@ import {
   UserCheck,
   UserX,
   Loader2,
-  Lock
+  Lock,
+  KeyRound,
+  Send
 } from "lucide-react"
 import { 
   Dialog, 
@@ -51,22 +54,21 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { useFirestore, useCollection, useMemoFirebase, errorEmitter } from "@/firebase"
+import { useFirestore, useCollection, useMemoFirebase, errorEmitter, useAuth } from "@/firebase"
 import { collection, doc, deleteDoc, updateDoc, setDoc, query, where } from "firebase/firestore"
 import { FirestorePermissionError, type SecurityRuleContext } from "@/firebase/errors"
 import { useToast } from "@/hooks/use-toast"
-
-// Firebase Auth logic for Admin adding users
-import { initializeApp, deleteApp } from "firebase/app"
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth"
+import { sendPasswordResetEmail, initializeApp, deleteApp, getAuth, createUserWithEmailAndPassword } from "firebase/auth"
 import { firebaseConfig } from "@/firebase/config"
 
 export default function StaffPage() {
   const db = useFirestore()
+  const auth = useAuth()
   const { toast } = useToast()
   const [search, setSearch] = useState("")
   const [isOpen, setIsOpen] = useState(false)
   const [isRegistering, setIsRegistering] = useState(false)
+  const [isSendingReset, setIsSendingReset] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     name: "",
@@ -75,7 +77,6 @@ export default function StaffPage() {
     role: "Staff" as "Admin" | "Staff"
   })
 
-  // Mengambil user dengan role Admin atau Staff dari koleksi 'users'
   const usersCollectionRef = useMemoFirebase(() => {
     if (!db) return null
     return collection(db, 'users')
@@ -107,7 +108,6 @@ export default function StaffPage() {
     const secondaryAuth = getAuth(secondaryApp)
 
     try {
-      // 1. Membuat user di Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
         secondaryAuth, 
         formData.email, 
@@ -115,7 +115,6 @@ export default function StaffPage() {
       )
       const uid = userCredential.user.uid
 
-      // 2. Menyimpan profil ke koleksi 'users'
       const userDocRef = doc(db, 'users', uid)
       await setDoc(userDocRef, {
         id: uid,
@@ -128,8 +127,11 @@ export default function StaffPage() {
 
       toast({ 
         title: "Berhasil!", 
-        description: `Petugas ${formData.name} telah didaftarkan sebagai ${formData.role}.` 
+        description: `Petugas ${formData.name} telah didaftarkan. Email reset password akan dikirimkan otomatis.` 
       })
+      
+      // Opsional: Kirim email reset agar user bisa ganti password sendiri
+      await sendPasswordResetEmail(auth, formData.email)
       
       setIsOpen(false)
       setFormData({ name: "", email: "", password: "", role: "Staff" })
@@ -145,8 +147,30 @@ export default function StaffPage() {
     }
   }
 
+  const handleSendResetEmail = async (email: string, id: string) => {
+    if (!auth) return
+    setIsSendingReset(id)
+    try {
+      await sendPasswordResetEmail(auth, email)
+      toast({ 
+        title: "Email Terkirim", 
+        description: `Tautan pemulihan telah dikirim ke ${email}.` 
+      })
+    } catch (error: any) {
+      toast({ 
+        title: "Gagal Mengirim", 
+        description: error.message, 
+        variant: "destructive" 
+      })
+    } finally {
+      setIsSendingReset(null)
+    }
+  }
+
   const handleDeleteStaff = (id: string) => {
     if (!db) return
+    if (!confirm("Hapus petugas ini secara permanen?")) return
+    
     const userDocRef = doc(db, 'users', id)
     deleteDoc(userDocRef).catch(async (error) => {
        const permissionError = new FirestorePermissionError({
@@ -162,7 +186,7 @@ export default function StaffPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold font-headline tracking-tight text-primary">Petugas Perpustakaan</h1>
-          <p className="text-muted-foreground text-sm">Hanya Admin yang dapat mendaftarkan petugas baru.</p>
+          <p className="text-muted-foreground text-sm">Kelola akses petugas dan kirim instruksi pemulihan via email.</p>
         </div>
         
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -172,30 +196,31 @@ export default function StaffPage() {
               Daftarkan Petugas
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md bg-white">
             <DialogHeader>
               <DialogTitle>Pendaftaran Petugas Baru</DialogTitle>
               <DialogDescription>
-                Akun ini akan langsung aktif dan bisa digunakan untuk login ke Pustaka Nusantara.
+                Petugas akan menerima email untuk mengatur kata sandi mereka sendiri.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nama Lengkap</Label>
+                <Label htmlFor="name" className="font-bold text-xs uppercase text-muted-foreground">Nama Lengkap</Label>
                 <Input 
                   id="name" 
                   placeholder="Nama Lengkap..." 
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="bg-white h-11 border-slate-200"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="role">Peran / Hak Akses</Label>
+                <Label htmlFor="role" className="font-bold text-xs uppercase text-muted-foreground">Peran / Hak Akses</Label>
                 <Select 
                   value={formData.role} 
                   onValueChange={(v: any) => setFormData({ ...formData, role: v })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11 bg-white border-slate-200">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -205,28 +230,28 @@ export default function StaffPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email Login</Label>
+                <Label htmlFor="email" className="font-bold text-xs uppercase text-muted-foreground">Email Login</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input 
                     id="email" 
                     type="email"
-                    placeholder="nama@smpn5.sch.id" 
-                    className="pl-10"
+                    placeholder="nama@email.com" 
+                    className="pl-10 h-11 bg-white border-slate-200"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Kata Sandi Awal</Label>
+                <Label htmlFor="password" className="font-bold text-xs uppercase text-muted-foreground">Kata Sandi Awal</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input 
                     id="password" 
                     type="password"
                     placeholder="Minimal 6 karakter" 
-                    className="pl-10"
+                    className="pl-10 h-11 bg-white border-slate-200"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   />
@@ -252,7 +277,7 @@ export default function StaffPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
             placeholder="Cari berdasarkan nama atau email..." 
-            className="pl-10" 
+            className="pl-10 bg-white" 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -300,18 +325,34 @@ export default function StaffPage() {
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem className="gap-2 text-destructive" onClick={() => handleDeleteStaff(person.id)}>
-                        <Trash2 className="h-4 w-4" /> Hapus
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="flex items-center justify-end gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-primary hover:text-primary hover:bg-primary/10 gap-2"
+                      onClick={() => handleSendResetEmail(person.email, person.id)}
+                      disabled={isSendingReset === person.id}
+                    >
+                      {isSendingReset === person.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <KeyRound className="h-4 w-4" />
+                      )}
+                      <span className="hidden sm:inline">Reset Email</span>
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem className="gap-2 text-destructive" onClick={() => handleDeleteStaff(person.id)}>
+                          <Trash2 className="h-4 w-4" /> Hapus
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
