@@ -1,16 +1,18 @@
+
 "use client"
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Library, Loader2, UserPlus, ShieldCheck } from "lucide-react"
+import { Library, Loader2, UserPlus, ShieldCheck, AlertCircle } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth"
 import { collection, doc, setDoc, query, limit } from "firebase/firestore"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function LoginPage() {
   const auth = useAuth()
@@ -101,13 +103,23 @@ export default function LoginPage() {
           <div className="space-y-1">
             <CardTitle className="text-2xl font-bold font-headline">SMPN 5 LANGKE REMBONG</CardTitle>
             <CardDescription>
-              {isSetupMode ? "Setup Akun Admin Pertama" : "Sistem Informasi Perpustakaan Sekolah"}
+              {isSetupMode ? "Setup Akun Admin Utama" : "Sistem Informasi Perpustakaan Sekolah"}
             </CardDescription>
           </div>
         </CardHeader>
         
         <form onSubmit={isSetupMode ? handleSetupAdmin : handleLogin}>
           <CardContent className="space-y-4">
+            {noUsersExist && !isSetupMode && (
+              <Alert className="bg-primary/10 border-primary/20 text-primary">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle className="text-xs font-bold uppercase">Sistem Baru Terdeteksi</AlertTitle>
+                <AlertDescription className="text-xs">
+                  Database masih kosong. Harap klik tombol inisialisasi di bawah untuk membuat akun Admin pertama.
+                </AlertDescription>
+              </Alert>
+            )}
+
             {isSetupMode && (
               <div className="space-y-2">
                 <Label htmlFor="name">Nama Lengkap Admin</Label>
@@ -151,7 +163,7 @@ export default function LoginPage() {
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin mr-2" />
               ) : isSetupMode ? (
-                <><UserPlus className="mr-2 h-5 w-5" /> Daftarkan Admin Sekarang</>
+                <><UserPlus className="mr-2 h-5 w-5" /> Daftarkan Admin Utama</>
               ) : (
                 "Masuk Sekarang"
               )}
@@ -161,7 +173,7 @@ export default function LoginPage() {
               <Button 
                 type="button" 
                 variant="outline" 
-                className="w-full border-dashed border-primary text-primary hover:bg-primary/5"
+                className="w-full border-dashed border-primary text-primary hover:bg-primary/5 h-12"
                 onClick={() => setIsSetupMode(true)}
               >
                 <ShieldCheck className="mr-2 h-4 w-4" />
@@ -186,12 +198,6 @@ export default function LoginPage() {
           </CardFooter>
         </form>
       </Card>
-
-      {!checkingUsers && noUsersExist && (
-        <div className="bg-primary/10 text-primary text-[10px] px-3 py-1 rounded-full font-bold animate-pulse">
-          SISTEM BARU: SILAKAN DAFTARKAN ADMIN PERTAMA
-        </div>
-      )}
     </div>
   )
 }
