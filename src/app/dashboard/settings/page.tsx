@@ -16,7 +16,8 @@ import { Badge } from "@/components/ui/badge"
 import { 
   useFirestore, 
   useDoc, 
-  errorEmitter 
+  errorEmitter,
+  useMemoFirebase
 } from '@/firebase'
 import { doc, setDoc } from 'firebase/firestore'
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors'
@@ -39,8 +40,11 @@ export default function SettingsPage() {
     digitalCatalog: true
   })
 
-  // Fetch settings from Firestore
-  const settingsDocRef = db ? doc(db, 'settings', 'general') : null
+  // Fetch settings from Firestore with memoized reference to prevent flickering
+  const settingsDocRef = useMemoFirebase(() => 
+    db ? doc(db, 'settings', 'general') : null, 
+  [db])
+  
   const { data: remoteSettings, isLoading: loading } = useDoc(settingsDocRef)
 
   useEffect(() => {
