@@ -5,38 +5,47 @@ service cloud.firestore {
 
     /**
      * SISTEM PERPUSTAKAAN SMPN 5 - SECURITY RULES
-     * Memperbaiki rekursi dengan memisahkan izin akses profil sendiri.
+     * Versi 1.3 - Optimasi pengecekan peran dan pencegahan rekursi.
      */
 
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Fungsi untuk mendapatkan role tanpa memicu rekursi berlebih
-    function getUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    // Fungsi pengecekan role yang aman dan tidak rekursif
+    function hasRole(roles) {
+      let authPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      // exists() dan get() di sini akan divalidasi oleh match /users/{userId}
+      return isSignedIn() && exists(authPath) && get(authPath).data.role in roles;
     }
 
     function isStaff() {
-      return isSignedIn() && getUserRole() in ['Admin', 'Staff'];
+      return hasRole(['Admin', 'Staff']);
     }
 
     function isAdmin() {
-      return isSignedIn() && getUserRole() == 'Admin';
+      return hasRole(['Admin']);
     }
 
     // Koleksi Pengguna (Admin/Staff)
     match /users/{userId} {
-      // PENTING: User bisa membaca datanya sendiri secara langsung (Base Case)
-      // Ini mencegah rekursi saat fungsi getUserRole() memanggil get()
+      // PENTING: Izin dasar untuk membaca profil sendiri
+      // Digunakan sebagai base case agar fungsi get() di rules tidak looping
       allow get: if isSignedIn() && request.auth.uid == userId;
       
-      // Admin/Staff bisa melihat profil user lain
-      allow get, list: if isStaff();
+      // Izin administratif untuk melihat daftar petugas lain
+      allow list: if isStaff();
+      allow get: if isStaff();
       
       allow create: if isSignedIn(); 
       allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow delete: if isAdmin();
+    }
+
+    // Koleksi Transaksi (Pinjam & Kembali)
+    match /transactions/{transactionId} {
+      // Hanya petugas (Admin/Staff) yang bisa mengelola sirkulasi
+      allow read, write: if isStaff();
     }
 
     // Koleksi Anggota Perpustakaan
@@ -46,13 +55,10 @@ service cloud.firestore {
 
     // Koleksi Buku
     match /books/{bookId} {
+      // Semua user yang login bisa melihat katalog buku
       allow read: if isSignedIn();
+      // Hanya petugas yang bisa menambah/ubah buku
       allow write: if isStaff();
-    }
-
-    // Koleksi Transaksi (Pinjam & Kembali)
-    match /transactions/{transactionId} {
-      allow read, write: if isStaff();
     }
 
     // Koleksi Log Aktivitas
