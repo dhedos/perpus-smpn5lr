@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, UserPlus, ShieldCheck, AlertCircle } from "lucide-react"
+import { Loader2, UserPlus, ShieldCheck, AlertCircle, Library } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth, useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase"
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth"
@@ -13,7 +13,6 @@ import { collection, doc, setDoc, query, limit } from "firebase/firestore"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import Image from "next/image"
 
 export default function LoginPage() {
   const auth = useAuth()
@@ -51,7 +50,7 @@ export default function LoginPage() {
     setLoading(true)
     try {
       await signInWithEmailAndPassword(auth, email, password)
-      toast({ title: "Berhasil Masuk", description: "Selamat datang di Sistem Perpustakaan SMPN 5 Langke Rembong." })
+      toast({ title: "Berhasil Masuk", description: "Selamat datang di Pustaka Nusantara." })
       router.push("/dashboard")
     } catch (error: any) {
       toast({ 
@@ -110,20 +109,13 @@ export default function LoginPage() {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 space-y-4">
       <Card className="w-full max-w-md shadow-2xl border-none p-2 bg-white animate-in zoom-in duration-500">
         <CardHeader className="space-y-4 text-center">
-          <div className="mx-auto w-32 h-32 relative mb-2">
-            <Image 
-              src="https://picsum.photos/seed/smp5emblem/200/200" 
-              alt="Logo SMPN 5" 
-              fill 
-              className="object-contain drop-shadow-md rounded-full border-4 border-primary/10"
-              priority
-              data-ai-hint="school logo"
-            />
+          <div className="mx-auto w-24 h-24 flex items-center justify-center rounded-3xl bg-primary/10 text-primary mb-2">
+            <Library className="h-12 w-12" />
           </div>
           <div className="space-y-1">
-            <CardTitle className="text-2xl font-bold font-headline uppercase tracking-tight text-primary">SMPN 5 Langke Rembong</CardTitle>
-            <CardDescription className="font-medium text-secondary">
-              {isSetupMode ? "Inisialisasi Sistem Baru" : "Sistem Informasi Perpustakaan"}
+            <CardTitle className="text-3xl font-black font-headline uppercase tracking-tight text-primary">PUSTAKA NUSANTARA</CardTitle>
+            <CardDescription className="font-bold text-secondary uppercase tracking-widest text-xs">
+              {isSetupMode ? "Inisialisasi Sistem Baru" : "SMPN 5 LANGKE REMBONG"}
             </CardDescription>
           </div>
         </CardHeader>

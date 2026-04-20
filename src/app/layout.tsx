@@ -5,14 +5,13 @@ import { Toaster } from "@/components/ui/toaster"
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 
 export const metadata: Metadata = {
-  title: 'Perpustakaan SMPN 5 LANGKE REMBONG',
-  description: 'Sistem Informasi Perpustakaan SMPN 5 Langke Rembong - Modern, AI, dan Sinkronisasi Cloud.',
+  title: 'Pustaka Nusantara - SMPN 5 LANGKE REMBONG',
+  description: 'Sistem Informasi Perpustakaan Modern SMPN 5 Langke Rembong.',
   icons: {
     icon: 'https://picsum.photos/seed/smp5emblem/128/128',
     shortcut: 'https://picsum.photos/seed/smp5emblem/128/128',
     apple: 'https://picsum.photos/seed/smp5emblem/128/128',
   },
-  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
@@ -25,8 +24,7 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-        <link rel="apple-touch-icon" href="https://picsum.photos/seed/smp5emblem/128/128" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
         <meta name="theme-color" content="#2E6ECE" />
       </head>
       <body className="font-body antialiased">

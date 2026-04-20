@@ -13,13 +13,13 @@ import {
   Database,
   LogOut,
   UserCog,
-  ClipboardCheck
+  ClipboardCheck,
+  Library
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useAuth, useUser } from "@/firebase"
 import { signOut } from "firebase/auth"
-import Image from "next/image"
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Beranda", href: "/dashboard" },
@@ -51,19 +51,14 @@ export function SidebarNav() {
 
   return (
     <div className="flex h-full flex-col bg-card text-card-foreground border-r">
-      <div className="flex h-20 items-center px-4 border-b shrink-0 gap-3">
-        <div className="relative h-12 w-12 shrink-0">
-          <Image 
-            src="https://picsum.photos/seed/smp5emblem/100/100" 
-            alt="Logo" 
-            fill 
-            className="object-contain rounded-full border border-muted"
-            data-ai-hint="school badge"
-          />
+      {/* Header section tanpa border-b sesuai permintaan */}
+      <div className="flex h-20 items-center px-4 shrink-0 gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <Library className="h-8 w-8" />
         </div>
         <div className="flex flex-col">
-          <span className="text-sm font-bold leading-tight text-primary">SMPN 5</span>
-          <span className="text-[10px] font-semibold leading-tight text-secondary uppercase">Langke Rembong</span>
+          <span className="text-sm font-black leading-tight text-primary tracking-tight">PUSTAKA NUSANTARA</span>
+          <span className="text-[10px] font-bold leading-tight text-secondary uppercase tracking-widest">SMPN 5 LANGKE REMBONG</span>
         </div>
       </div>
       

@@ -11,7 +11,8 @@ import {
   ArrowDownLeft, 
   Clock, 
   AlertCircle,
-  Loader2
+  Loader2,
+  Library
 } from "lucide-react"
 import { 
   BarChart, 
@@ -20,8 +21,7 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer,
-  Cell
+  ResponsiveContainer
 } from "recharts"
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, query, where, orderBy, limit } from "firebase/firestore"
@@ -30,7 +30,6 @@ export default function DashboardPage() {
   const { user } = useUser()
   const db = useFirestore()
 
-  // Real-time data fetching
   const booksRef = useMemoFirebase(() => db ? collection(db, 'books') : null, [db])
   const membersRef = useMemoFirebase(() => db ? collection(db, 'members') : null, [db])
   const transRef = useMemoFirebase(() => db ? collection(db, 'transactions') : null, [db])
@@ -94,13 +93,18 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div>
-        <h1 className="text-3xl font-bold font-headline tracking-tight text-primary">
-          SMPN 5 LANGKE REMBONG
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Selamat datang, {user?.displayNameCustom || "Petugas"}. Berikut ringkasan aktivitas perpustakaan hari ini.
-        </p>
+      <div className="flex items-center gap-4">
+        <div className="h-14 w-14 flex items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <Library className="h-8 w-8" />
+        </div>
+        <div>
+          <h1 className="text-3xl font-black font-headline tracking-tight text-primary">
+            PUSTAKA NUSANTARA
+          </h1>
+          <p className="text-xs font-bold text-secondary uppercase tracking-widest leading-none">
+            SMPN 5 LANGKE REMBONG
+          </p>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
