@@ -4,7 +4,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Database, CloudUpload, CloudDownload, RefreshCw, CheckCircle2, AlertTriangle, Zap, FileSpreadsheet, Info, History, ShieldCheck } from "lucide-react"
+import { Database, CloudUpload, CloudDownload, RefreshCw, CheckCircle2, AlertTriangle, Zap, FileSpreadsheet, Info, History, ShieldCheck, Layers } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
@@ -79,30 +79,23 @@ export default function SyncPage() {
         <Card className="border-none shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <FileSpreadsheet className="h-5 w-5 text-green-600" />
-              Laporan & Excel
+              <Layers className="h-5 w-5 text-blue-600" />
+              Efisien: Dokumen vs Stok
             </CardTitle>
-            <CardDescription>Ekspor data tanpa membebani database.</CardDescription>
+            <CardDescription>Bagaimana sistem menghitung penggunaan data.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="p-4 rounded-lg bg-accent/30 border border-primary/10 space-y-3">
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold">Efisiensi Ekspor</p>
-                  <p className="text-xs text-muted-foreground">Ekspor Excel dilakukan di browser petugas, bukan di server. Gratis 100%.</p>
-                </div>
+            <div className="p-4 rounded-lg bg-blue-50 border border-blue-100 space-y-3">
+              <p className="text-xs text-blue-800 leading-relaxed">
+                <strong>Penting:</strong> 1 Jenis Buku (misal: Matematika) hanya dihitung <strong>1 Pembacaan (Read)</strong> oleh Firebase, berapapun jumlah stok fisiknya (misal: 30 atau 100 eksemplar).
+              </p>
+              <div className="text-[10px] text-blue-600 font-medium">
+                Sistem ini sangat hemat kuota meskipun sekolah memiliki ribuan buku fisik.
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1 gap-2 text-xs">
-                <CloudDownload className="h-3 w-3" />
-                Backup JSON
-              </Button>
-              <Button variant="outline" className="flex-1 gap-2 text-xs">
-                <CloudUpload className="h-3 w-3" />
-                Restore Data
-              </Button>
+            <div className="flex items-center justify-between text-xs text-muted-foreground italic">
+              <span>*Berlaku untuk Spark Plan (Gratis)</span>
+              <CheckCircle2 className="h-3 w-3 text-green-500" />
             </div>
           </CardContent>
         </Card>
@@ -123,7 +116,7 @@ export default function SyncPage() {
             </p>
             <p>
               <strong>2. Apakah Bisa Google Sheets Jadi Database?</strong> <br/>
-              Google Sheets <strong>tidak disarankan</strong> menjadi database "mesin" aplikasi karena tidak aman dan lambat. Gunakan Google Sheets hanya untuk <strong>Arsip & Backup</strong> jika database Firebase sudah sangat penuh (misal setelah 5-10 tahun penggunaan).
+              Google Sheets <strong>tidak disarankan</strong> menjadi database "mesin" aplikasi karena tidak aman dan lambat. Gunakan Google Sheets hanya untuk <strong>Arsip & Backup</strong>.
             </p>
           </CardContent>
         </Card>
