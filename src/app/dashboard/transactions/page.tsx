@@ -98,6 +98,8 @@ export default function TransactionsPage() {
 
   const { data: activeTrans, isLoading: loadingActive } = useCollection(activeTransQuery)
 
+  const loanDays = useMemo(() => settings?.loanPeriod ? Number(settings.loanPeriod) : 7, [settings]);
+
   const filteredActiveTrans = useMemo(() => {
     if (!activeTrans) return []
     const sorted = [...activeTrans].sort((a, b) => {
@@ -117,9 +119,8 @@ export default function TransactionsPage() {
 
   // Hitung estimasi jatuh tempo untuk peminjaman baru (Dynamic based on settings)
   const estimatedDueDate = useMemo(() => {
-    const loanDays = settings?.loanPeriod ? Number(settings.loanPeriod) : 7;
     return addDays(startOfDay(new Date()), loanDays);
-  }, [settings?.loanPeriod]);
+  }, [loanDays]);
 
   const handleScanResult = (text: string) => {
     if (!text) return
@@ -141,8 +142,11 @@ export default function TransactionsPage() {
 
   const prepareReturn = (trans: any) => {
     const today = startOfDay(new Date());
-    const dueDate = startOfDay(parseISO(trans.dueDate));
-    const diffDays = differenceInDays(today, dueDate);
+    // Menghitung denda berdasarkan loanPeriod TERBARU dari Admin
+    const borrowDate = startOfDay(parseISO(trans.borrowDate));
+    const dynamicDueDate = addDays(borrowDate, loanDays);
+    const diffDays = differenceInDays(today, dynamicDueDate);
+    
     setLateDays(diffDays > 0 ? diffDays : 0);
     setPendingReturnTrans(trans);
     setReturnCondition("normal");
@@ -230,8 +234,6 @@ export default function TransactionsPage() {
   const handleProcessBorrow = () => {
     if (!db || !selectedMember || !selectedBook) return
     
-    // Ambil loanPeriod terbaru saat klik, pastikan dikonversi ke Number
-    const loanDays = settings?.loanPeriod ? Number(settings.loanPeriod) : 7;
     const today = startOfDay(new Date());
     const finalDueDate = addDays(today, loanDays);
 
@@ -269,7 +271,7 @@ export default function TransactionsPage() {
         <div className="text-right flex flex-col items-end gap-1">
           <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold gap-2 py-1.5 px-3">
             <CalendarDays className="h-4 w-4" />
-            Batas Pinjam: {settings?.loanPeriod ?? 7} Hari
+            Batas Pinjam: {loanDays} Hari
           </Badge>
           {loadingSettings && <p className="text-[10px] text-muted-foreground animate-pulse">Menghubungkan kebijakan...</p>}
         </div>
@@ -387,7 +389,11 @@ export default function TransactionsPage() {
                         ) : filteredActiveTrans.length === 0 ? (
                           <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground italic">Tidak ada peminjaman aktif{returnSearch && ' yang cocok'}.</TableCell></TableRow>
                         ) : filteredActiveTrans.map((t, index) => {
-                          const isOverdue = t.dueDate ? isAfter(new Date(), parseISO(t.dueDate)) : false;
+                          // Menghitung jatuh tempo secara dinamis berdasarkan kebijakan terbaru Admin
+                          const borrowDate = t.borrowDate ? parseISO(t.borrowDate) : new Date();
+                          const effectiveDueDate = addDays(borrowDate, loanDays);
+                          const isOverdue = isAfter(new Date(), effectiveDueDate);
+                          
                           return (
                             <TableRow key={t.id} className={cn(isOverdue && "bg-red-50/50")}>
                               <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
@@ -398,12 +404,12 @@ export default function TransactionsPage() {
                                 </div>
                               </TableCell>
                               <TableCell className="text-xs text-muted-foreground">
-                                {t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yyyy') : '-'}
+                                {format(borrowDate, 'dd/MM/yyyy')}
                               </TableCell>
                               <TableCell>
                                 <div className="space-y-1">
                                   <p className={cn("text-xs font-bold", isOverdue ? "text-destructive" : "text-muted-foreground")}>
-                                    {t.dueDate ? format(parseISO(t.dueDate), 'dd/MM/yyyy') : '-'}
+                                    {format(effectiveDueDate, 'dd/MM/yyyy')}
                                   </p>
                                   {isOverdue && <Badge variant="destructive" className="text-[9px] h-4 px-1">Terlambat</Badge>}
                                 </div>
