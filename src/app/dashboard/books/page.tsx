@@ -237,16 +237,22 @@ export default function BooksPage() {
   const handleSaveBook = () => {
     if (!db) return
     
+    // Validasi sederhana
+    if (!formData.title || !formData.code) {
+      toast({ title: "Gagal", description: "Judul dan Kode Buku wajib diisi.", variant: "destructive" })
+      return
+    }
+
     const newBook = { 
       ...formData, 
       createdAt: new Date().toISOString(), 
       updatedAt: new Date().toISOString() 
     }
 
-    // TUTUP SEGERA
+    // TUTUP DIALOG SEGERA untuk melepaskan UI
     setIsOpen(false)
     
-    // Kirim ke latar belakang
+    // Kirim ke database (non-blocking)
     addDoc(collection(db, 'books'), newBook)
       .catch(async (error) => {
         const permissionError = new FirestorePermissionError({
@@ -259,10 +265,10 @@ export default function BooksPage() {
     
     toast({ title: "Berhasil!", description: "Buku telah didaftarkan." })
     
-    // Bersihkan formulir setelah animasi dialog selesai
+    // Pembersihan state setelah UI tertutup
     setTimeout(() => {
       setFormData(INITIAL_FORM_DATA)
-    }, 300)
+    }, 200)
   }
 
   const handleUpdateBook = () => {
@@ -274,13 +280,18 @@ export default function BooksPage() {
       return
     }
 
-    const stockDiff = Number(formData.totalStock || 0) - Number(originalBook.totalStock || 0)
-    const newAvailableStock = Number(originalBook.availableStock || 0) + stockDiff
+    // Hitung perubahan stok secara cerdas
+    const currentTotal = Number(originalBook.totalStock || 0)
+    const newTotal = Number(formData.totalStock || 0)
+    const currentAvail = Number(originalBook.availableStock || 0)
+    
+    const diff = newTotal - currentTotal
+    const calculatedAvail = Math.max(0, currentAvail + diff)
 
     const updatedData = {
       ...formData,
-      totalStock: Number(formData.totalStock || 0),
-      availableStock: Math.max(0, newAvailableStock),
+      totalStock: newTotal,
+      availableStock: calculatedAvail,
       updatedAt: new Date().toISOString()
     }
 
@@ -301,11 +312,11 @@ export default function BooksPage() {
     
     toast({ title: "Berhasil!", description: "Data buku telah diperbarui." })
 
-    // Bersihkan state setelah animasi dialog selesai
+    // Pembersihan state
     setTimeout(() => {
       setEditingBookId(null)
       setFormData(INITIAL_FORM_DATA)
-    }, 300)
+    }, 200)
   }
 
   const handleDeleteBook = () => {
@@ -324,11 +335,11 @@ export default function BooksPage() {
         errorEmitter.emit('permission-error', permissionError);
       });
 
-    toast({ title: "Terhapus", description: "Buku sedang dihapus dari koleksi." })
+    toast({ title: "Terhapus", description: "Buku dihapus dari koleksi." })
     
     setTimeout(() => {
       setBookToDelete(null)
-    }, 300)
+    }, 200)
   }
 
   const startScanner = async () => {
@@ -464,13 +475,13 @@ export default function BooksPage() {
                           title: book.title || "",
                           author: book.author || "",
                           publisher: book.publisher || "",
-                          publicationYear: book.publicationYear || new Date().getFullYear(),
+                          publicationYear: Number(book.publicationYear || new Date().getFullYear()),
                           acquisitionDate: book.acquisitionDate || new Date().toISOString().split('T')[0],
                           isbn: book.isbn || "",
                           category: book.category || "",
                           rackLocation: book.rackLocation || "",
-                          totalStock: book.totalStock || 0,
-                          availableStock: book.availableStock || 0,
+                          totalStock: Number(book.totalStock || 0),
+                          availableStock: Number(book.availableStock || 0),
                           description: book.description || ""
                         }); 
                         setIsEditOpen(true); 
@@ -492,6 +503,7 @@ export default function BooksPage() {
         )}
       </Card>
 
+      {/* DIALOG TAMBAH */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-w-2xl bg-slate-50">
           <DialogHeader>
@@ -549,55 +561,7 @@ export default function BooksPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
-        <DialogContent className="sm:max-w-2xl p-0 border-none bg-black h-[100dvh] sm:h-auto overflow-hidden">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Pemindai QR Code Buku</DialogTitle>
-          </DialogHeader>
-          <div id="scanner-view" className="w-full h-full bg-black min-h-[300px]"></div>
-          <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-w-2xl bg-white">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-primary"><Info className="h-5 w-5" />Informasi Detail Buku</DialogTitle>
-          </DialogHeader>
-          {selectedBookDetail && (
-            <div className="grid grid-cols-2 gap-6 py-4">
-              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Judul Buku</Label><p className="font-bold text-lg leading-tight">{selectedBookDetail.title}</p></div>
-              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Kode Koleksi</Label><p className="font-mono text-primary font-bold">{selectedBookDetail.code}</p></div>
-              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Pengarang</Label><p>{selectedBookDetail.author}</p></div>
-              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Tgl. Penerimaan</Label><div className="flex items-center gap-2"><CalendarIcon className="h-3 w-3 text-muted-foreground" /><p>{selectedBookDetail.acquisitionDate ? new Date(selectedBookDetail.acquisitionDate).toLocaleDateString('id-ID', { dateStyle: 'long' }) : '-'}</p></div></div>
-              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Jenis & Lokasi Rak</Label><p><Badge variant="secondary" className="mr-2">{selectedBookDetail.category}</Badge> {selectedBookDetail.rackLocation || 'Rak belum diatur'}</p></div>
-              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Status Ketersediaan</Label><p className="font-semibold text-blue-600">{selectedBookDetail.availableStock} dari {selectedBookDetail.totalStock} tersedia</p></div>
-              <div className="col-span-2 space-y-1 pt-2 border-t">
-                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Deskripsi / Ringkasan AI</Label>
-                <div className="text-sm bg-muted/30 p-4 rounded-lg italic leading-relaxed">{selectedBookDetail.description || 'Tidak ada deskripsi.'}</div>
-              </div>
-            </div>
-          )}
-          <DialogFooter><Button onClick={() => setIsDetailOpen(false)}>Tutup</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isQrOpen} onOpenChange={setIsQrOpen}>
-        <DialogContent className="max-w-sm text-center">
-          <DialogHeader>
-            <DialogTitle>QR Code Buku</DialogTitle>
-          </DialogHeader>
-          <div className="bg-white p-6 rounded-xl border flex justify-center">
-            {selectedBookQr && <QRCodeSVG value={selectedBookQr.code} size={240} includeMargin />}
-          </div>
-          <div className="font-bold"><p>{selectedBookQr?.title}</p><p className="text-primary">{selectedBookQr?.code}</p></div>
-          <DialogFooter className="grid grid-cols-2 gap-2">
-            <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" />Cetak</Button>
-            <Button onClick={() => setIsQrOpen(false)}>Tutup</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
+      {/* DIALOG UBAH */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-2xl bg-slate-50">
           <DialogHeader>
@@ -623,6 +587,59 @@ export default function BooksPage() {
         </DialogContent>
       </Dialog>
 
+      {/* DIALOG SCANNER */}
+      <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
+        <DialogContent className="sm:max-w-2xl p-0 border-none bg-black h-[100dvh] sm:h-auto overflow-hidden">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Pemindai QR Code Buku</DialogTitle>
+          </DialogHeader>
+          <div id="scanner-view" className="w-full h-full bg-black min-h-[300px]"></div>
+          <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>
+        </DialogContent>
+      </Dialog>
+
+      {/* DIALOG DETAIL */}
+      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+        <DialogContent className="max-w-2xl bg-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-primary"><Info className="h-5 w-5" />Informasi Detail Buku</DialogTitle>
+          </DialogHeader>
+          {selectedBookDetail && (
+            <div className="grid grid-cols-2 gap-6 py-4">
+              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Judul Buku</Label><p className="font-bold text-lg leading-tight">{selectedBookDetail.title}</p></div>
+              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Kode Koleksi</Label><p className="font-mono text-primary font-bold">{selectedBookDetail.code}</p></div>
+              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Pengarang</Label><p>{selectedBookDetail.author}</p></div>
+              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Tgl. Penerimaan</Label><div className="flex items-center gap-2"><CalendarIcon className="h-3 w-3 text-muted-foreground" /><p>{selectedBookDetail.acquisitionDate ? new Date(selectedBookDetail.acquisitionDate).toLocaleDateString('id-ID', { dateStyle: 'long' }) : '-'}</p></div></div>
+              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Jenis & Lokasi Rak</Label><p><Badge variant="secondary" className="mr-2">{selectedBookDetail.category}</Badge> {selectedBookDetail.rackLocation || 'Rak belum diatur'}</p></div>
+              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Status Ketersediaan</Label><p className="font-semibold text-blue-600">{selectedBookDetail.availableStock} dari {selectedBookDetail.totalStock} tersedia</p></div>
+              <div className="col-span-2 space-y-1 pt-2 border-t">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Deskripsi / Ringkasan AI</Label>
+                <div className="text-sm bg-muted/30 p-4 rounded-lg italic leading-relaxed">{selectedBookDetail.description || 'Tidak ada deskripsi.'}</div>
+              </div>
+            </div>
+          )}
+          <DialogFooter><Button onClick={() => setIsDetailOpen(false)}>Tutup</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* DIALOG QR */}
+      <Dialog open={isQrOpen} onOpenChange={setIsQrOpen}>
+        <DialogContent className="max-w-sm text-center">
+          <DialogHeader>
+            <DialogTitle>QR Code Buku</DialogTitle>
+          </DialogHeader>
+          <div className="bg-white p-6 rounded-xl border flex justify-center">
+            {selectedBookQr && <QRCodeSVG value={selectedBookQr.code} size={240} includeMargin />}
+          </div>
+          <div className="font-bold"><p>{selectedBookQr?.title}</p><p className="text-primary">{selectedBookQr?.code}</p></div>
+          <DialogFooter className="grid grid-cols-2 gap-2">
+            <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" />Cetak</Button>
+            <Button onClick={() => setIsQrOpen(false)}>Tutup</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ALERT DIALOG HAPUS */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -630,7 +647,7 @@ export default function BooksPage() {
             <AlertDialogDescription>Tindakan ini permanen. Pastikan buku sudah tidak ada di inventaris fisik.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setBookToDelete(null)}>Batal</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteBook} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Hapus Permanen</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
