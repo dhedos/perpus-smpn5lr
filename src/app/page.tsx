@@ -5,14 +5,22 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, UserPlus, ShieldCheck, AlertCircle, Library } from "lucide-react"
+import { Loader2, UserPlus, ShieldCheck, AlertCircle, Library, KeyRound, Mail, X } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth, useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase"
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth"
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth"
 import { collection, doc, setDoc, query, limit } from "firebase/firestore"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 export default function LoginPage() {
   const auth = useAuth()
@@ -27,6 +35,11 @@ export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [adminName, setAdminName] = useState("")
+
+  // Password Reset State
+  const [isResetOpen, setIsResetOpen] = useState(false)
+  const [resetEmail, setResetEmail] = useState("")
+  const [isSendingReset, setIsSendingReset] = useState(false)
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -97,6 +110,30 @@ export default function LoginPage() {
     }
   }
 
+  const handleSendResetEmail = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!auth || !resetEmail) return
+
+    setIsSendingReset(true)
+    try {
+      await sendPasswordResetEmail(auth, resetEmail)
+      toast({ 
+        title: "Email Terkirim", 
+        description: "Silakan periksa kotak masuk email Anda untuk instruksi reset kata sandi." 
+      })
+      setIsResetOpen(false)
+      setResetEmail("")
+    } catch (error: any) {
+      toast({ 
+        title: "Gagal Mengirim", 
+        description: error.message || "Pastikan email Anda sudah terdaftar.", 
+        variant: "destructive" 
+      })
+    } finally {
+      setIsSendingReset(false)
+    }
+  }
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -158,7 +195,18 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="font-semibold">Kata Sandi</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="font-semibold">Kata Sandi</Label>
+                {!isSetupMode && (
+                  <button 
+                    type="button" 
+                    onClick={() => setIsResetOpen(true)}
+                    className="text-xs font-bold text-primary hover:underline"
+                  >
+                    Lupa Kata Sandi?
+                  </button>
+                )}
+              </div>
               <Input 
                 id="password" 
                 type="password" 
@@ -210,6 +258,61 @@ export default function LoginPage() {
           </CardFooter>
         </form>
       </Card>
+
+      {/* Password Reset Dialog */}
+      <Dialog open={isResetOpen} onOpenChange={setIsResetOpen}>
+        <DialogContent className="max-w-md bg-white">
+          <form onSubmit={handleSendResetEmail}>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-primary">
+                <KeyRound className="h-5 w-5" />
+                Pemulihan Kata Sandi
+              </DialogTitle>
+              <DialogDescription>
+                Masukkan email Anda untuk menerima tautan reset kata sandi melalui email.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-6 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="reset-email" className="font-semibold">Email Terdaftar</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    id="reset-email" 
+                    type="email"
+                    placeholder="nama@email.com"
+                    required
+                    className="pl-10 bg-white h-12 border-slate-300"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setIsResetOpen(false)}
+                className="flex-1"
+              >
+                Batal
+              </Button>
+              <Button 
+                type="submit" 
+                className="flex-1"
+                disabled={isSendingReset}
+              >
+                {isSendingReset ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  "Kirim Tautan"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
