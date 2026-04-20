@@ -19,7 +19,8 @@ import {
   User,
   AlertCircle,
   Clock,
-  Coins
+  Coins,
+  CalendarDays
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -40,7 +41,7 @@ import {
   useDoc
 } from '@/firebase'
 import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc } from 'firebase/firestore'
-import { differenceInDays, parseISO } from "date-fns"
+import { differenceInDays, parseISO, format } from "date-fns"
 
 export default function TransactionsPage() {
   const db = useFirestore()
@@ -277,7 +278,7 @@ export default function TransactionsPage() {
         returnDate: new Date().toISOString(), 
         type: 'return',
         fineAmount: calculatedFine,
-        isFinePaid: calculatedFine > 0 // Anggap lunas saat dikembalikan
+        isFinePaid: calculatedFine > 0 
       })
       
       const bDoc = await getDoc(doc(db, 'books', pendingReturnTrans.bookId))
@@ -311,6 +312,16 @@ export default function TransactionsPage() {
         <div>
           <h1 className="text-2xl font-bold text-primary">Pinjam & Kembali Buku</h1>
           <p className="text-sm text-muted-foreground">Proses sirkulasi buku dengan Scan atau Input Manual.</p>
+        </div>
+        <div className="hidden md:flex flex-col items-end gap-1">
+          <Badge variant="outline" className="gap-2 border-primary/20 text-primary">
+            <CalendarDays className="h-3 w-3" />
+            Batas Pinjam: {settings?.loanPeriod || 7} Hari
+          </Badge>
+          <Badge variant="outline" className="gap-2 border-orange-200 text-orange-600">
+            <Coins className="h-3 w-3" />
+            Denda: Rp{settings?.fineAmount || 500}/Hari
+          </Badge>
         </div>
       </div>
 

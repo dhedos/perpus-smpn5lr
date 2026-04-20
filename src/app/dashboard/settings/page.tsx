@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -7,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Library, Bell, Shield, Smartphone, Save, Loader2 } from "lucide-react"
+import { Library, Bell, Shield, Smartphone, Save, Loader2, Coins, CalendarDays } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 // Firebase
@@ -59,7 +60,7 @@ export default function SettingsPage() {
       .then(() => {
         toast({
           title: "Berhasil Disimpan",
-          description: "Pengaturan sistem telah diperbarui.",
+          description: "Pengaturan sistem (Denda & Jatuh Tempo) telah diperbarui.",
         })
       })
       .catch(async (error) => {
@@ -79,7 +80,7 @@ export default function SettingsPage() {
     <div className="max-w-4xl space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div>
         <h1 className="text-2xl font-bold font-headline tracking-tight text-primary">Pengaturan Sistem</h1>
-        <p className="text-muted-foreground text-sm">Konfigurasi profil SMPN 5 LANGKE REMBONG.</p>
+        <p className="text-muted-foreground text-sm">Konfigurasi profil dan kebijakan sirkulasi SMPN 5 LANGKE REMBONG.</p>
       </div>
 
       <Tabs defaultValue="general" className="w-full">
@@ -93,52 +94,68 @@ export default function SettingsPage() {
         <TabsContent value="general" className="mt-6">
           <Card className="border-none shadow-sm">
             <CardHeader>
-              <CardTitle>Informasi Sekolah</CardTitle>
-              <CardDescription>Nama sekolah yang tampil di aplikasi dan dokumen cetak.</CardDescription>
+              <CardTitle>Kebijakan Sirkulasi & Profil</CardTitle>
+              <CardDescription>Atur batas waktu peminjaman dan denda keterlambatan secara global.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="lib-name">Nama Perpustakaan</Label>
-                <Input 
-                  id="lib-name" 
-                  value={settings.libraryName} 
-                  onChange={(e) => setSettings({ ...settings, libraryName: e.target.value })}
-                  placeholder="Contoh: Perpustakaan SMPN 5..."
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="school-name">Nama Sekolah</Label>
-                <Input 
-                  id="school-name" 
-                  value={settings.schoolName}
-                  onChange={(e) => setSettings({ ...settings, schoolName: e.target.value })}
-                  placeholder="Contoh: SMPN 5 LANGKE REMBONG"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="loan-period">Batas Pinjam (Hari)</Label>
-                  <Input 
-                    id="loan-period" 
-                    type="number" 
-                    value={settings.loanPeriod}
-                    onChange={(e) => setSettings({ ...settings, loanPeriod: Number(e.target.value) })}
-                  />
+            <CardContent className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                   <div className="grid gap-2">
+                    <Label htmlFor="lib-name" className="font-bold text-xs uppercase text-muted-foreground">Nama Perpustakaan</Label>
+                    <Input 
+                      id="lib-name" 
+                      value={settings.libraryName} 
+                      onChange={(e) => setSettings({ ...settings, libraryName: e.target.value })}
+                      className="bg-slate-50 border-slate-200"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="school-name" className="font-bold text-xs uppercase text-muted-foreground">Nama Sekolah</Label>
+                    <Input 
+                      id="school-name" 
+                      value={settings.schoolName}
+                      onChange={(e) => setSettings({ ...settings, schoolName: e.target.value })}
+                      className="bg-slate-50 border-slate-200"
+                    />
+                  </div>
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="fine-amount">Denda per Hari (Rp)</Label>
-                  <Input 
-                    id="fine-amount" 
-                    type="number" 
-                    value={settings.fineAmount}
-                    onChange={(e) => setSettings({ ...settings, fineAmount: Number(e.target.value) })}
-                  />
+
+                <div className="space-y-4 p-4 bg-primary/5 rounded-xl border border-primary/10">
+                  <div className="grid gap-2">
+                    <Label htmlFor="loan-period" className="flex items-center gap-2 font-bold text-xs uppercase text-primary">
+                      <CalendarDays className="h-3 w-3" />
+                      Durasi Pinjam (Hari)
+                    </Label>
+                    <Input 
+                      id="loan-period" 
+                      type="number" 
+                      value={settings.loanPeriod}
+                      onChange={(e) => setSettings({ ...settings, loanPeriod: Number(e.target.value) })}
+                      className="bg-white border-primary/20 h-12 text-lg font-bold"
+                    />
+                    <p className="text-[10px] text-muted-foreground italic">Buku akan otomatis jatuh tempo setelah X hari.</p>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="fine-amount" className="flex items-center gap-2 font-bold text-xs uppercase text-orange-600">
+                      <Coins className="h-3 w-3" />
+                      Denda per Hari (Rp)
+                    </Label>
+                    <Input 
+                      id="fine-amount" 
+                      type="number" 
+                      value={settings.fineAmount}
+                      onChange={(e) => setSettings({ ...settings, fineAmount: Number(e.target.value) })}
+                      className="bg-white border-orange-200 h-12 text-lg font-bold text-orange-600"
+                    />
+                    <p className="text-[10px] text-muted-foreground italic">Denda otomatis dihitung saat pengembalian terlambat.</p>
+                  </div>
                 </div>
               </div>
-              <div className="pt-4">
-                <Button className="gap-2" onClick={handleSaveSettings} disabled={isSaving || loading}>
+              
+              <div className="pt-4 border-t">
+                <Button className="gap-2 h-12 px-8" onClick={handleSaveSettings} disabled={isSaving || loading}>
                   {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  Simpan Perubahan
+                  Simpan Semua Pengaturan
                 </Button>
               </div>
             </CardContent>
