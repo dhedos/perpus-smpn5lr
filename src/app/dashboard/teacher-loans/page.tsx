@@ -1,0 +1,356 @@
+"use client"
+
+import { useState, useMemo, useRef } from "react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { 
+  BookOpen, 
+  Search, 
+  Loader2, 
+  CheckCircle,
+  ScanBarcode,
+  X,
+  User,
+  GraduationCap,
+  History,
+  ArrowRightLeft,
+  ChevronRight,
+  MoreVertical,
+  Trash2
+} from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { useToast } from "@/hooks/use-toast"
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu"
+
+// Firebase
+import { 
+  useFirestore, 
+  useCollection, 
+  useMemoFirebase,
+  useUser 
+} from '@/firebase'
+import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc, orderBy, deleteDoc } from 'firebase/firestore'
+import { format } from "date-fns"
+
+export default function TeacherLoansPage() {
+  const db = useFirestore()
+  const { toast } = useToast()
+  
+  const [search, setSearch] = useState("")
+  const [memberSearch, setMemberSearch] = useState("")
+  const [bookSearch, setBookSearch] = useState("")
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [scannerMode, setScannerMode] = useState<"member" | "book">("member")
+  
+  const scannerInstanceRef = useRef<any>(null)
+  
+  const [selectedMember, setSelectedMember] = useState<any>(null)
+  const [selectedBook, setSelectedBook] = useState<any>(null)
+  const [showMemberSuggestions, setShowMemberSuggestions] = useState(false)
+  const [showBookSuggestions, setShowBookSuggestions] = useState(false)
+
+  const membersRef = useMemoFirebase(() => 
+    db ? query(collection(db, 'members'), where('type', '==', 'Teacher')) : null, [db])
+  const booksRef = useMemoFirebase(() => 
+    db ? query(collection(db, 'books'), orderBy('title', 'asc')) : null, [db])
+  const teacherTransQuery = useMemoFirebase(() => 
+    db ? query(collection(db, 'transactions'), where('memberType', '==', 'Teacher'), where('status', '==', 'active')) : null, [db])
+
+  const { data: teachers } = useCollection(membersRef)
+  const { data: books } = useCollection(booksRef)
+  const { data: transactions, isLoading: loadingTrans } = useCollection(teacherTransQuery)
+
+  const memberSuggestions = useMemo(() => {
+    if (!memberSearch || memberSearch.length < 1 || !teachers) return []
+    return teachers.filter(m => 
+      m.name?.toLowerCase().includes(memberSearch.toLowerCase()) || 
+      m.memberId?.toLowerCase().startsWith(memberSearch.toLowerCase())
+    ).slice(0, 5)
+  }, [memberSearch, teachers])
+
+  const bookSuggestions = useMemo(() => {
+    if (!bookSearch || bookSearch.length < 1 || !books) return []
+    return books.filter(b => 
+      b.title?.toLowerCase().includes(bookSearch.toLowerCase()) || 
+      b.code?.toLowerCase().startsWith(bookSearch.toLowerCase())
+    ).slice(0, 5)
+  }, [bookSearch, books])
+
+  const filteredTrans = useMemo(() => {
+    if (!transactions) return []
+    if (!search) return transactions
+    const s = search.toLowerCase()
+    return transactions.filter(t => 
+      t.memberName?.toLowerCase().includes(s) || 
+      t.bookTitle?.toLowerCase().includes(s)
+    )
+  }, [transactions, search])
+
+  const startScanner = async (mode: "member" | "book") => {
+    setScannerMode(mode)
+    setIsScannerOpen(true)
+    try {
+      const { Html5Qrcode } = await import("html5-qrcode")
+      setTimeout(async () => {
+        const sc = new Html5Qrcode("teacher-scanner")
+        scannerInstanceRef.current = sc
+        await sc.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, (text) => {
+          if (mode === "member") {
+            const m = teachers?.find(t => t.memberId?.toLowerCase() === text.toLowerCase())
+            if (m) { setSelectedMember(m); stopScanner(); }
+          } else {
+            const b = books?.find(bk => bk.code?.toLowerCase() === text.toLowerCase() || bk.isbn === text)
+            if (b) { setSelectedBook(b); stopScanner(); }
+          }
+        }, () => {})
+      }, 500)
+    } catch (e) { setIsScannerOpen(false) }
+  }
+
+  const stopScanner = async () => {
+    if (scannerInstanceRef.current?.isScanning) await scannerInstanceRef.current.stop()
+    setIsScannerOpen(false)
+  }
+
+  const handleProcessLoan = () => {
+    if (!db || !selectedMember || !selectedBook) return
+    setIsProcessing(true)
+
+    const newLoan = {
+      memberId: selectedMember.memberId,
+      memberName: selectedMember.name,
+      memberType: 'Teacher',
+      bookId: selectedBook.id,
+      bookTitle: selectedBook.title,
+      quantity: 1,
+      type: 'teacher_handbook',
+      status: 'active',
+      borrowDate: new Date().toISOString(),
+      createdAt: serverTimestamp()
+    }
+
+    addDoc(collection(db, 'transactions'), newLoan).then(() => {
+      const avail = Number(selectedBook.availableStock ?? 1)
+      updateDoc(doc(db, 'books', selectedBook.id), { availableStock: Math.max(0, avail - 1) })
+      toast({ title: "Buku Pegangan Dicatat", description: `${selectedBook.title} telah diserahkan ke ${selectedMember.name}.` })
+      setSelectedBook(null)
+      setSelectedMember(null)
+    }).finally(() => setIsProcessing(false))
+  }
+
+  const handleReturn = (trans: any) => {
+    if (!db) return
+    setIsProcessing(true)
+    const transRef = doc(db, 'transactions', trans.id)
+    updateDoc(transRef, { 
+      status: 'returned', 
+      returnDate: new Date().toISOString() 
+    }).then(async () => {
+      const bRef = doc(db, 'books', trans.bookId)
+      const bDoc = await getDoc(bRef)
+      if (bDoc.exists()) {
+        const avail = Number(bDoc.data().availableStock || 0)
+        updateDoc(bRef, { availableStock: avail + 1 })
+      }
+      toast({ title: "Buku Telah Kembali", description: "Buku pegangan telah dikembalikan ke perpustakaan." })
+    }).finally(() => setIsProcessing(false))
+  }
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
+            <GraduationCap className="h-7 w-7" /> Buku Pegangan Guru
+          </h1>
+          <p className="text-sm text-muted-foreground">Peminjaman jangka panjang untuk kebutuhan mengajar di kelas.</p>
+        </div>
+        <Badge variant="secondary" className="h-7 px-3 bg-blue-100 text-blue-700 border-none font-bold">
+          Status: Aktif Tahun Ajaran 2024/2025
+        </Badge>
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-1 border-none shadow-sm bg-blue-50/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+              <ArrowRightLeft className="h-4 w-4" /> Form Penyerahan
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Pilih Guru */}
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold text-muted-foreground uppercase">Cari Guru</Label>
+              <div className="relative">
+                <Input 
+                  placeholder="Nama atau NIP Guru..." 
+                  className="bg-white"
+                  value={memberSearch}
+                  onChange={e => { setMemberSearch(e.target.value); setShowMemberSuggestions(true); }}
+                />
+                <Button 
+                  size="icon" 
+                  variant="ghost" 
+                  className="absolute right-1 top-1/2 -translate-y-1/2"
+                  onClick={() => startScanner("member")}
+                >
+                  <ScanBarcode className="h-4 w-4" />
+                </Button>
+                {showMemberSuggestions && memberSuggestions.length > 0 && (
+                  <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border rounded-lg shadow-xl overflow-hidden">
+                    {memberSuggestions.map(m => (
+                      <div key={m.id} className="p-3 hover:bg-slate-50 cursor-pointer text-sm border-b last:border-0" onClick={() => { setSelectedMember(m); setMemberSearch(""); setShowMemberSuggestions(false); }}>
+                        <div className="font-bold">{m.name}</div>
+                        <div className="text-[10px] text-muted-foreground">{m.memberId}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {selectedMember && (
+                <div className="p-3 bg-white rounded-lg border flex justify-between items-center animate-in slide-in-from-left-2">
+                  <div className="text-xs font-bold text-primary">{selectedMember.name}</div>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedMember(null)}><X className="h-3 w-3" /></Button>
+                </div>
+              )}
+            </div>
+
+            {/* Pilih Buku */}
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold text-muted-foreground uppercase">Cari Buku Pegangan</Label>
+              <div className="relative">
+                <Input 
+                  placeholder="Judul atau Kode Buku..." 
+                  className="bg-white"
+                  value={bookSearch}
+                  onChange={e => { setBookSearch(e.target.value); setShowBookSuggestions(true); }}
+                />
+                <Button 
+                  size="icon" 
+                  variant="ghost" 
+                  className="absolute right-1 top-1/2 -translate-y-1/2"
+                  onClick={() => startScanner("book")}
+                >
+                  <ScanBarcode className="h-4 w-4" />
+                </Button>
+                {showBookSuggestions && bookSuggestions.length > 0 && (
+                  <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border rounded-lg shadow-xl overflow-hidden">
+                    {bookSuggestions.map(b => (
+                      <div key={b.id} className="p-3 hover:bg-slate-50 cursor-pointer text-sm border-b last:border-0" onClick={() => { setSelectedBook(b); setBookSearch(""); setShowBookSuggestions(false); }}>
+                        <div className="font-bold">{b.title}</div>
+                        <div className="text-[10px] text-muted-foreground">{b.code} ({b.availableStock} Tersedia)</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {selectedBook && (
+                <div className="p-3 bg-white rounded-lg border flex justify-between items-center animate-in slide-in-from-right-2">
+                  <div className="text-xs font-bold text-secondary-foreground">{selectedBook.title}</div>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedBook(null)}><X className="h-3 w-3" /></Button>
+                </div>
+              )}
+            </div>
+
+            <Button 
+              className="w-full h-12 font-black shadow-lg shadow-primary/20" 
+              disabled={!selectedMember || !selectedBook || isProcessing}
+              onClick={handleProcessLoan}
+            >
+              {isProcessing ? <Loader2 className="animate-spin" /> : "SERAHKAN BUKU"}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2 border-none shadow-sm overflow-hidden">
+          <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-sm font-bold uppercase tracking-wider">Daftar Pegangan Guru</CardTitle>
+              <CardDescription className="text-xs">Buku yang saat ini dipegang oleh bapak/ibu guru.</CardDescription>
+            </div>
+            <div className="relative w-48">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+              <Input placeholder="Cari..." className="pl-7 h-8 text-xs bg-muted/50 border-none" value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="max-h-[600px] overflow-y-auto">
+              <Table>
+                <TableHeader className="bg-slate-50/50 sticky top-0 z-10">
+                  <TableRow>
+                    <TableHead className="w-12 text-center">No.</TableHead>
+                    <TableHead>Guru / Peminjam</TableHead>
+                    <TableHead>Judul Buku</TableHead>
+                    <TableHead>Tgl. Serah</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loadingTrans ? (
+                    <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+                  ) : filteredTrans.length === 0 ? (
+                    <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground italic">Belum ada buku pegangan yang tercatat.</TableCell></TableRow>
+                  ) : filteredTrans.map((t, index) => (
+                    <TableRow key={t.id}>
+                      <TableCell className="text-center text-xs text-muted-foreground">{index + 1}</TableCell>
+                      <TableCell>
+                        <div className="font-bold text-xs">{t.memberName}</div>
+                        <div className="text-[10px] text-muted-foreground">{t.memberId}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium text-xs leading-tight">{t.bookTitle}</div>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {t.borrowDate ? format(new Date(t.borrowDate), 'dd/MM/yyyy') : '-'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-8 text-[10px] font-bold gap-1"
+                          onClick={() => handleReturn(t)}
+                        >
+                          <History className="h-3 w-3" /> Kembali
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
+        <DialogContent className="p-0 border-none bg-black max-w-xl h-[400px] overflow-hidden">
+          <div id="teacher-scanner" className="w-full h-full"></div>
+          <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}

@@ -109,7 +109,7 @@ export default function TransactionsPage() {
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings, isLoading: loadingSettings } = useDoc(settingsRef)
 
-  const membersRef = useMemoFirebase(() => db ? query(collection(db, 'members'), orderBy('name', 'asc')) : null, [db])
+  const membersRef = useMemoFirebase(() => db ? query(collection(db, 'members'), where('type', '==', 'Student'), orderBy('name', 'asc')) : null, [db])
   const booksRef = useMemoFirebase(() => db ? query(collection(db, 'books'), orderBy('title', 'asc')) : null, [db])
 
   const { data: members } = useCollection(membersRef)
@@ -117,7 +117,7 @@ export default function TransactionsPage() {
 
   const activeTransQuery = useMemoFirebase(() => {
     if (!db || !isStaff) return null;
-    return query(collection(db, 'transactions'), where('status', '==', 'active'));
+    return query(collection(db, 'transactions'), where('status', '==', 'active'), where('memberType', '==', 'Student'));
   }, [db, isStaff])
 
   const { data: activeTrans, isLoading: loadingActive } = useCollection(activeTransQuery)
@@ -206,9 +206,7 @@ export default function TransactionsPage() {
     const dynamicDueDate = addDays(borrowDate, loanDays);
     const diffDays = differenceInDays(today, dynamicDueDate);
     
-    // Buku Pegangan Guru tidak dikenakan denda keterlambatan
-    const isTeacher = trans.memberType === 'Teacher';
-    setLateDays(isTeacher ? 0 : (diffDays > 0 ? diffDays : 0));
+    setLateDays(diffDays > 0 ? diffDays : 0);
     setPendingReturnTrans(trans);
     
     const totalQty = Number(trans.quantity || 1);
@@ -368,8 +366,8 @@ export default function TransactionsPage() {
     <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-primary flex items-center gap-2"><ArrowRightLeft className="h-6 w-6" /> Sirkulasi Buku</h1>
-          <p className="text-sm text-muted-foreground">Proses peminjaman dan pengembalian koleksi perpustakaan.</p>
+          <h1 className="text-2xl font-bold text-primary flex items-center gap-2"><ArrowRightLeft className="h-6 w-6" /> Sirkulasi Siswa</h1>
+          <p className="text-sm text-muted-foreground">Peminjaman dan pengembalian harian untuk siswa.</p>
         </div>
         <div className="text-right flex flex-col items-end gap-1">
           <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold gap-2 py-1.5 px-3">
@@ -390,20 +388,20 @@ export default function TransactionsPage() {
             <Card className="bg-primary/5 border-primary/20 overflow-hidden">
               <CardContent className="pt-8 pb-8 text-center space-y-4">
                 <Button size="lg" className="h-16 px-12 gap-3 shadow-xl hover:shadow-2xl transition-all" onClick={startScanner}><ScanBarcode className="h-6 w-6" /> Buka Smart Scan</Button>
-                <div className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Arahkan kamera ke QR Code Anggota atau Buku</div>
+                <div className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Scan QR Siswa atau Buku</div>
               </CardContent>
             </Card>
 
             <div className="grid md:grid-cols-2 gap-6">
               <Card className="border-none shadow-sm relative">
                 <CardHeader className="bg-slate-50/50 pb-4 border-b">
-                  <CardTitle className="text-sm flex items-center gap-2 text-primary uppercase tracking-wider font-bold"><User className="h-4 w-4" /> Data Peminjam</CardTitle>
+                  <CardTitle className="text-sm flex items-center gap-2 text-primary uppercase tracking-wider font-bold"><User className="h-4 w-4" /> Data Siswa</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6 space-y-4">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
-                      placeholder="Ketik Nama atau ID Anggota..." 
+                      placeholder="Cari Nama atau NIS..." 
                       className="pl-10 h-12" 
                       value={memberSearch} 
                       onChange={e => {
@@ -440,13 +438,6 @@ export default function TransactionsPage() {
                         <div className="flex-1">
                           <div className="font-bold text-primary text-lg">{selectedMember.name}</div>
                           <div className="text-xs font-mono text-muted-foreground">{selectedMember.memberId} / {selectedMember.classOrSubject}</div>
-                          {selectedMember.type === 'Teacher' ? (
-                            <Badge variant="default" className="mt-1 bg-blue-600 text-[10px] h-5 gap-1 shadow-sm">
-                              <GraduationCap className="h-3 w-3" /> BUKU PEGANGAN GURU
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="mt-1 text-[8px] h-4">SISWA</Badge>
-                          )}
                         </div>
                         <Button variant="ghost" size="icon" onClick={() => setSelectedMember(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
                       </div>
@@ -461,28 +452,14 @@ export default function TransactionsPage() {
                 </CardHeader>
                 <CardContent className="pt-6 space-y-4">
                   <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
-                    <Button 
-                      variant={loanType === "personal" ? "default" : "ghost"} 
-                      size="sm" 
-                      className="gap-2 h-9" 
-                      onClick={() => setLoanType("personal")}
-                    >
-                      <Home className="h-3 w-3" /> Pribadi
-                    </Button>
-                    <Button 
-                      variant={loanType === "class" ? "default" : "ghost"} 
-                      size="sm" 
-                      className="gap-2 h-9" 
-                      onClick={() => setLoanType("class")}
-                    >
-                      <UsersIcon className="h-3 w-3" /> Kolektif Kelas
-                    </Button>
+                    <Button variant={loanType === "personal" ? "default" : "ghost"} size="sm" className="gap-2 h-9" onClick={() => setLoanType("personal")}><Home className="h-3 w-3" /> Pribadi</Button>
+                    <Button variant={loanType === "class" ? "default" : "ghost"} size="sm" className="gap-2 h-9" onClick={() => setLoanType("class")}><UsersIcon className="h-3 w-3" /> Kolektif</Button>
                   </div>
 
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
-                      placeholder="Ketik Judul atau Kode Buku..." 
+                      placeholder="Judul atau Kode Buku..." 
                       className="pl-10 h-12" 
                       value={bookSearch} 
                       onChange={e => {
@@ -588,8 +565,8 @@ export default function TransactionsPage() {
                 <CardHeader className="pb-3 border-b">
                   <div className="flex justify-between items-center">
                     <div>
-                      <CardTitle className="text-sm font-bold uppercase tracking-wider">Peminjaman Aktif</CardTitle>
-                      <CardDescription className="text-xs">Daftar sirkulasi buku yang sedang dipinjam.</CardDescription>
+                      <CardTitle className="text-sm font-bold uppercase tracking-wider">Peminjaman Siswa Aktif</CardTitle>
+                      <CardDescription className="text-xs">Daftar buku yang sedang dipinjam oleh siswa.</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
@@ -600,7 +577,7 @@ export default function TransactionsPage() {
                         <TableRow>
                           <TableHead className="w-12 text-center">No.</TableHead>
                           <TableHead>Peminjam & Buku</TableHead>
-                          <TableHead className="w-32">Status/Kat.</TableHead>
+                          <TableHead className="w-24 text-center">Tipe</TableHead>
                           <TableHead className="w-32">Jatuh Tempo</TableHead>
                           <TableHead className="w-24 text-right">Aksi</TableHead>
                         </TableRow>
@@ -609,38 +586,27 @@ export default function TransactionsPage() {
                         {loadingActive ? (
                           <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
                         ) : filteredActiveTrans.length === 0 ? (
-                          <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground italic">Tidak ada peminjaman aktif.</TableCell></TableRow>
+                          <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground italic">Tidak ada peminjaman siswa aktif.</TableCell></TableRow>
                         ) : filteredActiveTrans.map((t, index) => {
                           const borrowDate = t.borrowDate ? parseISO(t.borrowDate) : new Date();
                           const effectiveDueDate = addDays(borrowDate, loanDays);
                           const isOverdue = isAfter(new Date(), effectiveDueDate);
-                          const isTeacher = t.memberType === 'Teacher';
                           
                           return (
-                            <TableRow key={t.id} className={cn(isOverdue && !isTeacher && "bg-red-50/50")}>
+                            <TableRow key={t.id} className={cn(isOverdue && "bg-red-50/50")}>
                               <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
                               <TableCell>
                                 <div className="space-y-1">
-                                  <div className="font-bold text-sm leading-tight">
-                                    {t.bookTitle} {t.quantity > 1 && `(${t.quantity} unit)`}
-                                  </div>
+                                  <div className="font-bold text-sm leading-tight">{t.bookTitle} {t.quantity > 1 && `(${t.quantity} unit)`}</div>
                                   <div className="text-xs font-semibold">{t.memberName} <span className="text-muted-foreground font-normal">/ {t.memberId}</span></div>
                                 </div>
                               </TableCell>
-                              <TableCell>
-                                <div className="flex flex-col gap-1">
-                                  {isTeacher ? (
-                                    <Badge variant="default" className="text-[8px] h-4 w-fit bg-blue-600 font-bold uppercase">PEGANGAN GURU</Badge>
-                                  ) : (
-                                    <Badge variant="outline" className="text-[8px] h-4 w-fit">
-                                      {t.loanType === 'class' ? "KOLEKTIF" : "PRIBADI"}
-                                    </Badge>
-                                  )}
-                                </div>
+                              <TableCell className="text-center">
+                                <Badge variant="outline" className="text-[8px] h-4 uppercase font-bold">{t.loanType === 'class' ? "Kolektif" : "Pribadi"}</Badge>
                               </TableCell>
                               <TableCell>
-                                <div className={cn("text-xs font-bold", isOverdue && !isTeacher ? "text-destructive" : "text-muted-foreground")}>
-                                  {isTeacher ? "-" : format(effectiveDueDate, 'dd/MM/yyyy')}
+                                <div className={cn("text-xs font-bold", isOverdue ? "text-destructive" : "text-muted-foreground")}>
+                                  {format(effectiveDueDate, 'dd/MM/yyyy')}
                                 </div>
                               </TableCell>
                               <TableCell className="text-right">
@@ -673,51 +639,26 @@ export default function TransactionsPage() {
             <div className="space-y-6 py-4">
               <div className="p-4 bg-slate-50 rounded-xl border space-y-3">
                 <div className="flex-1">
-                  <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Informasi Buku</div>
-                  <div className="text-sm font-black">
-                    {pendingReturnTrans.bookTitle} ({pendingReturnTrans.quantity} unit)
-                  </div>
-                </div>
-                <div className="flex-1 pt-2 border-t">
-                  <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Peminjam</div>
-                  <div className="text-sm font-bold">{pendingReturnTrans.memberName}</div>
-                  <div className="text-[10px] text-muted-foreground">ID: {pendingReturnTrans.memberId}</div>
-                  {pendingReturnTrans.memberType === 'Teacher' && (
-                    <Badge variant="default" className="mt-1 bg-blue-600 border-none text-[8px] font-bold">BUKU PEGANGAN GURU</Badge>
-                  )}
+                  <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Buku & Peminjam</div>
+                  <div className="text-sm font-black">{pendingReturnTrans.bookTitle} ({pendingReturnTrans.quantity} unit)</div>
+                  <div className="text-xs font-bold text-primary mt-1">{pendingReturnTrans.memberName} / {pendingReturnTrans.memberId}</div>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Input Rincian Kondisi</div>
-                
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Rincian Kondisi</div>
                 <div className="grid gap-3">
                   <div className="flex items-center justify-between p-3 rounded-xl border bg-green-50/50">
                     <Label className="font-bold text-sm">Kembali Normal</Label>
-                    <Input 
-                      type="number" 
-                      className="w-16 h-8 text-center font-bold"
-                      value={returnNormalQty}
-                      onChange={(e) => setReturnNormalQty(Number(e.target.value))}
-                    />
+                    <Input type="number" className="w-16 h-8 text-center font-bold" value={returnNormalQty} onChange={(e) => setReturnNormalQty(Number(e.target.value))} />
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-xl border bg-orange-50/50">
                     <Label className="font-bold text-sm">Rusak</Label>
-                    <Input 
-                      type="number" 
-                      className="w-16 h-8 text-center font-bold"
-                      value={returnDamagedQty}
-                      onChange={(e) => setReturnDamagedQty(Number(e.target.value))}
-                    />
+                    <Input type="number" className="w-16 h-8 text-center font-bold" value={returnDamagedQty} onChange={(e) => setReturnDamagedQty(Number(e.target.value))} />
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-xl border bg-red-50/50">
                     <Label className="font-bold text-sm">Hilang</Label>
-                    <Input 
-                      type="number" 
-                      className="w-16 h-8 text-center font-bold"
-                      value={returnLostQty}
-                      onChange={(e) => setReturnLostQty(Number(e.target.value))}
-                    />
+                    <Input type="number" className="w-16 h-8 text-center font-bold" value={returnLostQty} onChange={(e) => setReturnLostQty(Number(e.target.value))} />
                   </div>
                 </div>
               </div>
@@ -731,7 +672,7 @@ export default function TransactionsPage() {
                       <div className="text-lg font-black text-orange-700">Rp {calculatedFine.toLocaleString('id-ID')}</div>
                     </div>
                   </div>
-                  <Badge variant="outline" className="border-orange-300 text-orange-700 text-[8px]">Tagihan Otomatis</Badge>
+                  <Badge variant="outline" className="border-orange-300 text-orange-700 text-[8px]">Tagihan</Badge>
                 </div>
               )}
             </div>
@@ -748,9 +689,6 @@ export default function TransactionsPage() {
 
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
         <DialogContent className="p-0 border-none bg-black max-w-xl h-[400px] overflow-hidden">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Pemindai QR Code</DialogTitle>
-          </DialogHeader>
           <div id="smart-scanner" className="w-full h-full"></div>
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>
         </DialogContent>

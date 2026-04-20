@@ -251,7 +251,7 @@ export default function MembersPage() {
               <TableHead className="w-12 text-center">No.</TableHead>
               <TableHead>Identitas</TableHead>
               <TableHead>Tipe</TableHead>
-              <TableHead>Kelas</TableHead>
+              <TableHead>Kelas / Unit</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>

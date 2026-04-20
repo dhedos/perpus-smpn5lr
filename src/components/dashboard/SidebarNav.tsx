@@ -1,4 +1,3 @@
-
 "use client"
 
 import Link from "next/link"
@@ -14,7 +13,8 @@ import {
   LogOut,
   UserCog,
   ClipboardCheck,
-  Library
+  Library,
+  GraduationCap
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -36,6 +36,7 @@ const menuItems = [
   { icon: LayoutDashboard, label: "Beranda", href: "/dashboard" },
   { icon: BookOpen, label: "Koleksi Buku", href: "/dashboard/books" },
   { icon: Users, label: "Daftar Anggota", href: "/dashboard/members" },
+  { icon: GraduationCap, label: "Buku Pegangan Guru", href: "/dashboard/teacher-loans" },
   { icon: ArrowLeftRight, label: "Pinjam & Kembali", href: "/dashboard/transactions" },
   { icon: BarChart3, label: "Laporan", href: "/dashboard/reports" },
 ]
