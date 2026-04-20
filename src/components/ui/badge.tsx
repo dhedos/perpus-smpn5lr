@@ -28,6 +28,7 @@ export interface BadgeProps
     VariantProps<typeof badgeVariants> {}
 
 function Badge({ className, variant, ...props }: BadgeProps) {
+  // Menggunakan span (bukan div) untuk menghindari hydration error saat berada di dalam tag p atau teks
   return (
     <span className={cn(badgeVariants({ variant }), className)} {...props} />
   )

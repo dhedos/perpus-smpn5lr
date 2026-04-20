@@ -28,7 +28,8 @@ import {
   AlertTriangle,
   Home,
   Users as UsersIcon,
-  Briefcase
+  Briefcase,
+  GraduationCap
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -205,7 +206,9 @@ export default function TransactionsPage() {
     const dynamicDueDate = addDays(borrowDate, loanDays);
     const diffDays = differenceInDays(today, dynamicDueDate);
     
-    setLateDays(diffDays > 0 ? diffDays : 0);
+    // Buku Pegangan Guru tidak dikenakan denda keterlambatan
+    const isTeacher = trans.memberType === 'Teacher';
+    setLateDays(isTeacher ? 0 : (diffDays > 0 ? diffDays : 0));
     setPendingReturnTrans(trans);
     
     const totalQty = Number(trans.quantity || 1);
@@ -437,7 +440,13 @@ export default function TransactionsPage() {
                         <div className="flex-1">
                           <div className="font-bold text-primary text-lg">{selectedMember.name}</div>
                           <div className="text-xs font-mono text-muted-foreground">{selectedMember.memberId} / {selectedMember.classOrSubject}</div>
-                          <Badge variant="outline" className="mt-1 text-[8px] h-4">{selectedMember.type === 'Teacher' ? 'GURU' : 'SISWA'}</Badge>
+                          {selectedMember.type === 'Teacher' ? (
+                            <Badge variant="default" className="mt-1 bg-blue-600 text-[10px] h-5 gap-1 shadow-sm">
+                              <GraduationCap className="h-3 w-3" /> BUKU PEGANGAN GURU
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="mt-1 text-[8px] h-4">SISWA</Badge>
+                          )}
                         </div>
                         <Button variant="ghost" size="icon" onClick={() => setSelectedMember(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
                       </div>
@@ -620,9 +629,13 @@ export default function TransactionsPage() {
                               </TableCell>
                               <TableCell>
                                 <div className="flex flex-col gap-1">
-                                  <Badge variant={isTeacher ? "default" : "outline"} className="text-[8px] h-4 w-fit">
-                                    {isTeacher ? "PEGANGAN GURU" : (t.loanType === 'class' ? "Kolektif" : "Pribadi")}
-                                  </Badge>
+                                  {isTeacher ? (
+                                    <Badge variant="default" className="text-[8px] h-4 w-fit bg-blue-600 font-bold uppercase">PEGANGAN GURU</Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-[8px] h-4 w-fit">
+                                      {t.loanType === 'class' ? "KOLEKTIF" : "PRIBADI"}
+                                    </Badge>
+                                  )}
                                 </div>
                               </TableCell>
                               <TableCell>
@@ -670,7 +683,7 @@ export default function TransactionsPage() {
                   <div className="text-sm font-bold">{pendingReturnTrans.memberName}</div>
                   <div className="text-[10px] text-muted-foreground">ID: {pendingReturnTrans.memberId}</div>
                   {pendingReturnTrans.memberType === 'Teacher' && (
-                    <Badge variant="secondary" className="mt-1 bg-primary/10 text-primary border-none text-[8px]">BUKU PEGANGAN GURU</Badge>
+                    <Badge variant="default" className="mt-1 bg-blue-600 border-none text-[8px] font-bold">BUKU PEGANGAN GURU</Badge>
                   )}
                 </div>
               </div>
