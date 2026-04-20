@@ -93,18 +93,13 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex items-center gap-4">
-        <div className="h-14 w-14 flex items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <Library className="h-8 w-8" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-black font-headline tracking-tight text-primary">
-            PUSTAKA NUSANTARA
-          </h1>
-          <p className="text-xs font-bold text-secondary uppercase tracking-widest leading-none">
-            SMPN 5 LANGKE REMBONG
-          </p>
-        </div>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold tracking-tight text-primary">
+          Selamat Datang, {user?.displayNameCustom || "Petugas"}
+        </h1>
+        <p className="text-muted-foreground text-sm">
+          Pantau aktivitas sirkulasi dan koleksi perpustakaan hari ini.
+        </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">

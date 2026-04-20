@@ -51,7 +51,7 @@ export function SidebarNav() {
 
   return (
     <div className="flex h-full flex-col bg-card text-card-foreground border-r">
-      {/* Header section tanpa border-b */}
+      {/* Header section tanpa garis pembatas bawah */}
       <div className="flex h-20 items-center px-4 shrink-0 gap-3">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <Library className="h-8 w-8" />
