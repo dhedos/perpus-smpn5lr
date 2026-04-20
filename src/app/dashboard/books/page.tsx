@@ -119,49 +119,53 @@ export default function BooksPage() {
     const file = e.target.files?.[0]
     if (!file || !db || !booksCollectionRef) return
 
-    const { read, utils } = await import("xlsx")
+    try {
+      const { read, utils } = await import("xlsx")
+      const reader = new FileReader()
+      reader.onload = async (evt) => {
+        try {
+          const data = new Uint8Array(evt.target?.result as ArrayBuffer)
+          const workbook = read(data, { type: "array" })
+          const sheetName = workbook.SheetNames[0]
+          const worksheet = workbook.Sheets[sheetName]
+          const json: any[] = utils.sheet_to_json(worksheet)
 
-    const reader = new FileReader()
-    reader.onload = async (evt) => {
-      try {
-        const data = new Uint8Array(evt.target?.result as ArrayBuffer)
-        const workbook = read(data, { type: "array" })
-        const sheetName = workbook.SheetNames[0]
-        const worksheet = workbook.Sheets[sheetName]
-        const json: any[] = utils.sheet_to_json(worksheet)
-
-        if (json.length === 0) {
-          toast({ title: "Gagal", description: "File Excel kosong.", variant: "destructive" })
-          return
-        }
-
-        toast({ title: "Mengimpor...", description: `Sedang mengimpor ${json.length} buku.` })
-
-        for (const row of json) {
-          const bookData = {
-            code: String(row.code || row.id || ""),
-            title: String(row.title || row.Judul || ""),
-            author: String(row.author || row.Pengarang || ""),
-            isbn: String(row.isbn || row.ISBN || ""),
-            category: String(row.category || row.Kategori || ""),
-            rackLocation: String(row.rackLocation || row.Rak || ""),
-            totalStock: Number(row.totalStock || row.Stok || 1),
-            availableStock: Number(row.availableStock || row.Tersedia || 1),
-            description: String(row.description || ""),
-            createdAt: new Date().toISOString()
+          if (json.length === 0) {
+            toast({ title: "Gagal", description: "File Excel kosong.", variant: "destructive" })
+            return
           }
 
-          if (bookData.title && bookData.code) {
-            addDoc(booksCollectionRef, bookData).catch(() => {})
-          }
-        }
+          toast({ title: "Mengimpor...", description: `Sedang mengimpor ${json.length} buku.` })
 
-        toast({ title: "Berhasil!", description: `${json.length} buku telah diproses.` })
-      } catch (error) {
-        toast({ title: "Gagal", description: "Gagal membaca file Excel.", variant: "destructive" })
+          for (const row of json) {
+            const bookData = {
+              code: String(row.code || row.id || ""),
+              title: String(row.title || row.Judul || ""),
+              author: String(row.author || row.Pengarang || ""),
+              isbn: String(row.isbn || row.ISBN || ""),
+              category: String(row.category || row.Kategori || ""),
+              rackLocation: String(row.rackLocation || row.Rak || ""),
+              totalStock: Number(row.totalStock || row.Stok || 1),
+              availableStock: Number(row.availableStock || row.Tersedia || 1),
+              description: String(row.description || ""),
+              createdAt: new Date().toISOString()
+            }
+
+            if (bookData.title && bookData.code) {
+              addDoc(booksCollectionRef, bookData).catch(() => {})
+            }
+          }
+
+          toast({ title: "Berhasil!", description: `${json.length} buku telah diproses.` })
+        } catch (error) {
+          toast({ title: "Gagal", description: "Gagal membaca file Excel.", variant: "destructive" })
+        }
       }
+      reader.readAsArrayBuffer(file)
+    } catch (e) {
+      toast({ title: "Gagal", description: "Gagal memuat pustaka Excel.", variant: "destructive" })
     }
-    reader.readAsArrayBuffer(file)
+    
     if (fileInputRef.current) fileInputRef.current.value = ""
   }
 
@@ -174,40 +178,43 @@ export default function BooksPage() {
       try { await scannerInstanceRef.current.stop() } catch (e) {}
     }
 
-    const { Html5Qrcode } = await import("html5-qrcode")
+    try {
+      const { Html5Qrcode } = await import("html5-qrcode")
+      setTimeout(async () => {
+        const container = document.getElementById("scanner-container")
+        if (!container) return
 
-    setTimeout(async () => {
-      const container = document.getElementById("scanner-container")
-      if (!container) return
-
-      try {
-        const scanner = new Html5Qrcode("scanner-container")
-        scannerInstanceRef.current = scanner
-        
-        await scanner.start(
-          { facingMode: "environment" },
-          { 
-            fps: 15, 
-            qrbox: { width: 280, height: 280 },
-            aspectRatio: 1.0
-          },
-          (decodedText) => {
-            if (target === "search") {
-              setSearch(decodedText)
-            } else {
-              setFormData(prev => ({ ...prev, isbn: decodedText }))
-            }
-            stopScanner()
-            toast({ title: "Terdeteksi!", description: decodedText })
-          },
-          () => {}
-        )
-        setHasCameraPermission(true)
-      } catch (err) {
-        console.error("Scanner error:", err)
-        setHasCameraPermission(false)
-      }
-    }, 500)
+        try {
+          const scanner = new Html5Qrcode("scanner-container")
+          scannerInstanceRef.current = scanner
+          
+          await scanner.start(
+            { facingMode: "environment" },
+            { 
+              fps: 15, 
+              qrbox: { width: 280, height: 280 },
+              aspectRatio: 1.0
+            },
+            (decodedText) => {
+              if (target === "search") {
+                setSearch(decodedText)
+              } else {
+                setFormData(prev => ({ ...prev, isbn: decodedText }))
+              }
+              stopScanner()
+              toast({ title: "Terdeteksi!", description: decodedText })
+            },
+            () => {}
+          )
+          setHasCameraPermission(true)
+        } catch (err) {
+          console.error("Scanner error:", err)
+          setHasCameraPermission(false)
+        }
+      }, 500)
+    } catch (e) {
+      toast({ title: "Gagal", description: "Gagal memuat kamera.", variant: "destructive" })
+    }
   }
 
   const stopScanner = async () => {
@@ -326,11 +333,11 @@ export default function BooksPage() {
       totalStock: Number(book.totalStock || 1), availableStock: Number(book.availableStock || 1),
       description: book.description || ""
     })
-    setIsEditOpen(true)
+    // Use timeout to prevent Radix UI dropdown/dialog focus conflict
+    setTimeout(() => setIsEditOpen(true), 100)
   }
 
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
-    // HID Scanner typically sends Enter after scanning
     if (e.key === "Enter") {
       toast({ title: "Scan Diterima", description: `Mencari: ${search}` })
     }
@@ -491,6 +498,60 @@ export default function BooksPage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Ubah Data Buku</DialogTitle>
+            <DialogDescription>Perbarui informasi katalog buku.</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-code">Kode Buku</Label>
+              <Input id="edit-code" value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Judul Buku</Label>
+              <Input id="edit-title" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-author">Pengarang</Label>
+              <Input id="edit-author" value={formData.author} onChange={(e) => setFormData({ ...formData, author: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-isbn">ISBN</Label>
+              <Input id="edit-isbn" value={formData.isbn} onChange={(e) => setFormData({ ...formData, isbn: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-category">Kategori</Label>
+              <Input id="edit-category" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-rack">Lokasi Rak</Label>
+              <Input id="edit-rack" value={formData.rackLocation} onChange={(e) => setFormData({ ...formData, rackLocation: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-totalStock">Total Stok</Label>
+              <Input id="edit-totalStock" type="number" value={formData.totalStock} onChange={(e) => setFormData({ ...formData, totalStock: Number(e.target.value) })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-availableStock">Stok Tersedia</Label>
+              <Input id="edit-availableStock" type="number" value={formData.availableStock} onChange={(e) => setFormData({ ...formData, availableStock: Number(e.target.value) })} />
+            </div>
+            <div className="md:col-span-2 space-y-2">
+              <Label htmlFor="edit-description">Deskripsi</Label>
+              <Textarea id="edit-description" className="min-h-[120px]" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Batal</Button>
+            <Button onClick={handleUpdateBook} disabled={isSaving}>
+              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Perbarui Buku
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Card className="border-none shadow-sm overflow-x-auto">
         <Table>
           <TableHeader>
@@ -522,7 +583,7 @@ export default function BooksPage() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => { setSelectedBookQr(book); setIsQrOpen(true); }}><QrCode className="h-4 w-4 mr-2" /> QR Code</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => { setSelectedBookQr(book); setTimeout(() => setIsQrOpen(true), 100); }}><QrCode className="h-4 w-4 mr-2" /> QR Code</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openEditDialog(book)}><Edit className="h-4 w-4 mr-2" /> Ubah</DropdownMenuItem>
                       <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteBook(book.id)}><Trash2 className="h-4 w-4 mr-2" /> Hapus</DropdownMenuItem>
                     </DropdownMenuContent>

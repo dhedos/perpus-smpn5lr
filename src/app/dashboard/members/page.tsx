@@ -209,7 +209,8 @@ export default function MembersPage() {
       phone: member.phone || "",
       joinDate: member.joinDate || new Date().toISOString().split('T')[0]
     })
-    setIsEditOpen(true)
+    // Use timeout to prevent Radix UI dropdown/dialog focus conflict
+    setTimeout(() => setIsEditOpen(true), 100)
   }
 
   return (
@@ -357,7 +358,7 @@ export default function MembersPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsOpen(false)}>Batal</Button>
+              <Button variant="outline" onClick={() => setIsEditOpen(false)}>Batal</Button>
               <Button onClick={handleUpdateMember} disabled={isSaving}>
                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Perbarui Anggota
@@ -459,7 +460,7 @@ export default function MembersPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem className="gap-2" onClick={() => { setSelectedMemberQr(member); setIsQrOpen(true); }}>
+                      <DropdownMenuItem className="gap-2" onClick={() => { setSelectedMemberQr(member); setTimeout(() => setIsQrOpen(true), 100); }}>
                         <QrCode className="h-4 w-4" /> QR Code
                       </DropdownMenuItem>
                       <DropdownMenuItem className="gap-2" onClick={() => openEditDialog(member)}>
