@@ -12,7 +12,8 @@ import {
   Clock, 
   AlertCircle,
   Loader2,
-  Library
+  Library,
+  TrendingUp
 } from "lucide-react"
 import { 
   BarChart, 
@@ -30,18 +31,19 @@ export default function DashboardPage() {
   const { user } = useUser()
   const db = useFirestore()
 
-  const booksRef = useMemoFirebase(() => db ? collection(db, 'books') : null, [db])
-  const membersRef = useMemoFirebase(() => db ? collection(db, 'members') : null, [db])
-  const transRef = useMemoFirebase(() => db ? collection(db, 'transactions') : null, [db])
-  
+  // Optimasi: Membatasi pembacaan data di dashboard untuk menghemat kuota Reads
+  const booksRef = useMemoFirebase(() => db ? query(collection(db, 'books'), limit(1)) : null, [db])
+  const membersRef = useMemoFirebase(() => db ? query(collection(db, 'members'), limit(1)) : null, [db])
   const activeTransQuery = useMemoFirebase(() => 
-    db ? query(collection(db, 'transactions'), where('status', '==', 'active')) : null, 
+    db ? query(collection(db, 'transactions'), where('status', '==', 'active'), limit(10)) : null, 
   [db])
 
   const latestTransQuery = useMemoFirebase(() => 
     db ? query(collection(db, 'transactions'), orderBy('createdAt', 'desc'), limit(5)) : null, 
   [db])
 
+  // Catatan: Dalam aplikasi skala besar, total jumlah (count) sebaiknya disimpan dalam dokumen counter terpisah
+  // Untuk MVP ini, kita menggunakan snapshot koleksi yang dibatasi limit untuk dashboard.
   const { data: books } = useCollection(booksRef)
   const { data: members } = useCollection(membersRef)
   const { data: activeTransactions } = useCollection(activeTransQuery)
@@ -49,16 +51,16 @@ export default function DashboardPage() {
 
   const stats = [
     { 
-      title: "Total Buku", 
-      value: books?.length || 0, 
-      desc: "Koleksi terdaftar", 
+      title: "Total Jenis Buku", 
+      value: books?.length ? "Aktif" : "0", 
+      desc: "Lihat menu Koleksi", 
       icon: BookOpen, 
       color: "text-primary",
       bgColor: "bg-primary/10"
     },
     { 
-      title: "Anggota Aktif", 
-      value: members?.length || 0, 
+      title: "Anggota", 
+      value: members?.length ? "Terdaftar" : "0", 
       desc: "Siswa & Guru", 
       icon: Users, 
       color: "text-secondary",
@@ -67,18 +69,18 @@ export default function DashboardPage() {
     { 
       title: "Peminjaman Aktif", 
       value: activeTransactions?.length || 0, 
-      desc: "Buku sedang dipinjam", 
+      desc: "Buku di tangan siswa", 
       icon: Clock, 
       color: "text-orange-500",
       bgColor: "bg-orange-100"
     },
     { 
-      title: "Denda (Simulasi)", 
-      value: "Rp 0", 
-      desc: "Total denda hari ini", 
-      icon: AlertCircle, 
-      color: "text-destructive",
-      bgColor: "bg-destructive/10"
+      title: "Status Sistem", 
+      value: "Hemat", 
+      desc: "Mode Kuota Aktif", 
+      icon: TrendingUp, 
+      color: "text-green-600",
+      bgColor: "bg-green-100"
     },
   ]
 
@@ -159,7 +161,7 @@ export default function DashboardPage() {
                 <div className="p-10 text-center"><Loader2 className="animate-spin mx-auto h-6 w-6 text-muted-foreground" /></div>
               ) : latestTransactions.length === 0 ? (
                 <div className="p-10 text-center text-sm text-muted-foreground">Belum ada transaksi.</div>
-              ) : latestTransactions.map((t, i) => (
+              ) : latestTransactions.map((t) => (
                 <div key={t.id} className="flex items-center justify-between px-6 py-4 hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className={t.type === 'return' ? "bg-green-100 text-green-600 p-2 rounded-full" : "bg-blue-100 text-blue-600 p-2 rounded-full"}>
