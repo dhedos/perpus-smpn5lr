@@ -21,7 +21,9 @@ import {
   Loader2, 
   Phone, 
   GraduationCap, 
-  School 
+  School,
+  QrCode,
+  Printer
 } from "lucide-react"
 import { 
   Dialog, 
@@ -49,6 +51,7 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
 import { useToast } from "@/hooks/use-toast"
+import { QRCodeSVG } from "qrcode.react"
 
 // Firebase imports
 import { 
@@ -68,6 +71,8 @@ export default function MembersPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
+  const [isQrOpen, setIsQrOpen] = useState(false)
+  const [selectedMemberQr, setSelectedMemberQr] = useState<any>(null)
   
   const [formData, setFormData] = useState({
     memberId: "",
@@ -80,7 +85,6 @@ export default function MembersPage() {
 
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
 
-  // Get members from Firestore
   const membersCollectionRef = useMemoFirebase(() => {
     if (!db) return null
     return collection(db, 'members')
@@ -88,7 +92,6 @@ export default function MembersPage() {
 
   const { data: members, loading } = useCollection(membersCollectionRef)
 
-  // Logic to find the next available ID (sequential, reusing gaps)
   const nextAvailableId = useMemo(() => {
     if (loading || !members) return ""
     const ids = members
@@ -107,7 +110,6 @@ export default function MembersPage() {
     return candidate.toString().padStart(4, '0')
   }, [members, loading])
 
-  // Update formData when nextAvailableId changes or dialog opens
   useEffect(() => {
     if (isOpen && nextAvailableId) {
       setFormData(prev => ({ ...prev, memberId: nextAvailableId }))
@@ -355,11 +357,35 @@ export default function MembersPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsEditOpen(false)}>Batal</Button>
+              <Button variant="outline" onClick={() => setIsOpen(false)}>Batal</Button>
               <Button onClick={handleUpdateMember} disabled={isSaving}>
                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Perbarui Anggota
               </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* QR Code Dialog */}
+        <Dialog open={isQrOpen} onOpenChange={setIsQrOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Kartu Digital Anggota</DialogTitle>
+              <DialogDescription>Gunakan QR ini untuk transaksi cepat.</DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col items-center justify-center p-6 space-y-4 bg-white rounded-xl">
+              <div id="member-qr" className="p-4 border-2 border-primary/20 rounded-xl">
+                {selectedMemberQr && <QRCodeSVG value={selectedMemberQr.memberId} size={200} level="H" includeMargin={true} />}
+              </div>
+              <div className="text-center">
+                <p className="font-bold text-lg">{selectedMemberQr?.name}</p>
+                <p className="font-mono text-primary font-bold">{selectedMemberQr?.memberId}</p>
+                <Badge variant="secondary" className="mt-1">{selectedMemberQr?.type === 'Teacher' ? 'GURU' : 'SISWA'}</Badge>
+              </div>
+            </div>
+            <DialogFooter className="grid grid-cols-2 gap-2">
+              <Button variant="outline" onClick={() => setIsQrOpen(false)}>Tutup</Button>
+              <Button onClick={() => window.print()} className="gap-2"><Printer className="h-4 w-4" /> Cetak</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -433,6 +459,9 @@ export default function MembersPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem className="gap-2" onClick={() => { setSelectedMemberQr(member); setIsQrOpen(true); }}>
+                        <QrCode className="h-4 w-4" /> QR Code
+                      </DropdownMenuItem>
                       <DropdownMenuItem className="gap-2" onClick={() => openEditDialog(member)}>
                         <Edit className="h-4 w-4" /> Ubah
                       </DropdownMenuItem>
