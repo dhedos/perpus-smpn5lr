@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useRef, useMemo } from "react"
@@ -112,7 +111,12 @@ export default function StockOpnamePage() {
         </CardContent></Card>
       </div>
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
-        <DialogContent className="sm:max-w-xl p-0 h-[100dvh] sm:h-auto border-none bg-black overflow-hidden"><div id="audit-scanner" className="w-full h-full bg-black"></div></DialogContent>
+        <DialogContent className="sm:max-w-xl p-0 h-[100dvh] sm:h-auto border-none bg-black overflow-hidden">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Pemindai Stok Opname</DialogTitle>
+          </DialogHeader>
+          <div id="audit-scanner" className="w-full h-full bg-black"></div>
+        </DialogContent>
       </Dialog>
     </div>
   )

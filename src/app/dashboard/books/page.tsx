@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo, useRef, useEffect } from "react"
@@ -284,7 +283,7 @@ export default function BooksPage() {
           <h1 className="text-2xl font-bold font-headline tracking-tight text-primary">Koleksi Buku</h1>
           <p className="text-muted-foreground text-sm">Manajemen katalog dan inventaris perpustakaan.</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex wrap gap-2">
           <Button variant="outline" size="sm" onClick={handlePrintAllQrs} className="hidden md:flex"><Printer className="h-4 w-4 mr-2" />Cetak Semua QR</Button>
           <Button variant="outline" size="sm" onClick={handleExportExcel}><FileDown className="h-4 w-4 mr-2" />Excel (Hemat Kuota)</Button>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -420,6 +419,9 @@ export default function BooksPage() {
 
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
         <DialogContent className="sm:max-w-2xl p-0 border-none bg-black h-[100dvh] sm:h-auto overflow-hidden">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Pemindai QR Code Buku</DialogTitle>
+          </DialogHeader>
           <div id="scanner-view" className="w-full h-full bg-black"></div>
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white" onClick={stopScanner}><X /></Button>
         </DialogContent>
