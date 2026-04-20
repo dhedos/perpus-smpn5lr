@@ -125,7 +125,7 @@ export default function BooksPage() {
         "Penerbit": book.publisher,
         "Tahun": book.publicationYear,
         "ISBN": book.isbn,
-        "Kategori": book.category,
+        "Jenis": book.category,
         "Rak": book.rackLocation,
         "Total Stok": book.totalStock,
         "Tersedia": book.availableStock
@@ -175,7 +175,7 @@ export default function BooksPage() {
               publisher: String(row.publisher || row.Penerbit || ""),
               publicationYear: Number(row.publicationYear || row.Tahun || new Date().getFullYear()),
               isbn: String(row.isbn || row.ISBN || ""),
-              category: String(row.category || row.Kategori || ""),
+              category: String(row.category || row.Jenis || row.Kategori || ""),
               rackLocation: String(row.rackLocation || row.Rak || ""),
               totalStock: Number(row.totalStock || row.Stok || 1),
               availableStock: Number(row.availableStock || row.Tersedia || 1),
@@ -513,7 +513,7 @@ export default function BooksPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="category">Kategori</Label>
+                  <Label htmlFor="category">Jenis Buku</Label>
                   <Input id="category" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} />
                 </div>
                 <div className="space-y-2">
@@ -686,7 +686,7 @@ export default function BooksPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-category">Kategori</Label>
+              <Label htmlFor="edit-category">Jenis Buku</Label>
               <Input id="edit-category" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} />
             </div>
             <div className="space-y-2">
@@ -722,7 +722,7 @@ export default function BooksPage() {
             <TableRow>
               <TableHead>Kode</TableHead>
               <TableHead>Judul & Tahun</TableHead>
-              <TableHead className="hidden md:table-cell">Kategori</TableHead>
+              <TableHead className="hidden md:table-cell">Jenis Buku</TableHead>
               <TableHead>Stok</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
