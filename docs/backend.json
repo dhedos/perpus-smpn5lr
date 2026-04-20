@@ -2,500 +2,73 @@
 {
   "entities": {
     "User": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents an individual who can log into the application, associated with a specific role and optionally linked to a library member profile. This entity links to an external authentication system via email.",
+      "description": "Profil pengguna sistem (Admin/Staff).",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the User entity."
-        },
-        "email": {
-          "type": "string",
-          "description": "User's email address, serving as a unique identifier for their application account and linking to the external authentication system.",
-          "format": "email"
-        },
-        "role": {
-          "type": "string",
-          "description": "The role of the user within the application (e.g., 'Admin', 'Officer', 'Teacher', 'Student')."
-        },
-        "libraryMemberId": {
-          "type": "string",
-          "description": "Reference to the LibraryMember entity if the user's role is 'Teacher' or 'Student'. (Relationship: User 1:1 LibraryMember)"
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when the user account was created.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp when the user account was last updated.",
-          "format": "date-time"
-        }
+        "id": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string" },
+        "name": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "id",
-        "email",
-        "role",
-        "createdAt",
-        "updatedAt"
-      ]
-    },
-    "LibraryMember": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "LibraryMember",
-      "type": "object",
-      "description": "Represents an individual registered as a library member, either a student or a teacher, with their personal and contact details.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the LibraryMember entity."
-        },
-        "memberType": {
-          "type": "string",
-          "description": "Specifies the type of library member (e.g., 'Student', 'Teacher')."
-        },
-        "uniqueIdNumber": {
-          "type": "string",
-          "description": "The unique identification number for the member (NIP for teachers, NIS for students). This number is unique per member type."
-        },
-        "fullName": {
-          "type": "string",
-          "description": "The full name of the library member."
-        },
-        "contactNumber": {
-          "type": "string",
-          "description": "The contact phone number of the library member."
-        },
-        "address": {
-          "type": "string",
-          "description": "The residential address of the library member."
-        },
-        "classOrSubject": {
-          "type": "string",
-          "description": "For students, their class; for teachers, their subject."
-        },
-        "registrationDate": {
-          "type": "string",
-          "description": "Date when the member was registered in the library system.",
-          "format": "date-time"
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to the User entity associated with this library member, if they have an application account. (Relationship: LibraryMember 1:1 User)"
-        }
-      },
-      "required": [
-        "id",
-        "memberType",
-        "uniqueIdNumber",
-        "fullName",
-        "registrationDate"
-      ]
-    },
-    "BookCategory": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "BookCategory",
-      "type": "object",
-      "description": "Defines categories used to classify books in the library for organization and searchability.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the BookCategory entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the book category (e.g., 'Fiksi', 'Sejarah', 'Sains')."
-        },
-        "description": {
-          "type": "string",
-          "description": "A brief description of the category."
-        }
-      },
-      "required": [
-        "id",
-        "name"
-      ]
-    },
-    "ShelfLocation": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ShelfLocation",
-      "type": "object",
-      "description": "Represents the physical location or shelf where books are stored in the library for efficient retrieval.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the ShelfLocation entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name or code of the shelf location (e.g., 'Rak A1', 'Lantai 2 - Bagian Fiksi')."
-        },
-        "description": {
-          "type": "string",
-          "description": "A description of the shelf location."
-        }
-      },
-      "required": [
-        "id",
-        "name"
-      ]
+      "required": ["id", "email", "role"]
     },
     "Book": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Book",
       "type": "object",
-      "description": "Represents a single book title available in the library, including its bibliographic details, stock information, and physical location.",
+      "description": "Data koleksi buku perpustakaan.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Book entity, often an auto-generated book code."
-        },
-        "title": {
-          "type": "string",
-          "description": "The full title of the book."
-        },
-        "author": {
-          "type": "string",
-          "description": "The author(s) of the book."
-        },
-        "publisher": {
-          "type": "string",
-          "description": "The publisher of the book."
-        },
-        "publicationYear": {
-          "type": "number",
-          "description": "The year the book was published."
-        },
-        "isbn": {
-          "type": "string",
-          "description": "The International Standard Book Number, unique for each book edition."
-        },
-        "totalStock": {
-          "type": "number",
-          "description": "The total number of physical copies of this book owned by the library."
-        },
-        "availableStock": {
-          "type": "number",
-          "description": "The number of copies of this book currently available for borrowing."
-        },
-        "coverImageUrl": {
-          "type": "string",
-          "description": "URL to the book's cover image.",
-          "format": "uri"
-        },
-        "description": {
-          "type": "string",
-          "description": "A summary or abstract of the book's content, potentially enhanced by AI."
-        },
-        "bookCategoryId": {
-          "type": "string",
-          "description": "Reference to the BookCategory this book belongs to. (Relationship: Book 1:N BookCategory)"
-        },
-        "shelfLocationId": {
-          "type": "string",
-          "description": "Reference to the ShelfLocation where this book is primarily stored. (Relationship: Book 1:N ShelfLocation)"
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when the book record was created.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp when the book record was last updated.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "title",
-        "author",
-        "publisher",
-        "publicationYear",
-        "isbn",
-        "totalStock",
-        "availableStock",
-        "bookCategoryId",
-        "shelfLocationId",
-        "createdAt",
-        "updatedAt"
-      ]
+        "code": { "type": "string" },
+        "title": { "type": "string" },
+        "author": { "type": "string" },
+        "totalStock": { "type": "number" },
+        "availableStock": { "type": "number" }
+      }
     },
     "BorrowingTransaction": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "BorrowingTransaction",
       "type": "object",
-      "description": "Records a single instance of a book being borrowed by a library member, including details about dates, status, and fines.",
+      "description": "Catatan peminjaman buku.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the BorrowingTransaction entity."
-        },
-        "borrowDate": {
-          "type": "string",
-          "description": "The date and time when the book was borrowed.",
-          "format": "date-time"
-        },
-        "dueDate": {
-          "type": "string",
-          "description": "The scheduled date and time when the book is due for return.",
-          "format": "date-time"
-        },
-        "returnDate": {
-          "type": "string",
-          "description": "The actual date and time when the book was returned. Null if not yet returned.",
-          "format": "date-time"
-        },
-        "status": {
-          "type": "string",
-          "description": "The current status of the transaction (e.g., 'Borrowed', 'Returned', 'Overdue')."
-        },
-        "fineAmount": {
-          "type": "number",
-          "description": "The amount of fine incurred for overdue returns, if any."
-        },
-        "isFinePaid": {
-          "type": "boolean",
-          "description": "Indicates whether the incurred fine has been paid by the member."
-        },
-        "libraryMemberId": {
-          "type": "string",
-          "description": "Reference to the LibraryMember who borrowed the book. (Relationship: LibraryMember 1:N BorrowingTransaction)"
-        },
-        "bookId": {
-          "type": "string",
-          "description": "Reference to the Book that was borrowed. (Relationship: Book 1:N BorrowingTransaction)"
-        },
-        "processedByUserId": {
-          "type": "string",
-          "description": "Reference to the User (admin or officer) who processed this borrowing transaction. (Relationship: User 1:N BorrowingTransaction)"
-        }
-      },
-      "required": [
-        "id",
-        "borrowDate",
-        "dueDate",
-        "status",
-        "fineAmount",
-        "isFinePaid",
-        "libraryMemberId",
-        "bookId",
-        "processedByUserId"
-      ]
+        "bookId": { "type": "string" },
+        "memberId": { "type": "string" },
+        "status": { "type": "string" },
+        "borrowDate": { "type": "string", "format": "date-time" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "fineAmount": { "type": "number" }
+      }
     },
-    "ActivityLog": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ActivityLog",
+    "Settings": {
+      "title": "Settings",
       "type": "object",
-      "description": "Records significant actions performed by users within the application for auditing, tracking, and compliance purposes.",
+      "description": "Konfigurasi global sistem (Batas Pinjam & Denda).",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the ActivityLog entry."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to the User who performed the action. (Relationship: User 1:N ActivityLog)"
-        },
-        "actionType": {
-          "type": "string",
-          "description": "A brief code or name for the type of action performed (e.g., 'BOOK_ADD', 'MEMBER_UPDATE', 'TRANSACTION_BORROW')."
-        },
-        "description": {
-          "type": "string",
-          "description": "A detailed description of the action and its context."
-        },
-        "timestamp": {
-          "type": "string",
-          "description": "The date and time when the action occurred.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "actionType",
-        "description",
-        "timestamp"
-      ]
-    },
-    "OverdueNotification": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "OverdueNotification",
-      "type": "object",
-      "description": "Records details of notifications sent to library members regarding overdue books, facilitating follow-up and management.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the OverdueNotification entity."
-        },
-        "borrowingTransactionId": {
-          "type": "string",
-          "description": "Reference to the BorrowingTransaction for which the notification was sent. (Relationship: BorrowingTransaction 1:N OverdueNotification)"
-        },
-        "notificationDate": {
-          "type": "string",
-          "description": "The date and time when the notification was sent.",
-          "format": "date-time"
-        },
-        "method": {
-          "type": "string",
-          "description": "The method used to send the notification (e.g., 'Email', 'In-App Message', 'SMS')."
-        },
-        "status": {
-          "type": "string",
-          "description": "The delivery status of the notification (e.g., 'Sent', 'Failed', 'Read')."
-        }
-      },
-      "required": [
-        "id",
-        "borrowingTransactionId",
-        "notificationDate",
-        "method",
-        "status"
-      ]
+        "loanPeriod": { "type": "number", "description": "Lama pinjam dalam hari." },
+        "fineAmount": { "type": "number", "description": "Denda per hari terlambat." },
+        "libraryName": { "type": "string" }
+      }
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous",
-      "google"
-    ]
+    "providers": ["password", "google"]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/users/{userId}",
-        "definition": {
-          "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Stores user profiles, including email, role, and a reference to their library member profile. The {userId} wildcard must correspond to the Firebase Authentication UID. Includes denormalized 'role' for authorization independence.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user, matching the Firebase Authentication UID."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/library_members/{memberId}",
-        "definition": {
-          "entityName": "LibraryMember",
-          "schema": {
-            "$ref": "#/backend/entities/LibraryMember"
-          },
-          "description": "Stores details of library members (students/teachers). Includes denormalized 'userId' to link to an application user, enabling authorization independence for self-access.",
-          "params": [
-            {
-              "name": "memberId",
-              "description": "The unique identifier of the library member."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/book_categories/{categoryId}",
-        "definition": {
-          "entityName": "BookCategory",
-          "schema": {
-            "$ref": "#/backend/entities/BookCategory"
-          },
-          "description": "Master data collection for various book categories. Publicly readable, staff-manageable.",
-          "params": [
-            {
-              "name": "categoryId",
-              "description": "The unique identifier of the book category."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/shelf_locations/{locationId}",
-        "definition": {
-          "entityName": "ShelfLocation",
-          "schema": {
-            "$ref": "#/backend/entities/ShelfLocation"
-          },
-          "description": "Master data collection for physical shelf locations in the library. Publicly readable, staff-manageable.",
-          "params": [
-            {
-              "name": "locationId",
-              "description": "The unique identifier of the shelf location."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/books/{bookId}",
-        "definition": {
-          "entityName": "Book",
-          "schema": {
-            "$ref": "#/backend/entities/Book"
-          },
-          "description": "Stores detailed information about each book title, including stock levels and references to category and shelf location. All authenticated users can read, staff can manage.",
-          "params": [
-            {
-              "name": "bookId",
-              "description": "The unique identifier of the book."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/borrowing_transactions/{transactionId}",
-        "definition": {
-          "entityName": "BorrowingTransaction",
-          "schema": {
-            "$ref": "#/backend/entities/BorrowingTransaction"
-          },
-          "description": "Records individual book borrowing events. Includes denormalized 'memberUserId' for direct member access and 'processedByUserId' for staff access, ensuring authorization independence.",
-          "params": [
-            {
-              "name": "transactionId",
-              "description": "The unique identifier of the borrowing transaction."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/activity_logs/{logId}",
-        "definition": {
-          "entityName": "ActivityLog",
-          "schema": {
-            "$ref": "#/backend/entities/ActivityLog"
-          },
-          "description": "Records significant user actions for auditing purposes. Includes the 'userId' of the actor for direct authorization checks. All authenticated users can write, Admins can read.",
-          "params": [
-            {
-              "name": "logId",
-              "description": "The unique identifier of the activity log entry."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/overdue_notifications/{notificationId}",
-        "definition": {
-          "entityName": "OverdueNotification",
-          "schema": {
-            "$ref": "#/backend/entities/OverdueNotification"
-          },
-          "description": "Tracks notifications sent for overdue books. Includes denormalized 'memberUserId' from the associated borrowing transaction to enable direct member access and authorization independence.",
-          "params": [
-            {
-              "name": "notificationId",
-              "description": "The unique identifier of the overdue notification."
-            }
-          ]
-        }
-      }
-    ]
+    "/settings/general": {
+      "schema": { "$ref": "#/backend/entities/Settings" },
+      "description": "Penyimpanan konfigurasi kebijakan sekolah."
+    },
+    "/books/{bookId}": {
+      "schema": { "$ref": "#/backend/entities/Book" },
+      "description": "Koleksi buku sekolah."
+    },
+    "/members/{memberId}": {
+      "schema": { "$ref": "#/backend/entities/LibraryMember" },
+      "description": "Data anggota perpustakaan."
+    },
+    "/transactions/{transId}": {
+      "schema": { "$ref": "#/backend/entities/BorrowingTransaction" },
+      "description": "Riwayat sirkulasi buku."
+    }
   }
 }

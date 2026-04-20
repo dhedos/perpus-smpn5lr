@@ -38,7 +38,7 @@ export default function SettingsPage() {
 
   // Fetch settings from Firestore
   const settingsDocRef = db ? doc(db, 'settings', 'general') : null
-  const { data: remoteSettings, loading } = useDoc(settingsDocRef)
+  const { data: remoteSettings, isLoading: loading } = useDoc(settingsDocRef)
 
   useEffect(() => {
     if (remoteSettings) {
@@ -60,7 +60,7 @@ export default function SettingsPage() {
       .then(() => {
         toast({
           title: "Berhasil Disimpan",
-          description: "Pengaturan sistem (Denda & Jatuh Tempo) telah diperbarui.",
+          description: "Pengaturan kebijakan perpustakaan (Batas Pinjam & Denda) telah diperbarui.",
         })
       })
       .catch(async (error) => {
@@ -78,35 +78,40 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-4xl space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      <div>
-        <h1 className="text-2xl font-bold font-headline tracking-tight text-primary">Pengaturan Sistem</h1>
-        <p className="text-muted-foreground text-sm">Konfigurasi profil dan kebijakan sirkulasi SMPN 5 LANGKE REMBONG.</p>
+      <div className="flex justify-between items-end">
+        <div>
+          <h1 className="text-2xl font-bold font-headline tracking-tight text-primary">Pengaturan Sistem</h1>
+          <p className="text-muted-foreground text-sm">Konfigurasi profil sekolah dan kebijakan denda sirkulasi.</p>
+        </div>
+        <Badge variant="secondary" className="bg-primary/10 text-primary border-none mb-1">
+          Role: Administrator
+        </Badge>
       </div>
 
       <Tabs defaultValue="general" className="w-full">
         <TabsList className="grid w-full grid-cols-4 h-12">
-          <TabsTrigger value="general" className="gap-2"><Library className="h-4 w-4" /> Umum</TabsTrigger>
+          <TabsTrigger value="general" className="gap-2"><Library className="h-4 w-4" /> Umum & Kebijakan</TabsTrigger>
           <TabsTrigger value="notifications" className="gap-2"><Bell className="h-4 w-4" /> Notifikasi</TabsTrigger>
           <TabsTrigger value="security" className="gap-2"><Shield className="h-4 w-4" /> Keamanan</TabsTrigger>
-          <TabsTrigger value="mobile" className="gap-2"><Smartphone className="h-4 w-4" /> Aplikasi</TabsTrigger>
+          <TabsTrigger value="mobile" className="gap-2"><Smartphone className="h-4 w-4" /> Akses Mobile</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="mt-6">
-          <Card className="border-none shadow-sm">
-            <CardHeader>
-              <CardTitle>Kebijakan Sirkulasi & Profil</CardTitle>
-              <CardDescription>Atur batas waktu peminjaman dan denda keterlambatan secara global.</CardDescription>
+          <Card className="border-none shadow-sm overflow-hidden">
+            <CardHeader className="bg-slate-50/50">
+              <CardTitle>Kebijakan Sirkulasi Utama</CardTitle>
+              <CardDescription>Atur denda dan jatuh tempo yang akan berlaku di seluruh sistem.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
+            <CardContent className="space-y-6 pt-6">
+              <div className="grid md:grid-cols-2 gap-8">
                 <div className="space-y-4">
-                   <div className="grid gap-2">
+                  <div className="grid gap-2">
                     <Label htmlFor="lib-name" className="font-bold text-xs uppercase text-muted-foreground">Nama Perpustakaan</Label>
                     <Input 
                       id="lib-name" 
                       value={settings.libraryName} 
                       onChange={(e) => setSettings({ ...settings, libraryName: e.target.value })}
-                      className="bg-slate-50 border-slate-200"
+                      className="bg-slate-50 border-slate-200 h-11"
                     />
                   </div>
                   <div className="grid gap-2">
@@ -115,47 +120,58 @@ export default function SettingsPage() {
                       id="school-name" 
                       value={settings.schoolName}
                       onChange={(e) => setSettings({ ...settings, schoolName: e.target.value })}
-                      className="bg-slate-50 border-slate-200"
+                      className="bg-slate-50 border-slate-200 h-11"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-4 p-4 bg-primary/5 rounded-xl border border-primary/10">
-                  <div className="grid gap-2">
-                    <Label htmlFor="loan-period" className="flex items-center gap-2 font-bold text-xs uppercase text-primary">
-                      <CalendarDays className="h-3 w-3" />
-                      Durasi Pinjam (Hari)
-                    </Label>
-                    <Input 
-                      id="loan-period" 
-                      type="number" 
-                      value={settings.loanPeriod}
-                      onChange={(e) => setSettings({ ...settings, loanPeriod: Number(e.target.value) })}
-                      className="bg-white border-primary/20 h-12 text-lg font-bold"
-                    />
-                    <p className="text-[10px] text-muted-foreground italic">Buku akan otomatis jatuh tempo setelah X hari.</p>
+                <div className="space-y-6 p-6 bg-primary/5 rounded-2xl border border-primary/10 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-4 opacity-5">
+                    <Coins className="h-24 w-24" />
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="fine-amount" className="flex items-center gap-2 font-bold text-xs uppercase text-orange-600">
-                      <Coins className="h-3 w-3" />
-                      Denda per Hari (Rp)
+                  
+                  <div className="grid gap-3">
+                    <Label htmlFor="loan-period" className="flex items-center gap-2 font-bold text-sm text-primary">
+                      <CalendarDays className="h-4 w-4" />
+                      Masa Peminjaman Buku (Hari)
                     </Label>
-                    <Input 
-                      id="fine-amount" 
-                      type="number" 
-                      value={settings.fineAmount}
-                      onChange={(e) => setSettings({ ...settings, fineAmount: Number(e.target.value) })}
-                      className="bg-white border-orange-200 h-12 text-lg font-bold text-orange-600"
-                    />
-                    <p className="text-[10px] text-muted-foreground italic">Denda otomatis dihitung saat pengembalian terlambat.</p>
+                    <div className="flex items-center gap-3">
+                      <Input 
+                        id="loan-period" 
+                        type="number" 
+                        value={settings.loanPeriod}
+                        onChange={(e) => setSettings({ ...settings, loanPeriod: Number(e.target.value) })}
+                        className="bg-white border-primary/20 h-12 text-xl font-black w-24 text-center"
+                      />
+                      <span className="text-sm font-semibold text-muted-foreground">Hari Kalender</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground italic">Buku harus kembali sebelum lewat jumlah hari ini.</p>
+                  </div>
+
+                  <div className="grid gap-3 pt-2">
+                    <Label htmlFor="fine-amount" className="flex items-center gap-2 font-bold text-sm text-orange-600">
+                      <Coins className="h-4 w-4" />
+                      Tarif Denda Terlambat (Rp)
+                    </Label>
+                    <div className="flex items-center gap-3">
+                      <div className="bg-orange-100 px-3 h-12 flex items-center rounded-l-md font-bold text-orange-600 border border-orange-200 border-r-0">Rp</div>
+                      <Input 
+                        id="fine-amount" 
+                        type="number" 
+                        value={settings.fineAmount}
+                        onChange={(e) => setSettings({ ...settings, fineAmount: Number(e.target.value) })}
+                        className="bg-white border-orange-200 h-12 text-xl font-black text-orange-600 rounded-l-none"
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground italic">Denda per buku per hari keterlambatan.</p>
                   </div>
                 </div>
               </div>
               
-              <div className="pt-4 border-t">
-                <Button className="gap-2 h-12 px-8" onClick={handleSaveSettings} disabled={isSaving || loading}>
+              <div className="pt-6 border-t">
+                <Button className="gap-2 h-12 px-10 shadow-lg shadow-primary/20" onClick={handleSaveSettings} disabled={isSaving || loading}>
                   {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  Simpan Semua Pengaturan
+                  Simpan Perubahan Kebijakan
                 </Button>
               </div>
             </CardContent>
@@ -165,36 +181,31 @@ export default function SettingsPage() {
         <TabsContent value="notifications" className="mt-6">
           <Card className="border-none shadow-sm">
             <CardHeader>
-              <CardTitle>Pengaturan Notifikasi</CardTitle>
-              <CardDescription>Atur pengingat otomatis untuk siswa dan guru.</CardDescription>
+              <CardTitle>Pengingat Otomatis</CardTitle>
+              <CardDescription>Konfigurasi notifikasi jatuh tempo ke smartphone anggota.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                 <div className="space-y-0.5">
-                  <Label>WhatsApp Pengingat</Label>
-                  <p className="text-xs text-muted-foreground">Kirim pesan otomatis sebelum jatuh tempo.</p>
+                  <Label className="text-base">Notifikasi WhatsApp</Label>
+                  <p className="text-xs text-muted-foreground">Kirim instruksi pengembalian 1 hari sebelum jatuh tempo.</p>
                 </div>
                 <Switch 
                   checked={settings.whatsappReminder} 
                   onCheckedChange={(v) => setSettings({ ...settings, whatsappReminder: v })}
                 />
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                 <div className="space-y-0.5">
-                  <Label>Email Laporan Mingguan</Label>
-                  <p className="text-xs text-muted-foreground">Kirim ringkasan statistik ke Admin.</p>
+                  <Label className="text-base">Laporan Email Mingguan</Label>
+                  <p className="text-xs text-muted-foreground">Kirim rekap buku yang belum kembali ke email Admin.</p>
                 </div>
                 <Switch 
                   checked={settings.emailReport} 
                   onCheckedChange={(v) => setSettings({ ...settings, emailReport: v })}
                 />
               </div>
-              <div className="pt-4">
-                <Button className="gap-2" onClick={handleSaveSettings} disabled={isSaving}>
-                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  Simpan Notifikasi
-                </Button>
-              </div>
+              <Button onClick={handleSaveSettings} disabled={isSaving}>Simpan Notifikasi</Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -202,11 +213,17 @@ export default function SettingsPage() {
         <TabsContent value="security" className="mt-6">
           <Card className="border-none shadow-sm">
             <CardHeader>
-              <CardTitle>Keamanan</CardTitle>
-              <CardDescription>Kelola verifikasi dua langkah dan akses Admin.</CardDescription>
+              <CardTitle>Keamanan Admin</CardTitle>
+              <CardDescription>Manajemen akses tingkat tinggi untuk sekolah.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button variant="outline">Ganti Password Admin Sekolah</Button>
+              <div className="p-4 border-2 border-dashed rounded-xl flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="font-bold">Ganti Password Utama</p>
+                  <p className="text-xs text-muted-foreground">Ganti kata sandi akses administrator sekolah Anda.</p>
+                </div>
+                <Button variant="outline">Ganti Sekarang</Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -214,30 +231,33 @@ export default function SettingsPage() {
         <TabsContent value="mobile" className="mt-6">
           <Card className="border-none shadow-sm">
             <CardHeader>
-              <CardTitle>Aplikasi Mobile Siswa</CardTitle>
-              <CardDescription>Aktifkan akses scan kartu anggota digital SMPN 5.</CardDescription>
+              <CardTitle>Aplikasi Web Anggota</CardTitle>
+              <CardDescription>Izinkan siswa melihat ketersediaan buku dari HP mereka.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Akses Katalog Digital</Label>
-                  <p className="text-xs text-muted-foreground">Siswa dapat melihat stok buku dari smartphone.</p>
+                  <Label>Katalog Publik Aktif</Label>
+                  <p className="text-xs text-muted-foreground">Halaman cari buku dapat diakses tanpa login oleh siswa.</p>
                 </div>
                 <Switch 
                   checked={settings.digitalCatalog} 
                   onCheckedChange={(v) => setSettings({ ...settings, digitalCatalog: v })}
                 />
               </div>
-              <div className="pt-4">
-                <Button className="gap-2" onClick={handleSaveSettings} disabled={isSaving}>
-                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  Simpan Akses
-                </Button>
-              </div>
+              <Button onClick={handleSaveSettings}>Simpan Akses</Button>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+    </div>
+  )
+}
+
+function Badge({ children, className, variant }: any) {
+  return (
+    <div className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2", className)}>
+      {children}
     </div>
   )
 }
