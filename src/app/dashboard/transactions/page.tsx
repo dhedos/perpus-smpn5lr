@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo, useRef, useEffect } from "react"
@@ -109,7 +110,7 @@ export default function TransactionsPage() {
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings, isLoading: loadingSettings } = useDoc(settingsRef)
 
-  const membersRef = useMemoFirebase(() => db ? query(collection(db, 'members'), where('type', '==', 'Student'), orderBy('name', 'asc')) : null, [db])
+  const membersRef = useMemoFirebase(() => db ? query(collection(db, 'members'), orderBy('name', 'asc')) : null, [db])
   const booksRef = useMemoFirebase(() => db ? query(collection(db, 'books'), orderBy('title', 'asc')) : null, [db])
 
   const { data: members } = useCollection(membersRef)
@@ -117,7 +118,7 @@ export default function TransactionsPage() {
 
   const activeTransQuery = useMemoFirebase(() => {
     if (!db || !isStaff) return null;
-    return query(collection(db, 'transactions'), where('status', '==', 'active'), where('memberType', '==', 'Student'));
+    return query(collection(db, 'transactions'), where('status', '==', 'active'));
   }, [db, isStaff])
 
   const { data: activeTrans, isLoading: loadingActive } = useCollection(activeTransQuery)
@@ -598,7 +599,7 @@ export default function TransactionsPage() {
                               <TableCell>
                                 <div className="space-y-1">
                                   <div className="font-bold text-sm leading-tight">{t.bookTitle} {t.quantity > 1 && `(${t.quantity} unit)`}</div>
-                                  <div className="text-xs font-semibold">{t.memberName} <span className="text-muted-foreground font-normal">/ {t.memberId}</span></div>
+                                  <div className="text-xs font-semibold">{t.memberName} <span className="text-muted-foreground font-normal">/ {t.memberId} / {t.classOrSubject}</span></div>
                                 </div>
                               </TableCell>
                               <TableCell className="text-center">
@@ -641,7 +642,7 @@ export default function TransactionsPage() {
                 <div className="flex-1">
                   <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Buku & Peminjam</div>
                   <div className="text-sm font-black">{pendingReturnTrans.bookTitle} ({pendingReturnTrans.quantity} unit)</div>
-                  <div className="text-xs font-bold text-primary mt-1">{pendingReturnTrans.memberName} / {pendingReturnTrans.memberId}</div>
+                  <div className="text-xs font-bold text-primary mt-1">{pendingReturnTrans.memberName} / {pendingReturnTrans.memberId} / {pendingReturnTrans.classOrSubject}</div>
                 </div>
               </div>
 

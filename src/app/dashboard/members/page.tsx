@@ -230,7 +230,7 @@ export default function MembersPage() {
                 <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Nama lengkap" />
               </div>
               <div className="space-y-2">
-                <Label className="font-semibold text-xs uppercase text-muted-foreground">{formData.type === 'Teacher' ? 'Unit / Mata Pelajaran' : 'Kelas'}</Label>
+                <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas / Unit</Label>
                 <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder={formData.type === 'Teacher' ? "Contoh: Guru Matematika" : "Contoh: VII A"} />
               </div>
             </div>
@@ -253,7 +253,7 @@ export default function MembersPage() {
               <TableHead className="w-12 text-center">No.</TableHead>
               <TableHead>Identitas</TableHead>
               <TableHead>Tipe</TableHead>
-              <TableHead>Kelas / Unit</TableHead>
+              <TableHead>Kelas</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
@@ -348,7 +348,7 @@ export default function MembersPage() {
               <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" />
             </div>
             <div className="space-y-2">
-              <Label className="font-semibold text-xs uppercase text-muted-foreground">{formData.type === 'Teacher' ? 'Unit / Mapel' : 'Kelas'}</Label>
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas / Unit</Label>
               <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" />
             </div>
           </div>

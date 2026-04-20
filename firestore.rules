@@ -6,7 +6,8 @@ service cloud.firestore {
     /**
      * ATURAN KEAMANAN PERPUSTAKAAN SMPN 5 - UPDATE IZIN AKSES
      * Memastikan semua petugas yang login dapat mengelola data sirkulasi.
-     * Triggering deployment to fix "Missing or insufficient permissions" on /members.
+     * Triggering deployment to fix "Missing or insufficient permissions" on /members list operation.
+     * Version: 1.0.2
      */
 
     function isSignedIn() {
@@ -16,13 +17,14 @@ service cloud.firestore {
     // Profil Pengguna (Petugas/Admin)
     match /users/{userId} {
       allow read: if isSignedIn();
-      // Izinkan petugas menulis data profil saat pendaftaran petugas baru
       allow write: if isSignedIn();
     }
 
-    // Koleksi Anggota (Siswa/Guru)
+    // Koleksi Anggota (Siswa/Guru) - Explicit permissions to solve list errors
     match /members/{memberId} {
-      allow read, write: if isSignedIn();
+      allow list: if isSignedIn();
+      allow get: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
     // Koleksi Buku

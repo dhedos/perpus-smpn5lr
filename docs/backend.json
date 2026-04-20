@@ -26,6 +26,20 @@
         "availableStock": { "type": "number" }
       }
     },
+    "LibraryMember": {
+      "title": "LibraryMember",
+      "type": "object",
+      "description": "Data anggota perpustakaan (Siswa/Guru).",
+      "properties": {
+        "memberId": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["Student", "Teacher"] },
+        "classOrSubject": { "type": "string" },
+        "phone": { "type": "string" },
+        "joinDate": { "type": "string", "format": "date" }
+      },
+      "required": ["memberId", "name", "type"]
+    },
     "BorrowingTransaction": {
       "title": "BorrowingTransaction",
       "type": "object",
