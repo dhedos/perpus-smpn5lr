@@ -1,6 +1,7 @@
+
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -20,7 +21,9 @@ import {
   ScanBarcode, 
   FileSpreadsheet,
   MoreVertical,
-  Loader2
+  Loader2,
+  Camera,
+  X
 } from "lucide-react"
 import { 
   Dialog, 
@@ -43,6 +46,11 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { generateBookDescription } from "@/ai/flows/generate-book-description-flow"
 import { useToast } from "@/hooks/use-toast"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+
+// External libs
+import * as XLSX from "xlsx"
+import { Html5Qrcode } from "html5-qrcode"
 
 // Firebase imports
 import { 
@@ -51,7 +59,7 @@ import {
   useMemoFirebase,
   errorEmitter 
 } from '@/firebase'
-import { collection, addDoc, deleteDoc, doc } from 'firebase/firestore'
+import { collection, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore'
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors'
 
 export default function BooksPage() {
@@ -62,7 +70,12 @@ export default function BooksPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null)
   
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const scannerRef = useRef<Html5Qrcode | null>(null)
+
   const [formData, setFormData] = useState({
     code: "",
     title: "",
@@ -88,9 +101,106 @@ export default function BooksPage() {
     return books.filter(b => 
       (b.title?.toLowerCase() || "").includes(search.toLowerCase()) || 
       (b.author?.toLowerCase() || "").includes(search.toLowerCase()) ||
-      (b.code?.toLowerCase() || "").includes(search.toLowerCase())
+      (b.code?.toLowerCase() || "").includes(search.toLowerCase()) ||
+      (b.isbn?.toLowerCase() || "").includes(search.toLowerCase())
     )
   }, [books, search])
+
+  // --- EXCEL IMPORT LOGIC ---
+  const handleImportClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !db || !booksCollectionRef) return
+
+    const reader = new FileReader()
+    reader.onload = async (evt) => {
+      try {
+        const data = new Uint8Array(evt.target?.result as ArrayBuffer)
+        const workbook = XLSX.read(data, { type: "array" })
+        const sheetName = workbook.SheetNames[0]
+        const worksheet = workbook.Sheets[sheetName]
+        const json: any[] = XLSX.utils.sheet_to_json(worksheet)
+
+        if (json.length === 0) {
+          toast({ title: "Gagal", description: "File Excel kosong.", variant: "destructive" })
+          return
+        }
+
+        toast({ title: "Mengimpor...", description: `Sedang mengimpor ${json.length} buku.` })
+
+        for (const row of json) {
+          // Normalisasi data dari Excel
+          const bookData = {
+            code: row.code || row.Kode || "",
+            title: row.title || row.Judul || "",
+            author: row.author || row.Pengarang || row.Penulis || "",
+            isbn: row.isbn || row.ISBN || "",
+            category: row.category || row.Kategori || "",
+            rackLocation: row.rackLocation || row.Rak || row.Lokasi || "",
+            totalStock: Number(row.totalStock || row.Stok || 1),
+            availableStock: Number(row.availableStock || row.Tersedia || 1),
+            description: row.description || row.Deskripsi || "",
+            createdAt: new Date().toISOString()
+          }
+
+          if (bookData.title && bookData.code) {
+            addDoc(booksCollectionRef, bookData).catch(err => console.error("Error importing row:", err))
+          }
+        }
+
+        toast({ title: "Berhasil!", description: `${json.length} buku telah ditambahkan.` })
+      } catch (error) {
+        toast({ title: "Gagal", description: "Gagal membaca file Excel. Pastikan format benar.", variant: "destructive" })
+      }
+    }
+    reader.readAsArrayBuffer(file)
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = ""
+  }
+
+  // --- BARCODE SCANNER LOGIC ---
+  const startScanner = async () => {
+    setIsScannerOpen(true)
+    setTimeout(async () => {
+      try {
+        const scanner = new Html5Qrcode("scanner-container")
+        scannerRef.current = scanner
+        
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          (decodedText) => {
+            setSearch(decodedText)
+            stopScanner()
+            toast({ title: "Berhasil!", description: `Barcode terdeteksi: ${decodedText}` })
+          },
+          (errorMessage) => {
+            // Error scanning is normal while looking for code
+          }
+        )
+        setHasCameraPermission(true)
+      } catch (err) {
+        console.error("Camera access error:", err)
+        setHasCameraPermission(false)
+        toast({
+          variant: "destructive",
+          title: "Akses Kamera Ditolak",
+          description: "Harap izinkan akses kamera pada browser Anda.",
+        })
+      }
+    }, 100)
+  }
+
+  const stopScanner = async () => {
+    if (scannerRef.current && scannerRef.current.isScanning) {
+      await scannerRef.current.stop()
+      scannerRef.current = null
+    }
+    setIsScannerOpen(false)
+  }
 
   const handleGenerateDescription = async () => {
     if (!formData.title) {
@@ -176,7 +286,14 @@ export default function BooksPage() {
         </div>
         
         <div className="flex gap-2">
-          <Button variant="outline" className="gap-2">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileChange} 
+            accept=".xlsx, .xls, .csv" 
+            className="hidden" 
+          />
+          <Button variant="outline" className="gap-2" onClick={handleImportClick}>
             <FileSpreadsheet className="h-4 w-4" />
             Import Excel
           </Button>
@@ -311,11 +428,37 @@ export default function BooksPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Button variant="secondary" className="gap-2">
+        <Button variant="secondary" className="gap-2" onClick={startScanner}>
           <ScanBarcode className="h-4 w-4" />
           Scan Barcode
         </Button>
       </div>
+
+      {/* Barcode Scanner Dialog */}
+      <Dialog open={isScannerOpen} onOpenChange={(open) => !open && stopScanner()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Scan Barcode Buku</DialogTitle>
+            <DialogDescription>Arahkan kamera ke barcode pada buku.</DialogDescription>
+          </DialogHeader>
+          <div className="relative aspect-square overflow-hidden rounded-xl bg-black">
+            <div id="scanner-container" className="h-full w-full"></div>
+            {hasCameraPermission === false && (
+              <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-white bg-black/80">
+                <Alert variant="destructive">
+                  <AlertTitle>Akses Kamera Dibutuhkan</AlertTitle>
+                  <AlertDescription>Harap izinkan akses kamera untuk memindai barcode.</AlertDescription>
+                </Alert>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={stopScanner} className="w-full">
+              Tutup Scanner
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Card className="border-none shadow-sm">
         <Table>
