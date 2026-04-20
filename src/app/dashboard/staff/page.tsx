@@ -58,7 +58,8 @@ import { useFirestore, useCollection, useMemoFirebase, errorEmitter, useAuth } f
 import { collection, doc, deleteDoc, updateDoc, setDoc, query, where } from "firebase/firestore"
 import { FirestorePermissionError, type SecurityRuleContext } from "@/firebase/errors"
 import { useToast } from "@/hooks/use-toast"
-import { sendPasswordResetEmail, initializeApp, deleteApp, getAuth, createUserWithEmailAndPassword } from "firebase/auth"
+import { initializeApp, deleteApp } from "firebase/app"
+import { sendPasswordResetEmail, getAuth, createUserWithEmailAndPassword } from "firebase/auth"
 import { firebaseConfig } from "@/firebase/config"
 
 export default function StaffPage() {
@@ -130,7 +131,6 @@ export default function StaffPage() {
         description: `Petugas ${formData.name} telah didaftarkan. Email reset password akan dikirimkan otomatis.` 
       })
       
-      // Opsional: Kirim email reset agar user bisa ganti password sendiri
       await sendPasswordResetEmail(auth, formData.email)
       
       setIsOpen(false)
