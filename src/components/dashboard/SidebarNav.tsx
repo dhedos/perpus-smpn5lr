@@ -20,6 +20,17 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useAuth, useUser } from "@/firebase"
 import { signOut } from "firebase/auth"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Beranda", href: "/dashboard" },
@@ -51,7 +62,6 @@ export function SidebarNav() {
 
   return (
     <div className="flex h-full flex-col bg-card text-card-foreground border-r">
-      {/* Header section tanpa garis pembatas bawah */}
       <div className="flex h-20 items-center px-4 shrink-0 gap-3">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <Library className="h-8 w-8" />
@@ -104,15 +114,32 @@ export function SidebarNav() {
         )}
       </div>
 
-      <div className="border-t p-4 shrink-0">
-        <Button 
-          variant="ghost" 
-          className="w-full justify-start gap-3 text-destructive hover:bg-destructive/10 hover:text-destructive rounded-lg"
-          onClick={handleLogout}
-        >
-          <LogOut className="h-5 w-5" />
-          <span className="text-sm font-medium">Keluar</span>
-        </Button>
+      <div className="p-4 shrink-0">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start gap-3 text-destructive hover:bg-destructive/10 hover:text-destructive rounded-lg"
+            >
+              <LogOut className="h-5 w-5" />
+              <span className="text-sm font-medium">Keluar</span>
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Konfirmasi Keluar</AlertDialogTitle>
+              <AlertDialogDescription>
+                Apakah Anda yakin ingin keluar dari sistem Pustaka Nusantara? Sesi Anda akan diakhiri.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Batal</AlertDialogCancel>
+              <AlertDialogAction onClick={handleLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Ya, Keluar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   )

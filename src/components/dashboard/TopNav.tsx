@@ -1,7 +1,7 @@
 
 "use client"
 
-import { Bell, Search, User, Globe, Wifi, WifiOff, LogOut, Menu, UserCircle, Lock, Loader2, CheckCircle2 } from "lucide-react"
+import { Bell, Search, User, Globe, Globe as GlobeIcon, Wifi, WifiOff, LogOut, Menu, UserCircle, Lock, Loader2, CheckCircle2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { 
@@ -35,6 +35,16 @@ import {
   DialogFooter,
   DialogDescription
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label"
 import { SidebarNav } from "./SidebarNav"
 import { useToast } from "@/hooks/use-toast"
@@ -42,6 +52,7 @@ import { useToast } from "@/hooks/use-toast"
 export function TopNav() {
   const [isOnline, setIsOnline] = useState(true)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const { user } = useUser()
   const auth = useAuth()
@@ -84,14 +95,12 @@ export function TopNav() {
     setIsSaving(true)
 
     try {
-      // 1. Update Name in Firestore
       const userDocRef = doc(db, 'users', user.uid)
       await updateDoc(userDocRef, {
         name: profileData.name,
         updatedAt: new Date().toISOString()
       })
 
-      // 2. Update Password if provided
       if (profileData.newPassword) {
         if (profileData.newPassword.length < 6) {
           throw new Error("Password minimal 6 karakter.")
@@ -119,7 +128,6 @@ export function TopNav() {
   return (
     <header className="h-16 border-b bg-card/50 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between px-4 md:px-6">
       <div className="flex items-center gap-4 flex-1">
-        {/* Mobile Menu Trigger */}
         <div className="md:hidden">
           <Sheet>
             <SheetTrigger asChild>
@@ -183,12 +191,12 @@ export function TopNav() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setIsProfileOpen(true)} className="py-2.5">
+            <DropdownMenuItem onClick={() => setIsProfileOpen(true)} className="py-2.5 cursor-pointer">
               <UserCircle className="h-4 w-4 mr-2 text-primary" />
               Profil Saya
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive py-2.5">
+            <DropdownMenuItem onClick={() => setIsLogoutConfirmOpen(true)} className="text-destructive focus:text-destructive py-2.5 cursor-pointer">
               <LogOut className="h-4 w-4 mr-2" />
               Keluar
             </DropdownMenuItem>
@@ -196,7 +204,6 @@ export function TopNav() {
         </DropdownMenu>
       </div>
 
-      {/* Profile Edit Dialog */}
       <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
         <DialogContent className="max-w-md bg-white">
           <DialogHeader>
@@ -243,6 +250,23 @@ export function TopNav() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={isLogoutConfirmOpen} onOpenChange={setIsLogoutConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Konfirmasi Keluar</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin keluar dari sistem Pustaka Nusantara? Sesi Anda akan diakhiri.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Ya, Keluar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   )
 }
