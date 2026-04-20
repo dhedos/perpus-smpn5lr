@@ -125,7 +125,7 @@ export default function MembersPage() {
   const handleSaveMember = () => {
     if (!db) return
     
-    // Gabungkan Kelas dan Mapel dengan tanda miring
+    // Gabungkan Kelas dan Mapel dengan tanda miring agar formatnya standar VII/TIK
     const fullClassSubject = formData.classPart && formData.subjectPart 
       ? `${formData.classPart}/${formData.subjectPart}` 
       : (formData.classPart || formData.subjectPart || "");
@@ -243,7 +243,7 @@ export default function MembersPage() {
                   <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Contoh: VII" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-semibold text-xs uppercase text-muted-foreground">Mata Pelajaran (Mapel)</Label>
+                  <Label className="font-semibold text-xs uppercase text-muted-foreground">Mapel</Label>
                   <Input value={formData.subjectPart ?? ""} onChange={e => setFormData({...formData, subjectPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Contoh: TIK" />
                 </div>
               </div>
