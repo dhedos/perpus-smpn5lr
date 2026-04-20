@@ -84,26 +84,26 @@ export default function StockOpnamePage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      <div><h1 className="text-2xl font-bold text-primary flex items-center gap-2"><ClipboardCheck />Stok Opname</h1><p className="text-muted-foreground text-sm">Pengecekan fisik koleksi perpustakaan.</p></div>
+      <div><h1 className="text-2xl font-bold text-primary flex items-center gap-2"><ClipboardCheck />Cek Stok Buku (Opname)</h1><p className="text-muted-foreground text-sm">Verifikasi fisik koleksi perpustakaan dengan data sistem.</p></div>
       <div className="grid md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-4">
           <Card className="bg-primary/5"><CardContent className="pt-6 space-y-4">
             <div className="flex gap-2">
-              <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Kode Buku..." className="pl-10 h-12" value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLookup(search)} /></div>
+              <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Scan atau Ketik Kode Buku..." className="pl-10 h-12" value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLookup(search)} /></div>
               <Button size="lg" className="h-12" onClick={startScanner}><ScanBarcode className="mr-2" />Scan</Button>
             </div>
             {selectedBook ? (
               <div className="bg-white p-6 rounded-xl border-2 border-primary/20 space-y-4">
                 <div className="flex justify-between"><div><Badge variant="outline">{selectedBook.code}</Badge><h3 className="text-lg font-bold">{selectedBook.title}</h3></div><div className="text-right"><p className="text-xs font-bold">STOK</p><p className="text-2xl font-black text-primary">{selectedBook.totalStock}</p></div></div>
                 <div className="grid grid-cols-2 gap-4">
-                  <Button variant="outline" className="h-20 flex-col border-green-200 bg-green-50" onClick={() => handleSaveAudit('LENGKAP')} disabled={isProcessing}><Check />LENGKAP</Button>
-                  <Button variant="outline" className="h-20 flex-col border-red-200 bg-red-50" onClick={() => handleSaveAudit('KURANG')} disabled={isProcessing}><PackageX />KURANG</Button>
+                  <Button variant="outline" className="h-20 flex-col border-green-200 bg-green-50" onClick={() => handleSaveAudit('LENGKAP')} disabled={isProcessing}><Check />FISIK LENGKAP</Button>
+                  <Button variant="outline" className="h-20 flex-col border-red-200 bg-red-50" onClick={() => handleSaveAudit('KURANG')} disabled={isProcessing}><PackageX />STOK KURANG</Button>
                 </div>
               </div>
-            ) : <div className="h-40 flex items-center justify-center border-2 border-dashed rounded-xl text-muted-foreground">Scan buku untuk memulai audit.</div>}
+            ) : <div className="h-40 flex items-center justify-center border-2 border-dashed rounded-xl text-muted-foreground">Silakan scan kode buku untuk mulai mengecek stok.</div>}
           </CardContent></Card>
         </div>
-        <Card className="h-full"><CardHeader><CardTitle className="text-sm flex items-center gap-2"><History className="h-4 w-4" />Riwayat</CardTitle></CardHeader><CardContent className="p-0">
+        <Card className="h-full"><CardHeader><CardTitle className="text-sm flex items-center gap-2"><History className="h-4 w-4" />Riwayat Cek Hari Ini</CardTitle></CardHeader><CardContent className="p-0">
           <div className="divide-y text-xs">
             {audits?.filter(a => a.actionType === 'STOCK_AUDIT').map(a => (
               <div key={a.id} className="p-4 flex justify-between items-center"><div><p className="font-bold">{a.description.split(': ')[1]}</p><p className="text-[10px] text-muted-foreground">{new Date(a.timestamp).toLocaleTimeString()}</p></div><Badge variant={a.auditStatus === 'LENGKAP' ? 'secondary' : 'destructive'}>{a.auditStatus}</Badge></div>

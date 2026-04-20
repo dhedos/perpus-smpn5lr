@@ -22,18 +22,18 @@ import { useAuth, useUser } from "@/firebase"
 import { signOut } from "firebase/auth"
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+  { icon: LayoutDashboard, label: "Beranda", href: "/dashboard" },
   { icon: BookOpen, label: "Koleksi Buku", href: "/dashboard/books" },
-  { icon: Users, label: "Keanggotaan", href: "/dashboard/members" },
-  { icon: ArrowLeftRight, label: "Transaksi", href: "/dashboard/transactions" },
+  { icon: Users, label: "Daftar Anggota", href: "/dashboard/members" },
+  { icon: ArrowLeftRight, label: "Pinjam & Kembali", href: "/dashboard/transactions" },
   { icon: BarChart3, label: "Laporan", href: "/dashboard/reports" },
 ]
 
 const adminOnlyItems = [
-  { icon: ClipboardCheck, label: "Stok Opname", href: "/dashboard/stock-opname" },
-  { icon: UserCog, label: "Petugas Perpustakaan", href: "/dashboard/staff" },
-  { icon: Database, label: "Backup & Sync", href: "/dashboard/sync" },
-  { icon: Settings, label: "Pengaturan", href: "/dashboard/settings" },
+  { icon: ClipboardCheck, label: "Cek Stok (Opname)", href: "/dashboard/stock-opname" },
+  { icon: UserCog, label: "Data Petugas", href: "/dashboard/staff" },
+  { icon: Database, label: "Sinkronisasi Data", href: "/dashboard/sync" },
+  { icon: Settings, label: "Pengaturan Sistem", href: "/dashboard/settings" },
 ]
 
 export function SidebarNav() {
@@ -61,7 +61,7 @@ export function SidebarNav() {
       
       <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
         <div className="mb-2 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          Utama
+          Menu Utama
         </div>
         {menuItems.map((item) => (
           <Link key={item.href} href={item.href}>

@@ -129,7 +129,7 @@ export default function TransactionsPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-primary">Sirkulasi Perpustakaan</h1>
+      <h1 className="text-2xl font-bold text-primary">Pinjam & Kembali Buku</h1>
       <Tabs defaultValue="borrow" onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="borrow">Peminjaman</TabsTrigger><TabsTrigger value="return">Pengembalian</TabsTrigger></TabsList>
         <div className="mt-6">

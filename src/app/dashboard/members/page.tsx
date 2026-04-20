@@ -148,8 +148,8 @@ export default function MembersPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold font-headline text-primary">Keanggotaan</h1>
-          <p className="text-muted-foreground text-sm">Kelola data siswa dan guru.</p>
+          <h1 className="text-2xl font-bold font-headline text-primary">Daftar Anggota</h1>
+          <p className="text-muted-foreground text-sm">Kelola data siswa dan guru yang terdaftar.</p>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild><Button className="gap-2"><UserPlus className="h-4 w-4" />Tambah Anggota</Button></DialogTrigger>
