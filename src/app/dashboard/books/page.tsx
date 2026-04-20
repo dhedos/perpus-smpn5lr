@@ -25,7 +25,8 @@ import {
   Camera,
   QrCode,
   Printer,
-  X
+  X,
+  Download
 } from "lucide-react"
 import { 
   Dialog, 
@@ -333,21 +334,82 @@ export default function BooksPage() {
       totalStock: Number(book.totalStock || 1), availableStock: Number(book.availableStock || 1),
       description: book.description || ""
     })
-    // Use timeout to prevent Radix UI dropdown/dialog focus conflict
     setTimeout(() => setIsEditOpen(true), 100)
   }
 
-  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      toast({ title: "Scan Diterima", description: `Mencari: ${search}` })
+  const downloadQrAsImage = () => {
+    const svg = document.getElementById("printable-qr")?.querySelector("svg")
+    if (!svg) return
+
+    const svgData = new XMLSerializer().serializeToString(svg)
+    const canvas = document.createElement("canvas")
+    const ctx = canvas.getContext("2d")
+    const img = new Image()
+    
+    img.onload = () => {
+      canvas.width = 1000
+      canvas.height = 1000
+      if (ctx) {
+        ctx.fillStyle = "white"
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        ctx.drawImage(img, 0, 0, 1000, 1000)
+        const pngUrl = canvas.toDataURL("image/png")
+        const downloadLink = document.createElement("a")
+        downloadLink.href = pngUrl
+        downloadLink.download = `QR_BUKU_${selectedBookQr?.code || 'BOOK'}.png`
+        document.body.appendChild(downloadLink)
+        downloadLink.click()
+        document.body.removeChild(downloadLink)
+      }
     }
+    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)))
+  }
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+
+    const qrElement = document.getElementById('printable-qr')
+    if (!qrElement) return
+
+    const svgData = qrElement.innerHTML
+    
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Cetak QR Code - ${selectedBookQr?.title}</title>
+          <style>
+            body { 
+              display: flex; 
+              flex-direction: column; 
+              align-items: center; 
+              justify-content: center; 
+              height: 100vh; 
+              margin: 0; 
+              font-family: sans-serif;
+            }
+            .container { text-align: center; border: 1px solid #eee; padding: 20px; border-radius: 10px; }
+            h2 { margin-top: 20px; color: #333; }
+            p { font-family: monospace; font-weight: bold; font-size: 1.2em; color: #2E6ECE; }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          <div class="container">
+            ${svgData}
+            <h2>${selectedBookQr?.title}</h2>
+            <p>${selectedBookQr?.code}</p>
+          </div>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
   }
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold font-headline tracking-tight">Koleksi Buku</h1>
+          <h1 className="text-2xl font-bold font-headline tracking-tight text-primary">Koleksi Buku</h1>
           <p className="text-muted-foreground text-sm">Kelola katalog buku, stok, dan lokasi rak.</p>
         </div>
         
@@ -439,7 +501,6 @@ export default function BooksPage() {
             className="pl-10" 
             value={search} 
             onChange={(e) => setSearch(e.target.value)} 
-            onKeyDown={handleSearchKeyDown}
           />
         </div>
         <Button variant="secondary" className="gap-2 w-full sm:w-auto" onClick={() => startScanner("search")}>
@@ -484,16 +545,21 @@ export default function BooksPage() {
           <DialogHeader><DialogTitle>QR Code Buku</DialogTitle></DialogHeader>
           <div className="flex flex-col items-center justify-center p-6 space-y-4">
             <div id="printable-qr" className="bg-white p-4 rounded-xl border-2 border-primary/20">
-              {selectedBookQr && <QRCodeSVG value={selectedBookQr.code} size={200} level="H" includeMargin={true} />}
+              {selectedBookQr && <QRCodeSVG value={selectedBookQr.code} size={250} level="H" includeMargin={true} />}
             </div>
             <div className="text-center">
               <p className="font-bold text-lg">{selectedBookQr?.title}</p>
               <p className="font-mono text-primary font-bold">{selectedBookQr?.code}</p>
             </div>
           </div>
-          <DialogFooter className="grid grid-cols-2 gap-2">
+          <DialogFooter className="grid grid-cols-3 gap-2">
             <Button variant="outline" onClick={() => setIsQrOpen(false)}>Tutup</Button>
-            <Button onClick={() => window.print()} className="gap-2"><Printer className="h-4 w-4" /> Cetak</Button>
+            <Button variant="secondary" onClick={downloadQrAsImage} className="gap-2">
+              <Download className="h-4 w-4" /> Unduh
+            </Button>
+            <Button onClick={handlePrint} className="gap-2">
+              <Printer className="h-4 w-4" /> Cetak
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -23,7 +23,8 @@ import {
   GraduationCap, 
   School,
   QrCode,
-  Printer
+  Printer,
+  Download
 } from "lucide-react"
 import { 
   Dialog, 
@@ -209,15 +210,90 @@ export default function MembersPage() {
       phone: member.phone || "",
       joinDate: member.joinDate || new Date().toISOString().split('T')[0]
     })
-    // Use timeout to prevent Radix UI dropdown/dialog focus conflict
     setTimeout(() => setIsEditOpen(true), 100)
+  }
+
+  const downloadQrAsImage = () => {
+    const svg = document.getElementById("member-qr")?.querySelector("svg")
+    if (!svg) return
+
+    const svgData = new XMLSerializer().serializeToString(svg)
+    const canvas = document.createElement("canvas")
+    const ctx = canvas.getContext("2d")
+    const img = new Image()
+    
+    img.onload = () => {
+      canvas.width = 1000
+      canvas.height = 1000
+      if (ctx) {
+        ctx.fillStyle = "white"
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        ctx.drawImage(img, 0, 0, 1000, 1000)
+        const pngUrl = canvas.toDataURL("image/png")
+        const downloadLink = document.createElement("a")
+        downloadLink.href = pngUrl
+        downloadLink.download = `QR_ANGGOTA_${selectedMemberQr?.memberId || 'MEMBER'}.png`
+        document.body.appendChild(downloadLink)
+        downloadLink.click()
+        document.body.removeChild(downloadLink)
+      }
+    }
+    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)))
+  }
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+
+    const qrElement = document.getElementById('member-qr')
+    if (!qrElement) return
+
+    const svgData = qrElement.innerHTML
+    
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Kartu Anggota - ${selectedMemberQr?.name}</title>
+          <style>
+            body { 
+              display: flex; 
+              flex-direction: column; 
+              align-items: center; 
+              justify-content: center; 
+              height: 100vh; 
+              margin: 0; 
+              font-family: sans-serif;
+            }
+            .card { 
+              text-align: center; 
+              border: 2px solid #2E6ECE; 
+              padding: 40px; 
+              border-radius: 20px;
+              width: 300px;
+            }
+            h2 { margin: 20px 0 5px 0; color: #333; }
+            .id { font-family: monospace; font-weight: bold; font-size: 1.5em; color: #2E6ECE; margin-bottom: 10px; }
+            .type { display: inline-block; padding: 5px 15px; background: #eee; border-radius: 50px; font-size: 0.8em; font-weight: bold; }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          <div class="card">
+            ${svgData}
+            <h2>${selectedMemberQr?.name}</h2>
+            <div class="id">${selectedMemberQr?.memberId}</div>
+            <div class="type">${selectedMemberQr?.type === 'Teacher' ? 'GURU' : 'SISWA'}</div>
+          </div>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
   }
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold font-headline tracking-tight">Keanggotaan</h1>
+          <h1 className="text-2xl font-bold font-headline tracking-tight text-primary">Keanggotaan</h1>
           <p className="text-muted-foreground text-sm">Kelola data siswa dan guru yang terdaftar sebagai anggota.</p>
         </div>
         
@@ -376,7 +452,7 @@ export default function MembersPage() {
             </DialogHeader>
             <div className="flex flex-col items-center justify-center p-6 space-y-4 bg-white rounded-xl">
               <div id="member-qr" className="p-4 border-2 border-primary/20 rounded-xl">
-                {selectedMemberQr && <QRCodeSVG value={selectedMemberQr.memberId} size={200} level="H" includeMargin={true} />}
+                {selectedMemberQr && <QRCodeSVG value={selectedMemberQr.memberId} size={250} level="H" includeMargin={true} />}
               </div>
               <div className="text-center">
                 <p className="font-bold text-lg">{selectedMemberQr?.name}</p>
@@ -384,9 +460,14 @@ export default function MembersPage() {
                 <Badge variant="secondary" className="mt-1">{selectedMemberQr?.type === 'Teacher' ? 'GURU' : 'SISWA'}</Badge>
               </div>
             </div>
-            <DialogFooter className="grid grid-cols-2 gap-2">
+            <DialogFooter className="grid grid-cols-3 gap-2">
               <Button variant="outline" onClick={() => setIsQrOpen(false)}>Tutup</Button>
-              <Button onClick={() => window.print()} className="gap-2"><Printer className="h-4 w-4" /> Cetak</Button>
+              <Button variant="secondary" onClick={downloadQrAsImage} className="gap-2">
+                <Download className="h-4 w-4" /> Unduh
+              </Button>
+              <Button onClick={handlePrint} className="gap-2">
+                <Printer className="h-4 w-4" /> Cetak
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
