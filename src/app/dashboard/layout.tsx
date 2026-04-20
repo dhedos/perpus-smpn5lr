@@ -17,6 +17,7 @@ export default function DashboardLayout({
   const router = useRouter()
 
   useEffect(() => {
+    // Hanya redirect jika pemuatan selesai DAN benar-benar tidak ada user
     if (!loading && !user) {
       router.push("/")
     }
@@ -25,11 +26,15 @@ export default function DashboardLayout({
   if (loading) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground font-medium">Menyiapkan Dashboard...</p>
+        </div>
       </div>
     )
   }
 
+  // Jika tidak ada user dan tidak sedang loading, tampilkan null selagi menunggu redirect useEffect
   if (!user) return null
 
   return (
