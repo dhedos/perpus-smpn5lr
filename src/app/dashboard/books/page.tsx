@@ -28,7 +28,8 @@ import {
   X,
   Download,
   FileDown,
-  AlertCircle
+  AlertCircle,
+  CheckCircle2
 } from "lucide-react"
 import { 
   Dialog, 
@@ -151,6 +152,62 @@ export default function BooksPage() {
     } catch (error) {
       toast({ title: "Gagal", description: "Gagal mengekspor data.", variant: "destructive" })
     }
+  }
+
+  const handlePrintAllQrs = () => {
+    if (filteredBooks.length === 0) {
+      toast({ title: "Data Kosong", description: "Tidak ada buku untuk dicetak.", variant: "destructive" })
+      return
+    }
+
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+
+    const qrContainer = document.createElement('div')
+    qrContainer.style.display = 'grid'
+    qrContainer.style.gridTemplateColumns = 'repeat(4, 1fr)'
+    qrContainer.style.gap = '10px'
+    qrContainer.style.padding = '10px'
+
+    // Kita butuh SVG strings untuk dicetak tanpa React
+    // Alternatif: Kita buka halaman khusus print atau gunakan cara DOM
+    
+    let stickersHtml = ''
+    filteredBooks.forEach(book => {
+      stickersHtml += `
+        <div style="border: 1px dashed #ccc; padding: 10px; text-align: center; width: 140px; height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: sans-serif;">
+          <div id="qr-${book.id}"></div>
+          <div style="font-size: 10px; font-weight: bold; margin-top: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%;">${book.title}</div>
+          <div style="font-size: 12px; color: #2E6ECE; font-weight: bold;">${book.code}</div>
+        </div>
+      `
+    })
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Cetak QR Koleksi - SMPN 5</title>
+          <style>
+            @page { size: A4; margin: 10mm; }
+            body { margin: 0; display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
+            .sticker { border: 1px dashed #bbb; padding: 8px; text-align: center; width: 145px; height: 190px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; page-break-inside: avoid; }
+            .qr-placeholder { width: 110px; height: 110px; margin-bottom: 5px; }
+            .title { font-size: 9px; font-weight: bold; font-family: sans-serif; height: 24px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin: 4px 0; }
+            .code { font-size: 11px; font-weight: 900; color: #000; font-family: monospace; }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          ${filteredBooks.map(book => `
+            <div class="sticker">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${book.code}" class="qr-placeholder" />
+              <div class="title">${book.title}</div>
+              <div class="code">${book.code}</div>
+            </div>
+          `).join('')}
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
   }
 
   const handleImportClick = () => {
@@ -332,6 +389,7 @@ export default function BooksPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".xlsx,.xls" className="hidden" />
+          <Button variant="outline" size="sm" onClick={handlePrintAllQrs} className="hidden md:flex"><Printer className="h-4 w-4 mr-2" />Cetak Semua QR</Button>
           <Button variant="outline" size="sm" onClick={handleExportExcel}><FileDown className="h-4 w-4 mr-2" />Ekspor</Button>
           <Button variant="outline" size="sm" onClick={handleImportClick}><FileSpreadsheet className="h-4 w-4 mr-2" />Impor</Button>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -342,15 +400,31 @@ export default function BooksPage() {
                 <div className="space-y-2">
                   <Label className={cn(duplicateBookByCode && "text-destructive")}>Kode Buku</Label>
                   <Input value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} className={cn(duplicateBookByCode && "border-destructive")} />
+                  {duplicateBookByCode && <p className="text-[10px] text-destructive">Kode ini sudah terdaftar!</p>}
                 </div>
                 <div className="space-y-2">
                   <Label>Judul</Label>
                   <Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
                 </div>
-                {/* ... fields ... */}
+                <div className="space-y-2">
+                  <Label>Pengarang</Label>
+                  <Input value={formData.author} onChange={e => setFormData({ ...formData, author: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tahun Terbit</Label>
+                  <Input type="number" value={formData.publicationYear} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} />
+                </div>
+                <div className="space-y-2">
+                  <Label className={cn(duplicateBookByIsbn && "text-destructive")}>ISBN</Label>
+                  <Input value={formData.isbn} onChange={e => setFormData({ ...formData, isbn: e.target.value })} className={cn(duplicateBookByIsbn && "border-destructive")} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Jenis Buku</Label>
+                  <Input value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} placeholder="Fiksi, Sains, dll" />
+                </div>
                 <div className="col-span-2 space-y-2">
-                  <div className="flex justify-between items-center"><Label>Deskripsi</Label><Button variant="ghost" size="sm" onClick={handleGenerateDescription} disabled={isGenerating}><Sparkles className="h-3 w-3 mr-1" />AI</Button></div>
-                  <Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
+                  <div className="flex justify-between items-center"><Label>Deskripsi</Label><Button variant="ghost" type="button" size="sm" onClick={handleGenerateDescription} disabled={isGenerating}><Sparkles className="h-3 w-3 mr-1" />AI</Button></div>
+                  <Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px]" />
                 </div>
               </div>
               <DialogFooter>
@@ -378,6 +452,8 @@ export default function BooksPage() {
           <TableBody>
             {loading ? (
               <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+            ) : filteredBooks.length === 0 ? (
+              <TableRow><TableCell colSpan={5} className="text-center py-10 text-muted-foreground">Tidak ada buku ditemukan.</TableCell></TableRow>
             ) : filteredBooks.map((book) => (
               <TableRow key={book.id}>
                 <TableCell className="font-mono text-xs">{book.code}</TableCell>
@@ -422,6 +498,25 @@ export default function BooksPage() {
           <DialogFooter className="grid grid-cols-2 gap-2">
             <Button variant="outline" onClick={downloadQrAsImage}><Download className="h-4 w-4 mr-2" />Unduh</Button>
             <Button onClick={handlePrint}><Printer className="h-4 w-4 mr-2" />Cetak</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader><DialogTitle>Ubah Data Buku</DialogTitle></DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="space-y-2">
+              <Label className={cn(duplicateBookByCode && "text-destructive")}>Kode Buku</Label>
+              <Input value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} className={cn(duplicateBookByCode && "border-destructive")} />
+            </div>
+            <div className="space-y-2"><Label>Judul</Label><Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Pengarang</Label><Input value={formData.author} onChange={e => setFormData({ ...formData, author: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Tahun</Label><Input type="number" value={formData.publicationYear} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Batal</Button>
+            <Button onClick={handleUpdateBook} disabled={isSaving || !!duplicateBookByCode}>Simpan Perubahan</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
