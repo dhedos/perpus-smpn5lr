@@ -55,6 +55,16 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { generateBookDescription } from "@/ai/flows/generate-book-description-flow"
 import { useToast } from "@/hooks/use-toast"
 import { QRCodeSVG } from "qrcode.react"
@@ -84,6 +94,8 @@ export default function BooksPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [isQrOpen, setIsQrOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [bookToDelete, setBookToDelete] = useState<string | null>(null)
   const [selectedBookQr, setSelectedBookQr] = useState<any>(null)
   const [selectedBookDetail, setSelectedBookDetail] = useState<any>(null)
   
@@ -106,7 +118,6 @@ export default function BooksPage() {
 
   const [editingBookId, setEditingBookId] = useState<string | null>(null)
 
-  // Menggunakan limit untuk menghemat kuota pembacaan Firebase
   const booksCollectionQuery = useMemoFirebase(() => {
     if (!db) return null
     return query(
@@ -146,7 +157,6 @@ export default function BooksPage() {
     })
   }, [books, search, filterCategory, filterYear])
 
-  // Fitur Export Excel yang hemat kuota (menggunakan data yang sudah ter-cache di browser)
   const handleExportExcel = async () => {
     try {
       if (filteredBooks.length === 0) {
@@ -170,13 +180,12 @@ export default function BooksPage() {
       const workbook = utils.book_new()
       utils.book_append_sheet(workbook, worksheet, "Koleksi Buku")
       
-      // Memberikan nama file dengan timestamp agar tidak tertukar
       const dateStr = new Date().toISOString().split('T')[0]
       writeFile(workbook, `Koleksi_Buku_SMPN5_${dateStr}.xlsx`)
       
       toast({ 
         title: "Berhasil Ekspor", 
-        description: "File Excel berhasil dibuat dari data yang tersimpan di memori (Snapshot)." 
+        description: "File Excel berhasil dibuat." 
       })
     } catch (error) {
       toast({ title: "Gagal", description: "Gagal mengekspor data.", variant: "destructive" })
@@ -233,10 +242,11 @@ export default function BooksPage() {
       updatedAt: new Date().toISOString() 
     })
       .then(() => {
-        toast({ title: "Berhasil!", description: "Buku telah terdaftar." })
         setIsOpen(false)
+        toast({ title: "Berhasil!", description: "Buku telah terdaftar." })
         setFormData({ code: "", title: "", author: "", publisher: "", publicationYear: new Date().getFullYear(), acquisitionDate: new Date().toISOString().split('T')[0], isbn: "", category: "", rackLocation: "", totalStock: 1, availableStock: 1, description: "" })
       })
+      .catch(() => toast({ title: "Gagal", variant: "destructive" }))
       .finally(() => setIsSaving(false))
   }
 
@@ -248,10 +258,22 @@ export default function BooksPage() {
       updatedAt: new Date().toISOString() 
     })
       .then(() => {
-        toast({ title: "Berhasil!", description: "Data diperbarui." })
         setIsEditOpen(false)
+        toast({ title: "Berhasil!", description: "Data diperbarui." })
       })
+      .catch(() => toast({ title: "Gagal", variant: "destructive" }))
       .finally(() => setIsSaving(false))
+  }
+
+  const handleDeleteBook = () => {
+    if (!db || !bookToDelete) return
+    deleteDoc(doc(db, 'books', bookToDelete))
+      .then(() => {
+        setIsDeleteDialogOpen(false)
+        setBookToDelete(null)
+        toast({ title: "Terhapus", description: "Buku telah dihapus dari koleksi." })
+      })
+      .catch(() => toast({ title: "Gagal menghapus", variant: "destructive" }))
   }
 
   const startScanner = async () => {
@@ -272,7 +294,15 @@ export default function BooksPage() {
   }
 
   const stopScanner = async () => {
-    if (scannerInstanceRef.current?.isScanning) await scannerInstanceRef.current.stop()
+    if (scannerInstanceRef.current) {
+      if (scannerInstanceRef.current.isScanning) {
+        await scannerInstanceRef.current.stop()
+      }
+      try {
+        scannerInstanceRef.current.clear()
+      } catch (e) {}
+      scannerInstanceRef.current = null
+    }
     setIsScannerOpen(false)
   }
 
@@ -285,7 +315,7 @@ export default function BooksPage() {
         </div>
         <div className="flex wrap gap-2">
           <Button variant="outline" size="sm" onClick={handlePrintAllQrs} className="hidden md:flex"><Printer className="h-4 w-4 mr-2" />Cetak Semua QR</Button>
-          <Button variant="outline" size="sm" onClick={handleExportExcel}><FileDown className="h-4 w-4 mr-2" />Excel (Hemat Kuota)</Button>
+          <Button variant="outline" size="sm" onClick={handleExportExcel}><FileDown className="h-4 w-4 mr-2" />Excel</Button>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-2" />Tambah Buku</Button></DialogTrigger>
             <DialogContent className="max-w-2xl bg-slate-50">
@@ -370,16 +400,15 @@ export default function BooksPage() {
               <TableHead>Kode</TableHead>
               <TableHead>Judul & Pengarang</TableHead>
               <TableHead>Thn Terbit</TableHead>
-              <TableHead>Tgl Terima</TableHead>
               <TableHead>Stok</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
             ) : filteredBooks.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground">Tidak ada buku ditemukan.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Tidak ada buku ditemukan.</TableCell></TableRow>
             ) : filteredBooks.map((book, index) => (
               <TableRow key={book.id}>
                 <TableCell className="text-center text-xs text-muted-foreground">{index + 1}</TableCell>
@@ -391,7 +420,6 @@ export default function BooksPage() {
                   </div>
                 </TableCell>
                 <TableCell className="text-xs">{book.publicationYear}</TableCell>
-                <TableCell className="text-xs text-muted-foreground">{book.acquisitionDate ? new Date(book.acquisitionDate).toLocaleDateString('id-ID') : '-'}</TableCell>
                 <TableCell className="text-xs font-medium">{book.availableStock}/{book.totalStock}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
@@ -400,7 +428,7 @@ export default function BooksPage() {
                       <DropdownMenuItem onClick={() => { setSelectedBookDetail(book); setIsDetailOpen(true); }}><Eye className="h-4 w-4 mr-2" />Lihat Detail</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => { setSelectedBookQr(book); setIsQrOpen(true); }}><QrCode className="h-4 w-4 mr-2" />Tampilkan QR</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => { setEditingBookId(book.id); setFormData({ ...book }); setIsEditOpen(true); }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onClick={() => { if(confirm("Hapus buku ini?")) deleteDoc(doc(db, 'books', book.id)) }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive" onClick={() => { setBookToDelete(book.id); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -419,9 +447,7 @@ export default function BooksPage() {
 
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
         <DialogContent className="sm:max-w-2xl p-0 border-none bg-black h-[100dvh] sm:h-auto overflow-hidden">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Pemindai QR Code Buku</DialogTitle>
-          </DialogHeader>
+          <DialogHeader className="sr-only"><DialogTitle>Pemindai QR Code Buku</DialogTitle></DialogHeader>
           <div id="scanner-view" className="w-full h-full bg-black"></div>
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white" onClick={stopScanner}><X /></Button>
         </DialogContent>
@@ -441,10 +467,6 @@ export default function BooksPage() {
               <div className="col-span-2 space-y-1 pt-2 border-t">
                 <Label className="text-[10px] uppercase font-bold text-muted-foreground">Deskripsi / Ringkasan AI</Label>
                 <div className="text-sm bg-muted/30 p-4 rounded-lg italic leading-relaxed">{selectedBookDetail.description || 'Tidak ada deskripsi.'}</div>
-              </div>
-              <div className="col-span-2 text-[10px] text-muted-foreground flex justify-between pt-2 border-t">
-                <span>Dibuat: {selectedBookDetail.createdAt ? new Date(selectedBookDetail.createdAt).toLocaleString('id-ID') : '-'}</span>
-                <span>Terakhir Update: {selectedBookDetail.updatedAt ? new Date(selectedBookDetail.updatedAt).toLocaleString('id-ID') : 'Belum pernah'}</span>
               </div>
             </div>
           )}
@@ -470,34 +492,13 @@ export default function BooksPage() {
         <DialogContent className="max-w-2xl bg-slate-50">
           <DialogHeader><DialogTitle>Ubah Data Buku</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-4">
-            <div className="space-y-2">
-              <Label className="font-semibold">Kode Buku</Label>
-              <Input value={formData.code} disabled className="bg-muted border-slate-300" />
-            </div>
-            <div className="space-y-2">
-              <Label className="font-semibold">Judul Buku</Label>
-              <Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" />
-            </div>
-            <div className="space-y-2">
-              <Label className="font-semibold">Pengarang</Label>
-              <Input value={formData.author} onChange={e => setFormData({ ...formData, author: e.target.value })} className="bg-white border-slate-300 h-11" />
-            </div>
-            <div className="space-y-2">
-              <Label className="font-semibold">Tahun Terbit</Label>
-              <Input type="number" value={formData.publicationYear} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300 h-11" />
-            </div>
-            <div className="space-y-2">
-              <Label className="font-semibold">Tgl. Penerimaan</Label>
-              <Input type="date" value={formData.acquisitionDate} onChange={e => setFormData({ ...formData, acquisitionDate: e.target.value })} className="bg-white border-slate-300 h-11" />
-            </div>
-            <div className="space-y-2">
-              <Label className="font-semibold">Jenis / Kategori</Label>
-              <Input value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} className="bg-white border-slate-300 h-11" />
-            </div>
-            <div className="col-span-2 space-y-2">
-              <Label className="font-semibold">Deskripsi</Label>
-              <Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" />
-            </div>
+            <div className="space-y-2"><Label className="font-semibold">Kode Buku</Label><Input value={formData.code} disabled className="bg-muted border-slate-300" /></div>
+            <div className="space-y-2"><Label className="font-semibold">Judul Buku</Label><Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold">Pengarang</Label><Input value={formData.author} onChange={e => setFormData({ ...formData, author: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold">Tahun Terbit</Label><Input type="number" value={formData.publicationYear} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold">Tgl. Penerimaan</Label><Input type="date" value={formData.acquisitionDate} onChange={e => setFormData({ ...formData, acquisitionDate: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold">Jenis / Kategori</Label><Input value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
+            <div className="col-span-2 space-y-2"><Label className="font-semibold">Deskripsi</Label><Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>Batal</Button>
@@ -505,6 +506,19 @@ export default function BooksPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Buku?</AlertDialogTitle>
+            <AlertDialogDescription>Tindakan ini permanen. Pastikan buku sudah tidak ada di inventaris.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteBook} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Hapus Permanen</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
