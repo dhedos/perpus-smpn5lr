@@ -77,7 +77,7 @@ export default function TransactionsPage() {
   const [calculatedFine, setCalculatedFine] = useState(0)
   const [lateDays, setLateDays] = useState(0)
 
-  // Settings
+  // Settings: Menarik batas pinjam dan tarif denda dari Admin
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
 
@@ -87,7 +87,7 @@ export default function TransactionsPage() {
   const { data: members } = useCollection(membersRef)
   const { data: books } = useCollection(booksRef)
 
-  // Query sederhana untuk menghindari masalah Index Komposit di awal
+  // Query sirkulasi aktif - Disederhanakan untuk menghindari error permission/index
   const activeTransQuery = useMemoFirebase(() => {
     if (!db || !isStaff) return null;
     return query(collection(db, 'transactions'), where('status', '==', 'active'));
@@ -97,7 +97,6 @@ export default function TransactionsPage() {
 
   const filteredActiveTrans = useMemo(() => {
     if (!activeTrans) return []
-    // Urutkan secara lokal di memori klien untuk menghemat kuota dan menghindari index error
     const sorted = [...activeTrans].sort((a, b) => {
       const dateA = a.borrowDate ? new Date(a.borrowDate).getTime() : 0;
       const dateB = b.borrowDate ? new Date(b.borrowDate).getTime() : 0;
@@ -105,11 +104,11 @@ export default function TransactionsPage() {
     });
 
     if (!returnSearch) return sorted
-    const search = returnSearch.toLowerCase()
+    const s = returnSearch.toLowerCase()
     return sorted.filter(t => 
-      t.memberName?.toLowerCase().includes(search) || 
-      t.bookTitle?.toLowerCase().includes(search) ||
-      t.memberId?.toLowerCase().includes(search)
+      t.memberName?.toLowerCase().includes(s) || 
+      t.bookTitle?.toLowerCase().includes(s) ||
+      t.memberId?.toLowerCase().includes(s)
     )
   }, [activeTrans, returnSearch])
 
@@ -141,18 +140,21 @@ export default function TransactionsPage() {
     setIsReturnConfirmOpen(true);
   }
 
+  // Efek untuk menghitung denda secara otomatis saat input kondisi berubah
   useEffect(() => {
     if (!pendingReturnTrans || !settings) return;
     
     let fine = 0;
+    // Denda keterlambatan (Rp per hari dari Admin)
     if (lateDays > 0) {
-      fine += lateDays * (settings.fineAmount || 500);
+      fine += lateDays * Number(settings.fineAmount || 500);
     }
     
+    // Denda kondisi khusus (Buku Hilang/Rusak)
     if (returnCondition === "lost") {
-      fine += (settings.lostBookFine || 50000);
+      fine += Number(settings.lostBookFine || 50000);
     } else if (returnCondition === "damaged") {
-      fine += (settings.fineAmount || 500) * 10; 
+      fine += Number(settings.fineAmount || 500) * 10; // Ilustrasi: denda rusak 10x tarif harian
     }
     
     setCalculatedFine(fine);
@@ -179,7 +181,8 @@ export default function TransactionsPage() {
         
         if (returnCondition === "lost") {
           await updateDoc(bRef, { 
-            totalStock: currentTotal - 1 
+            totalStock: currentTotal - 1,
+            availableStock: currentAvail // Tidak bertambah karena buku tidak ada fisiknya
           })
         } else {
           await updateDoc(bRef, { 
@@ -218,7 +221,13 @@ export default function TransactionsPage() {
   const handleProcessBorrow = () => {
     if (!db || !selectedMember || !selectedBook) return
     setIsProcessing(true)
-    const due = new Date(); due.setDate(due.getDate() + (settings?.loanPeriod || 7))
+    
+    // LOGIKA DINAMIS: Menggunakan loanPeriod dari Admin
+    const loanDays = Number(settings?.loanPeriod || 7);
+    const today = new Date();
+    const dueDate = new Date(); 
+    dueDate.setDate(today.getDate() + loanDays);
+
     addDoc(collection(db, 'transactions'), {
       memberId: selectedMember.memberId, 
       memberName: selectedMember.name, 
@@ -226,21 +235,27 @@ export default function TransactionsPage() {
       bookTitle: selectedBook.title, 
       type: 'borrow', 
       status: 'active', 
-      borrowDate: new Date().toISOString(), 
-      dueDate: due.toISOString(), 
+      borrowDate: today.toISOString(), 
+      dueDate: dueDate.toISOString(), 
       createdAt: serverTimestamp()
     }).then(() => {
       updateDoc(doc(db, 'books', selectedBook.id), { availableStock: Number(selectedBook.availableStock) - 1 })
-      toast({ title: "Berhasil Meminjam" }); setSelectedBook(null); setSelectedMember(null);
+      toast({ 
+        title: "Peminjaman Berhasil", 
+        description: `Jatuh tempo: ${format(dueDate, 'dd MMMM yyyy')} (${loanDays} hari).` 
+      }); 
+      setSelectedBook(null); 
+      setSelectedMember(null);
     }).finally(() => setIsProcessing(false))
   }
 
-  if (!isStaff) {
+  // Tampilkan loading jika status staff belum terverifikasi
+  if (!isStaff && !user) {
     return (
       <div className="h-[60vh] flex items-center justify-center">
         <div className="text-center space-y-4">
           <Loader2 className="h-10 w-10 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">Memverifikasi hak akses petugas...</p>
+          <p className="text-muted-foreground">Memuat data akses...</p>
         </div>
       </div>
     )
@@ -251,7 +266,10 @@ export default function TransactionsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-primary flex items-center gap-2"><ArrowRightLeft className="h-6 w-6" /> Sirkulasi & Kondisi Buku</h1>
-          <p className="text-sm text-muted-foreground">Proses peminjaman dan pengembalian dengan cek kondisi fisik.</p>
+          <p className="text-sm text-muted-foreground">Proses peminjaman dan pengembalian sesuai kebijakan sekolah.</p>
+        </div>
+        <div className="text-right">
+          <Badge variant="outline" className="text-[10px] font-bold">Kebijakan: {settings?.loanPeriod || 7} Hari</Badge>
         </div>
       </div>
 
@@ -456,9 +474,9 @@ export default function TransactionsPage() {
                     <span className="text-2xl font-black text-orange-600">Rp{calculatedFine.toLocaleString()}</span>
                   </div>
                   <div className="text-[10px] text-orange-700 font-medium leading-relaxed opacity-80 pt-2 border-t border-orange-200">
-                    {lateDays > 0 && <p className="flex justify-between"><span>• Terlambat {lateDays} hari</span> <span>Rp{(lateDays * (settings?.fineAmount || 500)).toLocaleString()}</span></p>}
-                    {returnCondition === 'damaged' && <p className="flex justify-between"><span>• Biaya Kerusakan Buku</span> <span>Rp{((settings?.fineAmount || 500) * 10).toLocaleString()}</span></p>}
-                    {returnCondition === 'lost' && <p className="flex justify-between"><span>• Ganti Buku Hilang</span> <span>Rp{(settings?.lostBookFine || 50000).toLocaleString()}</span></p>}
+                    {lateDays > 0 && <p className="flex justify-between"><span>• Terlambat {lateDays} hari</span> <span>Rp{(lateDays * Number(settings?.fineAmount || 500)).toLocaleString()}</span></p>}
+                    {returnCondition === 'damaged' && <p className="flex justify-between"><span>• Biaya Kerusakan Buku</span> <span>Rp{(Number(settings?.fineAmount || 500) * 10).toLocaleString()}</span></p>}
+                    {returnCondition === 'lost' && <p className="flex justify-between"><span>• Ganti Buku Hilang</span> <span>Rp{Number(settings?.lostBookFine || 50000).toLocaleString()}</span></p>}
                   </div>
                 </div>
               )}

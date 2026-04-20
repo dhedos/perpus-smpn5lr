@@ -21,7 +21,6 @@ import {
 } from '@/firebase'
 import { doc, setDoc } from 'firebase/firestore'
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors'
-import { cn } from "@/lib/utils"
 
 export default function SettingsPage() {
   const db = useFirestore()
@@ -40,7 +39,7 @@ export default function SettingsPage() {
     digitalCatalog: true
   })
 
-  // Fetch settings from Firestore with memoized reference to prevent flickering
+  // Fetch settings from Firestore
   const settingsDocRef = useMemoFirebase(() => 
     db ? doc(db, 'settings', 'general') : null, 
   [db])
@@ -64,7 +63,15 @@ export default function SettingsPage() {
 
     setIsSaving(true)
     
-    setDoc(settingsDocRef, settings, { merge: true })
+    // Pastikan data numerik tersimpan sebagai number, bukan string
+    const dataToSave = {
+      ...settings,
+      loanPeriod: Number(settings.loanPeriod),
+      fineAmount: Number(settings.fineAmount),
+      lostBookFine: Number(settings.lostBookFine)
+    }
+    
+    setDoc(settingsDocRef, dataToSave, { merge: true })
       .then(() => {
         toast({
           title: "Berhasil Disimpan",
@@ -75,7 +82,7 @@ export default function SettingsPage() {
         const permissionError = new FirestorePermissionError({
           path: settingsDocRef.path,
           operation: 'write',
-          requestResourceData: settings,
+          requestResourceData: dataToSave,
         } satisfies SecurityRuleContext);
         errorEmitter.emit('permission-error', permissionError);
       })
@@ -183,7 +190,6 @@ export default function SettingsPage() {
                         className="bg-white border-red-200 h-12 text-xl font-black text-destructive rounded-l-none"
                       />
                     </div>
-                    <p className="text-[10px] text-muted-foreground italic">Biaya penggantian flat jika buku tidak ditemukan.</p>
                   </div>
                 </div>
               </div>
