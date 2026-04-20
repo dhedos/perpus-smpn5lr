@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
@@ -55,7 +56,7 @@ export default function TransactionsPage() {
   const { toast } = useToast()
   
   const [activeTab, setActiveTab] = useState("borrow")
-  const [borrowerType, setBorrowerType] = useState("Siswa") // Siswa, Guru, Kelas
+  const [borrowerType, setBorrowerType] = useState("Siswa") 
   const [memberSearch, setMemberSearch] = useState("")
   const [bookSearch, setBookSearch] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
@@ -65,7 +66,6 @@ export default function TransactionsPage() {
   const [selectedMember, setSelectedMember] = useState<any>(null)
   const [selectedBook, setSelectedBook] = useState<any>(null)
 
-  // New Member Form Data
   const [newMemberData, setNewMemberData] = useState({
     memberId: "",
     name: "",
@@ -83,7 +83,6 @@ export default function TransactionsPage() {
   const { data: members, loading: membersLoading } = useCollection(membersRef)
   const { data: books } = useCollection(booksRef)
 
-  // Auto-ID Logic (sequential, reusable)
   const nextAvailableId = useMemo(() => {
     if (membersLoading || !members) return ""
     const ids = members
@@ -113,12 +112,12 @@ export default function TransactionsPage() {
     const term = memberSearch.toLowerCase()
     
     return members.filter(m => {
-      const matchesSearch = m.name?.toLowerCase().includes(term) || m.memberId?.includes(term) || m.classOrSubject?.toLowerCase().includes(term)
+      const matchesSearch = (m.name?.toLowerCase() || "").includes(term) || 
+                          (m.memberId || "").includes(term) || 
+                          (m.classOrSubject?.toLowerCase() || "").includes(term)
       
       if (borrowerType === "Siswa") return matchesSearch && m.type === "Student"
       if (borrowerType === "Guru") return matchesSearch && m.type === "Teacher"
-      if (borrowerType === "Kelas") return matchesSearch 
-      
       return matchesSearch
     })
   }, [members, memberSearch, borrowerType])
@@ -126,7 +125,7 @@ export default function TransactionsPage() {
   const foundBooks = useMemo(() => {
     if (!bookSearch || !books) return []
     const term = bookSearch.toLowerCase()
-    return books.filter(b => b.title?.toLowerCase().includes(term) || b.code?.toLowerCase().includes(term))
+    return books.filter(b => (b.title?.toLowerCase() || "").includes(term) || (b.code?.toLowerCase() || "").includes(term))
   }, [books, bookSearch])
 
   const handleAddNewMember = () => {
@@ -146,7 +145,6 @@ export default function TransactionsPage() {
       toast({ title: "Berhasil!", description: `Anggota baru dengan ID ${newMemberData.memberId} telah ditambahkan.` })
       setIsMemberDialogOpen(false)
       
-      // Auto select the newly created member
       setSelectedMember(createdMember)
       setMemberSearch(createdMember.name)
       
@@ -158,7 +156,7 @@ export default function TransactionsPage() {
         phone: "",
         joinDate: new Date().toISOString().split('T')[0]
       })
-    }).catch(async (error) => {
+    }).catch(async () => {
       const permissionError = new FirestorePermissionError({
         path: membersRef.path,
         operation: 'create',
@@ -190,7 +188,7 @@ export default function TransactionsPage() {
     const transactionData = {
       memberId: selectedMember.memberId,
       memberName: selectedMember.name,
-      memberType: selectedMember.type,
+      memberType: selectedMember.type || borrowerType,
       borrowerCategory: borrowerType,
       classOrSubject: selectedMember.classOrSubject,
       bookId: selectedBook.id,
@@ -210,14 +208,14 @@ export default function TransactionsPage() {
 
       toast({ 
         title: "Peminjaman Berhasil", 
-        description: `Buku ${selectedBook.title} dipinjam oleh ${selectedMember.name} (${borrowerType}).` 
+        description: `Buku ${selectedBook.title} dipinjam oleh ${selectedMember.name}.` 
       })
       
       setSelectedBook(null)
       setSelectedMember(null)
       setMemberSearch("")
       setBookSearch("")
-    }).catch(async (err) => {
+    }).catch(async () => {
       const permissionError = new FirestorePermissionError({
         path: transRef.path,
         operation: 'create',

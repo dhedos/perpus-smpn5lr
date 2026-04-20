@@ -48,10 +48,6 @@ import { generateBookDescription } from "@/ai/flows/generate-book-description-fl
 import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 
-// External libs
-import * as XLSX from "xlsx"
-import { Html5Qrcode } from "html5-qrcode"
-
 // Firebase imports
 import { 
   useFirestore, 
@@ -74,7 +70,7 @@ export default function BooksPage() {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const scannerRef = useRef<Html5Qrcode | null>(null)
+  const scannerRef = useRef<any>(null)
 
   const [formData, setFormData] = useState({
     code: "",
@@ -111,18 +107,21 @@ export default function BooksPage() {
     fileInputRef.current?.click()
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !db || !booksCollectionRef) return
+
+    // Import XLSX dynamically to avoid SSR/Turbopack issues
+    const { read, utils } = await import("xlsx")
 
     const reader = new FileReader()
     reader.onload = async (evt) => {
       try {
         const data = new Uint8Array(evt.target?.result as ArrayBuffer)
-        const workbook = XLSX.read(data, { type: "array" })
+        const workbook = read(data, { type: "array" })
         const sheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[sheetName]
-        const json: any[] = XLSX.utils.sheet_to_json(worksheet)
+        const json: any[] = utils.sheet_to_json(worksheet)
 
         if (json.length === 0) {
           toast({ title: "Gagal", description: "File Excel kosong.", variant: "destructive" })
@@ -132,38 +131,42 @@ export default function BooksPage() {
         toast({ title: "Mengimpor...", description: `Sedang mengimpor ${json.length} buku.` })
 
         for (const row of json) {
-          // Normalisasi data dari Excel
           const bookData = {
-            code: row.code || row.Kode || "",
-            title: row.title || row.Judul || "",
-            author: row.author || row.Pengarang || row.Penulis || "",
-            isbn: row.isbn || row.ISBN || "",
-            category: row.category || row.Kategori || "",
-            rackLocation: row.rackLocation || row.Rak || row.Lokasi || "",
+            code: String(row.code || row.Kode || row.id || ""),
+            title: String(row.title || row.Judul || ""),
+            author: String(row.author || row.Pengarang || row.Penulis || ""),
+            isbn: String(row.isbn || row.ISBN || ""),
+            category: String(row.category || row.Kategori || ""),
+            rackLocation: String(row.rackLocation || row.Rak || row.Lokasi || ""),
             totalStock: Number(row.totalStock || row.Stok || 1),
             availableStock: Number(row.availableStock || row.Tersedia || 1),
-            description: row.description || row.Deskripsi || "",
+            description: String(row.description || row.Deskripsi || ""),
             createdAt: new Date().toISOString()
           }
 
           if (bookData.title && bookData.code) {
-            addDoc(booksCollectionRef, bookData).catch(err => console.error("Error importing row:", err))
+            addDoc(booksCollectionRef, bookData).catch(() => {
+               // Silently catch row errors or handle individually if needed
+            })
           }
         }
 
-        toast({ title: "Berhasil!", description: `${json.length} buku telah ditambahkan.` })
+        toast({ title: "Berhasil!", description: `${json.length} buku telah diproses.` })
       } catch (error) {
         toast({ title: "Gagal", description: "Gagal membaca file Excel. Pastikan format benar.", variant: "destructive" })
       }
     }
     reader.readAsArrayBuffer(file)
-    // Reset input
     if (fileInputRef.current) fileInputRef.current.value = ""
   }
 
   // --- BARCODE SCANNER LOGIC ---
   const startScanner = async () => {
     setIsScannerOpen(true)
+    
+    // Dynamically import to ensure window is available
+    const { Html5Qrcode } = await import("html5-qrcode")
+
     setTimeout(async () => {
       try {
         const scanner = new Html5Qrcode("scanner-container")
@@ -177,13 +180,10 @@ export default function BooksPage() {
             stopScanner()
             toast({ title: "Berhasil!", description: `Barcode terdeteksi: ${decodedText}` })
           },
-          (errorMessage) => {
-            // Error scanning is normal while looking for code
-          }
+          () => {}
         )
         setHasCameraPermission(true)
       } catch (err) {
-        console.error("Camera access error:", err)
         setHasCameraPermission(false)
         toast({
           variant: "destructive",
@@ -515,16 +515,7 @@ export default function BooksPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem className="gap-2">
-                        <Edit className="h-4 w-4" /> Ubah
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="gap-2">
-                        <ScanBarcode className="h-4 w-4" /> Label Barcode
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="gap-2 text-destructive"
-                        onClick={() => handleDeleteBook(book.id)}
-                      >
+                      <DropdownMenuItem className="gap-2 text-destructive" onClick={() => handleDeleteBook(book.id)}>
                         <Trash2 className="h-4 w-4" /> Hapus
                       </DropdownMenuItem>
                     </DropdownMenuContent>
