@@ -158,7 +158,6 @@ export default function BooksPage() {
     })
   }, [books, search, filterCategory, filterYear])
 
-  // Function to force unlock UI pointer events
   const forceUnlockUI = () => {
     setTimeout(() => {
       document.body.style.pointerEvents = 'auto'
@@ -607,12 +606,12 @@ export default function BooksPage() {
           </DialogHeader>
           {selectedBookDetail && (
             <div className="grid grid-cols-2 gap-6 py-4">
-              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Judul Buku</Label><p className="font-bold text-lg leading-tight">{selectedBookDetail.title ?? ""}</p></div>
-              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Kode Koleksi</Label><p className="font-mono text-primary font-bold">{selectedBookDetail.code ?? ""}</p></div>
-              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Pengarang</Label><p>{selectedBookDetail.author ?? ""}</p></div>
-              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Tgl. Penerimaan</Label><div className="flex items-center gap-2"><CalendarIcon className="h-3 w-3 text-muted-foreground" /><p>{selectedBookDetail.acquisitionDate ? new Date(selectedBookDetail.acquisitionDate).toLocaleDateString('id-ID', { dateStyle: 'long' }) : '-'}</p></div></div>
-              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Jenis & Lokasi Rak</Label><p><Badge variant="secondary" className="mr-2">{selectedBookDetail.category ?? ""}</Badge> {selectedBookDetail.rackLocation || 'Rak belum diatur'}</p></div>
-              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Status Ketersediaan</Label><p className="font-semibold text-blue-600">{selectedBookDetail.availableStock ?? 0} dari {selectedBookDetail.totalStock ?? 0} tersedia</p></div>
+              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Judul Buku</Label><div className="font-bold text-lg leading-tight">{selectedBookDetail.title ?? ""}</div></div>
+              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Kode Koleksi</Label><div className="font-mono text-primary font-bold">{selectedBookDetail.code ?? ""}</div></div>
+              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Pengarang</Label><div>{selectedBookDetail.author ?? ""}</div></div>
+              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Tgl. Penerimaan</Label><div className="flex items-center gap-2"><CalendarIcon className="h-3 w-3 text-muted-foreground" /><div>{selectedBookDetail.acquisitionDate ? new Date(selectedBookDetail.acquisitionDate).toLocaleDateString('id-ID', { dateStyle: 'long' }) : '-'}</div></div></div>
+              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Jenis & Lokasi Rak</Label><div className="flex items-center gap-2"><Badge variant="secondary">{selectedBookDetail.category ?? ""}</Badge> <span>{selectedBookDetail.rackLocation || 'Rak belum diatur'}</span></div></div>
+              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Status Ketersediaan</Label><div className="font-semibold text-blue-600">{selectedBookDetail.availableStock ?? 0} dari {selectedBookDetail.totalStock ?? 0} tersedia</div></div>
               <div className="col-span-2 space-y-1 pt-2 border-t">
                 <Label className="text-[10px] uppercase font-bold text-muted-foreground">Deskripsi / Ringkasan AI</Label>
                 <div className="text-sm bg-muted/30 p-4 rounded-lg italic leading-relaxed">{selectedBookDetail.description || 'Tidak ada deskripsi.'}</div>
@@ -632,7 +631,7 @@ export default function BooksPage() {
           <div className="bg-white p-6 rounded-xl border flex justify-center">
             {selectedBookQr && <QRCodeSVG value={selectedBookQr.code} size={240} includeMargin />}
           </div>
-          <div className="font-bold"><p>{selectedBookQr?.title ?? ""}</p><p className="text-primary">{selectedBookQr?.code ?? ""}</p></div>
+          <div className="font-bold"><div>{selectedBookQr?.title ?? ""}</div><div className="text-primary">{selectedBookQr?.code ?? ""}</div></div>
           <DialogFooter className="grid grid-cols-2 gap-2">
             <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" />Cetak</Button>
             <Button onClick={() => setIsQrOpen(false)}>Tutup</Button>
