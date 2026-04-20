@@ -210,11 +210,11 @@ export default function BooksPage() {
           </style>
         </head>
         <body onload="window.print(); window.close();">
-          \${filteredBooks.map(book => `
+          ${filteredBooks.map(book => `
             <div class="sticker">
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=\${book.code}" class="qr-img" />
-              <div class="title">\${book.title}</div>
-              <div class="code">\${book.code}</div>
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${book.code}" class="qr-img" />
+              <div class="title">${book.title}</div>
+              <div class="code">${book.code}</div>
             </div>
           `).join('')}
         </body>
@@ -319,7 +319,9 @@ export default function BooksPage() {
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-2" />Tambah Buku</Button></DialogTrigger>
             <DialogContent className="max-w-2xl bg-slate-50">
-              <DialogHeader><DialogTitle>Tambah Buku Baru</DialogTitle></DialogHeader>
+              <DialogHeader>
+                <DialogTitle>Tambah Buku Baru</DialogTitle>
+              </DialogHeader>
               <div className="grid grid-cols-2 gap-4 py-4">
                 <div className="space-y-2">
                   <Label className="font-semibold">Kode Buku</Label>
@@ -455,7 +457,9 @@ export default function BooksPage() {
 
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
         <DialogContent className="sm:max-w-2xl p-0 border-none bg-black h-[100dvh] sm:h-auto overflow-hidden">
-          <DialogHeader className="sr-only"><DialogTitle>Pemindai QR Code Buku</DialogTitle></DialogHeader>
+          <DialogHeader className="sr-only">
+            <DialogTitle>Pemindai QR Code Buku</DialogTitle>
+          </DialogHeader>
           <div id="scanner-view" className="w-full h-full bg-black"></div>
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white" onClick={stopScanner}><X /></Button>
         </DialogContent>
@@ -463,7 +467,9 @@ export default function BooksPage() {
 
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
         <DialogContent className="max-w-2xl bg-white">
-          <DialogHeader><DialogTitle className="flex items-center gap-2 text-primary"><Info className="h-5 w-5" />Informasi Detail Buku</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-primary"><Info className="h-5 w-5" />Informasi Detail Buku</DialogTitle>
+          </DialogHeader>
           {selectedBookDetail && (
             <div className="grid grid-cols-2 gap-6 py-4">
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Judul Buku</Label><p className="font-bold text-lg leading-tight">{selectedBookDetail.title}</p></div>
@@ -484,7 +490,9 @@ export default function BooksPage() {
 
       <Dialog open={isQrOpen} onOpenChange={setIsQrOpen}>
         <DialogContent className="max-w-sm text-center">
-          <DialogHeader><DialogTitle>QR Code Buku</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>QR Code Buku</DialogTitle>
+          </DialogHeader>
           <div className="bg-white p-6 rounded-xl border flex justify-center">
             {selectedBookQr && <QRCodeSVG value={selectedBookQr.code} size={240} includeMargin />}
           </div>
@@ -498,7 +506,9 @@ export default function BooksPage() {
 
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-2xl bg-slate-50">
-          <DialogHeader><DialogTitle>Ubah Data Buku</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Ubah Data Buku</DialogTitle>
+          </DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-4">
             <div className="space-y-2"><Label className="font-semibold">Kode Buku</Label><Input value={formData.code} disabled className="bg-muted border-slate-300" /></div>
             <div className="space-y-2"><Label className="font-semibold">Judul Buku</Label><Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
