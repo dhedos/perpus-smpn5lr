@@ -137,8 +137,11 @@ export default function TransactionsPage() {
         await scanner.start(
           { facingMode: "environment" },
           { 
-            fps: 15, 
-            qrbox: { width: 300, height: 180 }, // Fokus area lebar untuk barcode
+            fps: 20, 
+            qrbox: (viewWidth, viewHeight) => {
+              const minSide = Math.min(viewWidth, viewHeight);
+              return { width: minSide * 0.8, height: minSide * 0.5 };
+            },
             aspectRatio: 1.0,
             formatsToSupport: [ 
               Html5QrcodeSupportedFormats.QR_CODE, 
@@ -454,26 +457,48 @@ export default function TransactionsPage() {
       </Tabs>
 
       <Dialog open={isScannerOpen} onOpenChange={(open) => !open && stopScanner()}>
-        <DialogContent className="sm:max-w-md p-0 overflow-hidden border-none bg-black">
-          <div className="p-4 bg-background flex justify-between items-center">
-             <DialogTitle className="text-base">Multifungsi Scanner</DialogTitle>
-             <Button variant="ghost" size="icon" onClick={stopScanner}><X className="h-5 w-5" /></Button>
+        <DialogContent className="max-w-none w-screen h-[100dvh] p-0 border-none bg-black">
+          <div className="absolute top-0 left-0 right-0 z-50 p-4 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-center">
+             <div className="text-white">
+                <DialogTitle className="text-lg font-bold">Multifungsi Scanner</DialogTitle>
+                <p className="text-xs text-white/70">Mencari Anggota atau Buku secara otomatis</p>
+             </div>
+             <Button variant="ghost" size="icon" className="text-white hover:bg-white/20" onClick={stopScanner}>
+               <X className="h-6 w-6" />
+             </Button>
           </div>
-          <div className="relative aspect-square w-full bg-black">
-            <div id="qr-transaction-scanner" className="h-full w-full"></div>
+          
+          <div className="relative w-full h-full bg-black">
+            <div id="qr-transaction-scanner" className="h-full w-full [&>video]:object-cover"></div>
+            
             {hasCameraPermission === false && (
-              <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-white bg-black/80">
-                <Alert variant="destructive" className="bg-destructive border-none text-white">
+              <div className="absolute inset-0 z-50 flex items-center justify-center p-6 text-center text-white bg-black/90">
+                <Alert variant="destructive" className="bg-destructive border-none text-white max-w-sm">
                   <AlertTitle>Izin Kamera Diperlukan</AlertTitle>
                   <AlertDescription>Mohon "Allow" kamera di perangkat Anda agar bisa memindai QR/Barcode.</AlertDescription>
+                  <Button variant="outline" className="mt-4 w-full" onClick={stopScanner}>Tutup</Button>
                 </Alert>
               </div>
             )}
-            <div className="absolute inset-0 border-x-[20px] border-y-[80px] border-black/40 pointer-events-none flex items-center justify-center">
-               <div className="w-[300px] h-[180px] border-4 border-primary/70 rounded-2xl shadow-[0_0_0_1000px_rgba(0,0,0,0.5)]"></div>
-            </div>
-            <div className="absolute bottom-10 left-0 right-0 text-center text-white text-xs font-bold animate-pulse">
-               Mencari Anggota / Buku...
+            
+            {/* Overlay UI */}
+            <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
+              <div className="w-[85vw] max-w-[450px] h-[35vh] max-h-[300px] border-2 border-primary/70 rounded-3xl relative shadow-[0_0_0_9999px_rgba(0,0,0,0.6)]">
+                {/* Scanner corners */}
+                <div className="absolute -top-1 -left-1 w-10 h-10 border-t-4 border-l-4 border-primary rounded-tl-2xl"></div>
+                <div className="absolute -top-1 -right-1 w-10 h-10 border-t-4 border-r-4 border-primary rounded-tr-2xl"></div>
+                <div className="absolute -bottom-1 -left-1 w-10 h-10 border-b-4 border-l-4 border-primary rounded-bl-2xl"></div>
+                <div className="absolute -bottom-1 -right-1 w-10 h-10 border-b-4 border-r-4 border-primary rounded-br-2xl"></div>
+                
+                {/* Laser animation line */}
+                <div className="absolute left-6 right-6 h-1 bg-primary/40 shadow-[0_0_20px_rgba(46,110,206,1)] animate-pulse top-1/2"></div>
+              </div>
+              
+              <div className="mt-10 px-8 py-3 bg-black/50 backdrop-blur-md rounded-full border border-white/20">
+                <p className="text-white text-sm font-bold animate-pulse flex items-center gap-2">
+                  <RefreshCcw className="h-4 w-4" /> Mendeteksi Koleksi / Siswa...
+                </p>
+              </div>
             </div>
           </div>
         </DialogContent>

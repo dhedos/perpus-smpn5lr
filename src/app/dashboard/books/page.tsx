@@ -192,8 +192,11 @@ export default function BooksPage() {
           await scanner.start(
             { facingMode: "environment" },
             { 
-              fps: 15, 
-              qrbox: { width: 300, height: 180 }, // Lebar untuk menangkap barcode memanjang
+              fps: 20, 
+              qrbox: (viewWidth, viewHeight) => {
+                const minSide = Math.min(viewWidth, viewHeight);
+                return { width: minSide * 0.8, height: minSide * 0.5 };
+              },
               aspectRatio: 1.0,
               formatsToSupport: [ 
                 Html5QrcodeSupportedFormats.QR_CODE, 
@@ -520,34 +523,57 @@ export default function BooksPage() {
       </div>
 
       <Dialog open={isScannerOpen} onOpenChange={(open) => !open && stopScanner()}>
-        <DialogContent className="sm:max-w-md p-0 overflow-hidden border-none bg-black">
-          <div className="p-4 bg-background flex justify-between items-center">
-            <div>
-              <DialogTitle className="text-base">Scanner Kamera</DialogTitle>
-              <DialogDescription className="text-xs">Arahkan ke barcode/QR buku</DialogDescription>
+        <DialogContent className="max-w-none w-screen h-[100dvh] p-0 border-none bg-black">
+          <div className="absolute top-0 left-0 right-0 z-50 p-4 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-center">
+            <div className="text-white">
+              <DialogTitle className="text-lg font-bold">Pemindai Kamera</DialogTitle>
+              <DialogDescription className="text-xs text-white/70">Arahkan ke barcode atau QR buku</DialogDescription>
             </div>
-            <Button variant="ghost" size="icon" onClick={stopScanner}><X className="h-5 w-5" /></Button>
+            <Button variant="ghost" size="icon" className="text-white hover:bg-white/20" onClick={stopScanner}>
+              <X className="h-6 w-6" />
+            </Button>
           </div>
-          <div className="relative aspect-square w-full bg-black flex items-center justify-center">
-            <div id="scanner-container" className="h-full w-full"></div>
+          
+          <div className="relative w-full h-full bg-black flex items-center justify-center">
+            <div id="scanner-container" className="h-full w-full [&>video]:object-cover"></div>
+            
             {hasCameraPermission === false && (
-              <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-white">
-                <Alert variant="destructive" className="bg-destructive text-white border-none">
+              <div className="absolute inset-0 z-50 flex items-center justify-center p-6 text-center text-white bg-black">
+                <Alert variant="destructive" className="bg-destructive text-white border-none max-w-sm">
                   <AlertTitle>Akses Kamera Gagal</AlertTitle>
                   <AlertDescription>Harap aktifkan izin kamera di pengaturan browser agar bisa memindai.</AlertDescription>
+                  <Button variant="outline" className="mt-4 w-full" onClick={stopScanner}>Tutup</Button>
                 </Alert>
               </div>
             )}
+            
             {hasCameraPermission === null && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-white" />
+              <div className="absolute inset-0 flex items-center justify-center bg-black">
+                <div className="flex flex-col items-center gap-4">
+                  <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                  <p className="text-white text-sm">Menyiapkan kamera...</p>
+                </div>
               </div>
             )}
-            <div className="absolute inset-0 border-x-[20px] border-y-[60px] border-black/40 pointer-events-none flex items-center justify-center">
-               <div className="w-[300px] h-[180px] border-2 border-primary/80 rounded-lg shadow-[0_0_0_1000px_rgba(0,0,0,0.5)]"></div>
-            </div>
-            <div className="absolute bottom-4 left-0 right-0 text-center text-white/70 text-[10px] uppercase tracking-widest">
-              Arahkan garis kotak ke barcode/QR
+
+            {/* Overlay UI */}
+            <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
+              <div className="w-[80vw] max-w-[400px] h-[30vh] max-h-[250px] border-2 border-primary/80 rounded-2xl relative shadow-[0_0_0_9999px_rgba(0,0,0,0.6)]">
+                {/* Scanner corners */}
+                <div className="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 border-primary rounded-tl-xl"></div>
+                <div className="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 border-primary rounded-tr-xl"></div>
+                <div className="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 border-primary rounded-bl-xl"></div>
+                <div className="absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 border-primary rounded-br-xl"></div>
+                
+                {/* Laser line effect */}
+                <div className="absolute left-4 right-4 h-0.5 bg-primary/50 shadow-[0_0_15px_rgba(46,110,206,1)] animate-pulse top-1/2"></div>
+              </div>
+              
+              <div className="mt-8 text-center px-6">
+                <p className="text-white text-sm font-medium bg-black/40 px-4 py-2 rounded-full backdrop-blur-sm">
+                  Posisikan kode di dalam kotak
+                </p>
+              </div>
             </div>
           </div>
         </DialogContent>
