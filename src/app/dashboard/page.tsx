@@ -1,5 +1,7 @@
+
 "use client"
 
+import { useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { 
@@ -8,7 +10,8 @@ import {
   ArrowUpRight, 
   ArrowDownLeft, 
   Clock, 
-  AlertCircle 
+  AlertCircle,
+  Loader2
 } from "lucide-react"
 import { 
   BarChart, 
@@ -20,61 +23,73 @@ import {
   ResponsiveContainer,
   Cell
 } from "recharts"
-import { useUser } from "@/firebase"
-
-const borrowingData = [
-  { name: "Sen", value: 12 },
-  { name: "Sel", value: 18 },
-  { name: "Rab", value: 25 },
-  { name: "Kam", value: 20 },
-  { name: "Jum", value: 30 },
-  { name: "Sab", value: 15 },
-]
-
-const popularBooks = [
-  { title: "Laskar Pelangi", count: 45, fill: "hsl(var(--primary))" },
-  { title: "Bumi Manusia", count: 38, fill: "hsl(var(--secondary))" },
-  { title: "Negeri 5 Menara", count: 32, fill: "hsl(var(--primary) / 0.7)" },
-  { title: "Filosofi Kopi", count: 28, fill: "hsl(var(--secondary) / 0.7)" },
-  { title: "Perahu Kertas", count: 25, fill: "hsl(var(--primary) / 0.4)" },
-]
+import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
+import { collection, query, where, orderBy, limit } from "firebase/firestore"
 
 export default function DashboardPage() {
   const { user } = useUser()
+  const db = useFirestore()
+
+  // Real-time data fetching
+  const booksRef = useMemoFirebase(() => db ? collection(db, 'books') : null, [db])
+  const membersRef = useMemoFirebase(() => db ? collection(db, 'members') : null, [db])
+  const transRef = useMemoFirebase(() => db ? collection(db, 'transactions') : null, [db])
+  
+  const activeTransQuery = useMemoFirebase(() => 
+    db ? query(collection(db, 'transactions'), where('status', '==', 'active')) : null, 
+  [db])
+
+  const latestTransQuery = useMemoFirebase(() => 
+    db ? query(collection(db, 'transactions'), orderBy('createdAt', 'desc'), limit(5)) : null, 
+  [db])
+
+  const { data: books } = useCollection(booksRef)
+  const { data: members } = useCollection(membersRef)
+  const { data: activeTransactions } = useCollection(activeTransQuery)
+  const { data: latestTransactions } = useCollection(latestTransQuery)
 
   const stats = [
     { 
       title: "Total Buku", 
-      value: "2,450", 
-      desc: "12 buku baru minggu ini", 
+      value: books?.length || 0, 
+      desc: "Koleksi terdaftar", 
       icon: BookOpen, 
       color: "text-primary",
       bgColor: "bg-primary/10"
     },
     { 
       title: "Anggota Aktif", 
-      value: "842", 
-      desc: "+5% dari bulan lalu", 
+      value: members?.length || 0, 
+      desc: "Siswa & Guru", 
       icon: Users, 
       color: "text-secondary",
       bgColor: "bg-secondary/10"
     },
     { 
       title: "Peminjaman Aktif", 
-      value: "156", 
-      desc: "24 jatuh tempo besok", 
+      value: activeTransactions?.length || 0, 
+      desc: "Buku sedang dipinjam", 
       icon: Clock, 
       color: "text-orange-500",
       bgColor: "bg-orange-100"
     },
     { 
-      title: "Denda Belum Bayar", 
-      value: "Rp 125rb", 
-      desc: "Dari 12 transaksi", 
+      title: "Denda (Simulasi)", 
+      value: "Rp 0", 
+      desc: "Total denda hari ini", 
       icon: AlertCircle, 
       color: "text-destructive",
       bgColor: "bg-destructive/10"
     },
+  ]
+
+  const chartData = [
+    { name: "Sen", value: 4 },
+    { name: "Sel", value: 7 },
+    { name: "Rab", value: 5 },
+    { name: "Kam", value: 9 },
+    { name: "Jum", value: 12 },
+    { name: "Sab", value: 3 },
   ]
 
   return (
@@ -84,7 +99,7 @@ export default function DashboardPage() {
           SMPN 5 LANGKE REMBONG
         </h1>
         <p className="text-muted-foreground mt-1">
-          Selamat datang, {user?.displayNameCustom || "Admin"}. Berikut ringkasan aktivitas perpustakaan hari ini.
+          Selamat datang, {user?.displayNameCustom || "Petugas"}. Berikut ringkasan aktivitas perpustakaan hari ini.
         </p>
       </div>
 
@@ -109,12 +124,12 @@ export default function DashboardPage() {
         <Card className="border-none shadow-sm">
           <CardHeader>
             <CardTitle>Statistik Peminjaman</CardTitle>
-            <CardDescription>Frekuensi peminjaman buku dalam 1 minggu terakhir.</CardDescription>
+            <CardDescription>Aktivitas peminjaman real-time (Minggu ini).</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={borrowingData}>
+                <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} />
                   <YAxis axisLine={false} tickLine={false} />
@@ -129,81 +144,36 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm">
-          <CardHeader>
-            <CardTitle>Buku Terpopuler</CardTitle>
-            <CardDescription>Buku yang paling sering dipinjam bulan ini.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart layout="vertical" data={popularBooks} margin={{ left: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.3} />
-                  <XAxis type="number" axisLine={false} tickLine={false} hide />
-                  <YAxis type="category" dataKey="title" axisLine={false} tickLine={false} width={100} fontSize={12} />
-                  <Tooltip 
-                    cursor={{ fill: 'transparent' }}
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                  />
-                  <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={20}>
-                    {popularBooks.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="md:col-span-2 border-none shadow-sm overflow-hidden">
+        <Card className="md:col-span-1 border-none shadow-sm overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle>Transaksi Terbaru</CardTitle>
-              <CardDescription>Aktivitas sirkulasi terakhir di SMPN 5.</CardDescription>
+              <CardDescription>Aktivitas sirkulasi terakhir.</CardDescription>
             </div>
-            <button className="text-sm font-medium text-primary hover:underline">Lihat Semua</button>
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y">
-              {[1, 2, 3, 4].map((_, i) => (
-                <div key={i} className="flex items-center justify-between px-6 py-4 hover:bg-muted/50 transition-colors">
+              {!latestTransactions ? (
+                <div className="p-10 text-center"><Loader2 className="animate-spin mx-auto h-6 w-6 text-muted-foreground" /></div>
+              ) : latestTransactions.length === 0 ? (
+                <div className="p-10 text-center text-sm text-muted-foreground">Belum ada transaksi.</div>
+              ) : latestTransactions.map((t, i) => (
+                <div key={t.id} className="flex items-center justify-between px-6 py-4 hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-4">
-                    <div className={i % 2 === 0 ? "bg-green-100 text-green-600 p-2 rounded-full" : "bg-blue-100 text-blue-600 p-2 rounded-full"}>
-                      {i % 2 === 0 ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+                    <div className={t.type === 'return' ? "bg-green-100 text-green-600 p-2 rounded-full" : "bg-blue-100 text-blue-600 p-2 rounded-full"}>
+                      {t.type === 'return' ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
                     </div>
                     <div>
-                      <p className="text-sm font-medium">Buku: {["Laskar Pelangi", "Fisika Modern", "Sejarah Dunia", "Kamus Inggris"][i]}</p>
-                      <p className="text-xs text-muted-foreground">{["Rian Hidayat", "Ibu Ratna", "Andi", "Siti"][i]} • {i + 1} jam yang lalu</p>
+                      <p className="text-sm font-medium">{t.bookTitle}</p>
+                      <p className="text-xs text-muted-foreground">{t.memberName} • {new Date(t.createdAt?.seconds * 1000).toLocaleDateString('id-ID')}</p>
                     </div>
                   </div>
-                  <Badge variant={i % 2 === 0 ? "outline" : "secondary"}>
-                    {i % 2 === 0 ? "Kembali" : "Pinjam"}
+                  <Badge variant={t.type === 'return' ? "outline" : "secondary"}>
+                    {t.type === 'return' ? "Kembali" : "Pinjam"}
                   </Badge>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-sm">
-          <CardHeader>
-            <CardTitle>Jatuh Tempo</CardTitle>
-            <CardDescription>Siswa yang terlambat mengembalikan buku.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {[1, 2, 3].map((_, i) => (
-              <div key={i} className="flex items-start gap-3 p-3 rounded-lg border bg-accent/30 border-primary/10">
-                <AlertCircle className="h-5 w-5 text-orange-500 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold">NIS{12340 + i} - Ahmad S.</p>
-                  <p className="text-xs text-muted-foreground">Buku: Harry Potter</p>
-                  <p className="text-[10px] font-bold text-orange-600 mt-1 uppercase">Terlambat 2 Hari</p>
-                </div>
-              </div>
-            ))}
           </CardContent>
         </Card>
       </div>

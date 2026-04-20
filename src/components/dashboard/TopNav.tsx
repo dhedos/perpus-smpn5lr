@@ -1,7 +1,7 @@
 
 "use client"
 
-import { Bell, Search, User, Globe, Wifi, WifiOff } from "lucide-react"
+import { Bell, Search, User, Globe, Wifi, WifiOff, LogOut } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { 
@@ -15,9 +15,15 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useState, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
+import { useUser, useAuth } from "@/firebase"
+import { signOut } from "firebase/auth"
+import { useRouter } from "next/navigation"
 
 export function TopNav() {
   const [isOnline, setIsOnline] = useState(true)
+  const { user } = useUser()
+  const auth = useAuth()
+  const router = useRouter()
 
   useEffect(() => {
     setIsOnline(navigator.onLine)
@@ -30,6 +36,13 @@ export function TopNav() {
       window.removeEventListener('offline', handleOffline)
     }
   }, [])
+
+  const handleLogout = async () => {
+    if (auth) {
+      await signOut(auth)
+      router.push("/")
+    }
+  }
 
   return (
     <header className="h-16 border-b bg-card/50 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between px-6">
@@ -58,33 +71,31 @@ export function TopNav() {
           </Badge>
         </div>
 
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-2 right-2 h-2 w-2 bg-secondary rounded-full border-2 border-background"></span>
-        </Button>
-
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-              <Avatar className="h-10 w-10">
-                <AvatarImage src="https://picsum.photos/seed/admin/200/200" alt="Admin" />
-                <AvatarFallback>AD</AvatarFallback>
+            <Button variant="ghost" className="relative h-10 flex items-center gap-3 px-2">
+              <div className="hidden md:block text-right">
+                <p className="text-xs font-bold leading-none">{user?.displayNameCustom || "Petugas"}</p>
+                <p className="text-[10px] leading-none text-muted-foreground mt-1">{user?.role || "Staff"}</p>
+              </div>
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={`https://picsum.photos/seed/${user?.uid}/200/200`} alt="Admin" />
+                <AvatarFallback>{user?.displayNameCustom?.[0] || "U"}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">Admin Perpustakaan</p>
-                <p className="text-xs leading-none text-muted-foreground">admin@sekolah.sch.id</p>
+                <p className="text-sm font-medium leading-none">{user?.displayNameCustom}</p>
+                <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profil</DropdownMenuItem>
-            <DropdownMenuItem>Log Aktivitas</DropdownMenuItem>
-            <DropdownMenuItem>Ganti Password</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">Keluar</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+              <LogOut className="h-4 w-4 mr-2" />
+              Keluar
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

@@ -19,7 +19,8 @@ import {
   Users,
   GraduationCap,
   School,
-  UserPlus
+  UserPlus,
+  ArrowDownLeft
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -48,7 +49,7 @@ import {
   useMemoFirebase,
   errorEmitter 
 } from '@/firebase'
-import { collection, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore'
+import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc } from 'firebase/firestore'
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors'
 
 export default function TransactionsPage() {
@@ -59,6 +60,7 @@ export default function TransactionsPage() {
   const [borrowerType, setBorrowerType] = useState("Siswa") 
   const [memberSearch, setMemberSearch] = useState("")
   const [bookSearch, setBookSearch] = useState("")
+  const [returnSearch, setReturnSearch] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [isAddingMember, setIsAddingMember] = useState(false)
   const [isMemberDialogOpen, setIsMemberDialogOpen] = useState(false)
@@ -82,6 +84,22 @@ export default function TransactionsPage() {
 
   const { data: members, loading: membersLoading } = useCollection(membersRef)
   const { data: books } = useCollection(booksRef)
+
+  // Return logic queries
+  const activeTransQuery = useMemoFirebase(() => 
+    db ? query(collection(db, 'transactions'), where('status', '==', 'active')) : null, 
+  [db])
+  const { data: activeTrans } = useCollection(activeTransQuery)
+
+  const foundActiveTrans = useMemo(() => {
+    if (!returnSearch || !activeTrans) return []
+    const term = returnSearch.toLowerCase()
+    return activeTrans.filter(t => 
+      (t.memberName?.toLowerCase() || "").includes(term) || 
+      (t.bookTitle?.toLowerCase() || "").includes(term) ||
+      (t.memberId || "").includes(term)
+    )
+  }, [activeTrans, returnSearch])
 
   const nextAvailableId = useMemo(() => {
     if (membersLoading || !members) return ""
@@ -147,22 +165,8 @@ export default function TransactionsPage() {
       
       setSelectedMember(createdMember)
       setMemberSearch(createdMember.name)
-      
-      setNewMemberData({
-        memberId: "",
-        name: "",
-        type: borrowerType === "Guru" ? "Teacher" : "Student",
-        classOrSubject: "",
-        phone: "",
-        joinDate: new Date().toISOString().split('T')[0]
-      })
     }).catch(async () => {
-      const permissionError = new FirestorePermissionError({
-        path: membersRef.path,
-        operation: 'create',
-        requestResourceData: newMemberData,
-      } satisfies SecurityRuleContext);
-      errorEmitter.emit('permission-error', permissionError);
+       toast({ title: "Gagal", description: "Gagal mendaftarkan anggota.", variant: "destructive" })
     }).finally(() => {
       setIsAddingMember(false)
     })
@@ -216,15 +220,45 @@ export default function TransactionsPage() {
       setMemberSearch("")
       setBookSearch("")
     }).catch(async () => {
-      const permissionError = new FirestorePermissionError({
-        path: transRef.path,
-        operation: 'create',
-        requestResourceData: transactionData,
-      } satisfies SecurityRuleContext);
-      errorEmitter.emit('permission-error', permissionError);
+      toast({ title: "Gagal", description: "Gagal memproses transaksi.", variant: "destructive" })
     }).finally(() => {
       setIsProcessing(false)
     })
+  }
+
+  const handleProcessReturn = async (transaction: any) => {
+    if (!db) return
+    setIsProcessing(true)
+
+    try {
+      // 1. Update Transaction
+      const tDoc = doc(db, 'transactions', transaction.id)
+      await updateDoc(tDoc, {
+        status: 'returned',
+        returnDate: new Date().toISOString(),
+        type: 'return'
+      })
+
+      // 2. Update Book Stock
+      const bDoc = doc(db, 'books', transaction.bookId)
+      const bSnap = await getDoc(bDoc)
+      if (bSnap.exists()) {
+        const currentStock = Number(bSnap.data().availableStock || 0)
+        await updateDoc(bDoc, {
+          availableStock: currentStock + 1
+        })
+      }
+
+      toast({ 
+        title: "Pengembalian Berhasil", 
+        description: `Buku ${transaction.bookTitle} telah dikembalikan oleh ${transaction.memberName}.` 
+      })
+      setReturnSearch("")
+    } catch (e) {
+      toast({ title: "Gagal", description: "Gagal memproses pengembalian.", variant: "destructive" })
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   return (
@@ -266,7 +300,6 @@ export default function TransactionsPage() {
                     setBorrowerType(v)
                     setSelectedMember(null)
                     setMemberSearch("")
-                    setNewMemberData(prev => ({ ...prev, type: v === "Guru" ? "Teacher" : "Student" }))
                   }}
                   className="grid grid-cols-3 gap-4"
                 >
@@ -324,28 +357,17 @@ export default function TransactionsPage() {
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Daftarkan Anggota Baru</DialogTitle>
-                        <DialogDescription>ID Anggota diatur otomatis berdasarkan ketersediaan.</DialogDescription>
                       </DialogHeader>
                       <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label htmlFor="memberId">ID Anggota (Otomatis)</Label>
-                            <Input 
-                              id="memberId" 
-                              value={newMemberData.memberId}
-                              readOnly
-                              className="bg-muted font-mono font-bold text-primary"
-                            />
+                            <Label htmlFor="memberId">ID Anggota</Label>
+                            <Input id="memberId" value={newMemberData.memberId} readOnly className="bg-muted" />
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="type">Tipe</Label>
-                            <Select 
-                              value={newMemberData.type} 
-                              onValueChange={(v) => setNewMemberData({ ...newMemberData, type: v })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
+                            <Select value={newMemberData.type} onValueChange={(v) => setNewMemberData({...newMemberData, type: v})}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="Student">Siswa</SelectItem>
                                 <SelectItem value="Teacher">Guru</SelectItem>
@@ -355,29 +377,11 @@ export default function TransactionsPage() {
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="name">Nama Lengkap</Label>
-                          <Input 
-                            id="name" 
-                            placeholder="Nama Lengkap..." 
-                            value={newMemberData.name}
-                            onChange={(e) => setNewMemberData({ ...newMemberData, name: e.target.value })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="class">Kelas / Mapel</Label>
-                          <Input 
-                            id="class" 
-                            placeholder="Contoh: XI-IPA-1 atau Matematika" 
-                            value={newMemberData.classOrSubject}
-                            onChange={(e) => setNewMemberData({ ...newMemberData, classOrSubject: e.target.value })}
-                          />
+                          <Input id="name" value={newMemberData.name} onChange={(e) => setNewMemberData({...newMemberData, name: e.target.value})} />
                         </div>
                       </div>
                       <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsMemberDialogOpen(false)}>Batal</Button>
-                        <Button onClick={handleAddNewMember} disabled={isAddingMember}>
-                          {isAddingMember && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                          Daftar & Pilih
-                        </Button>
+                        <Button onClick={handleAddNewMember} disabled={isAddingMember}>Simpan & Pilih</Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
@@ -403,28 +407,22 @@ export default function TransactionsPage() {
                               <div className="font-bold">{m.name}</div>
                               <div className="text-xs text-muted-foreground">{m.memberId} • {m.classOrSubject}</div>
                             </div>
-                            <Badge variant="outline" className="text-[10px]">{m.type === 'Teacher' ? 'Guru' : 'Siswa'}</Badge>
+                            <Badge variant="outline">{m.type === 'Teacher' ? 'Guru' : 'Siswa'}</Badge>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
-                  
-                  {selectedMember ? (
-                    <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 flex items-center gap-4 animate-in zoom-in duration-300">
-                      <div className="bg-primary p-3 rounded-full shadow-sm shadow-primary/30">
-                        {selectedMember.type === 'Teacher' ? <School className="h-6 w-6 text-white" /> : <GraduationCap className="h-6 w-6 text-white" />}
+                  {selectedMember && (
+                    <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-primary p-2 rounded-full text-white"><User className="h-5 w-5" /></div>
+                        <div>
+                          <p className="font-bold">{selectedMember.name}</p>
+                          <p className="text-xs text-muted-foreground">{selectedMember.memberId}</p>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="font-bold">{selectedMember.name}</p>
-                        <p className="text-xs text-muted-foreground">{selectedMember.memberId} | {selectedMember.classOrSubject}</p>
-                      </div>
-                      <Button variant="ghost" size="sm" className="h-7 text-destructive hover:bg-destructive/10" onClick={() => setSelectedMember(null)}>Batal</Button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center p-10 border-2 border-dashed rounded-xl bg-accent/20">
-                      <Search className="h-10 w-10 text-muted-foreground/40 mb-2" />
-                      <p className="text-xs text-muted-foreground">Silakan cari nama atau ID peminjam</p>
+                      <Button variant="ghost" size="sm" onClick={() => setSelectedMember(null)}>Hapus</Button>
                     </div>
                   )}
                 </CardContent>
@@ -456,85 +454,82 @@ export default function TransactionsPage() {
                           >
                             <div className="flex-1 mr-2">
                               <div className="font-bold truncate">{b.title}</div>
-                              <div className="text-xs text-muted-foreground">Kode: {b.code} | Rak: {b.rackLocation}</div>
+                              <div className="text-xs text-muted-foreground">{b.code}</div>
                             </div>
                             <Badge variant={Number(b.availableStock) > 0 ? "secondary" : "destructive"}>
-                              Stok: {b.availableStock}
+                              {b.availableStock}
                             </Badge>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
-
-                  {selectedBook ? (
-                    <div className="p-4 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center gap-4 animate-in zoom-in duration-300">
-                      <div className="bg-secondary p-3 rounded-full shadow-sm shadow-secondary/30">
-                        <BookOpen className="h-6 w-6 text-white" />
+                  {selectedBook && (
+                    <div className="p-4 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-secondary p-2 rounded-full text-white"><BookOpen className="h-5 w-5" /></div>
+                        <div>
+                          <p className="font-bold">{selectedBook.title}</p>
+                          <p className="text-xs text-muted-foreground">{selectedBook.code}</p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold truncate">{selectedBook.title}</p>
-                        <p className="text-xs text-muted-foreground">Kode: {selectedBook.code} | Rak {selectedBook.rackLocation || '-'}</p>
-                      </div>
-                      <Button variant="ghost" size="sm" className="h-7 text-destructive hover:bg-destructive/10" onClick={() => setSelectedBook(null)}>Batal</Button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center p-10 border-2 border-dashed rounded-xl bg-accent/20">
-                      <BookOpen className="h-10 w-10 text-muted-foreground/40 mb-2" />
-                      <p className="text-xs text-muted-foreground">Cari buku melalui input di atas</p>
+                      <Button variant="ghost" size="sm" onClick={() => setSelectedBook(null)}>Hapus</Button>
                     </div>
                   )}
                 </CardContent>
               </Card>
             </div>
 
-            <Card className="border-none shadow-lg bg-primary text-primary-foreground overflow-hidden">
-              <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-                <CheckCircle className="h-32 w-32" />
-              </div>
-              <CardContent className="flex flex-col md:flex-row items-center justify-between gap-6 p-8 relative z-10">
-                <div className="flex items-center gap-5">
-                  <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-sm">
-                    <Calendar className="h-8 w-8 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-white/80 text-sm font-medium uppercase tracking-wider">Durasi Peminjaman</p>
-                    <p className="text-3xl font-black">
-                      {selectedMember?.type === "Teacher" || borrowerType === "Kelas" ? "14 HARI" : "7 HARI"}
-                    </p>
-                    <p className="text-xs text-white/60">Batas: {new Date(new Date().setDate(new Date().getDate() + (selectedMember?.type === "Teacher" || borrowerType === "Kelas" ? 14 : 7))).toLocaleDateString('id-ID')}</p>
-                  </div>
-                </div>
-                <Button 
-                  size="lg" 
-                  variant="secondary"
-                  className="px-12 h-16 text-xl font-bold shadow-xl hover:scale-105 transition-transform" 
-                  disabled={!selectedMember || !selectedBook || isProcessing}
-                  onClick={handleProcessBorrow}
-                >
-                  {isProcessing ? <Loader2 className="h-6 w-6 animate-spin mr-2" /> : <CheckCircle className="h-6 w-6 mr-2" />}
-                  PROSES PINJAM
-                </Button>
-              </CardContent>
-            </Card>
+            <Button 
+              className="w-full h-16 text-xl font-bold" 
+              disabled={!selectedMember || !selectedBook || isProcessing}
+              onClick={handleProcessBorrow}
+            >
+              {isProcessing ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle className="mr-2" />}
+              KONFIRMASI PINJAM
+            </Button>
           </TabsContent>
 
           <TabsContent value="return" className="space-y-6">
-            <Card className="border-none shadow-sm max-w-2xl mx-auto">
-              <CardHeader className="text-center">
-                <div className="mx-auto bg-secondary/10 w-16 h-16 rounded-full flex items-center justify-center mb-4">
-                  <RefreshCcw className="h-8 w-8 text-secondary" />
-                </div>
-                <CardTitle className="text-2xl">Pengembalian Buku</CardTitle>
-                <CardDescription>Scan barcode buku atau cari berdasarkan nama siswa yang meminjam.</CardDescription>
+            <Card className="border-none shadow-sm">
+              <CardHeader>
+                <CardTitle>Cari Transaksi Aktif</CardTitle>
+                <CardDescription>Masukkan nama peminjam atau judul buku yang ingin dikembalikan.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6 pb-12">
+              <CardContent className="space-y-6">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Cari transaksi aktif (Nama Siswa / Judul Buku)..." className="pl-10 h-12" />
+                  <Input 
+                    placeholder="Nama / Judul / ID Anggota..." 
+                    className="pl-10 h-12" 
+                    value={returnSearch}
+                    onChange={(e) => setReturnSearch(e.target.value)}
+                  />
                 </div>
-                <div className="py-12 border-2 border-dashed rounded-2xl bg-muted/30 text-center">
-                  <p className="text-sm text-muted-foreground">Gunakan pencarian untuk memuat daftar peminjaman aktif.</p>
+
+                <div className="grid gap-4">
+                  {!foundActiveTrans.length && returnSearch && (
+                    <div className="text-center py-10 text-muted-foreground">Tidak ada peminjaman aktif ditemukan.</div>
+                  )}
+                  {foundActiveTrans.map(t => (
+                    <div key={t.id} className="p-4 rounded-xl border flex items-center justify-between bg-card hover:shadow-md transition-shadow">
+                      <div className="flex items-center gap-4">
+                        <div className="bg-secondary/10 p-3 rounded-full text-secondary"><ArrowDownLeft className="h-6 w-6" /></div>
+                        <div>
+                          <p className="font-bold">{t.bookTitle}</p>
+                          <p className="text-sm text-muted-foreground">Dipinjam oleh: <span className="font-semibold text-primary">{t.memberName}</span></p>
+                          <p className="text-xs text-orange-600 font-bold uppercase mt-1">Jatuh Tempo: {new Date(t.dueDate).toLocaleDateString('id-ID')}</p>
+                        </div>
+                      </div>
+                      <Button 
+                        variant="secondary" 
+                        onClick={() => handleProcessReturn(t)}
+                        disabled={isProcessing}
+                      >
+                        {isProcessing ? <Loader2 className="animate-spin" /> : "Proses Kembali"}
+                      </Button>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
