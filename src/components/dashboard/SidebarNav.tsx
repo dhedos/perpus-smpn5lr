@@ -12,7 +12,6 @@ import {
   Settings,
   Database,
   LogOut,
-  Library,
   UserCog,
   ClipboardCheck
 } from "lucide-react"
@@ -20,6 +19,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useAuth, useUser } from "@/firebase"
 import { signOut } from "firebase/auth"
+import Image from "next/image"
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Beranda", href: "/dashboard" },
@@ -50,17 +50,24 @@ export function SidebarNav() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-card text-card-foreground">
-      <div className="flex h-16 items-center px-6 border-b shrink-0">
-        <Library className="h-8 w-8 text-primary mr-2" />
+    <div className="flex h-full flex-col bg-card text-card-foreground border-r">
+      <div className="flex h-20 items-center px-4 border-b shrink-0 gap-3">
+        <div className="relative h-12 w-12 shrink-0">
+          <Image 
+            src="/logo.png" 
+            alt="Logo" 
+            fill 
+            className="object-contain"
+          />
+        </div>
         <div className="flex flex-col">
           <span className="text-sm font-bold leading-tight text-primary">SMPN 5</span>
-          <span className="text-xs font-semibold leading-tight text-secondary">LANGKE REMBONG</span>
+          <span className="text-[10px] font-semibold leading-tight text-muted-foreground uppercase">Langke Rembong</span>
         </div>
       </div>
       
       <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
-        <div className="mb-2 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        <div className="mb-2 px-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider opacity-60">
           Menu Utama
         </div>
         {menuItems.map((item) => (
@@ -73,14 +80,14 @@ export function SidebarNav() {
               )}
             >
               <item.icon className={cn("h-5 w-5", pathname === item.href ? "text-primary" : "")} />
-              {item.label}
+              <span className="text-sm">{item.label}</span>
             </Button>
           </Link>
         ))}
 
         {isAdmin && (
           <>
-            <div className="mt-8 mb-2 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <div className="mt-8 mb-2 px-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider opacity-60">
               Administrasi
             </div>
             {adminOnlyItems.map((item) => (
@@ -93,7 +100,7 @@ export function SidebarNav() {
                   )}
                 >
                   <item.icon className={cn("h-5 w-5", pathname === item.href ? "text-primary" : "")} />
-                  {item.label}
+                  <span className="text-sm">{item.label}</span>
                 </Button>
               </Link>
             ))}
@@ -104,11 +111,11 @@ export function SidebarNav() {
       <div className="border-t p-4 shrink-0">
         <Button 
           variant="ghost" 
-          className="w-full justify-start gap-3 text-destructive hover:bg-destructive/10 hover:text-destructive"
+          className="w-full justify-start gap-3 text-destructive hover:bg-destructive/10 hover:text-destructive rounded-lg"
           onClick={handleLogout}
         >
           <LogOut className="h-5 w-5" />
-          Keluar
+          <span className="text-sm font-medium">Keluar</span>
         </Button>
       </div>
     </div>

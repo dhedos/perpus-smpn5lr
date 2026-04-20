@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Library, Loader2, UserPlus, ShieldCheck, AlertCircle } from "lucide-react"
+import { Loader2, UserPlus, ShieldCheck, AlertCircle } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth, useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase"
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth"
@@ -13,6 +13,7 @@ import { collection, doc, setDoc, query, limit } from "firebase/firestore"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import Image from "next/image"
 
 export default function LoginPage() {
   const auth = useAuth()
@@ -28,14 +29,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [adminName, setAdminName] = useState("")
 
-  // Auto-redirect jika sudah login
   useEffect(() => {
     if (!authLoading && user) {
       router.push("/dashboard")
     }
   }, [user, authLoading, router])
 
-  // Mengecek apakah sudah ada user di sistem dengan limit 1 untuk efisiensi
   const usersQuery = useMemoFirebase(() => {
     if (!db) return null
     return query(collection(db, "users"), limit(1))
@@ -111,8 +110,14 @@ export default function LoginPage() {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 space-y-4">
       <Card className="w-full max-w-md shadow-2xl border-none p-2 bg-white animate-in zoom-in duration-500">
         <CardHeader className="space-y-4 text-center">
-          <div className="mx-auto bg-primary p-3 rounded-2xl shadow-lg shadow-primary/20 w-fit">
-            <Library className="h-10 w-10 text-white" />
+          <div className="mx-auto w-32 h-32 relative mb-2">
+            <Image 
+              src="/logo.png" 
+              alt="Logo SMPN 5" 
+              fill 
+              className="object-contain drop-shadow-md"
+              priority
+            />
           </div>
           <div className="space-y-1">
             <CardTitle className="text-2xl font-bold font-headline">SMPN 5 LANGKE REMBONG</CardTitle>
