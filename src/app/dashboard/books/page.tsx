@@ -72,8 +72,10 @@ import { QRCodeSVG } from "qrcode.react"
 import { 
   useFirestore, 
   useCollection, 
-  useMemoFirebase 
+  useMemoFirebase,
+  errorEmitter 
 } from '@/firebase'
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors'
 import { collection, addDoc, deleteDoc, doc, updateDoc, query, limit, orderBy } from 'firebase/firestore'
 
 const INITIAL_FORM_DATA = {
@@ -101,7 +103,6 @@ export default function BooksPage() {
   const [displayLimit, setDisplayLimit] = useState(50)
   
   const [isGenerating, setIsGenerating] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
@@ -236,9 +237,8 @@ export default function BooksPage() {
     finally { setIsGenerating(false) }
   }
 
-  const handleSaveBook = useCallback(() => {
+  const handleSaveBook = () => {
     if (!db) return
-    setIsSaving(true)
     
     const newBook = { 
       ...formData, 
@@ -246,26 +246,28 @@ export default function BooksPage() {
       updatedAt: new Date().toISOString() 
     }
 
-    addDoc(collection(db, 'books'), newBook)
-      .then(() => {
-        setIsOpen(false)
-        toast({ title: "Berhasil!", description: "Buku telah terdaftar." })
-        setFormData(INITIAL_FORM_DATA)
-      })
-      .catch((error) => {
-        console.error("Save error:", error)
-        toast({ title: "Gagal", description: "Gagal menyimpan data buku baru.", variant: "destructive" })
-      })
-      .finally(() => setIsSaving(false))
-  }, [db, formData, toast])
+    // NON-BLOCKING: Tutup UI segera
+    setIsOpen(false)
+    setFormData(INITIAL_FORM_DATA)
 
-  const handleUpdateBook = useCallback(() => {
+    addDoc(collection(db, 'books'), newBook)
+      .catch(async (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: 'books',
+          operation: 'create',
+          requestResourceData: newBook,
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      });
+    
+    toast({ title: "Berhasil!", description: "Buku telah didaftarkan." })
+  }
+
+  const handleUpdateBook = () => {
     if (!db || !editingBookId || !books) return
-    setIsSaving(true)
 
     const originalBook = books.find(b => b.id === editingBookId)
     if (!originalBook) {
-      setIsSaving(false)
       setIsEditOpen(false)
       return
     }
@@ -280,33 +282,45 @@ export default function BooksPage() {
       updatedAt: new Date().toISOString()
     }
 
-    updateDoc(doc(db, 'books', editingBookId), updatedData)
-      .then(() => {
-        setIsEditOpen(false)
-        toast({ title: "Berhasil!", description: "Data buku telah diperbarui." })
-        setEditingBookId(null)
-      })
-      .catch((error) => {
-        console.error("Update error:", error)
-        toast({ title: "Gagal", description: "Gagal memperbarui data buku.", variant: "destructive" })
-      })
-      .finally(() => setIsSaving(false))
-  }, [db, editingBookId, books, formData, toast])
+    const docRef = doc(db, 'books', editingBookId)
+    
+    // NON-BLOCKING: Tutup UI segera
+    setIsEditOpen(false)
+    setEditingBookId(null)
+    setFormData(INITIAL_FORM_DATA)
 
-  const handleDeleteBook = useCallback(() => {
+    updateDoc(docRef, updatedData)
+      .catch(async (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'update',
+          requestResourceData: updatedData,
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      });
+    
+    toast({ title: "Berhasil!", description: "Data buku telah diperbarui." })
+  }
+
+  const handleDeleteBook = () => {
     if (!db || !bookToDelete) return
-    deleteDoc(doc(db, 'books', bookToDelete))
-      .then(() => {
-        setIsDeleteDialogOpen(false)
-        setBookToDelete(null)
-        toast({ title: "Terhapus", description: "Buku telah dihapus dari koleksi." })
-      })
-      .catch((error) => {
-        console.error("Delete error:", error)
-        setIsDeleteDialogOpen(false)
-        toast({ title: "Gagal menghapus", variant: "destructive" })
-      })
-  }, [db, bookToDelete, toast])
+    const docRef = doc(db, 'books', bookToDelete)
+
+    // NON-BLOCKING: Tutup UI segera
+    setIsDeleteDialogOpen(false)
+    setBookToDelete(null)
+
+    deleteDoc(docRef)
+      .catch(async (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'delete',
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      });
+
+    toast({ title: "Terhapus", description: "Buku sedang dihapus dari koleksi." })
+  }
 
   const startScanner = async () => {
     setIsScannerOpen(true)
@@ -451,7 +465,7 @@ export default function BooksPage() {
         )}
       </Card>
 
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog open={isOpen} onOpenChange={(o) => { if(!o) setFormData(INITIAL_FORM_DATA); setIsOpen(o); }}>
         <DialogContent className="max-w-2xl bg-slate-50">
           <DialogHeader>
             <DialogTitle>Tambah Buku Baru</DialogTitle>
@@ -500,9 +514,8 @@ export default function BooksPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isSaving}>Batal</Button>
-            <Button onClick={handleSaveBook} disabled={isSaving} className="px-8 shadow-lg shadow-primary/20">
-              {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            <Button variant="outline" onClick={() => setIsOpen(false)}>Batal</Button>
+            <Button onClick={handleSaveBook} className="px-8 shadow-lg shadow-primary/20">
               Simpan Data
             </Button>
           </DialogFooter>
@@ -558,7 +571,7 @@ export default function BooksPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+      <Dialog open={isEditOpen} onOpenChange={(o) => { if(!o) { setFormData(INITIAL_FORM_DATA); setEditingBookId(null); } setIsEditOpen(o); }}>
         <DialogContent className="max-w-2xl bg-slate-50">
           <DialogHeader>
             <DialogTitle>Ubah Data Buku</DialogTitle>
@@ -575,9 +588,8 @@ export default function BooksPage() {
             <div className="col-span-2 space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Deskripsi</Label><Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" /></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditOpen(false)} disabled={isSaving}>Batal</Button>
-            <Button onClick={handleUpdateBook} disabled={isSaving} className="px-8 shadow-lg shadow-primary/20">
-              {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Batal</Button>
+            <Button onClick={handleUpdateBook} className="px-8 shadow-lg shadow-primary/20">
               Simpan Perubahan
             </Button>
           </DialogFooter>
@@ -591,8 +603,8 @@ export default function BooksPage() {
             <AlertDialogDescription>Tindakan ini permanen. Pastikan buku sudah tidak ada di inventaris fisik.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSaving}>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteBook} disabled={isSaving} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Hapus Permanen</AlertDialogAction>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteBook} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Hapus Permanen</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

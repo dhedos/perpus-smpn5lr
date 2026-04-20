@@ -63,9 +63,20 @@ import { QRCodeSVG } from "qrcode.react"
 import { 
   useFirestore, 
   useCollection, 
-  useMemoFirebase 
+  useMemoFirebase,
+  errorEmitter 
 } from '@/firebase'
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors'
 import { collection, addDoc, deleteDoc, doc, updateDoc, serverTimestamp, query, limit, orderBy } from 'firebase/firestore'
+
+const INITIAL_MEMBER_DATA = {
+  memberId: "",
+  name: "",
+  type: "Student",
+  classOrSubject: "",
+  phone: "",
+  joinDate: new Date().toISOString().split('T')[0]
+}
 
 export default function MembersPage() {
   const db = useFirestore()
@@ -73,7 +84,6 @@ export default function MembersPage() {
   
   const [search, setSearch] = useState("")
   const [displayLimit, setDisplayLimit] = useState(50)
-  const [isSaving, setIsSaving] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isQrOpen, setIsQrOpen] = useState(false)
@@ -81,18 +91,9 @@ export default function MembersPage() {
   const [memberToDelete, setMemberToDelete] = useState<string | null>(null)
   const [selectedMemberQr, setSelectedMemberQr] = useState<any>(null)
   
-  const [formData, setFormData] = useState({
-    memberId: "",
-    name: "",
-    type: "Student",
-    classOrSubject: "",
-    phone: "",
-    joinDate: new Date().toISOString().split('T')[0]
-  })
-
+  const [formData, setFormData] = useState(INITIAL_MEMBER_DATA)
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
 
-  // Optimasi kuota pembacaan dengan limit
   const membersCollectionQuery = useMemoFirebase(() => {
     if (!db) return null
     return query(
@@ -114,35 +115,66 @@ export default function MembersPage() {
 
   const handleSaveMember = () => {
     if (!db) return
-    setIsSaving(true)
-    addDoc(collection(db, 'members'), { ...formData, createdAt: serverTimestamp() })
-      .then(() => {
-        toast({ title: "Berhasil!", description: "Anggota ditambahkan." })
-        setIsOpen(false)
-        setFormData({ memberId: "", name: "", type: "Student", classOrSubject: "", phone: "", joinDate: new Date().toISOString().split('T')[0] })
-      })
-      .finally(() => setIsSaving(false))
+    const dataToSave = { ...formData, createdAt: serverTimestamp() }
+
+    // NON-BLOCKING: Tutup UI segera
+    setIsOpen(false)
+    setFormData(INITIAL_MEMBER_DATA)
+
+    addDoc(collection(db, 'members'), dataToSave)
+      .catch(async (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: 'members',
+          operation: 'create',
+          requestResourceData: dataToSave,
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      });
+    
+    toast({ title: "Berhasil!", description: "Anggota baru sedang didaftarkan." })
   }
 
   const handleUpdateMember = () => {
     if (!db || !editingMemberId) return
-    setIsSaving(true)
-    updateDoc(doc(db, 'members', editingMemberId), { ...formData, updatedAt: serverTimestamp() })
-      .then(() => {
-        toast({ title: "Berhasil!", description: "Data diperbarui." })
-        setIsEditOpen(false)
-      })
-      .finally(() => setIsSaving(false))
+    const docRef = doc(db, 'members', editingMemberId)
+    const dataToUpdate = { ...formData, updatedAt: serverTimestamp() }
+
+    // NON-BLOCKING: Tutup UI segera
+    setIsEditOpen(false)
+    setEditingMemberId(null)
+    setFormData(INITIAL_MEMBER_DATA)
+
+    updateDoc(docRef, dataToUpdate)
+      .catch(async (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'update',
+          requestResourceData: dataToUpdate,
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      });
+    
+    toast({ title: "Berhasil!", description: "Data anggota telah diperbarui." })
   }
 
   const handleDeleteMember = () => {
     if (!db || !memberToDelete) return
-    deleteDoc(doc(db, 'members', memberToDelete))
-      .then(() => {
-        setIsDeleteDialogOpen(false)
-        setMemberToDelete(null)
-        toast({ title: "Terhapus", description: "Anggota telah dihapus dari database." })
-      })
+    const docRef = doc(db, 'members', memberToDelete)
+
+    // NON-BLOCKING: Tutup UI segera
+    setIsDeleteDialogOpen(false)
+    setMemberToDelete(null)
+
+    deleteDoc(docRef)
+      .catch(async (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'delete',
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      });
+
+    toast({ title: "Terhapus", description: "Anggota sedang dihapus dari database." })
   }
 
   return (
@@ -152,7 +184,7 @@ export default function MembersPage() {
           <h1 className="text-2xl font-bold font-headline text-primary">Daftar Anggota</h1>
           <p className="text-muted-foreground text-sm">Kelola data siswa dan guru yang terdaftar.</p>
         </div>
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={isOpen} onOpenChange={(o) => { if(!o) setFormData(INITIAL_MEMBER_DATA); setIsOpen(o); }}>
           <DialogTrigger asChild><Button className="gap-2"><UserPlus className="h-4 w-4" />Tambah Anggota</Button></DialogTrigger>
           <DialogContent className="bg-slate-50">
             <DialogHeader><DialogTitle>Daftarkan Anggota Baru</DialogTitle></DialogHeader>
@@ -179,7 +211,7 @@ export default function MembersPage() {
                 <Input value={formData.classOrSubject} onChange={e => setFormData({...formData, classOrSubject: e.target.value})} className="bg-white border-slate-300 h-11" />
               </div>
             </div>
-            <DialogFooter><Button onClick={handleSaveMember} disabled={isSaving} className="w-full sm:w-auto h-11 px-8 shadow-lg shadow-primary/20">Simpan</Button></DialogFooter>
+            <DialogFooter><Button onClick={handleSaveMember} className="w-full sm:w-auto h-11 px-8 shadow-lg shadow-primary/20">Simpan</Button></DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
@@ -250,14 +282,14 @@ export default function MembersPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+      <Dialog open={isEditOpen} onOpenChange={(o) => { if(!o) { setFormData(INITIAL_MEMBER_DATA); setEditingMemberId(null); } setIsEditOpen(o); }}>
         <DialogContent className="bg-slate-50">
           <DialogHeader><DialogTitle>Ubah Data Anggota</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label><Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas/Mapel</Label><Input value={formData.classOrSubject} onChange={e => setFormData({...formData, classOrSubject: e.target.value})} className="bg-white border-slate-300 h-11" /></div>
           </div>
-          <DialogFooter><Button onClick={handleUpdateMember} disabled={isSaving}>Simpan Perubahan</Button></DialogFooter>
+          <DialogFooter><Button onClick={handleUpdateMember}>Simpan Perubahan</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
