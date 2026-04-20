@@ -86,30 +86,28 @@ export function TopNav() {
 
       <div className="flex items-center gap-2 md:gap-4">
         <div className="flex items-center gap-2 mr-2">
-          <Badge variant={isOnline ? "outline" : "destructive"} className="gap-1.5 flex items-center px-2 py-0.5">
+          <Badge variant={isOnline ? "outline" : "destructive"} className="gap-1.5 flex items-center px-2 py-0.5 border-none bg-transparent">
             {isOnline ? (
-              <>
-                <Wifi className="h-3 w-3 text-green-500" />
-                <span className="text-[10px] hidden xs:inline">Online</span>
-              </>
+              <Wifi className="h-4 w-4 text-green-500" />
             ) : (
-              <>
-                <WifiOff className="h-3 w-3" />
-                <span className="text-[10px] hidden xs:inline">Offline</span>
-              </>
+              <WifiOff className="h-4 w-4 text-destructive" />
             )}
           </Badge>
         </div>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-10 flex items-center gap-3 px-2">
+            <Button variant="ghost" className="relative h-12 flex items-center gap-3 px-2 hover:bg-transparent">
               <div className="hidden md:block text-right">
-                <p className="text-xs font-bold leading-none">{user?.displayNameCustom || "Petugas"}</p>
-                <p className="text-[10px] leading-none text-muted-foreground mt-1">{user?.role || "Staff"}</p>
+                <p className="text-sm font-bold leading-none uppercase tracking-tight">
+                  {user?.displayNameCustom || "Petugas"}
+                </p>
+                <p className="text-[10px] leading-none text-muted-foreground mt-1.5">
+                  {user?.role || "Staff"}
+                </p>
               </div>
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={`https://picsum.photos/seed/${user?.uid}/200/200`} alt="Admin" />
+              <Avatar className="h-9 w-9">
+                <AvatarImage src={`https://picsum.photos/seed/${user?.uid}/200/200`} alt="User" />
                 <AvatarFallback className="bg-primary/10 text-primary font-bold">{user?.displayNameCustom?.[0] || "U"}</AvatarFallback>
               </Avatar>
             </Button>
