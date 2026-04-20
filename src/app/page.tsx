@@ -1,13 +1,13 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Library, Loader2, UserPlus, ShieldCheck, AlertCircle } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
+import { useAuth, useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase"
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth"
 import { collection, doc, setDoc, query, limit } from "firebase/firestore"
 import { useRouter } from "next/navigation"
@@ -19,6 +19,7 @@ export default function LoginPage() {
   const db = useFirestore()
   const router = useRouter()
   const { toast } = useToast()
+  const { user, loading: authLoading } = useUser()
   
   const [loading, setLoading] = useState(false)
   const [isSetupMode, setIsSetupMode] = useState(false)
@@ -26,6 +27,13 @@ export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [adminName, setAdminName] = useState("")
+
+  // Auto-redirect jika sudah login
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push("/dashboard")
+    }
+  }, [user, authLoading, router])
 
   // Mengecek apakah sudah ada user di sistem dengan limit 1 untuk efisiensi
   const usersQuery = useMemoFirebase(() => {
@@ -63,11 +71,9 @@ export default function LoginPage() {
 
     setLoading(true)
     try {
-      // 1. Membuat akun Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
       const uid = userCredential.user.uid
 
-      // 2. Membuat profil di koleksi 'users' sesuai backend.json
       await setDoc(doc(db, "users", uid), {
         id: uid,
         name: adminName,
@@ -79,7 +85,7 @@ export default function LoginPage() {
 
       toast({ 
         title: "Setup Berhasil", 
-        description: "Admin pertama telah didaftarkan. Anda akan diarahkan ke Dashboard." 
+        description: "Admin pertama telah didaftarkan." 
       })
       router.push("/dashboard")
     } catch (error: any) {
@@ -91,6 +97,14 @@ export default function LoginPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   return (
