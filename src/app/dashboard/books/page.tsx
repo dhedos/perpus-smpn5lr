@@ -29,7 +29,9 @@ import {
   Download,
   FileDown,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Eye,
+  Info
 } from "lucide-react"
 import { 
   Dialog, 
@@ -75,11 +77,13 @@ export default function BooksPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
+  const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [isQrOpen, setIsQrOpen] = useState(false)
   const [scannerTarget, setScannerTarget] = useState<"search" | "isbn">("search")
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null)
   const [selectedBookQr, setSelectedBookQr] = useState<any>(null)
+  const [selectedBookDetail, setSelectedBookDetail] = useState<any>(null)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   const scannerInstanceRef = useRef<any>(null)
@@ -162,26 +166,6 @@ export default function BooksPage() {
 
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
-
-    const qrContainer = document.createElement('div')
-    qrContainer.style.display = 'grid'
-    qrContainer.style.gridTemplateColumns = 'repeat(4, 1fr)'
-    qrContainer.style.gap = '10px'
-    qrContainer.style.padding = '10px'
-
-    // Kita butuh SVG strings untuk dicetak tanpa React
-    // Alternatif: Kita buka halaman khusus print atau gunakan cara DOM
-    
-    let stickersHtml = ''
-    filteredBooks.forEach(book => {
-      stickersHtml += `
-        <div style="border: 1px dashed #ccc; padding: 10px; text-align: center; width: 140px; height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: sans-serif;">
-          <div id="qr-${book.id}"></div>
-          <div style="font-size: 10px; font-weight: bold; margin-top: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%;">${book.title}</div>
-          <div style="font-size: 12px; color: #2E6ECE; font-weight: bold;">${book.code}</div>
-        </div>
-      `
-    })
 
     printWindow.document.write(`
       <html>
@@ -424,7 +408,9 @@ export default function BooksPage() {
                 </div>
                 <div className="col-span-2 space-y-2">
                   <div className="flex justify-between items-center"><Label>Deskripsi</Label><Button variant="ghost" type="button" size="sm" onClick={handleGenerateDescription} disabled={isGenerating}><Sparkles className="h-3 w-3 mr-1" />AI</Button></div>
-                  <Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px]" />
+                  <article className="prose prose-sm max-w-none">
+                    <Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px]" />
+                  </article>
                 </div>
               </div>
               <DialogFooter>
@@ -447,15 +433,23 @@ export default function BooksPage() {
       <Card className="border-none shadow-sm overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow><TableHead>Kode</TableHead><TableHead>Judul</TableHead><TableHead>Jenis Buku</TableHead><TableHead>Stok</TableHead><TableHead className="text-right">Aksi</TableHead></TableRow>
+            <TableRow>
+              <TableHead className="w-12">No.</TableHead>
+              <TableHead>Kode</TableHead>
+              <TableHead>Judul</TableHead>
+              <TableHead>Jenis Buku</TableHead>
+              <TableHead>Stok</TableHead>
+              <TableHead className="text-right">Aksi</TableHead>
+            </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
             ) : filteredBooks.length === 0 ? (
-              <TableRow><TableCell colSpan={5} className="text-center py-10 text-muted-foreground">Tidak ada buku ditemukan.</TableCell></TableRow>
-            ) : filteredBooks.map((book) => (
+              <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Tidak ada buku ditemukan.</TableCell></TableRow>
+            ) : filteredBooks.map((book, index) => (
               <TableRow key={book.id}>
+                <TableCell className="text-muted-foreground text-xs">{index + 1}</TableCell>
                 <TableCell className="font-mono text-xs">{book.code}</TableCell>
                 <TableCell><div><p className="font-semibold">{book.title}</p><p className="text-[10px] text-muted-foreground">{book.author} ({book.publicationYear})</p></div></TableCell>
                 <TableCell><Badge variant="outline">{book.category || 'Umum'}</Badge></TableCell>
@@ -464,6 +458,7 @@ export default function BooksPage() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => { setSelectedBookDetail(book); setTimeout(() => setIsDetailOpen(true), 100); }}><Eye className="h-4 w-4 mr-2" />Lihat Detail</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => { setSelectedBookQr(book); setTimeout(() => setIsQrOpen(true), 100); }}><QrCode className="h-4 w-4 mr-2" />QR Code</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => { setEditingBookId(book.id); setFormData({ ...book }); setTimeout(() => setIsEditOpen(true), 100); }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
                       <DropdownMenuItem className="text-destructive" onClick={() => deleteDoc(doc(db, 'books', book.id))}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
@@ -517,6 +512,66 @@ export default function BooksPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>Batal</Button>
             <Button onClick={handleUpdateBook} disabled={isSaving || !!duplicateBookByCode}>Simpan Perubahan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5 text-primary" />
+              Detail Informasi Buku
+            </DialogTitle>
+          </DialogHeader>
+          {selectedBookDetail && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-10 py-4 max-h-[70vh] overflow-y-auto">
+              <div className="space-y-1">
+                <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Judul Buku</Label>
+                <p className="font-semibold text-lg leading-tight">{selectedBookDetail.title}</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Kode Koleksi</Label>
+                <p className="font-mono text-primary font-bold">{selectedBookDetail.code}</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Pengarang</Label>
+                <p>{selectedBookDetail.author || '-'}</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Penerbit & Tahun</Label>
+                <p>{selectedBookDetail.publisher || '-'} ({selectedBookDetail.publicationYear})</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">ISBN</Label>
+                <p>{selectedBookDetail.isbn || '-'}</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Jenis Buku</Label>
+                <div><Badge variant="secondary">{selectedBookDetail.category || 'Umum'}</Badge></div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Lokasi Rak</Label>
+                <p>{selectedBookDetail.rackLocation || 'Belum diatur'}</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Status Stok</Label>
+                <p className="font-medium text-blue-600">{selectedBookDetail.availableStock} dari {selectedBookDetail.totalStock} tersedia</p>
+              </div>
+              <div className="col-span-1 md:col-span-2 space-y-2 border-t pt-4">
+                <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Deskripsi / Ringkasan</Label>
+                <div className="text-sm leading-relaxed bg-muted/30 p-4 rounded-xl italic whitespace-pre-wrap">
+                  {selectedBookDetail.description || 'Tidak ada deskripsi yang tersedia untuk buku ini.'}
+                </div>
+              </div>
+              <div className="col-span-1 md:col-span-2 grid grid-cols-2 gap-4 border-t pt-4 mt-2 text-[10px] text-muted-foreground italic">
+                <p>Data dibuat: {selectedBookDetail.createdAt ? new Date(selectedBookDetail.createdAt).toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' }) : '-'}</p>
+                <p className="text-right">Terakhir update: {selectedBookDetail.updatedAt ? new Date(selectedBookDetail.updatedAt).toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' }) : 'Belum pernah'}</p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setIsDetailOpen(false)}>Tutup</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
