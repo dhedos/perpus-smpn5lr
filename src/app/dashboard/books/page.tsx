@@ -19,13 +19,11 @@ import {
   Trash2, 
   Sparkles, 
   ScanBarcode, 
-  FileSpreadsheet,
   MoreVertical,
   Loader2,
   QrCode,
   Printer,
   X,
-  Download,
   FileDown,
   Eye,
   Info,
@@ -58,11 +56,9 @@ import { cn } from "@/lib/utils"
 import { 
   useFirestore, 
   useCollection, 
-  useMemoFirebase,
-  errorEmitter 
+  useMemoFirebase 
 } from '@/firebase'
 import { collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore'
-import { FirestorePermissionError } from '@/firebase/errors'
 
 export default function BooksPage() {
   const db = useFirestore()
@@ -79,7 +75,6 @@ export default function BooksPage() {
   const [selectedBookQr, setSelectedBookQr] = useState<any>(null)
   const [selectedBookDetail, setSelectedBookDetail] = useState<any>(null)
   
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const scannerInstanceRef = useRef<any>(null)
 
   const [formData, setFormData] = useState({
@@ -124,8 +119,8 @@ export default function BooksPage() {
   const handleExportExcel = async () => {
     try {
       const { utils, writeFile } = await import("xlsx")
-      const dataToExport = filteredBooks.map(book => ({
-        "No": "",
+      const dataToExport = filteredBooks.map((book, index) => ({
+        "No": index + 1,
         "Kode": book.code,
         "Judul": book.title,
         "Pengarang": book.author,
@@ -157,11 +152,11 @@ export default function BooksPage() {
           <title>Cetak Label QR - SMPN 5</title>
           <style>
             @page { size: A4; margin: 10mm; }
-            body { margin: 0; display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; font-family: sans-serif; }
-            .sticker { border: 1px dashed #ccc; padding: 10px; text-align: center; width: 140px; height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; page-break-inside: avoid; }
-            .qr-img { width: 100px; height: 100px; margin-bottom: 5px; }
-            .title { font-size: 9px; font-weight: bold; margin: 4px 0; max-height: 24px; overflow: hidden; }
-            .code { font-size: 11px; font-weight: bold; color: #2E6ECE; }
+            body { margin: 0; display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-start; font-family: sans-serif; }
+            .sticker { border: 1px dashed #ccc; padding: 10px; text-align: center; width: 130px; height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; page-break-inside: avoid; }
+            .qr-img { width: 90px; height: 90px; margin-bottom: 5px; }
+            .title { font-size: 8px; font-weight: bold; margin: 2px 0; height: 20px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+            .code { font-size: 10px; font-weight: bold; color: #2E6ECE; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
@@ -245,36 +240,36 @@ export default function BooksPage() {
           <Button variant="outline" size="sm" onClick={handleExportExcel}><FileDown className="h-4 w-4 mr-2" />Ekspor Excel</Button>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-2" />Tambah Buku</Button></DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl bg-slate-50">
               <DialogHeader><DialogTitle>Tambah Buku Baru</DialogTitle></DialogHeader>
               <div className="grid grid-cols-2 gap-4 py-4">
                 <div className="space-y-2">
-                  <Label className={cn(duplicateBookByCode && "text-destructive")}>Kode Buku</Label>
-                  <Input value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} className={cn(duplicateBookByCode && "border-destructive")} />
+                  <Label className={cn("font-semibold", duplicateBookByCode && "text-destructive")}>Kode Buku</Label>
+                  <Input value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} className={cn("bg-white border-slate-300", duplicateBookByCode && "border-destructive")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Judul Buku</Label>
-                  <Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
+                  <Label className="font-semibold">Judul Buku</Label>
+                  <Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Pengarang</Label>
-                  <Input value={formData.author} onChange={e => setFormData({ ...formData, author: e.target.value })} />
+                  <Label className="font-semibold">Pengarang</Label>
+                  <Input value={formData.author} onChange={e => setFormData({ ...formData, author: e.target.value })} className="bg-white border-slate-300" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Tahun Terbit</Label>
-                  <Input type="number" value={formData.publicationYear} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} />
+                  <Label className="font-semibold">Tahun Terbit</Label>
+                  <Input type="number" value={formData.publicationYear} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Tanggal Perolehan</Label>
-                  <Input type="date" value={formData.acquisitionDate} onChange={e => setFormData({ ...formData, acquisitionDate: e.target.value })} />
+                  <Label className="font-semibold">Tanggal Perolehan</Label>
+                  <Input type="date" value={formData.acquisitionDate} onChange={e => setFormData({ ...formData, acquisitionDate: e.target.value })} className="bg-white border-slate-300" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Jenis Buku</Label>
-                  <Input value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} placeholder="Fiksi, Sains, dll" />
+                  <Label className="font-semibold">Jenis Buku</Label>
+                  <Input value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} placeholder="Fiksi, Sains, dll" className="bg-white border-slate-300" />
                 </div>
                 <div className="col-span-2 space-y-2">
-                  <div className="flex justify-between items-center"><Label>Deskripsi</Label><Button variant="ghost" type="button" size="sm" onClick={handleGenerateDescription} disabled={isGenerating}><Sparkles className="h-3 w-3 mr-1" />AI</Button></div>
-                  <Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px]" />
+                  <div className="flex justify-between items-center"><Label className="font-semibold">Deskripsi</Label><Button variant="ghost" type="button" size="sm" onClick={handleGenerateDescription} disabled={isGenerating}><Sparkles className="h-3 w-3 mr-1" />AI</Button></div>
+                  <Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" />
                 </div>
               </div>
               <DialogFooter>
