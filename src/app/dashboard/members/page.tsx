@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
@@ -83,11 +82,11 @@ export default function MembersPage() {
     return collection(db, 'members')
   }, [db])
 
-  const { data: members = [], loading } = useCollection(membersCollectionRef)
+  const { data: members, loading } = useCollection(membersCollectionRef)
 
   // Logic to find the next available ID (sequential, reusing gaps)
   const nextAvailableId = useMemo(() => {
-    if (loading) return ""
+    if (loading || !members) return ""
     const ids = members
       .map(m => parseInt(m.memberId))
       .filter(id => !isNaN(id))
@@ -112,6 +111,7 @@ export default function MembersPage() {
   }, [isOpen, nextAvailableId])
 
   const filteredMembers = useMemo(() => {
+    if (!members) return []
     return members.filter(m => 
       (m.name?.toLowerCase() || "").includes(search.toLowerCase()) || 
       (m.memberId?.toLowerCase() || "").includes(search.toLowerCase())

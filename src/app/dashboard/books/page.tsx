@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo } from "react"
@@ -82,9 +81,10 @@ export default function BooksPage() {
     return collection(db, 'books')
   }, [db])
 
-  const { data: books = [], loading } = useCollection(booksCollectionRef)
+  const { data: books, loading } = useCollection(booksCollectionRef)
 
   const filteredBooks = useMemo(() => {
+    if (!books) return []
     return books.filter(b => 
       (b.title?.toLowerCase() || "").includes(search.toLowerCase()) || 
       (b.author?.toLowerCase() || "").includes(search.toLowerCase()) ||

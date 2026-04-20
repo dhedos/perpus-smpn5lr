@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo } from "react"
@@ -82,9 +81,10 @@ export default function StaffPage() {
     return collection(db, 'users')
   }, [db])
 
-  const { data: allUsers = [], loading } = useCollection(usersCollectionRef)
+  const { data: allUsers, loading } = useCollection(usersCollectionRef)
   
   const staffMembers = useMemo(() => {
+    if (!allUsers) return []
     return allUsers.filter(u => u.role === 'Admin' || u.role === 'Staff')
   }, [allUsers])
 

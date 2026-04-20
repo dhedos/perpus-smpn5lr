@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
@@ -81,12 +80,12 @@ export default function TransactionsPage() {
   const booksRef = useMemoFirebase(() => db ? collection(db, 'books') : null, [db])
   const transRef = useMemoFirebase(() => db ? collection(db, 'transactions') : null, [db])
 
-  const { data: members = [], loading: membersLoading } = useCollection(membersRef)
-  const { data: books = [] } = useCollection(booksRef)
+  const { data: members, loading: membersLoading } = useCollection(membersRef)
+  const { data: books } = useCollection(booksRef)
 
   // Auto-ID Logic (sequential, reusable)
   const nextAvailableId = useMemo(() => {
-    if (membersLoading) return ""
+    if (membersLoading || !members) return ""
     const ids = members
       .map(m => parseInt(m.memberId))
       .filter(id => !isNaN(id))
@@ -110,7 +109,7 @@ export default function TransactionsPage() {
   }, [isMemberDialogOpen, nextAvailableId])
 
   const foundMembers = useMemo(() => {
-    if (!memberSearch) return []
+    if (!memberSearch || !members) return []
     const term = memberSearch.toLowerCase()
     
     return members.filter(m => {
@@ -125,7 +124,7 @@ export default function TransactionsPage() {
   }, [members, memberSearch, borrowerType])
 
   const foundBooks = useMemo(() => {
-    if (!bookSearch) return []
+    if (!bookSearch || !books) return []
     const term = bookSearch.toLowerCase()
     return books.filter(b => b.title?.toLowerCase().includes(term) || b.code?.toLowerCase().includes(term))
   }, [books, bookSearch])
