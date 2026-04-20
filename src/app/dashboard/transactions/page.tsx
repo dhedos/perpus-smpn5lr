@@ -20,7 +20,8 @@ import {
   ArrowRightLeft,
   Coins,
   Ghost,
-  CalendarDays
+  CalendarDays,
+  Clock
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -51,7 +52,8 @@ import {
   useUser
 } from '@/firebase'
 import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc } from 'firebase/firestore'
-import { differenceInDays, parseISO, format, isAfter } from "date-fns"
+import { differenceInDays, parseISO, format, isAfter, addDays } from "date-fns"
+import { id as localeID } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 
 export default function TransactionsPage() {
@@ -113,6 +115,12 @@ export default function TransactionsPage() {
     )
   }, [activeTrans, returnSearch])
 
+  // Hitung estimasi jatuh tempo untuk peminjaman baru
+  const estimatedDueDate = useMemo(() => {
+    const loanDays = Number(settings?.loanPeriod ?? 7);
+    return addDays(new Date(), loanDays);
+  }, [settings?.loanPeriod]);
+
   const handleScanResult = (text: string) => {
     if (!text) return
     const member = members?.find(m => m.memberId?.toLowerCase() === text.toLowerCase())
@@ -145,14 +153,17 @@ export default function TransactionsPage() {
     if (!pendingReturnTrans || !settings) return;
     
     let fine = 0;
+    const finePerDay = Number(settings.fineAmount ?? 500);
+    const lostFine = Number(settings.lostBookFine ?? 50000);
+
     if (lateDays > 0) {
-      fine += lateDays * Number(settings.fineAmount || 500);
+      fine += lateDays * finePerDay;
     }
     
     if (returnCondition === "lost") {
-      fine += Number(settings.lostBookFine || 50000);
+      fine += lostFine;
     } else if (returnCondition === "damaged") {
-      fine += Number(settings.fineAmount || 500) * 10;
+      fine += finePerDay * 10;
     }
     
     setCalculatedFine(fine);
@@ -179,7 +190,7 @@ export default function TransactionsPage() {
         
         if (returnCondition === "lost") {
           await updateDoc(bRef, { 
-            totalStock: currentTotal - 1,
+            totalStock: Math.max(0, currentTotal - 1),
             availableStock: currentAvail
           })
         } else {
@@ -219,14 +230,12 @@ export default function TransactionsPage() {
   const handleProcessBorrow = () => {
     if (!db || !selectedMember || !selectedBook) return
     
-    // VALIDASI KRUSIAL: Pastikan settings sudah termuat
+    // Pastikan menggunakan loanPeriod terbaru dari settings
     const loanDays = Number(settings?.loanPeriod ?? 7);
-    
-    setIsProcessing(true)
-    
     const today = new Date();
-    const dueDate = new Date(); 
-    dueDate.setDate(today.getDate() + loanDays);
+    const finalDueDate = addDays(today, loanDays);
+
+    setIsProcessing(true)
 
     addDoc(collection(db, 'transactions'), {
       memberId: selectedMember.memberId, 
@@ -236,13 +245,14 @@ export default function TransactionsPage() {
       type: 'borrow', 
       status: 'active', 
       borrowDate: today.toISOString(), 
-      dueDate: dueDate.toISOString(), 
+      dueDate: finalDueDate.toISOString(), 
       createdAt: serverTimestamp()
     }).then(() => {
-      updateDoc(doc(db, 'books', selectedBook.id), { availableStock: Number(selectedBook.availableStock) - 1 })
+      const avail = Number(selectedBook.availableStock ?? 1);
+      updateDoc(doc(db, 'books', selectedBook.id), { availableStock: Math.max(0, avail - 1) })
       toast({ 
         title: "Peminjaman Berhasil", 
-        description: `Jatuh tempo: ${format(dueDate, 'dd MMMM yyyy')} (${loanDays} hari).` 
+        description: `Jatuh tempo: ${format(finalDueDate, 'dd MMMM yyyy', { locale: localeID })}.` 
       }); 
       setSelectedBook(null); 
       setSelectedMember(null);
@@ -268,8 +278,8 @@ export default function TransactionsPage() {
           <p className="text-sm text-muted-foreground">Proses peminjaman dan pengembalian sesuai kebijakan sekolah.</p>
         </div>
         <div className="text-right flex flex-col items-end gap-1">
-          <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold gap-2">
-            <CalendarDays className="h-3 w-3" />
+          <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold gap-2 py-1.5 px-3">
+            <CalendarDays className="h-4 w-4" />
             Batas Pinjam: {settings?.loanPeriod ?? 7} Hari
           </Badge>
           {loadingSettings && <p className="text-[10px] text-muted-foreground animate-pulse">Menghubungkan kebijakan...</p>}
@@ -323,12 +333,22 @@ export default function TransactionsPage() {
                     <Input placeholder="Ketik Kode Buku..." className="pl-10 h-12" value={bookSearch} onChange={e => setBookSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleScanResult(bookSearch)} />
                   </div>
                   {selectedBook && (
-                    <div className="p-4 bg-secondary/5 rounded-xl border border-secondary/20 flex justify-between items-center animate-in slide-in-from-right-2">
-                      <div className="flex-1">
-                        <p className="font-bold text-secondary-foreground leading-tight">{selectedBook.title}</p>
-                        <p className="text-xs font-mono text-muted-foreground">{selectedBook.code}</p>
+                    <div className="p-4 bg-secondary/5 rounded-xl border border-secondary/20 flex flex-col gap-2 animate-in slide-in-from-right-2">
+                      <div className="flex justify-between items-center">
+                        <div className="flex-1">
+                          <p className="font-bold text-secondary-foreground leading-tight">{selectedBook.title}</p>
+                          <p className="text-xs font-mono text-muted-foreground">{selectedBook.code}</p>
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => setSelectedBook(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
                       </div>
-                      <Button variant="ghost" size="icon" onClick={() => setSelectedBook(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
+                      <div className="pt-2 border-t border-secondary/10 flex items-center justify-between">
+                         <span className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
+                           <Clock className="h-3 w-3" /> Jatuh Tempo:
+                         </span>
+                         <span className="text-xs font-bold text-primary">
+                           {format(estimatedDueDate, 'EEEE, dd MMM yyyy', { locale: localeID })}
+                         </span>
+                      </div>
                     </div>
                   )}
                 </CardContent>
