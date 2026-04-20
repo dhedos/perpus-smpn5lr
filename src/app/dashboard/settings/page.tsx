@@ -51,9 +51,9 @@ export default function SettingsPage() {
       setSettings(prev => ({ 
         ...prev, 
         ...remoteSettings,
-        loanPeriod: Number(remoteSettings.loanPeriod || 7),
-        fineAmount: Number(remoteSettings.fineAmount || 500),
-        lostBookFine: Number(remoteSettings.lostBookFine || 50000)
+        loanPeriod: Number(remoteSettings.loanPeriod ?? 7),
+        fineAmount: Number(remoteSettings.fineAmount ?? 500),
+        lostBookFine: Number(remoteSettings.lostBookFine ?? 50000)
       }))
     }
   }, [remoteSettings])
@@ -64,11 +64,12 @@ export default function SettingsPage() {
     setIsSaving(true)
     
     // Pastikan data numerik tersimpan sebagai number, bukan string
+    // Gunakan Math.max untuk mencegah angka 0 atau negatif jika tidak sengaja terinput
     const dataToSave = {
       ...settings,
-      loanPeriod: Number(settings.loanPeriod),
-      fineAmount: Number(settings.fineAmount),
-      lostBookFine: Number(settings.lostBookFine)
+      loanPeriod: Math.max(1, Number(settings.loanPeriod)),
+      fineAmount: Math.max(0, Number(settings.fineAmount)),
+      lostBookFine: Math.max(0, Number(settings.lostBookFine))
     }
     
     setDoc(settingsDocRef, dataToSave, { merge: true })

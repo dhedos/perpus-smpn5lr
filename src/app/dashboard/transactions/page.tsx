@@ -19,7 +19,8 @@ import {
   ThumbsUp,
   ArrowRightLeft,
   Coins,
-  Ghost
+  Ghost,
+  CalendarDays
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -79,7 +80,7 @@ export default function TransactionsPage() {
 
   // Settings: Menarik batas pinjam dan tarif denda dari Admin
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
-  const { data: settings } = useDoc(settingsRef)
+  const { data: settings, isLoading: loadingSettings } = useDoc(settingsRef)
 
   const membersRef = useMemoFirebase(() => db ? collection(db, 'members') : null, [db])
   const booksRef = useMemoFirebase(() => db ? collection(db, 'books') : null, [db])
@@ -87,7 +88,7 @@ export default function TransactionsPage() {
   const { data: members } = useCollection(membersRef)
   const { data: books } = useCollection(booksRef)
 
-  // Query sirkulasi aktif - Disederhanakan untuk menghindari error permission/index
+  // Query sirkulasi aktif
   const activeTransQuery = useMemoFirebase(() => {
     if (!db || !isStaff) return null;
     return query(collection(db, 'transactions'), where('status', '==', 'active'));
@@ -140,21 +141,18 @@ export default function TransactionsPage() {
     setIsReturnConfirmOpen(true);
   }
 
-  // Efek untuk menghitung denda secara otomatis saat input kondisi berubah
   useEffect(() => {
     if (!pendingReturnTrans || !settings) return;
     
     let fine = 0;
-    // Denda keterlambatan (Rp per hari dari Admin)
     if (lateDays > 0) {
       fine += lateDays * Number(settings.fineAmount || 500);
     }
     
-    // Denda kondisi khusus (Buku Hilang/Rusak)
     if (returnCondition === "lost") {
       fine += Number(settings.lostBookFine || 50000);
     } else if (returnCondition === "damaged") {
-      fine += Number(settings.fineAmount || 500) * 10; // Ilustrasi: denda rusak 10x tarif harian
+      fine += Number(settings.fineAmount || 500) * 10;
     }
     
     setCalculatedFine(fine);
@@ -182,7 +180,7 @@ export default function TransactionsPage() {
         if (returnCondition === "lost") {
           await updateDoc(bRef, { 
             totalStock: currentTotal - 1,
-            availableStock: currentAvail // Tidak bertambah karena buku tidak ada fisiknya
+            availableStock: currentAvail
           })
         } else {
           await updateDoc(bRef, { 
@@ -220,10 +218,12 @@ export default function TransactionsPage() {
 
   const handleProcessBorrow = () => {
     if (!db || !selectedMember || !selectedBook) return
+    
+    // VALIDASI KRUSIAL: Pastikan settings sudah termuat
+    const loanDays = Number(settings?.loanPeriod ?? 7);
+    
     setIsProcessing(true)
     
-    // LOGIKA DINAMIS: Menggunakan loanPeriod dari Admin
-    const loanDays = Number(settings?.loanPeriod || 7);
     const today = new Date();
     const dueDate = new Date(); 
     dueDate.setDate(today.getDate() + loanDays);
@@ -249,7 +249,6 @@ export default function TransactionsPage() {
     }).finally(() => setIsProcessing(false))
   }
 
-  // Tampilkan loading jika status staff belum terverifikasi
   if (!isStaff && !user) {
     return (
       <div className="h-[60vh] flex items-center justify-center">
@@ -268,8 +267,12 @@ export default function TransactionsPage() {
           <h1 className="text-2xl font-bold text-primary flex items-center gap-2"><ArrowRightLeft className="h-6 w-6" /> Sirkulasi & Kondisi Buku</h1>
           <p className="text-sm text-muted-foreground">Proses peminjaman dan pengembalian sesuai kebijakan sekolah.</p>
         </div>
-        <div className="text-right">
-          <Badge variant="outline" className="text-[10px] font-bold">Kebijakan: {settings?.loanPeriod || 7} Hari</Badge>
+        <div className="text-right flex flex-col items-end gap-1">
+          <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold gap-2">
+            <CalendarDays className="h-3 w-3" />
+            Batas Pinjam: {settings?.loanPeriod ?? 7} Hari
+          </Badge>
+          {loadingSettings && <p className="text-[10px] text-muted-foreground animate-pulse">Menghubungkan kebijakan...</p>}
         </div>
       </div>
 
@@ -332,7 +335,7 @@ export default function TransactionsPage() {
               </Card>
             </div>
 
-            <Button className="w-full h-16 text-lg font-black shadow-lg shadow-primary/20" disabled={!selectedMember || !selectedBook || isProcessing} onClick={handleProcessBorrow}>
+            <Button className="w-full h-16 text-lg font-black shadow-lg shadow-primary/20" disabled={!selectedMember || !selectedBook || isProcessing || loadingSettings} onClick={handleProcessBorrow}>
               {isProcessing ? <Loader2 className="animate-spin h-6 w-6" /> : "KONFIRMASI PEMINJAMAN"}
             </Button>
           </TabsContent>
