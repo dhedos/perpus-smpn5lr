@@ -73,7 +73,8 @@ const INITIAL_MEMBER_DATA = {
   memberId: "",
   name: "",
   type: "Student",
-  classOrSubject: "",
+  classPart: "",
+  subjectPart: "",
   phone: "",
   joinDate: new Date().toISOString().split('T')[0]
 }
@@ -123,7 +124,22 @@ export default function MembersPage() {
 
   const handleSaveMember = () => {
     if (!db) return
-    const dataToSave = { ...formData, createdAt: serverTimestamp() }
+    
+    // Gabungkan Kelas dan Mapel dengan tanda miring
+    const fullClassSubject = formData.classPart && formData.subjectPart 
+      ? `${formData.classPart}/${formData.subjectPart}` 
+      : (formData.classPart || formData.subjectPart || "");
+
+    const dataToSave = { 
+      memberId: formData.memberId,
+      name: formData.name,
+      type: formData.type,
+      classOrSubject: fullClassSubject,
+      phone: formData.phone,
+      joinDate: formData.joinDate,
+      createdAt: serverTimestamp() 
+    }
+
     setIsOpen(false)
     forceUnlockUI()
 
@@ -142,8 +158,22 @@ export default function MembersPage() {
 
   const handleUpdateMember = () => {
     if (!db || !editingMemberId) return
+    
+    const fullClassSubject = formData.classPart && formData.subjectPart 
+      ? `${formData.classPart}/${formData.subjectPart}` 
+      : (formData.classPart || formData.subjectPart || "");
+
     const docRef = doc(db, 'members', editingMemberId)
-    const dataToUpdate = { ...formData, updatedAt: serverTimestamp() }
+    const dataToUpdate = { 
+      memberId: formData.memberId,
+      name: formData.name,
+      type: formData.type,
+      classOrSubject: fullClassSubject,
+      phone: formData.phone,
+      joinDate: formData.joinDate,
+      updatedAt: serverTimestamp() 
+    }
+
     setIsEditOpen(false)
     forceUnlockUI()
 
@@ -187,17 +217,17 @@ export default function MembersPage() {
         </div>
         <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) { setFormData(INITIAL_MEMBER_DATA); forceUnlockUI(); } }}>
           <DialogTrigger asChild><Button className="gap-2"><UserPlus className="h-4 w-4" />Tambah Anggota</Button></DialogTrigger>
-          <DialogContent className="bg-slate-50">
+          <DialogContent className="bg-slate-50 max-w-md">
             <DialogHeader><DialogTitle>Daftarkan Anggota Baru</DialogTitle></DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="font-semibold text-xs uppercase text-muted-foreground">ID Anggota (NIS/NIP)</Label>
-                  <Input value={formData.memberId ?? ""} onChange={e => setFormData({...formData, memberId: e.target.value})} className="bg-white border-slate-300 h-11" />
+                  <Input value={formData.memberId ?? ""} onChange={e => setFormData({...formData, memberId: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Contoh: 12345" />
                 </div>
                 <div className="space-y-2">
                   <Label className="font-semibold text-xs uppercase text-muted-foreground">Tipe</Label>
-                  <Select value={formData.type} onValueChange={v => setFormData({...formData, type: v})}>
+                  <Select value={formData.type} onValueChange={v => setFormData({...formData, type: v as any})}>
                     <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
                     <SelectContent><SelectItem value="Student">Siswa</SelectItem><SelectItem value="Teacher">Guru</SelectItem></SelectContent>
                   </Select>
@@ -205,24 +235,30 @@ export default function MembersPage() {
               </div>
               <div className="space-y-2">
                 <Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label>
-                <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" />
+                <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Masukkan nama lengkap" />
               </div>
-              <div className="space-y-2">
-                <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas/Mapel</Label>
-                <Input value={formData.classOrSubject ?? ""} onChange={e => setFormData({...formData, classOrSubject: e.target.value})} className="bg-white border-slate-300 h-11" />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas</Label>
+                  <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Contoh: VII" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-semibold text-xs uppercase text-muted-foreground">Mata Pelajaran (Mapel)</Label>
+                  <Input value={formData.subjectPart ?? ""} onChange={e => setFormData({...formData, subjectPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Contoh: TIK" />
+                </div>
               </div>
             </div>
-            <DialogFooter><Button onClick={handleSaveMember} className="w-full sm:w-auto h-11 px-8 shadow-lg shadow-primary/20">Simpan</Button></DialogFooter>
+            <DialogFooter><Button onClick={handleSaveMember} className="w-full sm:w-auto h-11 px-8 shadow-lg shadow-primary/20">Simpan Anggota</Button></DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="bg-card p-4 rounded-xl shadow-sm">
+      <Card className="p-4 rounded-xl shadow-sm border-none bg-white">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Cari anggota berdasarkan nama atau ID..." className="pl-10 bg-white" value={search ?? ""} onChange={e => setSearch(e.target.value)} />
+          <Input placeholder="Cari anggota berdasarkan nama atau ID..." className="pl-10 h-11 border-slate-200" value={search ?? ""} onChange={e => setSearch(e.target.value)} />
         </div>
-      </div>
+      </Card>
 
       <Card className="border-none shadow-sm overflow-hidden">
         <Table>
@@ -246,11 +282,13 @@ export default function MembersPage() {
                 <TableCell>
                   <div className="space-y-0.5">
                     <div className="font-semibold leading-tight">{member.name ?? ""}</div>
-                    <div className="text-xs text-primary font-bold">{member.memberId ?? ""}</div>
+                    <div className="text-xs text-primary font-bold font-mono">{member.memberId ?? ""}</div>
                   </div>
                 </TableCell>
                 <TableCell><Badge variant="outline" className="h-5 px-1.5 text-[10px] font-bold">{member.type === 'Teacher' ? 'GURU' : 'SISWA'}</Badge></TableCell>
-                <TableCell>{member.classOrSubject || '-'}</TableCell>
+                <TableCell>
+                  <div className="text-sm font-medium">{member.classOrSubject || '-'}</div>
+                </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
@@ -264,11 +302,13 @@ export default function MembersPage() {
                       <DropdownMenuItem onSelect={() => { 
                         setTimeout(() => {
                           setEditingMemberId(member.id); 
+                          const parts = (member.classOrSubject || "").split('/');
                           setFormData({
                             memberId: member.memberId || "",
                             name: member.name || "",
-                            type: member.type || "Student",
-                            classOrSubject: member.classOrSubject || "",
+                            type: (member.type as any) || "Student",
+                            classPart: parts[0] || "",
+                            subjectPart: parts[1] || "",
                             phone: member.phone || "",
                             joinDate: member.joinDate || new Date().toISOString().split('T')[0]
                           }); 
@@ -300,9 +340,13 @@ export default function MembersPage() {
       <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-sm text-center">
           <DialogHeader><DialogTitle>Kartu Digital Anggota</DialogTitle></DialogHeader>
-          <div className="bg-white p-6 rounded-xl border-2 border-primary/20 space-y-4">
+          <div className="bg-white p-6 rounded-xl border-2 border-primary/20 space-y-4 shadow-xl">
             <div className="flex justify-center">{selectedMemberQr && <QRCodeSVG value={selectedMemberQr.memberId} size={250} level="H" includeMargin />}</div>
-            <div><p className="font-bold text-lg leading-tight">{selectedMemberQr?.name ?? ""}</p><p className="font-mono text-primary font-bold">{selectedMemberQr?.memberId ?? ""}</p></div>
+            <div>
+              <div className="font-bold text-lg leading-tight">{selectedMemberQr?.name ?? ""}</div>
+              <div className="font-mono text-primary font-bold">{selectedMemberQr?.memberId ?? ""}</div>
+              <div className="text-xs text-muted-foreground mt-1">{selectedMemberQr?.classOrSubject}</div>
+            </div>
           </div>
           <DialogFooter className="grid grid-cols-2 gap-2">
             <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" />Cetak</Button>
@@ -312,13 +356,25 @@ export default function MembersPage() {
       </Dialog>
 
       <Dialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); if(!v) { setFormData(INITIAL_MEMBER_DATA); setEditingMemberId(null); forceUnlockUI(); } }}>
-        <DialogContent className="bg-slate-50">
+        <DialogContent className="bg-slate-50 max-w-md">
           <DialogHeader><DialogTitle>Ubah Data Anggota</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label><Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" /></div>
-            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas/Mapel</Label><Input value={formData.classOrSubject ?? ""} onChange={e => setFormData({...formData, classOrSubject: e.target.value})} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2">
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label>
+              <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas</Label>
+                <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold text-xs uppercase text-muted-foreground">Mapel</Label>
+                <Input value={formData.subjectPart ?? ""} onChange={e => setFormData({...formData, subjectPart: e.target.value})} className="bg-white border-slate-300 h-11" />
+              </div>
+            </div>
           </div>
-          <DialogFooter><Button onClick={handleUpdateMember}>Simpan Perubahan</Button></DialogFooter>
+          <DialogFooter><Button onClick={handleUpdateMember} className="w-full h-11">Simpan Perubahan</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -326,7 +382,7 @@ export default function MembersPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Anggota?</AlertDialogTitle>
-            <AlertDialogDescription>Semua riwayat terkait anggota ini tidak akan dihapus, namun identitasnya akan hilang dari daftar aktif.</AlertDialogDescription>
+            <AlertDialogDescription>Data identitas akan dihapus. Pastikan anggota ini sudah tidak memiliki pinjaman aktif.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => { setMemberToDelete(null); forceUnlockUI(); }}>Batal</AlertDialogCancel>
