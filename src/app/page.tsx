@@ -112,11 +112,12 @@ export default function LoginPage() {
         <CardHeader className="space-y-4 text-center">
           <div className="mx-auto w-32 h-32 relative mb-2">
             <Image 
-              src="/logo.png" 
+              src="https://picsum.photos/seed/smpn5logo/200/200" 
               alt="Logo SMPN 5" 
               fill 
-              className="object-contain drop-shadow-md"
+              className="object-contain drop-shadow-md rounded-full border-4 border-primary/10"
               priority
+              data-ai-hint="school logo"
             />
           </div>
           <div className="space-y-1">

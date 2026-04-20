@@ -54,10 +54,11 @@ export function SidebarNav() {
       <div className="flex h-20 items-center px-4 border-b shrink-0 gap-3">
         <div className="relative h-12 w-12 shrink-0">
           <Image 
-            src="/logo.png" 
+            src="https://picsum.photos/seed/smpn5logo/100/100" 
             alt="Logo" 
             fill 
-            className="object-contain"
+            className="object-contain rounded-full"
+            data-ai-hint="school icon"
           />
         </div>
         <div className="flex flex-col">
