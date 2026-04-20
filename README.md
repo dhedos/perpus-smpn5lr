@@ -1,24 +1,36 @@
-
 # Pustaka Nusantara - SMPN 5 LANGKE REMBONG
 
-Sistem Informasi Perpustakaan Modern dengan integrasi AI dan Cloud Sync.
+Sistem Informasi Perpustakaan Modern dengan integrasi AI, Scan QR, dan Sinkronisasi Cloud yang dioptimalkan untuk efisiensi kuota.
 
-## Cara Memulai & Akses Mobile (HP)
+## Repositori GitHub
+**URL**: [https://github.com/dhedos/perpus-smpn5lr.git](https://github.com/dhedos/perpus-smpn5lr.git)
 
-1. **Akses Dashboard**: Buka URL preview yang disediakan.
-2. **Setup Admin**: Jika database kosong, gunakan tombol **"Inisialisasi Admin Pertama"** di halaman login.
-3. **Akses dari HP**: 
-   - Klik ikon **QR Code (Public Access)** di pojok kanan atas Firebase Studio.
-   - Scan QR tersebut dengan HP Anda.
-   - **PENTING**: Anda harus Login kembali di HP menggunakan akun Admin/Staff Anda.
-   - Pastikan HP terhubung ke internet dan URL dimulai dengan `https://`.
-4. **Izin Kamera**: Saat membuka fitur Scan di HP, pilih **"Allow"** (Izinkan) ketika browser meminta akses kamera.
+## Cara Mengunggah ke GitHub
+Jika Anda belum mengunggah kode ini, jalankan perintah berikut di terminal:
+1. `git init`
+2. `git add .`
+3. `git commit -m "Initial commit - Sistem Perpustakaan Modern"`
+4. `git branch -M main`
+5. `git remote add origin https://github.com/dhedos/perpus-smpn5lr.git`
+6. `git push -u origin main`
 
-## Fitur Utama
-- **QR Code per Buku**: Cetak dan tempel QR Code pada buku untuk sirkulasi instan.
-- **Sirkulasi Mobile**: Pinjam dan kembalikan buku tinggal scan QR menggunakan kamera HP.
-- **AI Deskripsi**: Buat ringkasan buku otomatis dengan Google Gemini AI.
-- **Sync & Backup**: Data tersimpan aman di cloud dan dapat diakses dari mana saja.
+## Fitur Unggulan
+- **QR Code per Buku**: Cetak label QR otomatis untuk sirkulasi buku.
+- **Smart Scan Mobile**: Pinjam dan kembali buku menggunakan kamera HP (Mendukung QR & Barcode EAN-13).
+- **AI Deskripsi**: Ringkasan buku otomatis menggunakan Google Gemini AI.
+- **Offline Persistence**: Data tetap bisa diakses meskipun internet sekolah mati (Caching).
+- **Optimasi Kuota**: Dirancang untuk tetap GRATIS (Spark Plan) meskipun memiliki 1.000+ jenis buku.
+
+## Portabilitas & Migrasi Data
+Aplikasi ini dirancang dengan prinsip **Portabilitas**:
+1. **Schema Definition**: Seluruh struktur database didefinisikan secara standar di file `docs/backend.json`.
+2. **Export Snapshots**: Data dapat diekspor ke Excel kapan saja untuk backup di Google Sheets.
+3. **Migration Ready**: Jika ingin pindah dari Firebase ke database lain (SQL/NoSQL), file `backend.json` berfungsi sebagai dokumentasi teknis utama untuk membangun ulang skema data di penyedia baru.
+
+## Panduan Petugas
+- **Login**: Gunakan email resmi yang didaftarkan Admin.
+- **Lupa Password**: Gunakan fitur "Lupa Kata Sandi" di halaman login untuk menerima link pemulihan via email.
+- **Sinkronisasi**: Pantau status data di menu "Sinkronisasi Data" pada Dashboard.
 
 ---
-&copy; 2024 SMPN 5 LANGKE REMBONG.
+&copy; 2024 SMPN 5 LANGKE REMBONG. Dirancang untuk efisiensi dan kemandirian data sekolah.
