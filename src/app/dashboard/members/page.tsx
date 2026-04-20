@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -21,9 +21,7 @@ import {
   Loader2, 
   QrCode,
   Printer,
-  Download,
-  GraduationCap,
-  School
+  Download
 } from "lucide-react"
 import { 
   Dialog, 
@@ -31,7 +29,6 @@ import {
   DialogHeader, 
   DialogTitle, 
   DialogFooter, 
-  DialogDescription, 
   DialogTrigger 
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -57,11 +54,9 @@ import { QRCodeSVG } from "qrcode.react"
 import { 
   useFirestore, 
   useCollection, 
-  useMemoFirebase,
-  errorEmitter 
+  useMemoFirebase 
 } from '@/firebase'
 import { collection, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore'
-import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors'
 
 export default function MembersPage() {
   const db = useFirestore()
@@ -115,33 +110,12 @@ export default function MembersPage() {
   const handleUpdateMember = () => {
     if (!db || !editingMemberId) return
     setIsSaving(true)
-    const ref = doc(db, 'members', editingMemberId)
-    updateDoc(ref, { ...formData, updatedAt: serverTimestamp() })
+    updateDoc(doc(db, 'members', editingMemberId), { ...formData, updatedAt: serverTimestamp() })
       .then(() => {
         toast({ title: "Berhasil!", description: "Data diperbarui." })
         setIsEditOpen(false)
       })
       .finally(() => setIsSaving(false))
-  }
-
-  const downloadQrAsImage = () => {
-    const svg = document.querySelector("#member-qr svg")
-    if (!svg) return
-    const canvas = document.createElement("canvas")
-    const img = new Image()
-    img.onload = () => {
-      canvas.width = 1000; canvas.height = 1000
-      const ctx = canvas.getContext("2d")
-      if (ctx) {
-        ctx.fillStyle = "white"; ctx.fillRect(0, 0, 1000, 1000)
-        ctx.drawImage(img, 0, 0, 1000, 1000)
-        const a = document.createElement("a")
-        a.href = canvas.toDataURL("image/png")
-        a.download = `QR_Member_${selectedMemberQr.memberId}.png`
-        a.click()
-      }
-    }
-    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(new XMLSerializer().serializeToString(svg))))
   }
 
   return (
@@ -153,37 +127,62 @@ export default function MembersPage() {
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild><Button className="gap-2"><UserPlus className="h-4 w-4" />Tambah Anggota</Button></DialogTrigger>
-          <DialogContent>
+          <DialogContent className="bg-slate-50">
             <DialogHeader><DialogTitle>Daftarkan Anggota Baru</DialogTitle></DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>ID Anggota</Label><Input value={formData.memberId} onChange={e => setFormData({...formData, memberId: e.target.value})} /></div>
                 <div className="space-y-2">
-                  <Label>Tipe</Label>
+                  <Label className="font-semibold">ID Anggota</Label>
+                  <Input value={formData.memberId} onChange={e => setFormData({...formData, memberId: e.target.value})} className="bg-white border-slate-300 h-11" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-semibold">Tipe</Label>
                   <Select value={formData.type} onValueChange={v => setFormData({...formData, type: v})}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
                     <SelectContent><SelectItem value="Student">Siswa</SelectItem><SelectItem value="Teacher">Guru</SelectItem></SelectContent>
                   </Select>
                 </div>
               </div>
-              <div className="space-y-2"><Label>Nama</Label><Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
-              <div className="space-y-2"><Label>Kelas/Mapel</Label><Input value={formData.classOrSubject} onChange={e => setFormData({...formData, classOrSubject: e.target.value})} /></div>
+              <div className="space-y-2">
+                <Label className="font-semibold">Nama Lengkap</Label>
+                <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold">Kelas/Mapel</Label>
+                <Input value={formData.classOrSubject} onChange={e => setFormData({...formData, classOrSubject: e.target.value})} className="bg-white border-slate-300 h-11" />
+              </div>
             </div>
-            <DialogFooter><Button onClick={handleSaveMember} disabled={isSaving}>Simpan</Button></DialogFooter>
+            <DialogFooter><Button onClick={handleSaveMember} disabled={isSaving} className="w-full sm:w-auto h-11 px-8">Simpan</Button></DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="bg-card p-4 rounded-xl shadow-sm"><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Cari anggota..." className="pl-10" value={search} onChange={e => setSearch(e.target.value)} /></div></div>
+      <div className="bg-card p-4 rounded-xl shadow-sm">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Cari anggota berdasarkan nama atau ID..." className="pl-10 bg-white" value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+      </div>
 
-      <Card className="border-none shadow-sm">
+      <Card className="border-none shadow-sm overflow-hidden">
         <Table>
-          <TableHeader><TableRow><TableHead>Identitas</TableHead><TableHead>Tipe</TableHead><TableHead>Kelas/Mapel</TableHead><TableHead className="text-right">Aksi</TableHead></TableRow></TableHeader>
+          <TableHeader>
+            <TableRow className="bg-muted/50">
+              <TableHead className="w-12 text-center">No.</TableHead>
+              <TableHead>Identitas</TableHead>
+              <TableHead>Tipe</TableHead>
+              <TableHead>Kelas/Mapel</TableHead>
+              <TableHead className="text-right">Aksi</TableHead>
+            </TableRow>
+          </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={4} className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
-            ) : filteredMembers.map((member) => (
+              <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+            ) : filteredMembers.length === 0 ? (
+              <TableRow><TableCell colSpan={5} className="text-center py-10 text-muted-foreground">Belum ada anggota terdaftar.</TableCell></TableRow>
+            ) : filteredMembers.map((member, index) => (
               <TableRow key={member.id}>
+                <TableCell className="text-center text-xs text-muted-foreground">{index + 1}</TableCell>
                 <TableCell><div><p className="font-semibold">{member.name}</p><p className="text-xs text-primary font-bold">{member.memberId}</p></div></TableCell>
                 <TableCell><Badge variant="outline">{member.type === 'Teacher' ? 'Guru' : 'Siswa'}</Badge></TableCell>
                 <TableCell>{member.classOrSubject || '-'}</TableCell>
@@ -191,9 +190,9 @@ export default function MembersPage() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => { setSelectedMemberQr(member); setTimeout(() => setIsQrOpen(true), 100); }}><QrCode className="h-4 w-4 mr-2" />QR Code</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => { setEditingMemberId(member.id); setFormData({...member}); setTimeout(() => setIsEditOpen(true), 100); }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onClick={() => deleteDoc(doc(db, 'members', member.id))}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => { setSelectedMemberQr(member); setIsQrOpen(true); }}><QrCode className="h-4 w-4 mr-2" />QR Code</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => { setEditingMemberId(member.id); setFormData({...member}); setIsEditOpen(true); }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive" onClick={() => { if(confirm("Hapus anggota ini?")) deleteDoc(doc(db, 'members', member.id)) }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -207,25 +206,24 @@ export default function MembersPage() {
         <DialogContent className="max-w-sm text-center">
           <DialogHeader><DialogTitle>Kartu Digital</DialogTitle></DialogHeader>
           <div className="bg-white p-6 rounded-xl border-2 border-primary/20 space-y-4">
-            <div id="member-qr" className="flex justify-center">
-              {selectedMemberQr && <QRCodeSVG value={selectedMemberQr.memberId} size={250} level="H" includeMargin={true} />}
-            </div>
+            <div className="flex justify-center">{selectedMemberQr && <QRCodeSVG value={selectedMemberQr.memberId} size={250} level="H" includeMargin />}</div>
             <div><p className="font-bold text-lg">{selectedMemberQr?.name}</p><p className="font-mono text-primary font-bold">{selectedMemberQr?.memberId}</p></div>
           </div>
           <DialogFooter className="grid grid-cols-2 gap-2">
-            <Button variant="outline" onClick={downloadQrAsImage}><Download className="h-4 w-4 mr-2" />Unduh</Button>
-            <Button onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" />Cetak</Button>
+            <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" />Cetak</Button>
+            <Button onClick={() => setIsQrOpen(false)}>Tutup</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent><DialogHeader><DialogTitle>Ubah Anggota</DialogTitle></DialogHeader>
+        <DialogContent className="bg-slate-50">
+          <DialogHeader><DialogTitle>Ubah Anggota</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="space-y-2"><Label>Nama</Label><Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
-            <div className="space-y-2"><Label>Kelas/Mapel</Label><Input value={formData.classOrSubject} onChange={e => setFormData({...formData, classOrSubject: e.target.value})} /></div>
+            <div className="space-y-2"><Label className="font-semibold">Nama Lengkap</Label><Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300" /></div>
+            <div className="space-y-2"><Label className="font-semibold">Kelas/Mapel</Label><Input value={formData.classOrSubject} onChange={e => setFormData({...formData, classOrSubject: e.target.value})} className="bg-white border-slate-300" /></div>
           </div>
-          <DialogFooter><Button onClick={handleUpdateMember}>Simpan</Button></DialogFooter>
+          <DialogFooter><Button onClick={handleUpdateMember}>Simpan Perubahan</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

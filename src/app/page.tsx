@@ -142,7 +142,7 @@ export default function LoginPage() {
 
             {isSetupMode && (
               <div className="space-y-2">
-                <Label htmlFor="name">Nama Lengkap Admin</Label>
+                <Label htmlFor="name" className="font-semibold">Nama Lengkap Admin</Label>
                 <Input 
                   id="name" 
                   placeholder="Nama Penanggung Jawab" 
@@ -154,7 +154,7 @@ export default function LoginPage() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="font-semibold">Email</Label>
               <Input 
                 id="email" 
                 type="email" 
@@ -166,7 +166,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Kata Sandi</Label>
+              <Label htmlFor="password" className="font-semibold">Kata Sandi</Label>
               <Input 
                 id="password" 
                 type="password" 

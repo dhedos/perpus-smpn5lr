@@ -58,7 +58,7 @@ import {
   useCollection, 
   useMemoFirebase 
 } from '@/firebase'
-import { collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore'
+import { collection, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 
 export default function BooksPage() {
   const db = useFirestore()
@@ -152,12 +152,12 @@ export default function BooksPage() {
         <head>
           <title>Cetak Label QR - SMPN 5</title>
           <style>
-            @page { size: A4; margin: 10mm; }
-            body { margin: 0; display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-start; font-family: sans-serif; }
-            .sticker { border: 1px dashed #ccc; padding: 10px; text-align: center; width: 130px; height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; page-break-inside: avoid; }
-            .qr-img { width: 90px; height: 90px; margin-bottom: 5px; }
-            .title { font-size: 8px; font-weight: bold; margin: 2px 0; height: 20px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-            .code { font-size: 10px; font-weight: bold; color: #2E6ECE; }
+            @page { size: A4; margin: 5mm; }
+            body { margin: 0; display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-start; font-family: sans-serif; background: #fff; }
+            .sticker { border: 0.5px solid #eee; padding: 6px; text-align: center; width: 120px; height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; page-break-inside: avoid; }
+            .qr-img { width: 85px; height: 85px; margin-bottom: 4px; }
+            .title { font-size: 7px; font-weight: bold; margin: 1px 0; height: 18px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+            .code { font-size: 9px; font-weight: bold; color: #2E6ECE; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
@@ -238,7 +238,7 @@ export default function BooksPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={handlePrintAllQrs} className="hidden md:flex"><Printer className="h-4 w-4 mr-2" />Cetak Semua QR</Button>
-          <Button variant="outline" size="sm" onClick={handleExportExcel}><FileDown className="h-4 w-4 mr-2" />Unduh Excel</Button>
+          <Button variant="outline" size="sm" onClick={handleExportExcel}><FileDown className="h-4 w-4 mr-2" />Excel</Button>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-2" />Tambah Buku</Button></DialogTrigger>
             <DialogContent className="max-w-2xl bg-slate-50">
@@ -246,36 +246,36 @@ export default function BooksPage() {
               <div className="grid grid-cols-2 gap-4 py-4">
                 <div className="space-y-2">
                   <Label className={cn("font-semibold", duplicateBookByCode && "text-destructive")}>Kode Buku</Label>
-                  <Input value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} className={cn("bg-white border-slate-300", duplicateBookByCode && "border-destructive")} />
+                  <Input value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} className={cn("bg-white border-slate-300 h-11", duplicateBookByCode && "border-destructive")} />
                 </div>
                 <div className="space-y-2">
                   <Label className="font-semibold">Judul Buku</Label>
-                  <Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300" />
+                  <Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" />
                 </div>
                 <div className="space-y-2">
                   <Label className="font-semibold">Pengarang</Label>
-                  <Input value={formData.author} onChange={e => setFormData({ ...formData, author: e.target.value })} className="bg-white border-slate-300" />
+                  <Input value={formData.author} onChange={e => setFormData({ ...formData, author: e.target.value })} className="bg-white border-slate-300 h-11" />
                 </div>
                 <div className="space-y-2">
                   <Label className="font-semibold">Tahun Terbit</Label>
-                  <Input type="number" value={formData.publicationYear} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300" />
+                  <Input type="number" value={formData.publicationYear} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300 h-11" />
                 </div>
                 <div className="space-y-2">
                   <Label className="font-semibold">Tgl. Penerimaan</Label>
-                  <Input type="date" value={formData.acquisitionDate} onChange={e => setFormData({ ...formData, acquisitionDate: e.target.value })} className="bg-white border-slate-300" />
+                  <Input type="date" value={formData.acquisitionDate} onChange={e => setFormData({ ...formData, acquisitionDate: e.target.value })} className="bg-white border-slate-300 h-11" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-semibold">Jenis Buku</Label>
-                  <Input value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} placeholder="Fiksi, Sains, dll" className="bg-white border-slate-300" />
+                  <Label className="font-semibold">Jenis / Kategori</Label>
+                  <Input value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} placeholder="Fiksi, Sains, dll" className="bg-white border-slate-300 h-11" />
                 </div>
                 <div className="col-span-2 space-y-2">
-                  <div className="flex justify-between items-center"><Label className="font-semibold">Deskripsi</Label><Button variant="ghost" type="button" size="sm" onClick={handleGenerateDescription} disabled={isGenerating}><Sparkles className="h-3 w-3 mr-1" />AI Deskripsi</Button></div>
+                  <div className="flex justify-between items-center"><Label className="font-semibold">Deskripsi / Ringkasan</Label><Button variant="ghost" type="button" size="sm" onClick={handleGenerateDescription} disabled={isGenerating}><Sparkles className="h-3 w-3 mr-1" />AI Deskripsi</Button></div>
                   <Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" />
                 </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsOpen(false)}>Batal</Button>
-                <Button onClick={handleSaveBook} disabled={isSaving || !!duplicateBookByCode}>Simpan Data</Button>
+                <Button onClick={handleSaveBook} disabled={isSaving || !!duplicateBookByCode} className="px-8">Simpan Data</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -285,7 +285,7 @@ export default function BooksPage() {
       <div className="flex items-center gap-4 bg-card p-4 rounded-xl shadow-sm">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Cari Kode, Judul, Tahun, atau ISBN..." className="pl-10" value={search} onChange={e => setSearch(e.target.value)} />
+          <Input placeholder="Cari Kode, Judul, Tahun, atau ISBN..." className="pl-10 bg-white" value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && setSearch(search)} />
         </div>
         <Button variant="secondary" onClick={startScanner}><ScanBarcode className="h-4 w-4 mr-2" />Scan</Button>
       </div>
@@ -294,7 +294,7 @@ export default function BooksPage() {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead className="w-12">No.</TableHead>
+              <TableHead className="w-12 text-center">No.</TableHead>
               <TableHead>Kode</TableHead>
               <TableHead>Judul & Pengarang</TableHead>
               <TableHead>Thn Terbit</TableHead>
@@ -310,7 +310,7 @@ export default function BooksPage() {
               <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground">Tidak ada buku.</TableCell></TableRow>
             ) : filteredBooks.map((book, index) => (
               <TableRow key={book.id}>
-                <TableCell className="text-xs text-muted-foreground">{index + 1}</TableCell>
+                <TableCell className="text-center text-xs text-muted-foreground">{index + 1}</TableCell>
                 <TableCell className="font-mono text-xs font-bold text-primary">{book.code}</TableCell>
                 <TableCell>
                   <div className="space-y-0.5">
@@ -346,7 +346,7 @@ export default function BooksPage() {
       </Dialog>
 
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl bg-white">
           <DialogHeader><DialogTitle className="flex items-center gap-2 text-primary"><Info className="h-5 w-5" />Informasi Detail Buku</DialogTitle></DialogHeader>
           {selectedBookDetail && (
             <div className="grid grid-cols-2 gap-6 py-4">
@@ -361,7 +361,7 @@ export default function BooksPage() {
                 <div className="text-sm bg-muted/30 p-4 rounded-lg italic leading-relaxed">{selectedBookDetail.description || 'Tidak ada deskripsi.'}</div>
               </div>
               <div className="col-span-2 text-[10px] text-muted-foreground flex justify-between pt-2 border-t">
-                <span>Diinput: {selectedBookDetail.createdAt ? new Date(selectedBookDetail.createdAt).toLocaleString('id-ID') : '-'}</span>
+                <span>Dibuat: {selectedBookDetail.createdAt ? new Date(selectedBookDetail.createdAt).toLocaleString('id-ID') : '-'}</span>
                 <span>Terakhir Update: {selectedBookDetail.updatedAt ? new Date(selectedBookDetail.updatedAt).toLocaleString('id-ID') : 'Belum pernah'}</span>
               </div>
             </div>
@@ -394,23 +394,23 @@ export default function BooksPage() {
             </div>
             <div className="space-y-2">
               <Label className="font-semibold">Judul Buku</Label>
-              <Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300" />
+              <Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" />
             </div>
             <div className="space-y-2">
               <Label className="font-semibold">Pengarang</Label>
-              <Input value={formData.author} onChange={e => setFormData({ ...formData, author: e.target.value })} className="bg-white border-slate-300" />
+              <Input value={formData.author} onChange={e => setFormData({ ...formData, author: e.target.value })} className="bg-white border-slate-300 h-11" />
             </div>
             <div className="space-y-2">
               <Label className="font-semibold">Tahun Terbit</Label>
-              <Input type="number" value={formData.publicationYear} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300" />
+              <Input type="number" value={formData.publicationYear} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300 h-11" />
             </div>
             <div className="space-y-2">
               <Label className="font-semibold">Tgl. Penerimaan</Label>
-              <Input type="date" value={formData.acquisitionDate} onChange={e => setFormData({ ...formData, acquisitionDate: e.target.value })} className="bg-white border-slate-300" />
+              <Input type="date" value={formData.acquisitionDate} onChange={e => setFormData({ ...formData, acquisitionDate: e.target.value })} className="bg-white border-slate-300 h-11" />
             </div>
             <div className="space-y-2">
-              <Label className="font-semibold">Jenis Buku</Label>
-              <Input value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} className="bg-white border-slate-300" />
+              <Label className="font-semibold">Jenis / Kategori</Label>
+              <Input value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} className="bg-white border-slate-300 h-11" />
             </div>
             <div className="col-span-2 space-y-2">
               <Label className="font-semibold">Deskripsi</Label>
@@ -419,7 +419,7 @@ export default function BooksPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>Batal</Button>
-            <Button onClick={handleUpdateBook} disabled={isSaving}>Simpan Perubahan</Button>
+            <Button onClick={handleUpdateBook} disabled={isSaving} className="px-8">Simpan Perubahan</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
