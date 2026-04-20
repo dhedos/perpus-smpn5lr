@@ -4,7 +4,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Database, CloudUpload, CloudDownload, RefreshCw, CheckCircle2, AlertTriangle, Zap, FileSpreadsheet } from "lucide-react"
+import { Database, CloudUpload, CloudDownload, RefreshCw, CheckCircle2, AlertTriangle, Zap, FileSpreadsheet, Info } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
@@ -108,13 +108,36 @@ export default function SyncPage() {
         </Card>
       </div>
 
+      <Card className="border-none shadow-sm border-blue-200 bg-blue-50/30">
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center gap-2 text-blue-800">
+            <Info className="h-4 w-4" />
+            Penjelasan Ekspor & Google Sheets
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 text-xs text-blue-700 leading-relaxed">
+          <p>
+            **1. Apakah Data Akan Mendobel?** <br/>
+            Ekspor ke Excel bersifat **Snapshot (Tangkapan Layar)**. Aplikasi mengambil data yang ada di memori laptop/HP petugas saat itu. Jika Anda mengunggah file ini berkali-kali ke satu Google Sheet yang sama tanpa menghapus data lama, maka di Google Sheets akan terlihat ganda. **Solusinya:** Hapus data lama di Google Sheets sebelum menempelkan data baru hasil ekspor.
+          </p>
+          <p>
+            **2. Apakah Data di Aplikasi Akan Menimpa?** <br/>
+            **TIDAK.** Mengekspor data hanyalah "membaca" untuk dilihat. Ini tidak akan mengubah, menimpa, atau mendobelkan data asli yang ada di database Firebase sekolah. Database Anda tetap aman dan unik berdasarkan **Kode Buku**.
+          </p>
+          <p>
+            **3. Mengapa Menggunakan Excel?** <br/>
+            Dengan mengunduh file Excel, Anda bisa mengolah laporan dengan leluasa (grafik, cetak, dll) tanpa memakan kuota internet dan kuota database Firebase, karena semua proses hitung terjadi di komputer Anda sendiri.
+          </p>
+        </CardContent>
+      </Card>
+
       <Card className="border-none shadow-sm border-orange-200 bg-orange-50/50">
         <CardContent className="flex items-start gap-4 p-6">
           <AlertTriangle className="h-6 w-6 text-orange-500 shrink-0" />
           <div className="space-y-1">
-            <p className="font-bold text-orange-800 text-sm">Apakah Sinkronisasi Menguras Kuota?</p>
+            <p className="font-bold text-orange-800 text-sm">Peringatan Kuota Reads</p>
             <p className="text-xs text-orange-700 leading-relaxed">
-              **TIDAK.** Sistem kami hanya membaca data baru yang belum ada di HP/Laptop Anda. Jika Anda mengekspor 1.000 buku ke Excel, aplikasi tidak akan membaca ulang database dari awal, melainkan menggunakan data yang sudah tersimpan di memori lokal. Ini memastikan SMPN 5 tetap bisa menggunakan Firebase secara GRATIS meskipun data bertambah banyak.
+              Sistem caching kami memastikan bahwa meskipun Anda memiliki 1.000 buku, aplikasi tidak akan membaca ulang database setiap saat. Penggunaan Firebase tetap **GRATIS** karena data yang sudah pernah dibuka akan disimpan di memori lokal petugas.
             </p>
           </div>
         </CardContent>

@@ -170,8 +170,15 @@ export default function BooksPage() {
       const worksheet = utils.json_to_sheet(dataToExport)
       const workbook = utils.book_new()
       utils.book_append_sheet(workbook, worksheet, "Koleksi Buku")
-      writeFile(workbook, "Koleksi_Buku_SMPN5.xlsx")
-      toast({ title: "Berhasil", description: "Data diekspor menggunakan Cache (Hemat Kuota)." })
+      
+      // Memberikan nama file dengan timestamp agar tidak tertukar
+      const dateStr = new Date().toISOString().split('T')[0]
+      writeFile(workbook, `Koleksi_Buku_SMPN5_${dateStr}.xlsx`)
+      
+      toast({ 
+        title: "Berhasil Ekspor", 
+        description: "File Excel berhasil dibuat dari data yang tersimpan di memori (Snapshot)." 
+      })
     } catch (error) {
       toast({ title: "Gagal", description: "Gagal mengekspor data.", variant: "destructive" })
     }
