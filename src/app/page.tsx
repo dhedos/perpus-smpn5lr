@@ -112,18 +112,18 @@ export default function LoginPage() {
         <CardHeader className="space-y-4 text-center">
           <div className="mx-auto w-32 h-32 relative mb-2">
             <Image 
-              src="https://picsum.photos/seed/smpn5logo/200/200" 
+              src="https://picsum.photos/seed/smp5emblem/200/200" 
               alt="Logo SMPN 5" 
               fill 
               className="object-contain drop-shadow-md rounded-full border-4 border-primary/10"
               priority
-              data-ai-hint="school logo"
+              data-ai-hint="school logo badge"
             />
           </div>
           <div className="space-y-1">
-            <CardTitle className="text-2xl font-bold font-headline">SMPN 5 LANGKE REMBONG</CardTitle>
-            <CardDescription>
-              {isSetupMode ? "Setup Akun Admin Utama" : "Sistem Informasi Perpustakaan Sekolah"}
+            <CardTitle className="text-2xl font-bold font-headline uppercase tracking-tight">SMPN 5 Langke Rembong</CardTitle>
+            <CardDescription className="font-medium text-primary/80">
+              {isSetupMode ? "Inisialisasi Sistem Baru" : "Sistem Informasi Perpustakaan"}
             </CardDescription>
           </div>
         </CardHeader>
@@ -133,9 +133,9 @@ export default function LoginPage() {
             {noUsersExist && !isSetupMode && (
               <Alert className="bg-primary/10 border-primary/20 text-primary">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle className="text-xs font-bold uppercase">Sistem Baru Terdeteksi</AlertTitle>
+                <AlertTitle className="text-xs font-bold uppercase">Sistem Belum Siap</AlertTitle>
                 <AlertDescription className="text-xs">
-                  Database masih kosong. Harap klik tombol inisialisasi di bawah untuk membuat akun Admin pertama.
+                  Database Admin masih kosong. Klik tombol di bawah untuk mendaftarkan akun Admin pertama sekolah.
                 </AlertDescription>
               </Alert>
             )}
@@ -145,9 +145,9 @@ export default function LoginPage() {
                 <Label htmlFor="name">Nama Lengkap Admin</Label>
                 <Input 
                   id="name" 
-                  placeholder="Contoh: Kepala Perpustakaan" 
+                  placeholder="Nama Penanggung Jawab" 
                   required 
-                  className="bg-muted/30 h-12"
+                  className="bg-white h-12 border-slate-300"
                   value={adminName}
                   onChange={(e) => setAdminName(e.target.value)}
                 />
@@ -158,9 +158,9 @@ export default function LoginPage() {
               <Input 
                 id="email" 
                 type="email" 
-                placeholder="admin@smpn5langkerembong.sch.id" 
+                placeholder="email@smpn5langkerembong.sch.id" 
                 required 
-                className="bg-muted/30 h-12"
+                className="bg-white h-12 border-slate-300"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -172,7 +172,7 @@ export default function LoginPage() {
                 type="password" 
                 placeholder="Minimal 6 karakter"
                 required 
-                className="bg-muted/30 h-12"
+                className="bg-white h-12 border-slate-300"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -183,9 +183,9 @@ export default function LoginPage() {
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin mr-2" />
               ) : isSetupMode ? (
-                <><UserPlus className="mr-2 h-5 w-5" /> Daftarkan Admin Utama</>
+                <><UserPlus className="mr-2 h-5 w-5" /> Aktifkan Admin Utama</>
               ) : (
-                "Masuk Sekarang"
+                "Masuk ke Sistem"
               )}
             </Button>
             
@@ -212,8 +212,8 @@ export default function LoginPage() {
               </Button>
             )}
             
-            <p className="text-xs text-muted-foreground text-center">
-              &copy; 2024 Perpustakaan SMPN 5 Langke Rembong.
+            <p className="text-[10px] text-muted-foreground text-center uppercase font-bold tracking-widest mt-4">
+              &copy; 2024 Pustaka Nusantara SMPN 5
             </p>
           </CardFooter>
         </form>

@@ -112,7 +112,8 @@ export default function BooksPage() {
       (b.title?.toLowerCase() || "").includes(search.toLowerCase()) || 
       (b.author?.toLowerCase() || "").includes(search.toLowerCase()) ||
       (b.code?.toLowerCase() || "").includes(search.toLowerCase()) ||
-      (b.isbn?.toLowerCase() || "").includes(search.toLowerCase())
+      (b.isbn?.toLowerCase() || "").includes(search.toLowerCase()) ||
+      (b.publicationYear?.toString() || "").includes(search)
     )
   }, [books, search])
 
@@ -124,12 +125,12 @@ export default function BooksPage() {
         "Kode": book.code,
         "Judul": book.title,
         "Pengarang": book.author,
-        "Tahun Terbit": book.publicationYear,
-        "Tanggal Perolehan": book.acquisitionDate,
+        "Thn Terbit": book.publicationYear,
+        "Tgl Penerimaan": book.acquisitionDate,
         "ISBN": book.isbn,
         "Jenis": book.category,
         "Rak": book.rackLocation,
-        "Total Stok": book.totalStock
+        "Stok": book.totalStock
       }))
       
       const worksheet = utils.json_to_sheet(dataToExport)
@@ -186,7 +187,7 @@ export default function BooksPage() {
   const handleSaveBook = () => {
     if (!db || !booksCollectionRef || duplicateBookByCode) return
     setIsSaving(true)
-    addDoc(booksCollectionRef, { ...formData, createdAt: new Date().toISOString() })
+    addDoc(booksCollectionRef, { ...formData, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() })
       .then(() => {
         toast({ title: "Berhasil!", description: "Buku telah terdaftar." })
         setIsOpen(false)
@@ -236,8 +237,8 @@ export default function BooksPage() {
           <p className="text-muted-foreground text-sm">Manajemen katalog dan inventaris perpustakaan.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={handlePrintAllQrs} className="hidden md:flex"><Printer className="h-4 w-4 mr-2" />Cetak Masal QR</Button>
-          <Button variant="outline" size="sm" onClick={handleExportExcel}><FileDown className="h-4 w-4 mr-2" />Ekspor Excel</Button>
+          <Button variant="outline" size="sm" onClick={handlePrintAllQrs} className="hidden md:flex"><Printer className="h-4 w-4 mr-2" />Cetak Semua QR</Button>
+          <Button variant="outline" size="sm" onClick={handleExportExcel}><FileDown className="h-4 w-4 mr-2" />Unduh Excel</Button>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-2" />Tambah Buku</Button></DialogTrigger>
             <DialogContent className="max-w-2xl bg-slate-50">
@@ -260,7 +261,7 @@ export default function BooksPage() {
                   <Input type="number" value={formData.publicationYear} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-semibold">Tanggal Perolehan</Label>
+                  <Label className="font-semibold">Tgl. Penerimaan</Label>
                   <Input type="date" value={formData.acquisitionDate} onChange={e => setFormData({ ...formData, acquisitionDate: e.target.value })} className="bg-white border-slate-300" />
                 </div>
                 <div className="space-y-2">
@@ -268,7 +269,7 @@ export default function BooksPage() {
                   <Input value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} placeholder="Fiksi, Sains, dll" className="bg-white border-slate-300" />
                 </div>
                 <div className="col-span-2 space-y-2">
-                  <div className="flex justify-between items-center"><Label className="font-semibold">Deskripsi</Label><Button variant="ghost" type="button" size="sm" onClick={handleGenerateDescription} disabled={isGenerating}><Sparkles className="h-3 w-3 mr-1" />AI</Button></div>
+                  <div className="flex justify-between items-center"><Label className="font-semibold">Deskripsi</Label><Button variant="ghost" type="button" size="sm" onClick={handleGenerateDescription} disabled={isGenerating}><Sparkles className="h-3 w-3 mr-1" />AI Deskripsi</Button></div>
                   <Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" />
                 </div>
               </div>
@@ -284,28 +285,29 @@ export default function BooksPage() {
       <div className="flex items-center gap-4 bg-card p-4 rounded-xl shadow-sm">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Cari Kode, Judul, atau ISBN..." className="pl-10" value={search} onChange={e => setSearch(e.target.value)} />
+          <Input placeholder="Cari Kode, Judul, Tahun, atau ISBN..." className="pl-10" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <Button variant="secondary" onClick={startScanner}><ScanBarcode className="h-4 w-4 mr-2" />Scan</Button>
       </div>
 
-      <Card className="border-none shadow-sm">
+      <Card className="border-none shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="bg-muted/50">
               <TableHead className="w-12">No.</TableHead>
               <TableHead>Kode</TableHead>
               <TableHead>Judul & Pengarang</TableHead>
-              <TableHead>Jenis</TableHead>
+              <TableHead>Thn Terbit</TableHead>
+              <TableHead>Tgl Terima</TableHead>
               <TableHead>Stok</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
             ) : filteredBooks.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Tidak ada buku.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground">Tidak ada buku.</TableCell></TableRow>
             ) : filteredBooks.map((book, index) => (
               <TableRow key={book.id}>
                 <TableCell className="text-xs text-muted-foreground">{index + 1}</TableCell>
@@ -313,11 +315,12 @@ export default function BooksPage() {
                 <TableCell>
                   <div className="space-y-0.5">
                     <p className="font-semibold leading-none">{book.title}</p>
-                    <p className="text-[10px] text-muted-foreground">{book.author} ({book.publicationYear})</p>
+                    <p className="text-[10px] text-muted-foreground">{book.author}</p>
                   </div>
                 </TableCell>
-                <TableCell><Badge variant="outline" className="text-[10px]">{book.category || 'Umum'}</Badge></TableCell>
-                <TableCell className="text-xs">{book.availableStock}/{book.totalStock}</TableCell>
+                <TableCell className="text-xs">{book.publicationYear}</TableCell>
+                <TableCell className="text-xs text-muted-foreground">{book.acquisitionDate ? new Date(book.acquisitionDate).toLocaleDateString('id-ID') : '-'}</TableCell>
+                <TableCell className="text-xs font-medium">{book.availableStock}/{book.totalStock}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
@@ -325,7 +328,7 @@ export default function BooksPage() {
                       <DropdownMenuItem onClick={() => { setSelectedBookDetail(book); setIsDetailOpen(true); }}><Eye className="h-4 w-4 mr-2" />Lihat Detail</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => { setSelectedBookQr(book); setIsQrOpen(true); }}><QrCode className="h-4 w-4 mr-2" />Tampilkan QR</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => { setEditingBookId(book.id); setFormData({ ...book }); setIsEditOpen(true); }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onClick={() => deleteDoc(doc(db, 'books', book.id))}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive" onClick={() => { if(confirm("Hapus buku ini?")) deleteDoc(doc(db, 'books', book.id)) }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -350,7 +353,7 @@ export default function BooksPage() {
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Judul Buku</Label><p className="font-bold text-lg leading-tight">{selectedBookDetail.title}</p></div>
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Kode Koleksi</Label><p className="font-mono text-primary font-bold">{selectedBookDetail.code}</p></div>
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Pengarang</Label><p>{selectedBookDetail.author}</p></div>
-              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Tanggal Perolehan</Label><div className="flex items-center gap-2"><CalendarIcon className="h-3 w-3 text-muted-foreground" /><p>{selectedBookDetail.acquisitionDate ? new Date(selectedBookDetail.acquisitionDate).toLocaleDateString('id-ID', { dateStyle: 'long' }) : '-'}</p></div></div>
+              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Tgl. Penerimaan</Label><div className="flex items-center gap-2"><CalendarIcon className="h-3 w-3 text-muted-foreground" /><p>{selectedBookDetail.acquisitionDate ? new Date(selectedBookDetail.acquisitionDate).toLocaleDateString('id-ID', { dateStyle: 'long' }) : '-'}</p></div></div>
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Jenis & Lokasi Rak</Label><p><Badge variant="secondary" className="mr-2">{selectedBookDetail.category}</Badge> {selectedBookDetail.rackLocation || 'Rak belum diatur'}</p></div>
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Status Ketersediaan</Label><p className="font-semibold text-blue-600">{selectedBookDetail.availableStock} dari {selectedBookDetail.totalStock} tersedia</p></div>
               <div className="col-span-2 space-y-1 pt-2 border-t">
@@ -358,8 +361,8 @@ export default function BooksPage() {
                 <div className="text-sm bg-muted/30 p-4 rounded-lg italic leading-relaxed">{selectedBookDetail.description || 'Tidak ada deskripsi.'}</div>
               </div>
               <div className="col-span-2 text-[10px] text-muted-foreground flex justify-between pt-2 border-t">
-                <span>Diinput: {selectedBookDetail.createdAt ? new Date(selectedBookDetail.createdAt).toLocaleString() : '-'}</span>
-                <span>Terakhir Update: {selectedBookDetail.updatedAt ? new Date(selectedBookDetail.updatedAt).toLocaleString() : 'Belum pernah'}</span>
+                <span>Diinput: {selectedBookDetail.createdAt ? new Date(selectedBookDetail.createdAt).toLocaleString('id-ID') : '-'}</span>
+                <span>Terakhir Update: {selectedBookDetail.updatedAt ? new Date(selectedBookDetail.updatedAt).toLocaleString('id-ID') : 'Belum pernah'}</span>
               </div>
             </div>
           )}
@@ -377,6 +380,46 @@ export default function BooksPage() {
           <DialogFooter className="grid grid-cols-2 gap-2">
             <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" />Cetak</Button>
             <Button onClick={() => setIsQrOpen(false)}>Tutup</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="max-w-2xl bg-slate-50">
+          <DialogHeader><DialogTitle>Ubah Data Buku</DialogTitle></DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="space-y-2">
+              <Label className="font-semibold">Kode Buku</Label>
+              <Input value={formData.code} disabled className="bg-muted border-slate-300" />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold">Judul Buku</Label>
+              <Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300" />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold">Pengarang</Label>
+              <Input value={formData.author} onChange={e => setFormData({ ...formData, author: e.target.value })} className="bg-white border-slate-300" />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold">Tahun Terbit</Label>
+              <Input type="number" value={formData.publicationYear} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300" />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold">Tgl. Penerimaan</Label>
+              <Input type="date" value={formData.acquisitionDate} onChange={e => setFormData({ ...formData, acquisitionDate: e.target.value })} className="bg-white border-slate-300" />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold">Jenis Buku</Label>
+              <Input value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} className="bg-white border-slate-300" />
+            </div>
+            <div className="col-span-2 space-y-2">
+              <Label className="font-semibold">Deskripsi</Label>
+              <Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Batal</Button>
+            <Button onClick={handleUpdateBook} disabled={isSaving}>Simpan Perubahan</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
