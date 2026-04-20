@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo, useRef } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -200,7 +200,7 @@ export default function BooksPage() {
     if (!printWindow) return
 
     const stickersHtml = filteredBooks.map(book => `
-      <div class="sticker" style="border: 0.5px solid #eee; padding: 6px; text-align: center; width: 120px; height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; page-break-inside: avoid; margin: 2px;">
+      <div style="border: 0.5px solid #eee; padding: 6px; text-align: center; width: 120px; height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; page-break-inside: avoid; margin: 2px;">
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${book.code}" style="width: 85px; height: 85px; margin-bottom: 4px;" />
         <div style="font-size: 7px; font-weight: bold; margin: 1px 0; height: 18px; overflow: hidden;">${book.title}</div>
         <div style="font-size: 9px; font-weight: bold; color: #2E6ECE;">${book.code}</div>
@@ -243,10 +243,10 @@ export default function BooksPage() {
       updatedAt: new Date().toISOString() 
     }
 
-    // NON-BLOCKING: Tutup UI segera
+    // TUTUP SEGERA
     setIsOpen(false)
-    setFormData(INITIAL_FORM_DATA)
-
+    
+    // Kirim ke latar belakang
     addDoc(collection(db, 'books'), newBook)
       .catch(async (error) => {
         const permissionError = new FirestorePermissionError({
@@ -258,6 +258,11 @@ export default function BooksPage() {
       });
     
     toast({ title: "Berhasil!", description: "Buku telah didaftarkan." })
+    
+    // Bersihkan formulir setelah animasi dialog selesai
+    setTimeout(() => {
+      setFormData(INITIAL_FORM_DATA)
+    }, 300)
   }
 
   const handleUpdateBook = () => {
@@ -281,10 +286,8 @@ export default function BooksPage() {
 
     const docRef = doc(db, 'books', editingBookId)
     
-    // NON-BLOCKING: Tutup UI segera
+    // TUTUP SEGERA
     setIsEditOpen(false)
-    setEditingBookId(null)
-    setFormData(INITIAL_FORM_DATA)
 
     updateDoc(docRef, updatedData)
       .catch(async (error) => {
@@ -297,15 +300,20 @@ export default function BooksPage() {
       });
     
     toast({ title: "Berhasil!", description: "Data buku telah diperbarui." })
+
+    // Bersihkan state setelah animasi dialog selesai
+    setTimeout(() => {
+      setEditingBookId(null)
+      setFormData(INITIAL_FORM_DATA)
+    }, 300)
   }
 
   const handleDeleteBook = () => {
     if (!db || !bookToDelete) return
     const docRef = doc(db, 'books', bookToDelete)
 
-    // NON-BLOCKING: Tutup UI segera
+    // TUTUP SEGERA
     setIsDeleteDialogOpen(false)
-    setBookToDelete(null)
 
     deleteDoc(docRef)
       .catch(async (error) => {
@@ -317,6 +325,10 @@ export default function BooksPage() {
       });
 
     toast({ title: "Terhapus", description: "Buku sedang dihapus dari koleksi." })
+    
+    setTimeout(() => {
+      setBookToDelete(null)
+    }, 300)
   }
 
   const startScanner = async () => {
@@ -340,10 +352,10 @@ export default function BooksPage() {
 
   const stopScanner = async () => {
     if (scannerInstanceRef.current) {
-      if (scannerInstanceRef.current.isScanning) {
-        await scannerInstanceRef.current.stop()
-      }
       try {
+        if (scannerInstanceRef.current.isScanning) {
+          await scannerInstanceRef.current.stop()
+        }
         await scannerInstanceRef.current.clear()
       } catch (e) {}
       scannerInstanceRef.current = null
@@ -480,7 +492,7 @@ export default function BooksPage() {
         )}
       </Card>
 
-      <Dialog open={isOpen} onOpenChange={(o) => { if(!o) setFormData(INITIAL_FORM_DATA); setIsOpen(o); }}>
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-w-2xl bg-slate-50">
           <DialogHeader>
             <DialogTitle>Tambah Buku Baru</DialogTitle>
@@ -586,7 +598,7 @@ export default function BooksPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isEditOpen} onOpenChange={(o) => { if(!o) { setFormData(INITIAL_FORM_DATA); setEditingBookId(null); } setIsEditOpen(o); }}>
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-2xl bg-slate-50">
           <DialogHeader>
             <DialogTitle>Ubah Data Buku</DialogTitle>
