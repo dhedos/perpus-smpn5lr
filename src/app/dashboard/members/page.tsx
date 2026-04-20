@@ -114,10 +114,18 @@ export default function MembersPage() {
     )
   }, [members, search])
 
+  const forceUnlockUI = () => {
+    setTimeout(() => {
+      document.body.style.pointerEvents = 'auto'
+    }, 100)
+  }
+
   const handleSaveMember = () => {
     if (!db) return
     const dataToSave = { ...formData, createdAt: serverTimestamp() }
     setIsOpen(false)
+    forceUnlockUI()
+
     addDoc(collection(db, 'members'), dataToSave)
       .catch(async (error) => {
         const permissionError = new FirestorePermissionError({
@@ -136,6 +144,8 @@ export default function MembersPage() {
     const docRef = doc(db, 'members', editingMemberId)
     const dataToUpdate = { ...formData, updatedAt: serverTimestamp() }
     setIsEditOpen(false)
+    forceUnlockUI()
+
     updateDoc(docRef, dataToUpdate)
       .catch(async (error) => {
         const permissionError = new FirestorePermissionError({
@@ -153,6 +163,8 @@ export default function MembersPage() {
     if (!db || !memberToDelete) return
     const docRef = doc(db, 'members', memberToDelete)
     setIsDeleteDialogOpen(false)
+    forceUnlockUI()
+
     deleteDoc(docRef)
       .catch(async (error) => {
         const permissionError = new FirestorePermissionError({
@@ -172,7 +184,7 @@ export default function MembersPage() {
           <h1 className="text-2xl font-bold font-headline text-primary">Daftar Anggota</h1>
           <p className="text-muted-foreground text-sm">Kelola data siswa dan guru yang terdaftar.</p>
         </div>
-        <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) { setFormData(INITIAL_MEMBER_DATA); document.body.style.pointerEvents = 'auto'; } }}>
+        <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) { setFormData(INITIAL_MEMBER_DATA); forceUnlockUI(); } }}>
           <DialogTrigger asChild><Button className="gap-2"><UserPlus className="h-4 w-4" />Tambah Anggota</Button></DialogTrigger>
           <DialogContent className="bg-slate-50">
             <DialogHeader><DialogTitle>Daftarkan Anggota Baru</DialogTitle></DialogHeader>
@@ -230,16 +242,39 @@ export default function MembersPage() {
             ) : filteredMembers.map((member, index) => (
               <TableRow key={member.id}>
                 <TableCell className="text-center text-xs text-muted-foreground">{index + 1}</TableCell>
-                <TableCell><div><p className="font-semibold leading-tight">{member.name}</p><p className="text-xs text-primary font-bold">{member.memberId}</p></div></TableCell>
+                <TableCell><div><p className="font-semibold leading-tight">{member.name ?? ""}</p><p className="text-xs text-primary font-bold">{member.memberId ?? ""}</p></div></TableCell>
                 <TableCell><Badge variant="outline" className="h-5 px-1.5 text-[10px] font-bold">{member.type === 'Teacher' ? 'GURU' : 'SISWA'}</Badge></TableCell>
                 <TableCell>{member.classOrSubject || '-'}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onSelect={() => { setSelectedMemberQr(member); setIsQrOpen(true); }}><QrCode className="h-4 w-4 mr-2" />Kartu QR</DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => { setEditingMemberId(member.id); setFormData({...member}); setIsEditOpen(true); }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onSelect={() => { setMemberToDelete(member.id); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => { 
+                        setTimeout(() => {
+                          setSelectedMemberQr(member); 
+                          setIsQrOpen(true);
+                        }, 0);
+                      }}><QrCode className="h-4 w-4 mr-2" />Kartu QR</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => { 
+                        setTimeout(() => {
+                          setEditingMemberId(member.id); 
+                          setFormData({
+                            memberId: member.memberId || "",
+                            name: member.name || "",
+                            type: member.type || "Student",
+                            classOrSubject: member.classOrSubject || "",
+                            phone: member.phone || "",
+                            joinDate: member.joinDate || new Date().toISOString().split('T')[0]
+                          }); 
+                          setIsEditOpen(true);
+                        }, 0);
+                      }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive" onSelect={() => { 
+                        setTimeout(() => {
+                          setMemberToDelete(member.id); 
+                          setIsDeleteDialogOpen(true);
+                        }, 0);
+                      }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -256,12 +291,12 @@ export default function MembersPage() {
         )}
       </Card>
 
-      <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) document.body.style.pointerEvents = 'auto'; }}>
+      <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-sm text-center">
           <DialogHeader><DialogTitle>Kartu Digital Anggota</DialogTitle></DialogHeader>
           <div className="bg-white p-6 rounded-xl border-2 border-primary/20 space-y-4">
             <div className="flex justify-center">{selectedMemberQr && <QRCodeSVG value={selectedMemberQr.memberId} size={250} level="H" includeMargin />}</div>
-            <div><p className="font-bold text-lg leading-tight">{selectedMemberQr?.name}</p><p className="font-mono text-primary font-bold">{selectedMemberQr?.memberId}</p></div>
+            <div><p className="font-bold text-lg leading-tight">{selectedMemberQr?.name ?? ""}</p><p className="font-mono text-primary font-bold">{selectedMemberQr?.memberId ?? ""}</p></div>
           </div>
           <DialogFooter className="grid grid-cols-2 gap-2">
             <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" />Cetak</Button>
@@ -270,7 +305,7 @@ export default function MembersPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); if(!v) { setFormData(INITIAL_MEMBER_DATA); setEditingMemberId(null); document.body.style.pointerEvents = 'auto'; } }}>
+      <Dialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); if(!v) { setFormData(INITIAL_MEMBER_DATA); setEditingMemberId(null); forceUnlockUI(); } }}>
         <DialogContent className="bg-slate-50">
           <DialogHeader><DialogTitle>Ubah Data Anggota</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
@@ -281,14 +316,14 @@ export default function MembersPage() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={(v) => { setIsDeleteDialogOpen(v); if(!v) document.body.style.pointerEvents = 'auto'; }}>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={(v) => { setIsDeleteDialogOpen(v); if(!v) forceUnlockUI(); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Anggota?</AlertDialogTitle>
             <AlertDialogDescription>Semua riwayat terkait anggota ini tidak akan dihapus, namun identitasnya akan hilang dari daftar aktif.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => { setMemberToDelete(null); forceUnlockUI(); }}>Batal</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteMember} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Ya, Hapus</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -296,4 +331,3 @@ export default function MembersPage() {
     </div>
   )
 }
-    

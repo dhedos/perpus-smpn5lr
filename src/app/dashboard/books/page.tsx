@@ -158,6 +158,13 @@ export default function BooksPage() {
     })
   }, [books, search, filterCategory, filterYear])
 
+  // Function to force unlock UI pointer events
+  const forceUnlockUI = () => {
+    setTimeout(() => {
+      document.body.style.pointerEvents = 'auto'
+    }, 100)
+  }
+
   const handleExportExcel = async () => {
     try {
       if (filteredBooks.length === 0) {
@@ -248,6 +255,8 @@ export default function BooksPage() {
     }
 
     setIsOpen(false)
+    forceUnlockUI()
+
     addDoc(collection(db, 'books'), newBook)
       .catch(async (error) => {
         const permissionError = new FirestorePermissionError({
@@ -265,7 +274,7 @@ export default function BooksPage() {
   const handleUpdateBook = () => {
     if (!db || !editingBookId || !books) return
     const originalBook = books.find(b => b.id === editingBookId)
-    if (!originalBook) { setIsEditOpen(false); return; }
+    if (!originalBook) { setIsEditOpen(false); forceUnlockUI(); return; }
 
     const currentTotal = Number(originalBook.totalStock || 0)
     const newTotal = Number(formData.totalStock || 0)
@@ -282,6 +291,8 @@ export default function BooksPage() {
 
     const docRef = doc(db, 'books', editingBookId)
     setIsEditOpen(false)
+    forceUnlockUI()
+
     updateDoc(docRef, updatedData)
       .catch(async (error) => {
         const permissionError = new FirestorePermissionError({
@@ -300,6 +311,8 @@ export default function BooksPage() {
     if (!db || !bookToDelete) return
     const docRef = doc(db, 'books', bookToDelete)
     setIsDeleteDialogOpen(false)
+    forceUnlockUI()
+
     deleteDoc(docRef)
       .catch(async (error) => {
         const permissionError = new FirestorePermissionError({
@@ -342,7 +355,7 @@ export default function BooksPage() {
       scannerInstanceRef.current = null
     }
     setIsScannerOpen(false)
-    document.body.style.pointerEvents = 'auto'
+    forceUnlockUI()
   }
 
   return (
@@ -437,27 +450,44 @@ export default function BooksPage() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onSelect={() => { setSelectedBookDetail(book); setIsDetailOpen(true); }}><Eye className="h-4 w-4 mr-2" />Lihat Detail</DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => { setSelectedBookQr(book); setIsQrOpen(true); }}><QrCode className="h-4 w-4 mr-2" />Tampilkan QR</DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => { 
-                        setEditingBookId(book.id); 
-                        setFormData({
-                          code: book.code || "",
-                          title: book.title || "",
-                          author: book.author || "",
-                          publisher: book.publisher || "",
-                          publicationYear: Number(book.publicationYear || new Date().getFullYear()),
-                          acquisitionDate: book.acquisitionDate || new Date().toISOString().split('T')[0],
-                          isbn: book.isbn || "",
-                          category: book.category || "",
-                          rackLocation: book.rackLocation || "",
-                          totalStock: Number(book.totalStock || 0),
-                          availableStock: Number(book.availableStock || 0),
-                          description: book.description || ""
-                        }); 
-                        setIsEditOpen(true); 
+                        setTimeout(() => {
+                          setSelectedBookDetail(book); 
+                          setIsDetailOpen(true);
+                        }, 0);
+                      }}><Eye className="h-4 w-4 mr-2" />Lihat Detail</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => { 
+                        setTimeout(() => {
+                          setSelectedBookQr(book); 
+                          setIsQrOpen(true);
+                        }, 0);
+                      }}><QrCode className="h-4 w-4 mr-2" />Tampilkan QR</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => { 
+                        setTimeout(() => {
+                          setEditingBookId(book.id); 
+                          setFormData({
+                            code: book.code || "",
+                            title: book.title || "",
+                            author: book.author || "",
+                            publisher: book.publisher || "",
+                            publicationYear: Number(book.publicationYear || new Date().getFullYear()),
+                            acquisitionDate: book.acquisitionDate || new Date().toISOString().split('T')[0],
+                            isbn: book.isbn || "",
+                            category: book.category || "",
+                            rackLocation: book.rackLocation || "",
+                            totalStock: Number(book.totalStock || 0),
+                            availableStock: Number(book.availableStock || 0),
+                            description: book.description || ""
+                          }); 
+                          setIsEditOpen(true);
+                        }, 0);
                       }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onSelect={() => { setBookToDelete(book.id); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive" onSelect={() => { 
+                        setTimeout(() => {
+                          setBookToDelete(book.id); 
+                          setIsDeleteDialogOpen(true);
+                        }, 0);
+                      }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -475,7 +505,7 @@ export default function BooksPage() {
       </Card>
 
       {/* DIALOG TAMBAH */}
-      <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) document.body.style.pointerEvents = 'auto'; }}>
+      <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-2xl bg-slate-50">
           <DialogHeader>
             <DialogTitle>Tambah Buku Baru</DialogTitle>
@@ -533,7 +563,7 @@ export default function BooksPage() {
       </Dialog>
 
       {/* DIALOG UBAH */}
-      <Dialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); if(!v) document.body.style.pointerEvents = 'auto'; }}>
+      <Dialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-2xl bg-slate-50">
           <DialogHeader>
             <DialogTitle>Ubah Data Buku</DialogTitle>
@@ -570,19 +600,19 @@ export default function BooksPage() {
       </Dialog>
 
       {/* DIALOG DETAIL */}
-      <Dialog open={isDetailOpen} onOpenChange={(v) => { setIsDetailOpen(v); if(!v) document.body.style.pointerEvents = 'auto'; }}>
+      <Dialog open={isDetailOpen} onOpenChange={(v) => { setIsDetailOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-2xl bg-white">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-primary"><Info className="h-5 w-5" />Informasi Detail Buku</DialogTitle>
           </DialogHeader>
           {selectedBookDetail && (
             <div className="grid grid-cols-2 gap-6 py-4">
-              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Judul Buku</Label><p className="font-bold text-lg leading-tight">{selectedBookDetail.title}</p></div>
-              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Kode Koleksi</Label><p className="font-mono text-primary font-bold">{selectedBookDetail.code}</p></div>
-              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Pengarang</Label><p>{selectedBookDetail.author}</p></div>
+              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Judul Buku</Label><p className="font-bold text-lg leading-tight">{selectedBookDetail.title ?? ""}</p></div>
+              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Kode Koleksi</Label><p className="font-mono text-primary font-bold">{selectedBookDetail.code ?? ""}</p></div>
+              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Pengarang</Label><p>{selectedBookDetail.author ?? ""}</p></div>
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Tgl. Penerimaan</Label><div className="flex items-center gap-2"><CalendarIcon className="h-3 w-3 text-muted-foreground" /><p>{selectedBookDetail.acquisitionDate ? new Date(selectedBookDetail.acquisitionDate).toLocaleDateString('id-ID', { dateStyle: 'long' }) : '-'}</p></div></div>
-              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Jenis & Lokasi Rak</Label><p><Badge variant="secondary" className="mr-2">{selectedBookDetail.category}</Badge> {selectedBookDetail.rackLocation || 'Rak belum diatur'}</p></div>
-              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Status Ketersediaan</Label><p className="font-semibold text-blue-600">{selectedBookDetail.availableStock} dari {selectedBookDetail.totalStock} tersedia</p></div>
+              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Jenis & Lokasi Rak</Label><p><Badge variant="secondary" className="mr-2">{selectedBookDetail.category ?? ""}</Badge> {selectedBookDetail.rackLocation || 'Rak belum diatur'}</p></div>
+              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Status Ketersediaan</Label><p className="font-semibold text-blue-600">{selectedBookDetail.availableStock ?? 0} dari {selectedBookDetail.totalStock ?? 0} tersedia</p></div>
               <div className="col-span-2 space-y-1 pt-2 border-t">
                 <Label className="text-[10px] uppercase font-bold text-muted-foreground">Deskripsi / Ringkasan AI</Label>
                 <div className="text-sm bg-muted/30 p-4 rounded-lg italic leading-relaxed">{selectedBookDetail.description || 'Tidak ada deskripsi.'}</div>
@@ -594,7 +624,7 @@ export default function BooksPage() {
       </Dialog>
 
       {/* DIALOG QR */}
-      <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) document.body.style.pointerEvents = 'auto'; }}>
+      <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-sm text-center">
           <DialogHeader>
             <DialogTitle>QR Code Buku</DialogTitle>
@@ -602,7 +632,7 @@ export default function BooksPage() {
           <div className="bg-white p-6 rounded-xl border flex justify-center">
             {selectedBookQr && <QRCodeSVG value={selectedBookQr.code} size={240} includeMargin />}
           </div>
-          <div className="font-bold"><p>{selectedBookQr?.title}</p><p className="text-primary">{selectedBookQr?.code}</p></div>
+          <div className="font-bold"><p>{selectedBookQr?.title ?? ""}</p><p className="text-primary">{selectedBookQr?.code ?? ""}</p></div>
           <DialogFooter className="grid grid-cols-2 gap-2">
             <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" />Cetak</Button>
             <Button onClick={() => setIsQrOpen(false)}>Tutup</Button>
@@ -611,14 +641,14 @@ export default function BooksPage() {
       </Dialog>
 
       {/* ALERT DIALOG HAPUS */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={(v) => { setIsDeleteDialogOpen(v); if(!v) document.body.style.pointerEvents = 'auto'; }}>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={(v) => { setIsDeleteDialogOpen(v); if(!v) forceUnlockUI(); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Buku?</AlertDialogTitle>
             <AlertDialogDescription>Tindakan ini permanen. Pastikan buku sudah tidak ada di inventaris fisik.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setBookToDelete(null)}>Batal</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => { setBookToDelete(null); forceUnlockUI(); }}>Batal</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteBook} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Hapus Permanen</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -626,4 +656,3 @@ export default function BooksPage() {
     </div>
   )
 }
-    
