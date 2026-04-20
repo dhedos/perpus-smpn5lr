@@ -30,16 +30,37 @@ const prompt = ai.definePrompt({
   name: 'generateBookDescriptionPrompt',
   input: {schema: GenerateBookDescriptionInputSchema},
   output: {schema: GenerateBookDescriptionOutputSchema},
-  prompt: `You are an expert book describer. Your task is to generate a detailed and engaging book description.
-Focus on the plot, themes, and target audience. Do not include any promotional language like "buy now" or "available today".
+  config: {
+    safetySettings: [
+      {
+        category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+        threshold: 'BLOCK_NONE',
+      },
+      {
+        category: 'HARM_CATEGORY_HATE_SPEECH',
+        threshold: 'BLOCK_NONE',
+      },
+      {
+        category: 'HARM_CATEGORY_HARASSMENT',
+        threshold: 'BLOCK_NONE',
+      },
+      {
+        category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+        threshold: 'BLOCK_NONE',
+      },
+    ],
+  },
+  prompt: `You are an expert book describer for a school library. Your task is to generate a helpful and engaging book description in Indonesian (Bahasa Indonesia).
+Focus on what the book is about, its educational value, or the story. 
 
-Use the following information to create the description:
+If the provided input seems like gibberish or random characters, try to imagine what a book with that title might be about, or provide a generic but encouraging library-style description.
 
+Information:
 {{#if title}}Title: {{{title}}}{{/if}}
 {{#if author}}Author: {{{author}}}{{/if}}
 {{#if isbn}}ISBN: {{{isbn}}}{{/if}}
 
-Generate the description based on the available information. If only limited information is provided, make educated guesses to create a compelling description.`,
+Generate the description based on the available information.`,
 });
 
 const generateBookDescriptionFlow = ai.defineFlow(
@@ -49,7 +70,17 @@ const generateBookDescriptionFlow = ai.defineFlow(
     outputSchema: GenerateBookDescriptionOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    try {
+      const {output} = await prompt(input);
+      if (!output) {
+        throw new Error('AI returned empty output');
+      }
+      return output;
+    } catch (error) {
+      console.error('Genkit flow error:', error);
+      return {
+        description: "Maaf, AI tidak dapat menghasilkan deskripsi untuk data ini saat ini. Silakan tulis deskripsi secara manual."
+      };
+    }
   }
 );
