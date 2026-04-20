@@ -27,7 +27,8 @@ import {
   Printer,
   X,
   Download,
-  FileDown
+  FileDown,
+  AlertCircle
 } from "lucide-react"
 import { 
   Dialog, 
@@ -52,6 +53,7 @@ import { generateBookDescription } from "@/ai/flows/generate-book-description-fl
 import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import { QRCodeSVG } from "qrcode.react"
+import { cn } from "@/lib/utils"
 
 // Firebase imports
 import { 
@@ -104,6 +106,17 @@ export default function BooksPage() {
   }, [db])
 
   const { data: books, loading } = useCollection(booksCollectionRef)
+
+  // Duplicate Checks
+  const duplicateBookByCode = useMemo(() => {
+    if (!formData.code || !books) return null
+    return books.find(b => b.code?.toLowerCase() === formData.code.toLowerCase() && b.id !== editingBookId)
+  }, [formData.code, books, editingBookId])
+
+  const duplicateBookByIsbn = useMemo(() => {
+    if (!formData.isbn || !books) return null
+    return books.find(b => b.isbn === formData.isbn && b.id !== editingBookId)
+  }, [formData.isbn, books, editingBookId])
 
   const filteredBooks = useMemo(() => {
     if (!books) return []
@@ -167,9 +180,16 @@ export default function BooksPage() {
 
           toast({ title: "Mengimpor...", description: `Sedang mengimpor ${json.length} buku.` })
 
+          let importedCount = 0;
           for (const row of json) {
+            const bookCode = String(row.code || row.id || row.Kode || "");
+            
+            // Skip duplicates in import
+            const isDuplicate = books?.some(b => b.code?.toLowerCase() === bookCode.toLowerCase());
+            if (isDuplicate) continue;
+
             const bookData = {
-              code: String(row.code || row.id || row.Kode || ""),
+              code: bookCode,
               title: String(row.title || row.Judul || ""),
               author: String(row.author || row.Pengarang || ""),
               publisher: String(row.publisher || row.Penerbit || ""),
@@ -185,10 +205,11 @@ export default function BooksPage() {
 
             if (bookData.title && bookData.code) {
               addDoc(booksCollectionRef, bookData).catch(() => {})
+              importedCount++;
             }
           }
 
-          toast({ title: "Berhasil!", description: `${json.length} buku telah diproses.` })
+          toast({ title: "Berhasil!", description: `${importedCount} buku baru telah diproses.` })
         } catch (error) {
           toast({ title: "Gagal", description: "Gagal membaca file Excel.", variant: "destructive" })
         }
@@ -305,6 +326,11 @@ export default function BooksPage() {
       return
     }
 
+    if (duplicateBookByCode) {
+      toast({ title: "Kode Sudah Ada", description: `Buku "${duplicateBookByCode.title}" sudah menggunakan kode ini.`, variant: "destructive" })
+      return
+    }
+
     setIsSaving(true)
     
     addDoc(booksCollectionRef, {
@@ -335,6 +361,11 @@ export default function BooksPage() {
   const handleUpdateBook = () => {
     if (!db || !editingBookId) return
     
+    if (duplicateBookByCode) {
+      toast({ title: "Kode Sudah Ada", description: `Buku lain sudah menggunakan kode ini.`, variant: "destructive" })
+      return
+    }
+
     setIsSaving(true)
     const bookDocRef = doc(db, 'books', editingBookId)
     
@@ -484,8 +515,18 @@ export default function BooksPage() {
               </DialogHeader>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="code">Kode Buku</Label>
-                  <Input id="code" value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value })} />
+                  <Label htmlFor="code" className={cn(duplicateBookByCode && "text-destructive")}>Kode Buku</Label>
+                  <Input 
+                    id="code" 
+                    value={formData.code} 
+                    onChange={(e) => setFormData({ ...formData, code: e.target.value })} 
+                    className={cn(duplicateBookByCode && "border-destructive focus-visible:ring-destructive")}
+                  />
+                  {duplicateBookByCode && (
+                    <p className="text-[10px] text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> Buku ini sudah ada: {duplicateBookByCode.title}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="title">Judul Buku</Label>
@@ -504,13 +545,23 @@ export default function BooksPage() {
                   <Input id="year" type="number" value={formData.publicationYear} onChange={(e) => setFormData({ ...formData, publicationYear: Number(e.target.value) })} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="isbn">ISBN / Barcode</Label>
+                  <Label htmlFor="isbn" className={cn(duplicateBookByIsbn && "text-destructive")}>ISBN / Barcode</Label>
                   <div className="flex gap-2">
-                    <Input id="isbn" value={formData.isbn} className="flex-1" onChange={(e) => setFormData({ ...formData, isbn: e.target.value })} />
+                    <Input 
+                      id="isbn" 
+                      value={formData.isbn} 
+                      className={cn("flex-1", duplicateBookByIsbn && "border-destructive focus-visible:ring-destructive")} 
+                      onChange={(e) => setFormData({ ...formData, isbn: e.target.value })} 
+                    />
                     <Button variant="secondary" size="icon" onClick={() => startScanner("isbn")}>
                       <Camera className="h-4 w-4" />
                     </Button>
                   </div>
+                  {duplicateBookByIsbn && (
+                    <p className="text-[10px] text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> ISBN sudah terdaftar: {duplicateBookByIsbn.title}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="category">Jenis Buku</Label>
@@ -541,7 +592,7 @@ export default function BooksPage() {
               </div>
               <DialogFooter className="gap-2">
                 <Button variant="outline" onClick={() => setIsOpen(false)}>Batal</Button>
-                <Button onClick={handleSaveBook} disabled={isSaving}>
+                <Button onClick={handleSaveBook} disabled={isSaving || !!duplicateBookByCode}>
                   {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Simpan Koleksi
                 </Button>
@@ -657,8 +708,18 @@ export default function BooksPage() {
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-code">Kode Buku</Label>
-              <Input id="edit-code" value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value })} />
+              <Label htmlFor="edit-code" className={cn(duplicateBookByCode && "text-destructive")}>Kode Buku</Label>
+              <Input 
+                id="edit-code" 
+                value={formData.code} 
+                onChange={(e) => setFormData({ ...formData, code: e.target.value })} 
+                className={cn(duplicateBookByCode && "border-destructive focus-visible:ring-destructive")}
+              />
+              {duplicateBookByCode && (
+                <p className="text-[10px] text-destructive flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" /> Kode sudah digunakan oleh: {duplicateBookByCode.title}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-title">Judul Buku</Label>
@@ -677,13 +738,23 @@ export default function BooksPage() {
               <Input id="edit-year" type="number" value={formData.publicationYear} onChange={(e) => setFormData({ ...formData, publicationYear: Number(e.target.value) })} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-isbn">ISBN / Barcode</Label>
+              <Label htmlFor="edit-isbn" className={cn(duplicateBookByIsbn && "text-destructive")}>ISBN / Barcode</Label>
               <div className="flex gap-2">
-                <Input id="edit-isbn" value={formData.isbn} className="flex-1" onChange={(e) => setFormData({ ...formData, isbn: e.target.value })} />
+                <Input 
+                  id="edit-isbn" 
+                  value={formData.isbn} 
+                  className={cn("flex-1", duplicateBookByIsbn && "border-destructive focus-visible:ring-destructive")} 
+                  onChange={(e) => setFormData({ ...formData, isbn: e.target.value })} 
+                />
                 <Button variant="secondary" size="icon" onClick={() => startScanner("isbn")}>
                   <Camera className="h-4 w-4" />
                 </Button>
               </div>
+              {duplicateBookByIsbn && (
+                <p className="text-[10px] text-destructive flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" /> ISBN sudah terdaftar: {duplicateBookByIsbn.title}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-category">Jenis Buku</Label>
@@ -708,7 +779,7 @@ export default function BooksPage() {
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>Batal</Button>
-            <Button onClick={handleUpdateBook} disabled={isSaving}>
+            <Button onClick={handleUpdateBook} disabled={isSaving || !!duplicateBookByCode}>
               {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Perbarui Buku
             </Button>
