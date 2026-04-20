@@ -125,16 +125,14 @@ export default function MembersPage() {
   const handleSaveMember = () => {
     if (!db) return
     
-    // Gabungkan Kelas dan Mapel dengan tanda miring agar formatnya standar VII/TIK
-    const fullClassSubject = formData.classPart && formData.subjectPart 
-      ? `${formData.classPart}/${formData.subjectPart}` 
-      : (formData.classPart || formData.subjectPart || "");
+    // Gabungkan Kelas dan Mapel sesuai tipe
+    const infoValue = formData.type === 'Student' ? formData.classPart : formData.subjectPart;
 
     const dataToSave = { 
       memberId: formData.memberId,
       name: formData.name,
       type: formData.type,
-      classOrSubject: fullClassSubject,
+      classOrSubject: infoValue || "",
       phone: formData.phone,
       joinDate: formData.joinDate,
       createdAt: serverTimestamp() 
@@ -152,23 +150,21 @@ export default function MembersPage() {
         } satisfies SecurityRuleContext);
         errorEmitter.emit('permission-error', permissionError);
       });
-    toast({ title: "Berhasil!", description: "Anggota baru sedang didaftarkan." })
+    toast({ title: "Berhasil!", description: "Anggota baru telah didaftarkan." })
     setTimeout(() => { setFormData(INITIAL_MEMBER_DATA) }, 200)
   }
 
   const handleUpdateMember = () => {
     if (!db || !editingMemberId) return
     
-    const fullClassSubject = formData.classPart && formData.subjectPart 
-      ? `${formData.classPart}/${formData.subjectPart}` 
-      : (formData.classPart || formData.subjectPart || "");
+    const infoValue = formData.type === 'Student' ? formData.classPart : formData.subjectPart;
 
     const docRef = doc(db, 'members', editingMemberId)
     const dataToUpdate = { 
       memberId: formData.memberId,
       name: formData.name,
       type: formData.type,
-      classOrSubject: fullClassSubject,
+      classOrSubject: infoValue || "",
       phone: formData.phone,
       joinDate: formData.joinDate,
       updatedAt: serverTimestamp() 
@@ -204,7 +200,7 @@ export default function MembersPage() {
         } satisfies SecurityRuleContext);
         errorEmitter.emit('permission-error', permissionError);
       });
-    toast({ title: "Terhapus", description: "Anggota sedang dihapus." })
+    toast({ title: "Terhapus", description: "Anggota telah dihapus." })
     setTimeout(() => { setMemberToDelete(null) }, 200)
   }
 
@@ -223,7 +219,7 @@ export default function MembersPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="font-semibold text-xs uppercase text-muted-foreground">ID Anggota (NIS/NIP)</Label>
-                  <Input value={formData.memberId ?? ""} onChange={e => setFormData({...formData, memberId: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Contoh: 12345" />
+                  <Input value={formData.memberId ?? ""} onChange={e => setFormData({...formData, memberId: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="NIS/NIP" />
                 </div>
                 <div className="space-y-2">
                   <Label className="font-semibold text-xs uppercase text-muted-foreground">Tipe</Label>
@@ -235,7 +231,7 @@ export default function MembersPage() {
               </div>
               <div className="space-y-2">
                 <Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label>
-                <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Masukkan nama lengkap" />
+                <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Nama lengkap" />
               </div>
               
               <div className="grid grid-cols-1 gap-4">
@@ -271,7 +267,7 @@ export default function MembersPage() {
               <TableHead className="w-12 text-center">No.</TableHead>
               <TableHead>Identitas</TableHead>
               <TableHead>Tipe</TableHead>
-              <TableHead>Kelas/Mapel</TableHead>
+              <TableHead>Kelas / Mapel</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
@@ -306,13 +302,13 @@ export default function MembersPage() {
                       <DropdownMenuItem onSelect={() => { 
                         setTimeout(() => {
                           setEditingMemberId(member.id); 
-                          const parts = (member.classOrSubject || "").split('/');
+                          const isStudent = member.type === 'Student';
                           setFormData({
                             memberId: member.memberId || "",
                             name: member.name || "",
                             type: (member.type as any) || "Student",
-                            classPart: parts[0] || "",
-                            subjectPart: parts[1] || "",
+                            classPart: isStudent ? member.classOrSubject : "",
+                            subjectPart: !isStudent ? member.classOrSubject : "",
                             phone: member.phone || "",
                             joinDate: member.joinDate || new Date().toISOString().split('T')[0]
                           }); 
@@ -389,7 +385,7 @@ export default function MembersPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Anggota?</AlertDialogTitle>
-            <AlertDialogDescription>Data identitas akan dihapus. Pastikan anggota ini sudah tidak memiliki pinjaman aktif.</AlertDialogDescription>
+            <AlertDialogDescription>Data identitas akan dihapus secara permanen.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => { setMemberToDelete(null); forceUnlockUI(); }}>Batal</AlertDialogCancel>
