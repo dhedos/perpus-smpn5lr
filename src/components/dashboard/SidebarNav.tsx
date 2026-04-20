@@ -1,3 +1,4 @@
+
 "use client"
 
 import Link from "next/link"
@@ -47,8 +48,8 @@ export function SidebarNav() {
   }
 
   return (
-    <div className="flex h-full flex-col border-r bg-card text-card-foreground">
-      <div className="flex h-16 items-center px-6 border-b">
+    <div className="flex h-full flex-col bg-card text-card-foreground">
+      <div className="flex h-16 items-center px-6 border-b shrink-0">
         <Library className="h-8 w-8 text-primary mr-2" />
         <div className="flex flex-col">
           <span className="text-sm font-bold leading-tight text-primary">SMPN 5</span>
@@ -98,7 +99,7 @@ export function SidebarNav() {
         )}
       </div>
 
-      <div className="border-t p-4">
+      <div className="border-t p-4 shrink-0">
         <Button 
           variant="ghost" 
           className="w-full justify-start gap-3 text-destructive hover:bg-destructive/10 hover:text-destructive"
