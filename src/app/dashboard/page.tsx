@@ -93,11 +93,14 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight text-primary">
-          Selamat Datang, {user?.displayNameCustom || "Petugas"}
+      <div className="flex flex-col gap-0.5">
+        <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest opacity-80">
+          Selamat Datang,
+        </p>
+        <h1 className="text-2xl font-black tracking-tight text-primary uppercase leading-tight">
+          {user?.displayNameCustom || "Petugas Perpustakaan"}
         </h1>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-muted-foreground text-xs mt-1">
           Pantau aktivitas sirkulasi dan koleksi perpustakaan hari ini.
         </p>
       </div>
