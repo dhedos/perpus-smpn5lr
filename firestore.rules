@@ -5,6 +5,7 @@ service cloud.firestore {
 
     /**
      * SISTEM PERPUSTAKAAN SMPN 5 - SECURITY RULES
+     * Diperbarui untuk mencegah rekursi pada pengecekan role.
      */
 
     function isSignedIn() {
@@ -15,37 +16,33 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function getRole() {
-      // Mengambil role dari dokumen user itu sendiri
-      return isSignedIn() ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role : null;
-    }
-
-    function hasRole(role) {
-      return isSignedIn() && getRole() == role;
+    // Fungsi pembantu untuk mengambil data user tanpa memicu rekursi
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
     function isStaff() {
-      // Menyesuaikan dengan role yang digunakan di aplikasi (Admin & Staff)
-      return hasRole('Admin') || hasRole('Staff');
+      return isSignedIn() && (getUserData().role == 'Admin' || getUserData().role == 'Staff');
     }
 
     function isAdmin() {
-      return hasRole('Admin');
+      return isSignedIn() && getUserData().role == 'Admin';
     }
 
     // Koleksi Pengguna (Admin/Staff)
     match /users/{userId} {
-      allow get: if isOwner(userId) || isStaff();
+      // PENTING: User harus bisa membaca dokumennya sendiri tanpa isStaff() 
+      // untuk menghindari rekursi saat fungsi isStaff() memanggil get() pada koleksi ini.
+      allow get: if isOwner(userId) || (isSignedIn() && getUserData().role in ['Admin', 'Staff']);
       allow list: if isStaff(); 
-      allow create: if isSignedIn(); // Izinkan inisialisasi admin pertama atau pendaftaran oleh admin lain
+      allow create: if isSignedIn(); 
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if isAdmin();
     }
 
     // Koleksi Anggota Perpustakaan
     match /members/{memberId} {
-      allow read: if isStaff();
-      allow write: if isStaff();
+      allow read, write: if isStaff();
     }
 
     // Koleksi Buku
@@ -56,18 +53,17 @@ service cloud.firestore {
 
     // Koleksi Transaksi (Pinjam & Kembali)
     match /transactions/{transactionId} {
-      allow read: if isStaff();
-      allow write: if isStaff();
+      allow read, write: if isStaff();
     }
 
-    // Koleksi Log Aktivitas (Audit & Stock Opname)
+    // Koleksi Log Aktivitas
     match /activity_logs/{logId} {
       allow read: if isStaff();
       allow create: if isSignedIn();
       allow update, delete: if isAdmin();
     }
 
-    // Koleksi Pengaturan (Denda, Batas Pinjam, dll)
+    // Koleksi Pengaturan
     match /settings/{settingId} {
       allow read: if isSignedIn();
       allow write: if isStaff();
