@@ -5,38 +5,37 @@ service cloud.firestore {
 
     /**
      * SISTEM PERPUSTAKAAN SMPN 5 - SECURITY RULES
-     * Diperbarui untuk mencegah rekursi pada pengecekan role.
+     * Memperbaiki rekursi dengan memisahkan izin akses profil sendiri.
      */
 
     function isSignedIn() {
       return request.auth != null;
     }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    // Fungsi pembantu untuk mengambil data user tanpa memicu rekursi
-    function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    // Fungsi untuk mendapatkan role tanpa memicu rekursi berlebih
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
 
     function isStaff() {
-      return isSignedIn() && (getUserData().role == 'Admin' || getUserData().role == 'Staff');
+      return isSignedIn() && getUserRole() in ['Admin', 'Staff'];
     }
 
     function isAdmin() {
-      return isSignedIn() && getUserData().role == 'Admin';
+      return isSignedIn() && getUserRole() == 'Admin';
     }
 
     // Koleksi Pengguna (Admin/Staff)
     match /users/{userId} {
-      // PENTING: User harus bisa membaca dokumennya sendiri tanpa isStaff() 
-      // untuk menghindari rekursi saat fungsi isStaff() memanggil get() pada koleksi ini.
-      allow get: if isOwner(userId) || (isSignedIn() && getUserData().role in ['Admin', 'Staff']);
-      allow list: if isStaff(); 
+      // PENTING: User bisa membaca datanya sendiri secara langsung (Base Case)
+      // Ini mencegah rekursi saat fungsi getUserRole() memanggil get()
+      allow get: if isSignedIn() && request.auth.uid == userId;
+      
+      // Admin/Staff bisa melihat profil user lain
+      allow get, list: if isStaff();
+      
       allow create: if isSignedIn(); 
-      allow update: if isOwner(userId) || isAdmin();
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow delete: if isAdmin();
     }
 
