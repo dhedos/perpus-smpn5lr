@@ -1,7 +1,6 @@
-
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,7 +8,7 @@ import { Library, Loader2, UserPlus, ShieldCheck } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth"
-import { collection, doc, setDoc } from "firebase/firestore"
+import { collection, doc, setDoc, query, limit } from "firebase/firestore"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 
@@ -26,11 +25,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [adminName, setAdminName] = useState("")
 
-  // Mengecek apakah sudah ada user di sistem untuk menentukan mode setup
-  const usersRef = useMemoFirebase(() => db ? collection(db, "users") : null, [db])
-  const { data: usersList, loading: checkingUsers } = useCollection(usersRef)
+  // Mengecek apakah sudah ada user di sistem dengan limit 1 untuk efisiensi
+  const usersQuery = useMemoFirebase(() => {
+    if (!db) return null
+    return query(collection(db, "users"), limit(1))
+  }, [db])
   
-  const noUsersExist = !checkingUsers && usersList && usersList.length === 0
+  const { data: usersList, isLoading: checkingUsers } = useCollection(usersQuery)
+  
+  const noUsersExist = !checkingUsers && usersList !== null && usersList.length === 0
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
