@@ -216,7 +216,7 @@ export default function MembersPage() {
           <p className="text-muted-foreground text-sm">Kelola data siswa dan guru yang terdaftar.</p>
         </div>
         <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) { setFormData(INITIAL_MEMBER_DATA); forceUnlockUI(); } }}>
-          <DialogTrigger asChild><Button className="gap-2"><UserPlus className="h-4 w-4" />Tambah Anggota</Button></DialogTrigger>
+          <DialogTrigger asChild><Button className="gap-2"><UserPlus className="h-4 w-4" /> Tambah Anggota</Button></DialogTrigger>
           <DialogContent className="bg-slate-50 max-w-md">
             <DialogHeader><DialogTitle>Daftarkan Anggota Baru</DialogTitle></DialogHeader>
             <div className="grid gap-4 py-4">
@@ -298,7 +298,7 @@ export default function MembersPage() {
                           setSelectedMemberQr(member); 
                           setIsQrOpen(true);
                         }, 10);
-                      }}><QrCode className="h-4 w-4 mr-2" />Kartu QR</DropdownMenuItem>
+                      }}><QrCode className="h-4 w-4 mr-2" /> Kartu QR</DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => { 
                         setTimeout(() => {
                           setEditingMemberId(member.id); 
@@ -314,13 +314,13 @@ export default function MembersPage() {
                           }); 
                           setIsEditOpen(true);
                         }, 10);
-                      }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
+                      }}><Edit className="h-4 w-4 mr-2" /> Ubah</DropdownMenuItem>
                       <DropdownMenuItem className="text-destructive" onSelect={() => { 
                         setTimeout(() => {
                           setMemberToDelete(member.id); 
                           setIsDeleteDialogOpen(true);
                         }, 10);
-                      }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
+                      }}><Trash2 className="h-4 w-4 mr-2" /> Hapus</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -349,7 +349,7 @@ export default function MembersPage() {
             </div>
           </div>
           <DialogFooter className="grid grid-cols-2 gap-2">
-            <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" />Cetak</Button>
+            <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" /> Cetak</Button>
             <Button onClick={() => setIsQrOpen(false)}>Tutup</Button>
           </DialogFooter>
         </DialogContent>

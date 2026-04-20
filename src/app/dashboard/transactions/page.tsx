@@ -25,7 +25,9 @@ import {
   ChevronRight,
   Minus,
   Plus,
-  AlertTriangle
+  AlertTriangle,
+  Home,
+  Users as UsersIcon
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -45,6 +47,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 // Firebase
 import { 
@@ -76,6 +85,7 @@ export default function TransactionsPage() {
   const [selectedMember, setSelectedMember] = useState<any>(null)
   const [selectedBook, setSelectedBook] = useState<any>(null)
   const [borrowQuantity, setBorrowQuantity] = useState(1)
+  const [loanType, setLoanType] = useState<"personal" | "class">("personal")
 
   // Autocomplete suggestions
   const [showMemberSuggestions, setShowMemberSuggestions] = useState(false)
@@ -348,6 +358,7 @@ export default function TransactionsPage() {
       bookId: selectedBook.id, 
       bookTitle: selectedBook.title, 
       quantity: borrowQuantity,
+      loanType: loanType,
       type: 'borrow', 
       status: 'active', 
       borrowDate: today.toISOString(), 
@@ -463,9 +474,28 @@ export default function TransactionsPage() {
 
               <Card className="border-none shadow-sm relative">
                 <CardHeader className="bg-slate-50/50 pb-4 border-b">
-                  <CardTitle className="text-sm flex items-center gap-2 text-secondary uppercase tracking-wider font-bold"><BookOpen className="h-4 w-4" /> Data Buku</CardTitle>
+                  <CardTitle className="text-sm flex items-center gap-2 text-secondary uppercase tracking-wider font-bold"><BookOpen className="h-4 w-4" /> Data Buku & Kategori</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6 space-y-4">
+                  <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
+                    <Button 
+                      variant={loanType === "personal" ? "default" : "ghost"} 
+                      size="sm" 
+                      className="gap-2 h-9" 
+                      onClick={() => setLoanType("personal")}
+                    >
+                      <Home className="h-3 w-3" /> Pribadi
+                    </Button>
+                    <Button 
+                      variant={loanType === "class" ? "default" : "ghost"} 
+                      size="sm" 
+                      className="gap-2 h-9" 
+                      onClick={() => setLoanType("class")}
+                    >
+                      <UsersIcon className="h-3 w-3" /> Kolektif Kelas
+                    </Button>
+                  </div>
+
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
@@ -488,7 +518,7 @@ export default function TransactionsPage() {
                               setSelectedBook(b);
                               setBookSearch("");
                               setShowBookSuggestions(false);
-                              setBorrowQuantity(1);
+                              setBorrowQuantity(loanType === "class" ? Math.min(b.availableStock || 1, 20) : 1);
                             }}
                           >
                             <div className="flex flex-col">
@@ -601,7 +631,7 @@ export default function TransactionsPage() {
                         <TableRow>
                           <TableHead className="w-12 text-center">No.</TableHead>
                           <TableHead>Peminjam & Buku</TableHead>
-                          <TableHead className="w-32">Tgl Pinjam</TableHead>
+                          <TableHead className="w-32">Kategori</TableHead>
                           <TableHead className="w-32">Jatuh Tempo</TableHead>
                           <TableHead className="w-24 text-right">Aksi</TableHead>
                         </TableRow>
@@ -615,7 +645,6 @@ export default function TransactionsPage() {
                           const borrowDate = t.borrowDate ? parseISO(t.borrowDate) : new Date();
                           const effectiveDueDate = addDays(borrowDate, loanDays);
                           const isOverdue = isAfter(new Date(), effectiveDueDate);
-                          const totalMemberLoans = getMemberLoanCount(t.memberId);
                           const memberData = members?.find(m => m.memberId === t.memberId);
                           
                           return (
@@ -636,14 +665,14 @@ export default function TransactionsPage() {
                                         {memberData.classOrSubject}
                                       </span>
                                     )}
-                                    <Badge variant="outline" className="text-[9px] h-4 py-0 px-1 border-primary/20 bg-primary/5 text-primary">
-                                      {totalMemberLoans} Buku
-                                    </Badge>
                                   </div>
                                 </div>
                               </TableCell>
-                              <TableCell className="text-xs text-muted-foreground">
-                                {format(borrowDate, 'dd/MM/yyyy')}
+                              <TableCell>
+                                <Badge variant="outline" className={cn("text-[10px] gap-1", t.loanType === 'class' ? "border-blue-200 bg-blue-50 text-blue-700" : "border-slate-200 bg-slate-50 text-slate-700")}>
+                                  {t.loanType === 'class' ? <UsersIcon className="h-3 w-3" /> : <Home className="h-3 w-3" />}
+                                  {t.loanType === 'class' ? "Kolektif" : "Pribadi"}
+                                </Badge>
                               </TableCell>
                               <TableCell>
                                 <div className="space-y-1">
