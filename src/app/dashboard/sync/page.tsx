@@ -4,8 +4,8 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Database, CloudUpload, CloudDownload, RefreshCw, CheckCircle2, AlertTriangle } from "lucide-react"
-import { useState } from "react"
+import { Database, CloudUpload, CloudDownload, RefreshCw, CheckCircle2, AlertTriangle, Zap } from "lucide-react"
+import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 
@@ -13,6 +13,18 @@ export default function SyncPage() {
   const { toast } = useToast()
   const [syncing, setSyncing] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [isOnline, setIsOnline] = useState(true)
+
+  useEffect(() => {
+    setIsOnline(navigator.onLine)
+    const handleStatus = () => setIsOnline(navigator.onLine)
+    window.addEventListener('online', handleStatus)
+    window.addEventListener('offline', handleStatus)
+    return () => {
+      window.removeEventListener('online', handleStatus)
+      window.removeEventListener('offline', handleStatus)
+    }
+  }, [])
 
   const handleSync = () => {
     setSyncing(true)
@@ -23,42 +35,42 @@ export default function SyncPage() {
         if (prev >= 100) {
           clearInterval(interval)
           setSyncing(false)
-          toast({ title: "Sinkronisasi Berhasil", description: "Seluruh data offline telah diunggah ke cloud." })
+          toast({ title: "Caching Berhasil", description: "Database lokal telah disinkronkan dengan server cloud." })
           return 100
         }
-        return prev + 10
+        return prev + 20
       })
-    }, 200)
+    }, 150)
   }
 
   return (
     <div className="max-w-4xl space-y-6 animate-in fade-in duration-500">
       <div>
-        <h1 className="text-2xl font-bold font-headline tracking-tight">Backup & Sinkronisasi</h1>
-        <p className="text-muted-foreground text-sm">Kelola data offline dan cadangan cloud.</p>
+        <h1 className="text-2xl font-bold font-headline tracking-tight text-primary">Caching & Sinkronisasi</h1>
+        <p className="text-muted-foreground text-sm">Kelola penyimpanan lokal untuk menghemat kuota data SMPN 5.</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="border-none shadow-sm bg-primary/5 border-primary/10">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CloudUpload className="h-5 w-5 text-primary" />
-              Status Cloud
+              <Zap className="h-5 w-5 text-yellow-500 fill-yellow-500" />
+              Sistem Caching Aktif
             </CardTitle>
-            <CardDescription>Terakhir sinkronisasi: 10 menit yang lalu</CardDescription>
+            <CardDescription>Status: {isOnline ? 'Terhubung ke Cloud' : 'Mode Offline Aktif'}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Data Menunggu</span>
-              <span className="font-bold">0 File</span>
+              <span className="text-muted-foreground">Penyimpanan Lokal</span>
+              <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">IndexedDB Aktif</Badge>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Kesehatan Database</span>
-              <Badge className="bg-green-500 hover:bg-green-600 border-none">Optimal</Badge>
+              <span className="text-muted-foreground">Kecepatan Akses</span>
+              <span className="font-bold text-primary">Instan (dari Cache)</span>
             </div>
-            <Button className="w-full gap-2" onClick={handleSync} disabled={syncing}>
+            <Button className="w-full gap-2 shadow-md" onClick={handleSync} disabled={syncing}>
               <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-              {syncing ? 'Menyinkronkan...' : 'Sinkronisasi Sekarang'}
+              {syncing ? 'Memperbarui Cache...' : 'Segarkan Data (Sync)'}
             </Button>
             {syncing && <Progress value={progress} className="h-2" />}
           </CardContent>
@@ -68,24 +80,30 @@ export default function SyncPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Database className="h-5 w-5 text-secondary" />
-              Backup Lokal
+              Keamanan Data
             </CardTitle>
-            <CardDescription>Simpan salinan database ke penyimpanan lokal.</CardDescription>
+            <CardDescription>Data tetap aman meskipun internet mati.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-4 rounded-lg bg-accent/30 border border-primary/10 space-y-3">
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold">Otomatisasi Backup</p>
-                  <p className="text-xs text-muted-foreground">Backup harian pukul 23:59 aktif.</p>
+                  <p className="text-sm font-semibold">Auto-Recovery</p>
+                  <p className="text-xs text-muted-foreground">Data disinkronkan otomatis saat online.</p>
                 </div>
               </div>
             </div>
-            <Button variant="outline" className="w-full gap-2">
-              <CloudDownload className="h-4 w-4" />
-              Download Backup (.json)
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1 gap-2 text-xs">
+                <CloudDownload className="h-3 w-3" />
+                Ekspor JSON
+              </Button>
+              <Button variant="outline" className="flex-1 gap-2 text-xs">
+                <CloudUpload className="h-3 w-3" />
+                Impor Backup
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -94,9 +112,9 @@ export default function SyncPage() {
         <CardContent className="flex items-start gap-4 p-6">
           <AlertTriangle className="h-6 w-6 text-orange-500 shrink-0" />
           <div className="space-y-1">
-            <p className="font-bold text-orange-800">Peringatan Keamanan</p>
-            <p className="text-sm text-orange-700">
-              Jangan menghapus cache browser saat aplikasi dalam status "Offline" jika masih ada data yang belum disinkronkan ke Cloud.
+            <p className="font-bold text-orange-800 text-sm">Info Optimasi Spark Plan</p>
+            <p className="text-xs text-orange-700 leading-relaxed">
+              Sistem Caching ini memastikan buku yang sudah pernah dilihat tidak akan memotong kuota "Read" Firebase Anda berkali-kali. Ini sangat membantu untuk sekolah dengan ribuan buku agar tetap bisa menggunakan Firebase secara GRATIS selamanya.
             </p>
           </div>
         </CardContent>
