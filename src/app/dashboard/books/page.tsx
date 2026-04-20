@@ -1,6 +1,7 @@
+
 "use client"
 
-import { useState, useMemo, useRef, useCallback } from "react"
+import { useState, useMemo, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -199,10 +200,10 @@ export default function BooksPage() {
     if (!printWindow) return
 
     const stickersHtml = filteredBooks.map(book => `
-      <div class="sticker">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${book.code}" class="qr-img" />
-        <div class="title">${book.title}</div>
-        <div class="code">${book.code}</div>
+      <div class="sticker" style="border: 0.5px solid #eee; padding: 6px; text-align: center; width: 120px; height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; page-break-inside: avoid; margin: 2px;">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${book.code}" style="width: 85px; height: 85px; margin-bottom: 4px;" />
+        <div style="font-size: 7px; font-weight: bold; margin: 1px 0; height: 18px; overflow: hidden;">${book.title}</div>
+        <div style="font-size: 9px; font-weight: bold; color: #2E6ECE;">${book.code}</div>
       </div>
     `).join('')
 
@@ -213,10 +214,6 @@ export default function BooksPage() {
           <style>
             @page { size: A4; margin: 5mm; }
             body { margin: 0; display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-start; font-family: sans-serif; background: #fff; }
-            .sticker { border: 0.5px solid #eee; padding: 6px; text-align: center; width: 120px; height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; page-break-inside: avoid; }
-            .qr-img { width: 85px; height: 85px; margin-bottom: 4px; }
-            .title { font-size: 7px; font-weight: bold; margin: 1px 0; height: 18px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-            .code { font-size: 9px; font-weight: bold; color: #2E6ECE; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
@@ -232,7 +229,7 @@ export default function BooksPage() {
     setIsGenerating(true)
     try {
       const result = await generateBookDescription({ title: formData.title, author: formData.author, isbn: formData.isbn })
-      setFormData(prev => ({ ...prev, description: result.description }))
+      setFormData(prev => ({ ...prev, description: result.description || "" }))
     } catch (e) { toast({ title: "AI Sibuk", variant: "destructive" }) }
     finally { setIsGenerating(false) }
   }
@@ -277,7 +274,7 @@ export default function BooksPage() {
 
     const updatedData = {
       ...formData,
-      totalStock: Number(formData.totalStock),
+      totalStock: Number(formData.totalStock || 0),
       availableStock: Math.max(0, newAvailableStock),
       updatedAt: new Date().toISOString()
     }
@@ -327,7 +324,8 @@ export default function BooksPage() {
     try {
       const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
       setTimeout(async () => {
-        if (!document.getElementById("scanner-view")) return;
+        const scannerElement = document.getElementById("scanner-view")
+        if (!scannerElement) return;
         const scanner = new Html5Qrcode("scanner-view")
         scannerInstanceRef.current = scanner
         await scanner.start(
@@ -447,7 +445,24 @@ export default function BooksPage() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => { setSelectedBookDetail(book); setIsDetailOpen(true); }}><Eye className="h-4 w-4 mr-2" />Lihat Detail</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => { setSelectedBookQr(book); setIsQrOpen(true); }}><QrCode className="h-4 w-4 mr-2" />Tampilkan QR</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => { setEditingBookId(book.id); setFormData({ ...book }); setIsEditOpen(true); }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => { 
+                        setEditingBookId(book.id); 
+                        setFormData({
+                          code: book.code || "",
+                          title: book.title || "",
+                          author: book.author || "",
+                          publisher: book.publisher || "",
+                          publicationYear: book.publicationYear || new Date().getFullYear(),
+                          acquisitionDate: book.acquisitionDate || new Date().toISOString().split('T')[0],
+                          isbn: book.isbn || "",
+                          category: book.category || "",
+                          rackLocation: book.rackLocation || "",
+                          totalStock: book.totalStock || 0,
+                          availableStock: book.availableStock || 0,
+                          description: book.description || ""
+                        }); 
+                        setIsEditOpen(true); 
+                      }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
                       <DropdownMenuItem className="text-destructive" onClick={() => { setBookToDelete(book.id); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -473,35 +488,35 @@ export default function BooksPage() {
           <div className="grid grid-cols-2 gap-4 py-4">
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">Kode Buku</Label>
-              <Input value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} className="bg-white border-slate-300 h-11" />
+              <Input value={formData.code ?? ""} onChange={e => setFormData({ ...formData, code: e.target.value })} className="bg-white border-slate-300 h-11" />
             </div>
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">Judul Buku</Label>
-              <Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" />
+              <Input value={formData.title ?? ""} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" />
             </div>
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">Pengarang</Label>
-              <Input value={formData.author} onChange={e => setFormData({ ...formData, author: e.target.value })} className="bg-white border-slate-300 h-11" />
+              <Input value={formData.author ?? ""} onChange={e => setFormData({ ...formData, author: e.target.value })} className="bg-white border-slate-300 h-11" />
             </div>
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">Tahun Terbit</Label>
-              <Input type="number" value={formData.publicationYear} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300 h-11" />
+              <Input type="number" value={formData.publicationYear ?? ""} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300 h-11" />
             </div>
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">ISBN</Label>
-              <Input value={formData.isbn} onChange={e => setFormData({ ...formData, isbn: e.target.value })} className="bg-white border-slate-300 h-11" />
+              <Input value={formData.isbn ?? ""} onChange={e => setFormData({ ...formData, isbn: e.target.value })} className="bg-white border-slate-300 h-11" />
             </div>
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">Jenis / Kategori</Label>
-              <Input value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} placeholder="Fiksi, Sains, dll" className="bg-white border-slate-300 h-11" />
+              <Input value={formData.category ?? ""} onChange={e => setFormData({ ...formData, category: e.target.value })} placeholder="Fiksi, Sains, dll" className="bg-white border-slate-300 h-11" />
             </div>
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">Jumlah Stok Total</Label>
-              <Input type="number" value={formData.totalStock} onChange={e => setFormData({ ...formData, totalStock: Number(e.target.value), availableStock: Number(e.target.value) })} className="bg-white border-slate-300 h-11" />
+              <Input type="number" value={formData.totalStock ?? 0} onChange={e => setFormData({ ...formData, totalStock: Number(e.target.value), availableStock: Number(e.target.value) })} className="bg-white border-slate-300 h-11" />
             </div>
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">Lokasi Rak</Label>
-              <Input value={formData.rackLocation} onChange={e => setFormData({ ...formData, rackLocation: e.target.value })} className="bg-white border-slate-300 h-11" />
+              <Input value={formData.rackLocation ?? ""} onChange={e => setFormData({ ...formData, rackLocation: e.target.value })} className="bg-white border-slate-300 h-11" />
             </div>
             <div className="col-span-2 space-y-2">
               <div className="flex justify-between items-center">
@@ -510,7 +525,7 @@ export default function BooksPage() {
                   <Sparkles className="h-3 w-3 mr-1" />AI Deskripsi
                 </Button>
               </div>
-              <Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" />
+              <Textarea value={formData.description ?? ""} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" />
             </div>
           </div>
           <DialogFooter>
@@ -577,15 +592,15 @@ export default function BooksPage() {
             <DialogTitle>Ubah Data Buku</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-4">
-            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Kode Buku</Label><Input value={formData.code} disabled className="bg-muted border-slate-300 h-11" /></div>
-            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Judul Buku</Label><Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
-            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Pengarang</Label><Input value={formData.author} onChange={e => setFormData({ ...formData, author: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
-            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Tahun Terbit</Label><Input type="number" value={formData.publicationYear} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300 h-11" /></div>
-            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Jumlah Stok Total</Label><Input type="number" value={formData.totalStock} onChange={e => setFormData({ ...formData, totalStock: Number(e.target.value) })} className="bg-white border-slate-300 h-11" /></div>
-            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Tgl. Penerimaan</Label><Input type="date" value={formData.acquisitionDate} onChange={e => setFormData({ ...formData, acquisitionDate: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
-            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Jenis / Kategori</Label><Input value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
-            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Lokasi Rak</Label><Input value={formData.rackLocation} onChange={e => setFormData({ ...formData, rackLocation: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
-            <div className="col-span-2 space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Deskripsi</Label><Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" /></div>
+            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Kode Buku</Label><Input value={formData.code ?? ""} disabled className="bg-muted border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Judul Buku</Label><Input value={formData.title ?? ""} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Pengarang</Label><Input value={formData.author ?? ""} onChange={e => setFormData({ ...formData, author: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Tahun Terbit</Label><Input type="number" value={formData.publicationYear ?? ""} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Jumlah Stok Total</Label><Input type="number" value={formData.totalStock ?? 0} onChange={e => setFormData({ ...formData, totalStock: Number(e.target.value) })} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Tgl. Penerimaan</Label><Input type="date" value={formData.acquisitionDate ?? ""} onChange={e => setFormData({ ...formData, acquisitionDate: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Jenis / Kategori</Label><Input value={formData.category ?? ""} onChange={e => setFormData({ ...formData, category: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Lokasi Rak</Label><Input value={formData.rackLocation ?? ""} onChange={e => setFormData({ ...formData, rackLocation: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
+            <div className="col-span-2 space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Deskripsi</Label><Textarea value={formData.description ?? ""} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>Batal</Button>
