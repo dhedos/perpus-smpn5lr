@@ -23,7 +23,9 @@ import {
   CalendarDays,
   Ghost,
   ShieldAlert,
-  ThumbsUp
+  ThumbsUp,
+  ArrowRightLeft,
+  Calendar
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -36,6 +38,14 @@ import {
   DialogDescription
 } from "@/components/ui/dialog"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 // Firebase
 import { 
@@ -44,8 +54,8 @@ import {
   useMemoFirebase,
   useDoc
 } from '@/firebase'
-import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc } from 'firebase/firestore'
-import { differenceInDays, parseISO, format } from "date-fns"
+import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc, orderBy } from 'firebase/firestore'
+import { differenceInDays, parseISO, format, isAfter } from "date-fns"
 import { cn } from "@/lib/utils"
 
 export default function TransactionsPage() {
@@ -83,9 +93,20 @@ export default function TransactionsPage() {
   const { data: books } = useCollection(booksRef)
 
   const activeTransQuery = useMemoFirebase(() => 
-    db ? query(collection(db, 'transactions'), where('status', '==', 'active')) : null, 
+    db ? query(collection(db, 'transactions'), where('status', '==', 'active'), orderBy('createdAt', 'desc')) : null, 
   [db])
-  const { data: activeTrans } = useCollection(activeTransQuery)
+  const { data: activeTrans, isLoading: loadingActive } = useCollection(activeTransQuery)
+
+  const filteredActiveTrans = useMemo(() => {
+    if (!activeTrans) return []
+    if (!returnSearch) return activeTrans
+    const search = returnSearch.toLowerCase()
+    return activeTrans.filter(t => 
+      t.memberName?.toLowerCase().includes(search) || 
+      t.bookTitle?.toLowerCase().includes(search) ||
+      t.memberId?.toLowerCase().includes(search)
+    )
+  }, [activeTrans, returnSearch])
 
   const handleScanResult = (text: string) => {
     if (!text) return
@@ -98,9 +119,10 @@ export default function TransactionsPage() {
     } else {
       const trans = activeTrans?.find(t => { 
         const b = books?.find(bk => bk.id === t.bookId); 
-        return b?.code?.toLowerCase() === text.toLowerCase() || b?.isbn === text; 
+        return b?.code?.toLowerCase() === text.toLowerCase() || b?.isbn === text || t.memberId?.toLowerCase() === text.toLowerCase(); 
       })
       if (trans) { prepareReturn(trans); stopScanner(); }
+      else toast({ title: "Transaksi Aktif Tidak Ditemukan", variant: "destructive" })
     }
   }
 
@@ -114,21 +136,18 @@ export default function TransactionsPage() {
     setIsReturnConfirmOpen(true);
   }
 
-  // Recalculate fine when condition changes
   useEffect(() => {
     if (!pendingReturnTrans || !settings) return;
     
     let fine = 0;
-    // Late fine
     if (lateDays > 0) {
       fine += lateDays * (settings.fineAmount || 500);
     }
     
-    // Condition fine
     if (returnCondition === "lost") {
       fine += (settings.lostBookFine || 50000);
     } else if (returnCondition === "damaged") {
-      fine += (settings.fineAmount || 500) * 10; // Simple damaged fine: 10x daily fine
+      fine += (settings.fineAmount || 500) * 10; 
     }
     
     setCalculatedFine(fine);
@@ -138,7 +157,6 @@ export default function TransactionsPage() {
     if (!db || !pendingReturnTrans) return
     setIsProcessing(true)
     try {
-      // 1. Update Transaction
       await updateDoc(doc(db, 'transactions', pendingReturnTrans.id), { 
         status: 'returned', 
         returnDate: new Date().toISOString(), 
@@ -148,7 +166,6 @@ export default function TransactionsPage() {
         isFinePaid: calculatedFine > 0 
       })
       
-      // 2. Update Book Inventory
       const bRef = doc(db, 'books', pendingReturnTrans.bookId)
       const bDoc = await getDoc(bRef)
       if (bDoc.exists()) {
@@ -156,12 +173,10 @@ export default function TransactionsPage() {
         const currentAvail = bDoc.data().availableStock || 0
         
         if (returnCondition === "lost") {
-          // If lost, total stock decreases by 1, available stock stays same
           await updateDoc(bRef, { 
             totalStock: currentTotal - 1 
           })
         } else {
-          // If normal or damaged, available stock increases back
           await updateDoc(bRef, { 
             availableStock: currentAvail + 1 
           })
@@ -176,12 +191,11 @@ export default function TransactionsPage() {
     } finally { setIsProcessing(false) }
   }
 
-  // Existing helpers start here
   const startScanner = async () => {
     setIsScannerOpen(true); 
     setHasCameraPermission(null)
     try {
-      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
+      const { Html5Qrcode } = await import("html5-qrcode")
       setTimeout(async () => {
         try {
           const scanner = new Html5Qrcode("smart-scanner")
@@ -203,10 +217,15 @@ export default function TransactionsPage() {
     setIsProcessing(true)
     const due = new Date(); due.setDate(due.getDate() + (settings?.loanPeriod || 7))
     addDoc(collection(db, 'transactions'), {
-      memberId: selectedMember.memberId, memberName: selectedMember.name, 
-      bookId: selectedBook.id, bookTitle: selectedBook.title, 
-      type: 'borrow', status: 'active', borrowDate: new Date().toISOString(), 
-      dueDate: due.toISOString(), createdAt: serverTimestamp()
+      memberId: selectedMember.memberId, 
+      memberName: selectedMember.name, 
+      bookId: selectedBook.id, 
+      bookTitle: selectedBook.title, 
+      type: 'borrow', 
+      status: 'active', 
+      borrowDate: new Date().toISOString(), 
+      dueDate: due.toISOString(), 
+      createdAt: serverTimestamp()
     }).then(() => {
       updateDoc(doc(db, 'books', selectedBook.id), { availableStock: Number(selectedBook.availableStock) - 1 })
       toast({ title: "Berhasil Meminjam" }); setSelectedBook(null); setSelectedMember(null);
@@ -214,115 +233,236 @@ export default function TransactionsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-primary">Sirkulasi & Kondisi Buku</h1>
-          <p className="text-sm text-muted-foreground">Proses peminjaman dan pengembalian dengan cek kondisi.</p>
+          <h1 className="text-2xl font-bold text-primary flex items-center gap-2"><ArrowRightLeft className="h-6 w-6" /> Sirkulasi & Kondisi Buku</h1>
+          <p className="text-sm text-muted-foreground">Proses peminjaman dan pengembalian dengan cek kondisi fisik.</p>
         </div>
       </div>
 
-      <Tabs defaultValue="borrow" onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 h-12">
-          <TabsTrigger value="borrow" className="text-base font-semibold">Peminjaman</TabsTrigger>
-          <TabsTrigger value="return" className="text-base font-semibold">Pengembalian</TabsTrigger>
+      <Tabs defaultValue="borrow" onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 h-14 p-1 bg-muted/50">
+          <TabsTrigger value="borrow" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Peminjaman</TabsTrigger>
+          <TabsTrigger value="return" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Pengembalian</TabsTrigger>
         </TabsList>
         
-        <div className="mt-6">
+        <div className="mt-8">
           <TabsContent value="borrow" className="space-y-6">
-            <Card className="bg-primary/5 border-primary/20">
-              <CardContent className="pt-6 text-center space-y-4">
-                <Button size="lg" className="h-16 px-10 gap-2 shadow-lg" onClick={startScanner}><ScanBarcode className="h-6 w-6" />Buka Smart Scan</Button>
+            <Card className="bg-primary/5 border-primary/20 overflow-hidden">
+              <CardContent className="pt-8 pb-8 text-center space-y-4">
+                <Button size="lg" className="h-16 px-12 gap-3 shadow-xl hover:shadow-2xl transition-all" onClick={startScanner}><ScanBarcode className="h-6 w-6" /> Buka Smart Scan</Button>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Arahkan kamera ke QR Code Anggota atau Buku</p>
               </CardContent>
             </Card>
 
             <div className="grid md:grid-cols-2 gap-6">
-              <Card className="border-none shadow-sm">
-                <CardHeader className="pb-3"><CardTitle className="text-sm flex items-center gap-2"><User className="h-4 w-4 text-primary" />Data Peminjam</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <Input placeholder="Input ID Anggota..." value={memberSearch} onChange={e => setMemberSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleScanResult(memberSearch)} />
-                  {selectedMember && <div className="p-4 bg-primary/10 rounded-xl border flex justify-between"><div><p className="font-bold">{selectedMember.name}</p><p className="text-xs">{selectedMember.memberId}</p></div><Button variant="ghost" size="icon" onClick={() => setSelectedMember(null)}><X className="h-4 w-4" /></Button></div>}
+              <Card className="border-none shadow-sm overflow-hidden">
+                <CardHeader className="bg-slate-50/50 pb-4 border-b">
+                  <CardTitle className="text-sm flex items-center gap-2 text-primary uppercase tracking-wider font-bold"><User className="h-4 w-4" /> Data Peminjam</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="Ketik ID Anggota..." className="pl-10 h-12" value={memberSearch} onChange={e => setMemberSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleScanResult(memberSearch)} />
+                  </div>
+                  {selectedMember && (
+                    <div className="p-4 bg-primary/5 rounded-xl border border-primary/20 flex justify-between items-center animate-in slide-in-from-left-2">
+                      <div>
+                        <p className="font-bold text-primary">{selectedMember.name}</p>
+                        <p className="text-xs font-mono text-muted-foreground">{selectedMember.memberId}</p>
+                      </div>
+                      <Button variant="ghost" size="icon" onClick={() => setSelectedMember(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-              <Card className="border-none shadow-sm">
-                <CardHeader className="pb-3"><CardTitle className="text-sm flex items-center gap-2"><BookOpen className="h-4 w-4 text-secondary" />Data Buku</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <Input placeholder="Input Kode Buku..." value={bookSearch} onChange={e => setBookSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleScanResult(bookSearch)} />
-                  {selectedBook && <div className="p-4 bg-secondary/10 rounded-xl border flex justify-between"><div><p className="font-bold">{selectedBook.title}</p><p className="text-xs">{selectedBook.code}</p></div><Button variant="ghost" size="icon" onClick={() => setSelectedBook(null)}><X className="h-4 w-4" /></Button></div>}
+
+              <Card className="border-none shadow-sm overflow-hidden">
+                <CardHeader className="bg-slate-50/50 pb-4 border-b">
+                  <CardTitle className="text-sm flex items-center gap-2 text-secondary uppercase tracking-wider font-bold"><BookOpen className="h-4 w-4" /> Data Buku</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="Ketik Kode Buku..." className="pl-10 h-12" value={bookSearch} onChange={e => setBookSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleScanResult(bookSearch)} />
+                  </div>
+                  {selectedBook && (
+                    <div className="p-4 bg-secondary/5 rounded-xl border border-secondary/20 flex justify-between items-center animate-in slide-in-from-right-2">
+                      <div className="flex-1">
+                        <p className="font-bold text-secondary-foreground leading-tight">{selectedBook.title}</p>
+                        <p className="text-xs font-mono text-muted-foreground">{selectedBook.code}</p>
+                      </div>
+                      <Button variant="ghost" size="icon" onClick={() => setSelectedBook(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
-            <Button className="w-full h-16 text-lg font-bold" disabled={!selectedMember || !selectedBook || isProcessing} onClick={handleProcessBorrow}>
-              {isProcessing ? <Loader2 className="animate-spin" /> : "KONFIRMASI PEMINJAMAN"}
+
+            <Button className="w-full h-16 text-lg font-black shadow-lg shadow-primary/20" disabled={!selectedMember || !selectedBook || isProcessing} onClick={handleProcessBorrow}>
+              {isProcessing ? <Loader2 className="animate-spin h-6 w-6" /> : "KONFIRMASI PEMINJAMAN"}
             </Button>
           </TabsContent>
 
           <TabsContent value="return" className="space-y-6">
-            <Card className="border-none shadow-sm bg-accent/30 p-10 text-center space-y-4">
-              <Button variant="secondary" className="h-16 px-10 gap-2 shadow-md" onClick={startScanner}><ScanBarcode className="h-6 w-6" />Scan Buku Kembali</Button>
-              <Input placeholder="Atau ketik Kode Buku/Nama Peminjam..." className="max-w-md mx-auto h-12" value={returnSearch} onChange={e => setReturnSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleScanResult(returnSearch)} />
-            </Card>
+            <div className="grid md:grid-cols-3 gap-6">
+              <Card className="md:col-span-1 border-none shadow-sm bg-accent/30 flex flex-col items-center justify-center p-8 gap-4">
+                <Button variant="secondary" className="h-20 w-full gap-3 shadow-md font-bold" onClick={startScanner}><ScanBarcode className="h-8 w-8" /> Scan Buku</Button>
+                <div className="w-full space-y-2">
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Pencarian Manual</Label>
+                  <Input placeholder="Cari Nama/Kode..." className="h-12 bg-white" value={returnSearch} onChange={e => setReturnSearch(e.target.value)} />
+                </div>
+              </Card>
+
+              <Card className="md:col-span-2 border-none shadow-sm overflow-hidden">
+                <CardHeader className="pb-3 border-b">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle className="text-sm font-bold uppercase tracking-wider">Peminjaman Aktif</CardTitle>
+                      <CardDescription className="text-xs">Buku yang saat ini sedang dibawa siswa.</CardDescription>
+                    </div>
+                    <Badge variant="secondary" className="font-bold">{activeTrans?.length || 0} Buku</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="max-h-[500px] overflow-y-auto">
+                    <Table>
+                      <TableHeader className="bg-slate-50/50 sticky top-0 z-10">
+                        <TableRow>
+                          <TableHead>Peminjam & Buku</TableHead>
+                          <TableHead className="w-32">Jatuh Tempo</TableHead>
+                          <TableHead className="w-24 text-right">Aksi</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {loadingActive ? (
+                          <TableRow><TableCell colSpan={3} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+                        ) : filteredActiveTrans.length === 0 ? (
+                          <TableRow><TableCell colSpan={3} className="text-center py-12 text-muted-foreground italic">Tidak ada peminjaman aktif{returnSearch && ' yang cocok'}.</TableCell></TableRow>
+                        ) : filteredActiveTrans.map((t) => {
+                          const isOverdue = isAfter(new Date(), parseISO(t.dueDate));
+                          return (
+                            <TableRow key={t.id} className={cn(isOverdue && "bg-red-50/50")}>
+                              <TableCell>
+                                <div className="space-y-0.5">
+                                  <p className="font-bold text-sm leading-tight">{t.bookTitle}</p>
+                                  <p className="text-xs text-muted-foreground">{t.memberName} ({t.memberId})</p>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="space-y-1">
+                                  <p className={cn("text-xs font-bold", isOverdue ? "text-destructive" : "text-muted-foreground")}>
+                                    {format(parseISO(t.dueDate), 'dd/MM/yyyy')}
+                                  </p>
+                                  {isOverdue && <Badge variant="destructive" className="text-[9px] h-4 px-1">Terlambat</Badge>}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button size="sm" variant="outline" className="h-8 text-xs font-bold hover:bg-primary hover:text-white" onClick={() => prepareReturn(t)}>
+                                  Kembali
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </div>
       </Tabs>
 
       <Dialog open={isReturnConfirmOpen} onOpenChange={setIsReturnConfirmOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-white">
           <DialogHeader>
-            <DialogTitle>Konfirmasi & Kondisi Buku</DialogTitle>
-            <DialogDescription>Tentukan kondisi fisik buku saat ini.</DialogDescription>
+            <DialogTitle className="flex items-center gap-2 text-primary font-bold">
+              <CheckCircle className="h-5 w-5" /> Konfirmasi & Kondisi Buku
+            </DialogTitle>
+            <DialogDescription>
+              Tentukan kondisi fisik buku saat pengembalian.
+            </DialogDescription>
           </DialogHeader>
           
           {pendingReturnTrans && (
             <div className="space-y-6 py-4">
-              <div className="p-3 bg-muted rounded-md text-xs space-y-1">
-                <p>Peminjam: <b>{pendingReturnTrans.memberName}</b></p>
-                <p>Buku: <b>{pendingReturnTrans.bookTitle}</b></p>
+              <div className="p-4 bg-slate-50 rounded-xl border space-y-2">
+                <div className="flex items-start gap-3">
+                  <BookOpen className="h-4 w-4 text-primary mt-1" />
+                  <div>
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Informasi Buku</p>
+                    <p className="text-sm font-black">{pendingReturnTrans.bookTitle}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <User className="h-4 w-4 text-primary mt-1" />
+                  <div>
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Peminjam</p>
+                    <p className="text-sm font-bold">{pendingReturnTrans.memberName}</p>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-3">
-                <Label className="font-bold text-xs uppercase text-muted-foreground tracking-widest">Pilih Kondisi Fisik</Label>
+                <Label className="font-bold text-xs uppercase text-muted-foreground tracking-widest flex items-center gap-2">
+                  <ShieldAlert className="h-3 w-3" /> Pilih Kondisi Fisik
+                </Label>
                 <RadioGroup value={returnCondition} onValueChange={(v: any) => setReturnCondition(v)} className="grid grid-cols-1 gap-2">
-                  <div className={cn("flex items-center space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-slate-50", returnCondition === 'normal' && "border-primary bg-primary/5")}>
+                  <div className={cn("flex items-center space-x-3 p-4 rounded-xl border-2 transition-all cursor-pointer", returnCondition === 'normal' ? "border-primary bg-primary/5" : "hover:bg-slate-50")}>
                     <RadioGroupItem value="normal" id="c-normal" />
-                    <Label htmlFor="c-normal" className="flex-1 cursor-pointer flex items-center gap-2"><ThumbsUp className="h-4 w-4 text-green-600" /> Lengkap & Normal</Label>
+                    <Label htmlFor="c-normal" className="flex-1 cursor-pointer flex items-center justify-between font-bold">
+                      <span className="flex items-center gap-2"><ThumbsUp className="h-4 w-4 text-green-600" /> Lengkap & Baik</span>
+                      <Badge variant="outline" className="bg-white">Normal</Badge>
+                    </Label>
                   </div>
-                  <div className={cn("flex items-center space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-slate-50", returnCondition === 'damaged' && "border-orange-500 bg-orange-50")}>
+                  <div className={cn("flex items-center space-x-3 p-4 rounded-xl border-2 transition-all cursor-pointer", returnCondition === 'damaged' ? "border-orange-500 bg-orange-50" : "hover:bg-slate-50")}>
                     <RadioGroupItem value="damaged" id="c-damaged" />
-                    <Label htmlFor="c-damaged" className="flex-1 cursor-pointer flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-orange-600" /> Rusak (Perlu Perbaikan)</Label>
+                    <Label htmlFor="c-damaged" className="flex-1 cursor-pointer flex items-center justify-between font-bold">
+                      <span className="flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-orange-600" /> Rusak (Denda)</span>
+                      <Badge variant="outline" className="bg-white border-orange-200 text-orange-700">Perbaikan</Badge>
+                    </Label>
                   </div>
-                  <div className={cn("flex items-center space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-slate-50", returnCondition === 'lost' && "border-destructive bg-red-50")}>
+                  <div className={cn("flex items-center space-x-3 p-4 rounded-xl border-2 transition-all cursor-pointer", returnCondition === 'lost' ? "border-destructive bg-red-50" : "hover:bg-slate-50")}>
                     <RadioGroupItem value="lost" id="c-lost" />
-                    <Label htmlFor="c-lost" className="flex-1 cursor-pointer flex items-center gap-2"><Ghost className="h-4 w-4 text-destructive" /> Hilang (Penggantian)</Label>
+                    <Label htmlFor="c-lost" className="flex-1 cursor-pointer flex items-center justify-between font-bold">
+                      <span className="flex items-center gap-2"><Ghost className="h-4 w-4 text-destructive" /> Hilang (Ganti)</span>
+                      <Badge variant="destructive" className="h-5 px-1.5">Penggantian</Badge>
+                    </Label>
                   </div>
                 </RadioGroup>
               </div>
 
               {calculatedFine > 0 && (
-                <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg space-y-1">
+                <div className="p-5 bg-orange-50 border-2 border-orange-200 rounded-2xl space-y-2 animate-in zoom-in-95">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-bold text-orange-800">TOTAL DENDA:</span>
-                    <span className="text-xl font-black text-orange-600">Rp{calculatedFine.toLocaleString()}</span>
+                    <span className="text-xs font-black text-orange-800 uppercase tracking-widest flex items-center gap-2"><Coins className="h-4 w-4" /> Tagihan Denda</span>
+                    <span className="text-2xl font-black text-orange-600">Rp{calculatedFine.toLocaleString()}</span>
                   </div>
-                  <div className="text-[10px] text-orange-700 flex flex-col gap-0.5 opacity-80">
-                    {lateDays > 0 && <span>- Terlambat {lateDays} hari x Rp{(settings?.fineAmount || 500).toLocaleString()}</span>}
-                    {returnCondition === 'damaged' && <span>- Biaya Kerusakan: Rp{((settings?.fineAmount || 500) * 10).toLocaleString()}</span>}
-                    {returnCondition === 'lost' && <span>- Biaya Buku Hilang: Rp{(settings?.lostBookFine || 50000).toLocaleString()}</span>}
+                  <div className="text-[10px] text-orange-700 font-medium leading-relaxed opacity-80 pt-2 border-t border-orange-200">
+                    {lateDays > 0 && <p className="flex justify-between"><span>• Terlambat {lateDays} hari</span> <span>Rp{(lateDays * (settings?.fineAmount || 500)).toLocaleString()}</span></p>}
+                    {returnCondition === 'damaged' && <p className="flex justify-between"><span>• Biaya Kerusakan Buku</span> <span>Rp{((settings?.fineAmount || 500) * 10).toLocaleString()}</span></p>}
+                    {returnCondition === 'lost' && <p className="flex justify-between"><span>• Ganti Buku Hilang</span> <span>Rp{(settings?.lostBookFine || 50000).toLocaleString()}</span></p>}
                   </div>
                 </div>
               )}
             </div>
           )}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsReturnConfirmOpen(false)} disabled={isProcessing}>Batal</Button>
-            <Button onClick={handleConfirmReturn} disabled={isProcessing} className="px-8">{isProcessing ? <Loader2 className="animate-spin" /> : "Simpan Data"}</Button>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIsReturnConfirmOpen(false)} disabled={isProcessing} className="flex-1">Batal</Button>
+            <Button onClick={handleConfirmReturn} disabled={isProcessing} className="flex-1 shadow-lg shadow-primary/20">{isProcessing ? <Loader2 className="animate-spin" /> : "Simpan Data"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
-        <DialogContent className="p-0 border-none bg-black max-w-xl"><div id="smart-scanner" className="w-full h-80"></div></DialogContent>
+        <DialogContent className="p-0 border-none bg-black max-w-xl h-[400px] overflow-hidden">
+          <div id="smart-scanner" className="w-full h-full"></div>
+          <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>
+        </DialogContent>
       </Dialog>
     </div>
   )
