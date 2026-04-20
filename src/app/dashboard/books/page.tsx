@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useRef, useEffect } from "react"
+import { useState, useMemo, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -35,8 +35,7 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogFooter,
-  DialogTrigger
+  DialogFooter
 } from "@/components/ui/dialog"
 import { 
   Select, 
@@ -68,7 +67,6 @@ import {
 import { generateBookDescription } from "@/ai/flows/generate-book-description-flow"
 import { useToast } from "@/hooks/use-toast"
 import { QRCodeSVG } from "qrcode.react"
-import { cn } from "@/lib/utils"
 
 // Firebase imports
 import { 
@@ -77,6 +75,21 @@ import {
   useMemoFirebase 
 } from '@/firebase'
 import { collection, addDoc, deleteDoc, doc, updateDoc, query, limit, orderBy } from 'firebase/firestore'
+
+const INITIAL_FORM_DATA = {
+  code: "",
+  title: "",
+  author: "",
+  publisher: "",
+  publicationYear: new Date().getFullYear(),
+  acquisitionDate: new Date().toISOString().split('T')[0],
+  isbn: "",
+  category: "",
+  rackLocation: "",
+  totalStock: 1,
+  availableStock: 1,
+  description: ""
+}
 
 export default function BooksPage() {
   const db = useFirestore()
@@ -101,21 +114,7 @@ export default function BooksPage() {
   
   const scannerInstanceRef = useRef<any>(null)
 
-  const [formData, setFormData] = useState({
-    code: "",
-    title: "",
-    author: "",
-    publisher: "",
-    publicationYear: new Date().getFullYear(),
-    acquisitionDate: new Date().toISOString().split('T')[0],
-    isbn: "",
-    category: "",
-    rackLocation: "",
-    totalStock: 1,
-    availableStock: 1,
-    description: ""
-  })
-
+  const [formData, setFormData] = useState(INITIAL_FORM_DATA)
   const [editingBookId, setEditingBookId] = useState<string | null>(null)
 
   const booksCollectionQuery = useMemoFirebase(() => {
@@ -237,40 +236,46 @@ export default function BooksPage() {
     finally { setIsGenerating(false) }
   }
 
-  const handleSaveBook = () => {
+  const handleSaveBook = useCallback(() => {
     if (!db) return
     setIsSaving(true)
-    addDoc(collection(db, 'books'), { 
+    
+    const newBook = { 
       ...formData, 
       createdAt: new Date().toISOString(), 
       updatedAt: new Date().toISOString() 
-    })
+    }
+
+    addDoc(collection(db, 'books'), newBook)
       .then(() => {
         setIsOpen(false)
         toast({ title: "Berhasil!", description: "Buku telah terdaftar." })
-        setFormData({ code: "", title: "", author: "", publisher: "", publicationYear: new Date().getFullYear(), acquisitionDate: new Date().toISOString().split('T')[0], isbn: "", category: "", rackLocation: "", totalStock: 1, availableStock: 1, description: "" })
+        setFormData(INITIAL_FORM_DATA)
       })
-      .catch(() => toast({ title: "Gagal", variant: "destructive" }))
+      .catch((error) => {
+        console.error("Save error:", error)
+        toast({ title: "Gagal", description: "Gagal menyimpan data buku baru.", variant: "destructive" })
+      })
       .finally(() => setIsSaving(false))
-  }
+  }, [db, formData, toast])
 
-  const handleUpdateBook = () => {
+  const handleUpdateBook = useCallback(() => {
     if (!db || !editingBookId || !books) return
     setIsSaving(true)
 
-    // Cari data buku lama untuk menghitung selisih stok
     const originalBook = books.find(b => b.id === editingBookId)
     if (!originalBook) {
       setIsSaving(false)
+      setIsEditOpen(false)
       return
     }
 
-    // Hitung selisih stok: Stok Tersedia baru = Stok Tersedia lama + (Stok Total baru - Stok Total lama)
-    const stockDiff = formData.totalStock - (originalBook.totalStock || 0)
-    const newAvailableStock = (originalBook.availableStock || 0) + stockDiff
+    const stockDiff = Number(formData.totalStock || 0) - Number(originalBook.totalStock || 0)
+    const newAvailableStock = Number(originalBook.availableStock || 0) + stockDiff
 
     const updatedData = {
       ...formData,
+      totalStock: Number(formData.totalStock),
       availableStock: Math.max(0, newAvailableStock),
       updatedAt: new Date().toISOString()
     }
@@ -278,13 +283,17 @@ export default function BooksPage() {
     updateDoc(doc(db, 'books', editingBookId), updatedData)
       .then(() => {
         setIsEditOpen(false)
-        toast({ title: "Berhasil!", description: "Data diperbarui." })
+        toast({ title: "Berhasil!", description: "Data buku telah diperbarui." })
+        setEditingBookId(null)
       })
-      .catch(() => toast({ title: "Gagal", variant: "destructive" }))
+      .catch((error) => {
+        console.error("Update error:", error)
+        toast({ title: "Gagal", description: "Gagal memperbarui data buku.", variant: "destructive" })
+      })
       .finally(() => setIsSaving(false))
-  }
+  }, [db, editingBookId, books, formData, toast])
 
-  const handleDeleteBook = () => {
+  const handleDeleteBook = useCallback(() => {
     if (!db || !bookToDelete) return
     deleteDoc(doc(db, 'books', bookToDelete))
       .then(() => {
@@ -292,8 +301,12 @@ export default function BooksPage() {
         setBookToDelete(null)
         toast({ title: "Terhapus", description: "Buku telah dihapus dari koleksi." })
       })
-      .catch(() => toast({ title: "Gagal menghapus", variant: "destructive" }))
-  }
+      .catch((error) => {
+        console.error("Delete error:", error)
+        setIsDeleteDialogOpen(false)
+        toast({ title: "Gagal menghapus", variant: "destructive" })
+      })
+  }, [db, bookToDelete, toast])
 
   const startScanner = async () => {
     setIsScannerOpen(true)
@@ -336,61 +349,15 @@ export default function BooksPage() {
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={handlePrintAllQrs} className="hidden md:flex"><Printer className="h-4 w-4 mr-2" />Cetak Semua QR</Button>
           <Button variant="outline" size="sm" onClick={handleExportExcel}><FileDown className="h-4 w-4 mr-2" />Excel</Button>
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-2" />Tambah Buku</Button></DialogTrigger>
-            <DialogContent className="max-w-2xl bg-slate-50">
-              <DialogHeader>
-                <DialogTitle>Tambah Buku Baru</DialogTitle>
-              </DialogHeader>
-              <div className="grid grid-cols-2 gap-4 py-4">
-                <div className="space-y-2">
-                  <Label className="font-semibold text-xs uppercase text-muted-foreground">Kode Buku</Label>
-                  <Input value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} className="bg-white border-slate-300 h-11" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-semibold text-xs uppercase text-muted-foreground">Judul Buku</Label>
-                  <Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-semibold text-xs uppercase text-muted-foreground">Pengarang</Label>
-                  <Input value={formData.author} onChange={e => setFormData({ ...formData, author: e.target.value })} className="bg-white border-slate-300 h-11" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-semibold text-xs uppercase text-muted-foreground">Tahun Terbit</Label>
-                  <Input type="number" value={formData.publicationYear} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300 h-11" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-semibold text-xs uppercase text-muted-foreground">ISBN</Label>
-                  <Input value={formData.isbn} onChange={e => setFormData({ ...formData, isbn: e.target.value })} className="bg-white border-slate-300 h-11" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-semibold text-xs uppercase text-muted-foreground">Jenis / Kategori</Label>
-                  <Input value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} placeholder="Fiksi, Sains, dll" className="bg-white border-slate-300 h-11" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-semibold text-xs uppercase text-muted-foreground">Jumlah Stok Total</Label>
-                  <Input type="number" value={formData.totalStock} onChange={e => setFormData({ ...formData, totalStock: Number(e.target.value), availableStock: Number(e.target.value) })} className="bg-white border-slate-300 h-11" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-semibold text-xs uppercase text-muted-foreground">Lokasi Rak</Label>
-                  <Input value={formData.rackLocation} onChange={e => setFormData({ ...formData, rackLocation: e.target.value })} className="bg-white border-slate-300 h-11" />
-                </div>
-                <div className="col-span-2 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <Label className="font-semibold text-xs uppercase text-muted-foreground">Deskripsi / Ringkasan</Label>
-                    <Button variant="ghost" type="button" size="sm" onClick={handleGenerateDescription} disabled={isGenerating} className="h-6 text-[10px] font-bold">
-                      <Sparkles className="h-3 w-3 mr-1" />AI Deskripsi
-                    </Button>
-                  </div>
-                  <Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsOpen(false)}>Batal</Button>
-                <Button onClick={handleSaveBook} disabled={isSaving} className="px-8 shadow-lg shadow-primary/20">Simpan Data</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button 
+            size="sm" 
+            onClick={() => {
+              setFormData(INITIAL_FORM_DATA);
+              setIsOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" />Tambah Buku
+          </Button>
         </div>
       </div>
 
@@ -484,6 +451,64 @@ export default function BooksPage() {
         )}
       </Card>
 
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="max-w-2xl bg-slate-50">
+          <DialogHeader>
+            <DialogTitle>Tambah Buku Baru</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="space-y-2">
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">Kode Buku</Label>
+              <Input value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} className="bg-white border-slate-300 h-11" />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">Judul Buku</Label>
+              <Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">Pengarang</Label>
+              <Input value={formData.author} onChange={e => setFormData({ ...formData, author: e.target.value })} className="bg-white border-slate-300 h-11" />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">Tahun Terbit</Label>
+              <Input type="number" value={formData.publicationYear} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300 h-11" />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">ISBN</Label>
+              <Input value={formData.isbn} onChange={e => setFormData({ ...formData, isbn: e.target.value })} className="bg-white border-slate-300 h-11" />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">Jenis / Kategori</Label>
+              <Input value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} placeholder="Fiksi, Sains, dll" className="bg-white border-slate-300 h-11" />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">Jumlah Stok Total</Label>
+              <Input type="number" value={formData.totalStock} onChange={e => setFormData({ ...formData, totalStock: Number(e.target.value), availableStock: Number(e.target.value) })} className="bg-white border-slate-300 h-11" />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">Lokasi Rak</Label>
+              <Input value={formData.rackLocation} onChange={e => setFormData({ ...formData, rackLocation: e.target.value })} className="bg-white border-slate-300 h-11" />
+            </div>
+            <div className="col-span-2 space-y-2">
+              <div className="flex justify-between items-center">
+                <Label className="font-semibold text-xs uppercase text-muted-foreground">Deskripsi / Ringkasan</Label>
+                <Button variant="ghost" type="button" size="sm" onClick={handleGenerateDescription} disabled={isGenerating} className="h-6 text-[10px] font-bold">
+                  <Sparkles className="h-3 w-3 mr-1" />AI Deskripsi
+                </Button>
+              </div>
+              <Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isSaving}>Batal</Button>
+            <Button onClick={handleSaveBook} disabled={isSaving} className="px-8 shadow-lg shadow-primary/20">
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Simpan Data
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
         <DialogContent className="sm:max-w-2xl p-0 border-none bg-black h-[100dvh] sm:h-auto overflow-hidden">
           <DialogHeader className="sr-only">
@@ -550,8 +575,11 @@ export default function BooksPage() {
             <div className="col-span-2 space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Deskripsi</Label><Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" /></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Batal</Button>
-            <Button onClick={handleUpdateBook} disabled={isSaving} className="px-8 shadow-lg shadow-primary/20">Simpan Perubahan</Button>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)} disabled={isSaving}>Batal</Button>
+            <Button onClick={handleUpdateBook} disabled={isSaving} className="px-8 shadow-lg shadow-primary/20">
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Simpan Perubahan
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -563,8 +591,8 @@ export default function BooksPage() {
             <AlertDialogDescription>Tindakan ini permanen. Pastikan buku sudah tidak ada di inventaris fisik.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteBook} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Hapus Permanen</AlertDialogAction>
+            <AlertDialogCancel disabled={isSaving}>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteBook} disabled={isSaving} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Hapus Permanen</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
