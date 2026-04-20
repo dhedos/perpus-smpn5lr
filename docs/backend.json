@@ -34,6 +34,7 @@
         "bookId": { "type": "string" },
         "memberId": { "type": "string" },
         "status": { "type": "string" },
+        "condition": { "type": "string", "enum": ["normal", "damaged", "lost"] },
         "borrowDate": { "type": "string", "format": "date-time" },
         "dueDate": { "type": "string", "format": "date-time" },
         "fineAmount": { "type": "number" }
@@ -46,6 +47,7 @@
       "properties": {
         "loanPeriod": { "type": "number", "description": "Lama pinjam dalam hari." },
         "fineAmount": { "type": "number", "description": "Denda per hari terlambat." },
+        "lostBookFine": { "type": "number", "description": "Denda flat jika buku hilang." },
         "libraryName": { "type": "string" }
       }
     }

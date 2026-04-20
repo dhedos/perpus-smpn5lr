@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Library, Bell, Shield, Smartphone, Save, Loader2, Coins, CalendarDays } from "lucide-react"
+import { Library, Bell, Shield, Smartphone, Save, Loader2, Coins, CalendarDays, AlertTriangle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { Badge } from "@/components/ui/badge"
 
 // Firebase
 import { 
@@ -19,6 +20,7 @@ import {
 } from '@/firebase'
 import { doc, setDoc } from 'firebase/firestore'
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors'
+import { cn } from "@/lib/utils"
 
 export default function SettingsPage() {
   const db = useFirestore()
@@ -31,6 +33,7 @@ export default function SettingsPage() {
     schoolName: "SMPN 5 LANGKE REMBONG",
     loanPeriod: 7,
     fineAmount: 500,
+    lostBookFine: 50000,
     whatsappReminder: true,
     emailReport: true,
     digitalCatalog: true
@@ -46,7 +49,8 @@ export default function SettingsPage() {
         ...prev, 
         ...remoteSettings,
         loanPeriod: Number(remoteSettings.loanPeriod || 7),
-        fineAmount: Number(remoteSettings.fineAmount || 500)
+        fineAmount: Number(remoteSettings.fineAmount || 500),
+        lostBookFine: Number(remoteSettings.lostBookFine || 50000)
       }))
     }
   }, [remoteSettings])
@@ -60,7 +64,7 @@ export default function SettingsPage() {
       .then(() => {
         toast({
           title: "Berhasil Disimpan",
-          description: "Pengaturan kebijakan perpustakaan (Batas Pinjam & Denda) telah diperbarui.",
+          description: "Pengaturan kebijakan perpustakaan telah diperbarui.",
         })
       })
       .catch(async (error) => {
@@ -126,14 +130,10 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="space-y-6 p-6 bg-primary/5 rounded-2xl border border-primary/10 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-4 opacity-5">
-                    <Coins className="h-24 w-24" />
-                  </div>
-                  
                   <div className="grid gap-3">
                     <Label htmlFor="loan-period" className="flex items-center gap-2 font-bold text-sm text-primary">
                       <CalendarDays className="h-4 w-4" />
-                      Masa Peminjaman Buku (Hari)
+                      Masa Peminjaman (Hari)
                     </Label>
                     <div className="flex items-center gap-3">
                       <Input 
@@ -145,13 +145,12 @@ export default function SettingsPage() {
                       />
                       <span className="text-sm font-semibold text-muted-foreground">Hari Kalender</span>
                     </div>
-                    <p className="text-[10px] text-muted-foreground italic">Buku harus kembali sebelum lewat jumlah hari ini.</p>
                   </div>
 
                   <div className="grid gap-3 pt-2">
                     <Label htmlFor="fine-amount" className="flex items-center gap-2 font-bold text-sm text-orange-600">
                       <Coins className="h-4 w-4" />
-                      Tarif Denda Terlambat (Rp)
+                      Denda Terlambat (Rp)
                     </Label>
                     <div className="flex items-center gap-3">
                       <div className="bg-orange-100 px-3 h-12 flex items-center rounded-l-md font-bold text-orange-600 border border-orange-200 border-r-0">Rp</div>
@@ -163,7 +162,24 @@ export default function SettingsPage() {
                         className="bg-white border-orange-200 h-12 text-xl font-black text-orange-600 rounded-l-none"
                       />
                     </div>
-                    <p className="text-[10px] text-muted-foreground italic">Denda per buku per hari keterlambatan.</p>
+                  </div>
+
+                  <div className="grid gap-3 pt-2">
+                    <Label htmlFor="lost-fine" className="flex items-center gap-2 font-bold text-sm text-destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      Denda Buku Hilang (Rp)
+                    </Label>
+                    <div className="flex items-center gap-3">
+                      <div className="bg-red-100 px-3 h-12 flex items-center rounded-l-md font-bold text-destructive border border-red-200 border-r-0">Rp</div>
+                      <Input 
+                        id="lost-fine" 
+                        type="number" 
+                        value={settings.lostBookFine}
+                        onChange={(e) => setSettings({ ...settings, lostBookFine: Number(e.target.value) })}
+                        className="bg-white border-red-200 h-12 text-xl font-black text-destructive rounded-l-none"
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground italic">Biaya penggantian flat jika buku tidak ditemukan.</p>
                   </div>
                 </div>
               </div>
@@ -171,7 +187,7 @@ export default function SettingsPage() {
               <div className="pt-6 border-t">
                 <Button className="gap-2 h-12 px-10 shadow-lg shadow-primary/20" onClick={handleSaveSettings} disabled={isSaving || loading}>
                   {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  Simpan Perubahan Kebijakan
+                  Simpan Kebijakan
                 </Button>
               </div>
             </CardContent>
@@ -250,14 +266,6 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
-  )
-}
-
-function Badge({ children, className, variant }: any) {
-  return (
-    <div className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2", className)}>
-      {children}
     </div>
   )
 }

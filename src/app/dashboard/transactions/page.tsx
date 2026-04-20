@@ -20,7 +20,10 @@ import {
   AlertCircle,
   Clock,
   Coins,
-  CalendarDays
+  CalendarDays,
+  Ghost,
+  ShieldAlert,
+  ThumbsUp
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -32,6 +35,7 @@ import {
   DialogFooter,
   DialogDescription
 } from "@/components/ui/dialog"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 // Firebase
 import { 
@@ -42,6 +46,7 @@ import {
 } from '@/firebase'
 import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc } from 'firebase/firestore'
 import { differenceInDays, parseISO, format } from "date-fns"
+import { cn } from "@/lib/utils"
 
 export default function TransactionsPage() {
   const db = useFirestore()
@@ -60,13 +65,14 @@ export default function TransactionsPage() {
   const [selectedMember, setSelectedMember] = useState<any>(null)
   const [selectedBook, setSelectedBook] = useState<any>(null)
 
-  // Fine & Return Modal State
+  // Return Process State
   const [isReturnConfirmOpen, setIsReturnConfirmOpen] = useState(false)
   const [pendingReturnTrans, setPendingReturnTrans] = useState<any>(null)
+  const [returnCondition, setReturnCondition] = useState<"normal" | "damaged" | "lost">("normal")
   const [calculatedFine, setCalculatedFine] = useState(0)
   const [lateDays, setLateDays] = useState(0)
 
-  // Settings for Loan Period and Fine Amount
+  // Settings
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
 
@@ -81,6 +87,96 @@ export default function TransactionsPage() {
   [db])
   const { data: activeTrans } = useCollection(activeTransQuery)
 
+  const handleScanResult = (text: string) => {
+    if (!text) return
+    const member = members?.find(m => m.memberId?.toLowerCase() === text.toLowerCase())
+    const book = books?.find(b => b.code?.toLowerCase() === text.toLowerCase() || b.isbn === text)
+
+    if (activeTab === "borrow") {
+      if (member) { setSelectedMember(member); toast({ title: "Anggota Terdeteksi" }) }
+      else if (book) { setSelectedBook(book); toast({ title: "Buku Terdeteksi" }) }
+    } else {
+      const trans = activeTrans?.find(t => { 
+        const b = books?.find(bk => bk.id === t.bookId); 
+        return b?.code?.toLowerCase() === text.toLowerCase() || b?.isbn === text; 
+      })
+      if (trans) { prepareReturn(trans); stopScanner(); }
+    }
+  }
+
+  const prepareReturn = (trans: any) => {
+    const today = new Date();
+    const dueDate = parseISO(trans.dueDate);
+    const diffDays = differenceInDays(today, dueDate);
+    setLateDays(diffDays > 0 ? diffDays : 0);
+    setPendingReturnTrans(trans);
+    setReturnCondition("normal");
+    setIsReturnConfirmOpen(true);
+  }
+
+  // Recalculate fine when condition changes
+  useEffect(() => {
+    if (!pendingReturnTrans || !settings) return;
+    
+    let fine = 0;
+    // Late fine
+    if (lateDays > 0) {
+      fine += lateDays * (settings.fineAmount || 500);
+    }
+    
+    // Condition fine
+    if (returnCondition === "lost") {
+      fine += (settings.lostBookFine || 50000);
+    } else if (returnCondition === "damaged") {
+      fine += (settings.fineAmount || 500) * 10; // Simple damaged fine: 10x daily fine
+    }
+    
+    setCalculatedFine(fine);
+  }, [returnCondition, pendingReturnTrans, lateDays, settings]);
+
+  const handleConfirmReturn = async () => {
+    if (!db || !pendingReturnTrans) return
+    setIsProcessing(true)
+    try {
+      // 1. Update Transaction
+      await updateDoc(doc(db, 'transactions', pendingReturnTrans.id), { 
+        status: 'returned', 
+        returnDate: new Date().toISOString(), 
+        type: 'return',
+        condition: returnCondition,
+        fineAmount: calculatedFine,
+        isFinePaid: calculatedFine > 0 
+      })
+      
+      // 2. Update Book Inventory
+      const bRef = doc(db, 'books', pendingReturnTrans.bookId)
+      const bDoc = await getDoc(bRef)
+      if (bDoc.exists()) {
+        const currentTotal = bDoc.data().totalStock || 0
+        const currentAvail = bDoc.data().availableStock || 0
+        
+        if (returnCondition === "lost") {
+          // If lost, total stock decreases by 1, available stock stays same
+          await updateDoc(bRef, { 
+            totalStock: currentTotal - 1 
+          })
+        } else {
+          // If normal or damaged, available stock increases back
+          await updateDoc(bRef, { 
+            availableStock: currentAvail + 1 
+          })
+        }
+      }
+      
+      toast({ title: "Berhasil!", description: "Pengembalian buku telah dicatat." })
+      setIsReturnConfirmOpen(false);
+      setReturnSearch("");
+    } catch (err) {
+      toast({ title: "Gagal", variant: "destructive" })
+    } finally { setIsProcessing(false) }
+  }
+
+  // Existing helpers start here
   const startScanner = async () => {
     setIsScannerOpen(true); 
     setHasCameraPermission(null)
@@ -90,238 +186,39 @@ export default function TransactionsPage() {
         try {
           const scanner = new Html5Qrcode("smart-scanner")
           scannerInstanceRef.current = scanner
-          await scanner.start(
-            { facingMode: "environment" },
-            { 
-              fps: 20, 
-              qrbox: (vw, vh) => { 
-                const m = Math.min(vw, vh); 
-                return { width: m * 0.8, height: m * 0.5 }; 
-              }, 
-              formatsToSupport: [
-                Html5QrcodeSupportedFormats.QR_CODE, 
-                Html5QrcodeSupportedFormats.EAN_13, 
-                Html5QrcodeSupportedFormats.CODE_128
-              ] 
-            },
-            (text) => handleScanResult(text),
-            () => {}
-          )
+          await scanner.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (text) => handleScanResult(text), () => {})
           setHasCameraPermission(true)
-        } catch (err) { 
-          console.error("Scanner start error:", err)
-          setHasCameraPermission(false) 
-        }
+        } catch (err) { setHasCameraPermission(false) }
       }, 500)
-    } catch (e) { 
-      toast({ title: "Gagal", description: "Kamera tidak dapat diakses.", variant: "destructive" }) 
-      setIsScannerOpen(false)
-    }
-  }
-
-  const handleScanResult = (text: string) => {
-    if (!text) return
-    
-    const member = members?.find(m => m.memberId?.toLowerCase() === text.toLowerCase())
-    const book = books?.find(b => b.code?.toLowerCase() === text.toLowerCase() || b.isbn === text)
-
-    if (activeTab === "borrow") {
-      if (member) { 
-        setSelectedMember(member); 
-        toast({ title: "Anggota Terdeteksi", description: member.name }) 
-      }
-      else if (book) { 
-        setSelectedBook(book); 
-        toast({ title: "Buku Terdeteksi", description: book.title }) 
-      }
-      else {
-        toast({ title: "Tidak Dikenali", description: `Data '${text}' tidak terdaftar di sistem.`, variant: "destructive" })
-      }
-    } else {
-      // Logic for return
-      const trans = activeTrans?.find(t => { 
-        const b = books?.find(bk => bk.id === t.bookId); 
-        return b?.code?.toLowerCase() === text.toLowerCase() || b?.isbn === text; 
-      })
-      if (trans) { 
-        setReturnSearch(trans.bookTitle); 
-        toast({ title: "Buku Ditemukan", description: trans.bookTitle }); 
-        prepareReturn(trans); 
-        stopScanner(); 
-      } else {
-        toast({ title: "Buku Tidak Sedang Dipinjam", description: "Pastikan kode benar dan buku memiliki status 'Dipinjam'.", variant: "destructive" })
-      }
-    }
-  }
-
-  const handleManualMemberSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && memberSearch) {
-      const member = members?.find(m => 
-        m.memberId?.toLowerCase() === memberSearch.toLowerCase() || 
-        m.name?.toLowerCase().includes(memberSearch.toLowerCase())
-      )
-      if (member) {
-        setSelectedMember(member)
-        setMemberSearch("")
-        toast({ title: "Anggota Terpilih", description: member.name })
-      } else {
-        toast({ title: "Anggota Tidak Ditemukan", variant: "destructive" })
-      }
-    }
-  }
-
-  const handleManualBookSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && bookSearch) {
-      const book = books?.find(b => 
-        b.code?.toLowerCase() === bookSearch.toLowerCase() || 
-        b.isbn === bookSearch ||
-        b.title?.toLowerCase().includes(bookSearch.toLowerCase())
-      )
-      if (book) {
-        setSelectedBook(book)
-        setBookSearch("")
-        toast({ title: "Buku Terpilih", description: book.title })
-      } else {
-        toast({ title: "Buku Tidak Ditemukan", variant: "destructive" })
-      }
-    }
-  }
-
-  const handleManualReturnSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && returnSearch) {
-      const trans = activeTrans?.find(t => 
-        t.bookTitle?.toLowerCase().includes(returnSearch.toLowerCase()) || 
-        t.memberId?.toLowerCase() === returnSearch.toLowerCase()
-      )
-      if (trans) {
-        prepareReturn(trans)
-      } else {
-        toast({ title: "Transaksi Tidak Ditemukan", description: "Buku ini mungkin sudah dikembalikan.", variant: "destructive" })
-      }
-    }
-  }
-
-  const prepareReturn = (trans: any) => {
-    const today = new Date();
-    const dueDate = parseISO(trans.dueDate);
-    const diffDays = differenceInDays(today, dueDate);
-    
-    if (diffDays > 0) {
-      const finePerDay = settings?.fineAmount || 500;
-      setLateDays(diffDays);
-      setCalculatedFine(diffDays * finePerDay);
-    } else {
-      setLateDays(0);
-      setCalculatedFine(0);
-    }
-    
-    setPendingReturnTrans(trans);
-    setIsReturnConfirmOpen(true);
+    } catch (e) { setIsScannerOpen(false) }
   }
 
   const stopScanner = async () => {
-    if (scannerInstanceRef.current) { 
-      try { 
-        if (scannerInstanceRef.current.isScanning) {
-          await scannerInstanceRef.current.stop()
-        }
-      } catch (e) {
-        console.error("Scanner stop error:", e)
-      } 
-    }
+    if (scannerInstanceRef.current?.isScanning) await scannerInstanceRef.current.stop()
     setIsScannerOpen(false)
   }
 
   const handleProcessBorrow = () => {
     if (!db || !selectedMember || !selectedBook) return
-    if (selectedBook.availableStock <= 0) {
-      toast({ title: "Stok Habis", description: "Buku tidak tersedia untuk dipinjam.", variant: "destructive" })
-      return
-    }
-
     setIsProcessing(true)
-    const loanDays = settings?.loanPeriod || 7;
-    const due = new Date(); 
-    due.setDate(due.getDate() + loanDays)
-    
+    const due = new Date(); due.setDate(due.getDate() + (settings?.loanPeriod || 7))
     addDoc(collection(db, 'transactions'), {
-      memberId: selectedMember.memberId, 
-      memberName: selectedMember.name, 
-      bookId: selectedBook.id, 
-      bookTitle: selectedBook.title, 
-      type: 'borrow', 
-      status: 'active', 
-      borrowDate: new Date().toISOString(), 
-      dueDate: due.toISOString(), 
-      createdAt: serverTimestamp()
+      memberId: selectedMember.memberId, memberName: selectedMember.name, 
+      bookId: selectedBook.id, bookTitle: selectedBook.title, 
+      type: 'borrow', status: 'active', borrowDate: new Date().toISOString(), 
+      dueDate: due.toISOString(), createdAt: serverTimestamp()
     }).then(() => {
-      updateDoc(doc(db, 'books', selectedBook.id), { 
-        availableStock: Number(selectedBook.availableStock) - 1 
-      })
-      toast({ title: "Berhasil!", description: `${selectedBook.title} telah dipinjam oleh ${selectedMember.name}.` })
-      setSelectedBook(null); 
-      setSelectedMember(null); 
-      setBookSearch(""); 
-      setMemberSearch("")
-    }).catch((err) => {
-      console.error("Borrow error:", err)
-      toast({ title: "Gagal", description: "Terjadi kesalahan saat menyimpan data.", variant: "destructive" })
+      updateDoc(doc(db, 'books', selectedBook.id), { availableStock: Number(selectedBook.availableStock) - 1 })
+      toast({ title: "Berhasil Meminjam" }); setSelectedBook(null); setSelectedMember(null);
     }).finally(() => setIsProcessing(false))
-  }
-
-  const handleConfirmReturn = async () => {
-    if (!db || !pendingReturnTrans) return
-    setIsProcessing(true)
-    try {
-      await updateDoc(doc(db, 'transactions', pendingReturnTrans.id), { 
-        status: 'returned', 
-        returnDate: new Date().toISOString(), 
-        type: 'return',
-        fineAmount: calculatedFine,
-        isFinePaid: calculatedFine > 0 
-      })
-      
-      const bDoc = await getDoc(doc(db, 'books', pendingReturnTrans.bookId))
-      if (bDoc.exists()) {
-        await updateDoc(doc(db, 'books', pendingReturnTrans.bookId), { 
-          availableStock: (bDoc.data().availableStock || 0) + 1 
-        })
-      }
-      
-      toast({ 
-        title: "Berhasil!", 
-        description: calculatedFine > 0 
-          ? `Buku kembali. Denda Rp${calculatedFine.toLocaleString()} telah dicatat.` 
-          : "Buku telah dikembalikan tepat waktu." 
-      })
-      
-      setIsReturnConfirmOpen(false);
-      setReturnSearch("");
-      setPendingReturnTrans(null);
-    } catch (err) {
-      console.error("Return error:", err)
-      toast({ title: "Gagal", description: "Gagal memproses pengembalian.", variant: "destructive" })
-    } finally { 
-      setIsProcessing(false) 
-    }
   }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-primary">Pinjam & Kembali Buku</h1>
-          <p className="text-sm text-muted-foreground">Proses sirkulasi buku dengan Scan atau Input Manual.</p>
-        </div>
-        <div className="hidden md:flex flex-col items-end gap-1">
-          <Badge variant="outline" className="gap-2 border-primary/20 text-primary">
-            <CalendarDays className="h-3 w-3" />
-            Batas Pinjam: {settings?.loanPeriod || 7} Hari
-          </Badge>
-          <Badge variant="outline" className="gap-2 border-orange-200 text-orange-600">
-            <Coins className="h-3 w-3" />
-            Denda: Rp{settings?.fineAmount || 500}/Hari
-          </Badge>
+          <h1 className="text-2xl font-bold text-primary">Sirkulasi & Kondisi Buku</h1>
+          <p className="text-sm text-muted-foreground">Proses peminjaman dan pengembalian dengan cek kondisi.</p>
         </div>
       </div>
 
@@ -335,252 +232,97 @@ export default function TransactionsPage() {
           <TabsContent value="borrow" className="space-y-6">
             <Card className="bg-primary/5 border-primary/20">
               <CardContent className="pt-6 text-center space-y-4">
-                <Button size="lg" className="h-16 px-10 gap-2 shadow-lg hover:shadow-primary/20 transition-all" onClick={startScanner}>
-                  <ScanBarcode className="h-6 w-6" />
-                  Buka Pemindai Smart Scan
-                </Button>
-                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                  <Sparkles className="h-3 w-3" />
-                  <span>Scan Kartu Anggota lalu Barcode Buku Bergantian</span>
-                </div>
+                <Button size="lg" className="h-16 px-10 gap-2 shadow-lg" onClick={startScanner}><ScanBarcode className="h-6 w-6" />Buka Smart Scan</Button>
               </CardContent>
             </Card>
 
             <div className="grid md:grid-cols-2 gap-6">
               <Card className="border-none shadow-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <User className="h-4 w-4 text-primary" />
-                    Data Peminjam
-                  </CardTitle>
-                </CardHeader>
+                <CardHeader className="pb-3"><CardTitle className="text-sm flex items-center gap-2"><User className="h-4 w-4 text-primary" />Data Peminjam</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      placeholder="Input ID Anggota lalu Enter..." 
-                      className="pl-10 h-11" 
-                      value={memberSearch} 
-                      onChange={e => setMemberSearch(e.target.value)}
-                      onKeyDown={handleManualMemberSearch}
-                    />
-                  </div>
-                  {selectedMember ? (
-                    <div className="p-4 bg-primary/10 rounded-xl border border-primary/20 flex justify-between items-center animate-in fade-in zoom-in duration-300">
-                      <div>
-                        <p className="text-xs font-bold text-primary uppercase">Anggota Terpilih</p>
-                        <p className="font-bold text-lg">{selectedMember.name}</p>
-                        <p className="text-xs text-muted-foreground">{selectedMember.memberId}</p>
-                      </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setSelectedMember(null)}>
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="h-24 flex items-center justify-center border-2 border-dashed rounded-xl text-muted-foreground text-xs text-center px-4">
-                      Belum ada anggota terpilih.<br/>Scan kartu atau ketik ID lalu tekan Enter.
-                    </div>
-                  )}
+                  <Input placeholder="Input ID Anggota..." value={memberSearch} onChange={e => setMemberSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleScanResult(memberSearch)} />
+                  {selectedMember && <div className="p-4 bg-primary/10 rounded-xl border flex justify-between"><div><p className="font-bold">{selectedMember.name}</p><p className="text-xs">{selectedMember.memberId}</p></div><Button variant="ghost" size="icon" onClick={() => setSelectedMember(null)}><X className="h-4 w-4" /></Button></div>}
                 </CardContent>
               </Card>
-
               <Card className="border-none shadow-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <BookOpen className="h-4 w-4 text-secondary" />
-                    Data Buku
-                  </CardTitle>
-                </CardHeader>
+                <CardHeader className="pb-3"><CardTitle className="text-sm flex items-center gap-2"><BookOpen className="h-4 w-4 text-secondary" />Data Buku</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      placeholder="Input Kode Buku lalu Enter..." 
-                      className="pl-10 h-11" 
-                      value={bookSearch} 
-                      onChange={e => setBookSearch(e.target.value)}
-                      onKeyDown={handleManualBookSearch}
-                    />
-                  </div>
-                  {selectedBook ? (
-                    <div className="p-4 bg-secondary/10 rounded-xl border border-secondary/20 flex justify-between items-center animate-in fade-in zoom-in duration-300">
-                      <div>
-                        <p className="text-xs font-bold text-secondary uppercase">Buku Terpilih</p>
-                        <p className="font-bold text-lg leading-tight">{selectedBook.title}</p>
-                        <p className="text-xs text-muted-foreground">{selectedBook.code}</p>
-                      </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setSelectedBook(null)}>
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="h-24 flex items-center justify-center border-2 border-dashed rounded-xl text-muted-foreground text-xs text-center px-4">
-                      Belum ada buku terpilih.<br/>Scan buku atau ketik Kode lalu tekan Enter.
-                    </div>
-                  )}
+                  <Input placeholder="Input Kode Buku..." value={bookSearch} onChange={e => setBookSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleScanResult(bookSearch)} />
+                  {selectedBook && <div className="p-4 bg-secondary/10 rounded-xl border flex justify-between"><div><p className="font-bold">{selectedBook.title}</p><p className="text-xs">{selectedBook.code}</p></div><Button variant="ghost" size="icon" onClick={() => setSelectedBook(null)}><X className="h-4 w-4" /></Button></div>}
                 </CardContent>
               </Card>
             </div>
-
-            <Button 
-              className="w-full h-16 text-lg font-bold shadow-xl" 
-              disabled={!selectedMember || !selectedBook || isProcessing} 
-              onClick={handleProcessBorrow}
-            >
-              {isProcessing ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle className="mr-2 h-6 w-6" />}
-              KONFIRMASI PEMINJAMAN
+            <Button className="w-full h-16 text-lg font-bold" disabled={!selectedMember || !selectedBook || isProcessing} onClick={handleProcessBorrow}>
+              {isProcessing ? <Loader2 className="animate-spin" /> : "KONFIRMASI PEMINJAMAN"}
             </Button>
           </TabsContent>
 
           <TabsContent value="return" className="space-y-6">
-            <Card className="border-none shadow-sm bg-accent/30">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <RefreshCcw className="h-5 w-5 text-primary" />
-                  Pengembalian Cepat
-                </CardTitle>
-                <CardDescription>Scan buku atau input manual untuk mengembalikan buku ke stok.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <Button variant="secondary" className="w-full h-14 text-base font-bold gap-3" onClick={startScanner}>
-                  <ScanBarcode className="h-5 w-5" />
-                  Scan QR Buku untuk Kembali
-                </Button>
-                
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <Input 
-                    placeholder="Input Kode Buku atau Nama Peminjam lalu Enter..." 
-                    className="pl-10 h-14 text-base" 
-                    value={returnSearch} 
-                    onChange={e => setReturnSearch(e.target.value)} 
-                    onKeyDown={handleManualReturnSearch}
-                  />
-                </div>
-
-                <div className="bg-background/50 p-6 rounded-xl border-2 border-dashed border-muted flex flex-col items-center justify-center text-muted-foreground gap-2">
-                  <AlertCircle className="h-8 w-8 opacity-20" />
-                  <p className="text-sm font-medium">Menunggu input pengembalian...</p>
-                </div>
-              </CardContent>
+            <Card className="border-none shadow-sm bg-accent/30 p-10 text-center space-y-4">
+              <Button variant="secondary" className="h-16 px-10 gap-2 shadow-md" onClick={startScanner}><ScanBarcode className="h-6 w-6" />Scan Buku Kembali</Button>
+              <Input placeholder="Atau ketik Kode Buku/Nama Peminjam..." className="max-w-md mx-auto h-12" value={returnSearch} onChange={e => setReturnSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleScanResult(returnSearch)} />
             </Card>
           </TabsContent>
         </div>
       </Tabs>
 
-      {/* Confirmation & Fine Dialog */}
       <Dialog open={isReturnConfirmOpen} onOpenChange={setIsReturnConfirmOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <RefreshCcw className="h-5 w-5 text-primary" />
-              Konfirmasi Pengembalian
-            </DialogTitle>
-            <DialogDescription>
-              Pastikan data buku dan peminjam sudah sesuai.
-            </DialogDescription>
+            <DialogTitle>Konfirmasi & Kondisi Buku</DialogTitle>
+            <DialogDescription>Tentukan kondisi fisik buku saat ini.</DialogDescription>
           </DialogHeader>
           
           {pendingReturnTrans && (
-            <div className="space-y-4 py-4">
-              <div className="p-4 bg-muted rounded-lg space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Peminjam:</span>
-                  <span className="font-bold">{pendingReturnTrans.memberName}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Buku:</span>
-                  <span className="font-bold">{pendingReturnTrans.bookTitle}</span>
-                </div>
-                <div className="flex justify-between text-sm border-t pt-2 mt-2">
-                  <span className="text-muted-foreground">Jatuh Tempo:</span>
-                  <span className="font-medium text-orange-600">
-                    {new Date(pendingReturnTrans.dueDate).toLocaleDateString('id-ID', { dateStyle: 'medium' })}
-                  </span>
-                </div>
+            <div className="space-y-6 py-4">
+              <div className="p-3 bg-muted rounded-md text-xs space-y-1">
+                <p>Peminjam: <b>{pendingReturnTrans.memberName}</b></p>
+                <p>Buku: <b>{pendingReturnTrans.bookTitle}</b></p>
               </div>
 
-              {calculatedFine > 0 ? (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg animate-in shake-1 duration-500">
-                  <div className="flex items-center gap-3 text-red-700">
-                    <div className="bg-red-100 p-2 rounded-full">
-                      <Coins className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-wider">Terlambat {lateDays} Hari</p>
-                      <p className="text-lg font-black">DENDA: Rp{calculatedFine.toLocaleString()}</p>
-                    </div>
+              <div className="space-y-3">
+                <Label className="font-bold text-xs uppercase text-muted-foreground tracking-widest">Pilih Kondisi Fisik</Label>
+                <RadioGroup value={returnCondition} onValueChange={(v: any) => setReturnCondition(v)} className="grid grid-cols-1 gap-2">
+                  <div className={cn("flex items-center space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-slate-50", returnCondition === 'normal' && "border-primary bg-primary/5")}>
+                    <RadioGroupItem value="normal" id="c-normal" />
+                    <Label htmlFor="c-normal" className="flex-1 cursor-pointer flex items-center gap-2"><ThumbsUp className="h-4 w-4 text-green-600" /> Lengkap & Normal</Label>
                   </div>
-                  <p className="text-[10px] text-red-600 mt-2 italic">*Harap tagih denda ke siswa sebelum menekan tombol simpan.</p>
-                </div>
-              ) : (
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3 text-green-700">
-                  <div className="bg-green-100 p-2 rounded-full">
-                    <CheckCircle className="h-5 w-5" />
+                  <div className={cn("flex items-center space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-slate-50", returnCondition === 'damaged' && "border-orange-500 bg-orange-50")}>
+                    <RadioGroupItem value="damaged" id="c-damaged" />
+                    <Label htmlFor="c-damaged" className="flex-1 cursor-pointer flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-orange-600" /> Rusak (Perlu Perbaikan)</Label>
                   </div>
-                  <p className="font-bold">Buku Kembali Tepat Waktu</p>
+                  <div className={cn("flex items-center space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-slate-50", returnCondition === 'lost' && "border-destructive bg-red-50")}>
+                    <RadioGroupItem value="lost" id="c-lost" />
+                    <Label htmlFor="c-lost" className="flex-1 cursor-pointer flex items-center gap-2"><Ghost className="h-4 w-4 text-destructive" /> Hilang (Penggantian)</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {calculatedFine > 0 && (
+                <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-bold text-orange-800">TOTAL DENDA:</span>
+                    <span className="text-xl font-black text-orange-600">Rp{calculatedFine.toLocaleString()}</span>
+                  </div>
+                  <div className="text-[10px] text-orange-700 flex flex-col gap-0.5 opacity-80">
+                    {lateDays > 0 && <span>- Terlambat {lateDays} hari x Rp{(settings?.fineAmount || 500).toLocaleString()}</span>}
+                    {returnCondition === 'damaged' && <span>- Biaya Kerusakan: Rp{((settings?.fineAmount || 500) * 10).toLocaleString()}</span>}
+                    {returnCondition === 'lost' && <span>- Biaya Buku Hilang: Rp{(settings?.lostBookFine || 50000).toLocaleString()}</span>}
+                  </div>
                 </div>
               )}
             </div>
           )}
 
-          <DialogFooter className="gap-2">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setIsReturnConfirmOpen(false)} disabled={isProcessing}>Batal</Button>
-            <Button onClick={handleConfirmReturn} disabled={isProcessing} className="bg-primary px-8">
-              {isProcessing ? <Loader2 className="animate-spin mr-2" /> : "Simpan & Selesai"}
-            </Button>
+            <Button onClick={handleConfirmReturn} disabled={isProcessing} className="px-8">{isProcessing ? <Loader2 className="animate-spin" /> : "Simpan Data"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
-        <DialogContent className="sm:max-w-2xl p-0 h-[100dvh] sm:h-auto border-none bg-black overflow-hidden sm:rounded-2xl">
-          <div className="absolute top-0 left-0 right-0 z-50 p-4 flex justify-between items-center text-white bg-gradient-to-b from-black/80">
-            <div className="flex items-center gap-2">
-              <div className="bg-primary p-2 rounded-lg">
-                <ScanBarcode className="h-5 w-5" />
-              </div>
-              <DialogTitle className="text-white">Multifungsi Smart Scanner</DialogTitle>
-            </div>
-            <Button variant="ghost" size="icon" onClick={stopScanner} className="text-white hover:bg-white/20">
-              <X className="h-6 w-6" />
-            </Button>
-          </div>
-          
-          <div className="relative w-full h-full aspect-square sm:aspect-video bg-black flex items-center justify-center">
-            <div id="smart-scanner" className="w-full h-full"></div>
-            
-            {hasCameraPermission === false && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-white bg-black/90">
-                <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-                <h3 className="text-lg font-bold">Kamera Tidak Diakses</h3>
-                <p className="text-sm text-muted-foreground mt-2">Harap izinkan akses kamera pada pengaturan browser Anda untuk menggunakan fitur ini.</p>
-                <Button className="mt-6" onClick={() => window.location.reload()}>Muat Ulang Halaman</Button>
-              </div>
-            )}
-
-            {hasCameraPermission === true && (
-              <div className="absolute inset-0 pointer-events-none border-[40px] border-black/40">
-                <div className="w-full h-full border-2 border-primary/50 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-[2px] bg-primary animate-[scan-line_2s_ease-in-out_infinite]"></div>
-                  <style jsx>{`
-                    @keyframes scan-line {
-                      0% { top: 0; }
-                      50% { top: 100%; }
-                      100% { top: 0; }
-                    }
-                  `}</style>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="bg-white p-4 text-center">
-            <p className="text-xs text-muted-foreground">Posisikan QR Code atau Barcode di tengah kotak untuk pemindaian otomatis.</p>
-          </div>
-        </DialogContent>
+        <DialogContent className="p-0 border-none bg-black max-w-xl"><div id="smart-scanner" className="w-full h-80"></div></DialogContent>
       </Dialog>
     </div>
   )
