@@ -7,7 +7,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { useAuth, useFirestore } from '../provider';
 
 export interface UserWithRole extends User {
-  role?: 'Admin' | 'Staff';
+  role?: 'Admin' | 'Staff' | 'Teacher' | 'Student';
   displayNameCustom?: string;
 }
 
@@ -23,13 +23,14 @@ export function useUser() {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
-          const staffDoc = await getDoc(doc(db, 'staff', firebaseUser.uid));
-          if (staffDoc.exists()) {
-            const data = staffDoc.data();
+          // Mengambil profil dari koleksi 'users' sesuai backend.json
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
             setUser({
               ...firebaseUser,
               role: data.role,
-              displayNameCustom: data.name
+              displayNameCustom: data.name || data.email?.split('@')[0]
             } as UserWithRole);
           } else {
             setUser(firebaseUser as UserWithRole);
@@ -46,5 +47,5 @@ export function useUser() {
     return () => unsubscribe();
   }, [auth, db]);
 
-  return { user, loading, isAdmin: user?.role === 'Admin', isStaff: user?.role === 'Staff' };
+  return { user, loading, isAdmin: user?.role === 'Admin', isStaff: user?.role === 'Staff' || user?.role === 'Admin' };
 }

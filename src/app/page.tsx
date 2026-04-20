@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -25,11 +26,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [adminName, setAdminName] = useState("")
 
-  // Check if any staff exists to show setup mode
-  const staffRef = useMemoFirebase(() => db ? collection(db, "staff") : null, [db])
-  const { data: staffList, loading: checkingStaff } = useCollection(staffRef)
+  // Mengecek apakah sudah ada user di sistem untuk menentukan mode setup
+  const usersRef = useMemoFirebase(() => db ? collection(db, "users") : null, [db])
+  const { data: usersList, loading: checkingUsers } = useCollection(usersRef)
   
-  const noStaffExists = !checkingStaff && staffList.length === 0
+  const noUsersExist = !checkingUsers && usersList && usersList.length === 0
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,18 +58,18 @@ export default function LoginPage() {
 
     setLoading(true)
     try {
-      // 1. Create Auth User
+      // 1. Membuat akun Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
       const uid = userCredential.user.uid
 
-      // 2. Create Staff Document with Admin Role
-      await setDoc(doc(db, "staff", uid), {
+      // 2. Membuat profil di koleksi 'users' sesuai backend.json
+      await setDoc(doc(db, "users", uid), {
+        id: uid,
         name: adminName,
         email: email,
-        staffId: "ADMIN-001",
         role: "Admin",
-        status: "Active",
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       })
 
       toast({ 
@@ -143,7 +144,7 @@ export default function LoginPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full h-12 text-base font-bold shadow-lg" disabled={loading || checkingStaff}>
+            <Button type="submit" className="w-full h-12 text-base font-bold shadow-lg" disabled={loading || checkingUsers}>
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin mr-2" />
               ) : isSetupMode ? (
@@ -153,7 +154,7 @@ export default function LoginPage() {
               )}
             </Button>
             
-            {!checkingStaff && noStaffExists && !isSetupMode && (
+            {!checkingUsers && noUsersExist && !isSetupMode && (
               <Button 
                 type="button" 
                 variant="outline" 
@@ -183,7 +184,7 @@ export default function LoginPage() {
         </form>
       </Card>
 
-      {!checkingStaff && noStaffExists && (
+      {!checkingUsers && noUsersExist && (
         <div className="bg-primary/10 text-primary text-[10px] px-3 py-1 rounded-full font-bold animate-pulse">
           SISTEM BARU: SILAKAN DAFTARKAN ADMIN PERTAMA
         </div>
