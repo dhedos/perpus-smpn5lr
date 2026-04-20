@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo, useRef } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -17,7 +17,9 @@ import {
   Sparkles,
   RefreshCcw,
   User,
-  AlertCircle
+  AlertCircle,
+  Clock,
+  Coins
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -25,7 +27,9 @@ import {
   Dialog, 
   DialogContent, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogFooter,
+  DialogDescription
 } from "@/components/ui/dialog"
 
 // Firebase
@@ -33,8 +37,10 @@ import {
   useFirestore, 
   useCollection, 
   useMemoFirebase,
+  useDoc
 } from '@/firebase'
 import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc } from 'firebase/firestore'
+import { differenceInDays, parseISO } from "date-fns"
 
 export default function TransactionsPage() {
   const db = useFirestore()
@@ -52,6 +58,16 @@ export default function TransactionsPage() {
   
   const [selectedMember, setSelectedMember] = useState<any>(null)
   const [selectedBook, setSelectedBook] = useState<any>(null)
+
+  // Fine & Return Modal State
+  const [isReturnConfirmOpen, setIsReturnConfirmOpen] = useState(false)
+  const [pendingReturnTrans, setPendingReturnTrans] = useState<any>(null)
+  const [calculatedFine, setCalculatedFine] = useState(0)
+  const [lateDays, setLateDays] = useState(0)
+
+  // Settings for Loan Period and Fine Amount
+  const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
+  const { data: settings } = useDoc(settingsRef)
 
   const membersRef = useMemoFirebase(() => db ? collection(db, 'members') : null, [db])
   const booksRef = useMemoFirebase(() => db ? collection(db, 'books') : null, [db])
@@ -129,7 +145,7 @@ export default function TransactionsPage() {
       if (trans) { 
         setReturnSearch(trans.bookTitle); 
         toast({ title: "Buku Ditemukan", description: trans.bookTitle }); 
-        handleProcessReturn(trans); 
+        prepareReturn(trans); 
         stopScanner(); 
       } else {
         toast({ title: "Buku Tidak Sedang Dipinjam", description: "Pastikan kode benar dan buku memiliki status 'Dipinjam'.", variant: "destructive" })
@@ -177,11 +193,29 @@ export default function TransactionsPage() {
         t.memberId?.toLowerCase() === returnSearch.toLowerCase()
       )
       if (trans) {
-        handleProcessReturn(trans)
+        prepareReturn(trans)
       } else {
         toast({ title: "Transaksi Tidak Ditemukan", description: "Buku ini mungkin sudah dikembalikan.", variant: "destructive" })
       }
     }
+  }
+
+  const prepareReturn = (trans: any) => {
+    const today = new Date();
+    const dueDate = parseISO(trans.dueDate);
+    const diffDays = differenceInDays(today, dueDate);
+    
+    if (diffDays > 0) {
+      const finePerDay = settings?.fineAmount || 500;
+      setLateDays(diffDays);
+      setCalculatedFine(diffDays * finePerDay);
+    } else {
+      setLateDays(0);
+      setCalculatedFine(0);
+    }
+    
+    setPendingReturnTrans(trans);
+    setIsReturnConfirmOpen(true);
   }
 
   const stopScanner = async () => {
@@ -205,8 +239,9 @@ export default function TransactionsPage() {
     }
 
     setIsProcessing(true)
+    const loanDays = settings?.loanPeriod || 7;
     const due = new Date(); 
-    due.setDate(due.getDate() + 7)
+    due.setDate(due.getDate() + loanDays)
     
     addDoc(collection(db, 'transactions'), {
       memberId: selectedMember.memberId, 
@@ -233,23 +268,35 @@ export default function TransactionsPage() {
     }).finally(() => setIsProcessing(false))
   }
 
-  const handleProcessReturn = async (trans: any) => {
-    if (!db) return
+  const handleConfirmReturn = async () => {
+    if (!db || !pendingReturnTrans) return
     setIsProcessing(true)
     try {
-      await updateDoc(doc(db, 'transactions', trans.id), { 
+      await updateDoc(doc(db, 'transactions', pendingReturnTrans.id), { 
         status: 'returned', 
         returnDate: new Date().toISOString(), 
-        type: 'return' 
+        type: 'return',
+        fineAmount: calculatedFine,
+        isFinePaid: calculatedFine > 0 // Anggap lunas saat dikembalikan
       })
-      const bDoc = await getDoc(doc(db, 'books', trans.bookId))
+      
+      const bDoc = await getDoc(doc(db, 'books', pendingReturnTrans.bookId))
       if (bDoc.exists()) {
-        await updateDoc(doc(db, 'books', trans.bookId), { 
+        await updateDoc(doc(db, 'books', pendingReturnTrans.bookId), { 
           availableStock: (bDoc.data().availableStock || 0) + 1 
         })
       }
-      toast({ title: "Berhasil!", description: "Buku telah dikembalikan dan stok diperbarui." })
-      setReturnSearch("")
+      
+      toast({ 
+        title: "Berhasil!", 
+        description: calculatedFine > 0 
+          ? `Buku kembali. Denda Rp${calculatedFine.toLocaleString()} telah dicatat.` 
+          : "Buku telah dikembalikan tepat waktu." 
+      })
+      
+      setIsReturnConfirmOpen(false);
+      setReturnSearch("");
+      setPendingReturnTrans(null);
     } catch (err) {
       console.error("Return error:", err)
       toast({ title: "Gagal", description: "Gagal memproses pengembalian.", variant: "destructive" })
@@ -412,6 +459,71 @@ export default function TransactionsPage() {
         </div>
       </Tabs>
 
+      {/* Confirmation & Fine Dialog */}
+      <Dialog open={isReturnConfirmOpen} onOpenChange={setIsReturnConfirmOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RefreshCcw className="h-5 w-5 text-primary" />
+              Konfirmasi Pengembalian
+            </DialogTitle>
+            <DialogDescription>
+              Pastikan data buku dan peminjam sudah sesuai.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {pendingReturnTrans && (
+            <div className="space-y-4 py-4">
+              <div className="p-4 bg-muted rounded-lg space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Peminjam:</span>
+                  <span className="font-bold">{pendingReturnTrans.memberName}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Buku:</span>
+                  <span className="font-bold">{pendingReturnTrans.bookTitle}</span>
+                </div>
+                <div className="flex justify-between text-sm border-t pt-2 mt-2">
+                  <span className="text-muted-foreground">Jatuh Tempo:</span>
+                  <span className="font-medium text-orange-600">
+                    {new Date(pendingReturnTrans.dueDate).toLocaleDateString('id-ID', { dateStyle: 'medium' })}
+                  </span>
+                </div>
+              </div>
+
+              {calculatedFine > 0 ? (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg animate-in shake-1 duration-500">
+                  <div className="flex items-center gap-3 text-red-700">
+                    <div className="bg-red-100 p-2 rounded-full">
+                      <Coins className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wider">Terlambat {lateDays} Hari</p>
+                      <p className="text-lg font-black">DENDA: Rp{calculatedFine.toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-red-600 mt-2 italic">*Harap tagih denda ke siswa sebelum menekan tombol simpan.</p>
+                </div>
+              ) : (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3 text-green-700">
+                  <div className="bg-green-100 p-2 rounded-full">
+                    <CheckCircle className="h-5 w-5" />
+                  </div>
+                  <p className="font-bold">Buku Kembali Tepat Waktu</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIsReturnConfirmOpen(false)} disabled={isProcessing}>Batal</Button>
+            <Button onClick={handleConfirmReturn} disabled={isProcessing} className="bg-primary px-8">
+              {isProcessing ? <Loader2 className="animate-spin mr-2" /> : "Simpan & Selesai"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
         <DialogContent className="sm:max-w-2xl p-0 h-[100dvh] sm:h-auto border-none bg-black overflow-hidden sm:rounded-2xl">
           <div className="absolute top-0 left-0 right-0 z-50 p-4 flex justify-between items-center text-white bg-gradient-to-b from-black/80">
@@ -438,7 +550,6 @@ export default function TransactionsPage() {
               </div>
             )}
 
-            {/* Scanning UI Overlay */}
             {hasCameraPermission === true && (
               <div className="absolute inset-0 pointer-events-none border-[40px] border-black/40">
                 <div className="w-full h-full border-2 border-primary/50 relative overflow-hidden">
