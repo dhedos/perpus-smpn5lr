@@ -1,3 +1,4 @@
+
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
@@ -8,8 +9,10 @@ export const metadata: Metadata = {
   description: 'Sistem Informasi Perpustakaan SMPN 5 Langke Rembong - Modern, AI, dan Sinkronisasi Cloud.',
   icons: {
     icon: '/logo.png',
+    shortcut: '/logo.png',
     apple: '/logo.png',
   },
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
@@ -24,6 +27,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
         <link rel="apple-touch-icon" href="/logo.png" />
+        <meta name="theme-color" content="#2E6ECE" />
       </head>
       <body className="font-body antialiased">
         <FirebaseClientProvider>
