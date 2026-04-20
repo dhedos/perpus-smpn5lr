@@ -23,7 +23,8 @@ import {
   MoreVertical,
   Loader2,
   Camera,
-  X
+  X,
+  Maximize2
 } from "lucide-react"
 import { 
   Dialog, 
@@ -68,10 +69,11 @@ export default function BooksPage() {
   const [isOpen, setIsOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [scannerTarget, setScannerTarget] = useState<"search" | "isbn">("search")
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const scannerRef = useRef<any>(null)
+  const scannerInstanceRef = useRef<any>(null)
 
   const [formData, setFormData] = useState({
     code: "",
@@ -114,7 +116,6 @@ export default function BooksPage() {
     const file = e.target.files?.[0]
     if (!file || !db || !booksCollectionRef) return
 
-    // Import XLSX dynamically to avoid SSR/Turbopack issues
     const { read, utils } = await import("xlsx")
 
     const reader = new FileReader()
@@ -135,28 +136,26 @@ export default function BooksPage() {
 
         for (const row of json) {
           const bookData = {
-            code: String(row.code || row.Kode || row.id || ""),
+            code: String(row.code || row.id || ""),
             title: String(row.title || row.Judul || ""),
-            author: String(row.author || row.Pengarang || row.Penulis || ""),
+            author: String(row.author || row.Pengarang || ""),
             isbn: String(row.isbn || row.ISBN || ""),
             category: String(row.category || row.Kategori || ""),
-            rackLocation: String(row.rackLocation || row.Rak || row.Lokasi || ""),
+            rackLocation: String(row.rackLocation || row.Rak || ""),
             totalStock: Number(row.totalStock || row.Stok || 1),
             availableStock: Number(row.availableStock || row.Tersedia || 1),
-            description: String(row.description || row.Deskripsi || ""),
+            description: String(row.description || ""),
             createdAt: new Date().toISOString()
           }
 
           if (bookData.title && bookData.code) {
-            addDoc(booksCollectionRef, bookData).catch(() => {
-               // Silently catch row errors or handle individually if needed
-            })
+            addDoc(booksCollectionRef, bookData).catch(() => {})
           }
         }
 
         toast({ title: "Berhasil!", description: `${json.length} buku telah diproses.` })
       } catch (error) {
-        toast({ title: "Gagal", description: "Gagal membaca file Excel. Pastikan format benar.", variant: "destructive" })
+        toast({ title: "Gagal", description: "Gagal membaca file Excel.", variant: "destructive" })
       }
     }
     reader.readAsArrayBuffer(file)
@@ -164,22 +163,35 @@ export default function BooksPage() {
   }
 
   // --- BARCODE SCANNER LOGIC ---
-  const startScanner = async () => {
+  const startScanner = async (target: "search" | "isbn" = "search") => {
+    setScannerTarget(target)
     setIsScannerOpen(true)
+    setHasCameraPermission(null)
     
-    // Dynamically import to ensure window is available
     const { Html5Qrcode } = await import("html5-qrcode")
 
+    // Wait for the container to be in DOM
     setTimeout(async () => {
+      const container = document.getElementById("scanner-container")
+      if (!container) return
+
       try {
         const scanner = new Html5Qrcode("scanner-container")
-        scannerRef.current = scanner
+        scannerInstanceRef.current = scanner
         
         await scanner.start(
           { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 250, height: 250 } },
+          { 
+            fps: 10, 
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
+          },
           (decodedText) => {
-            setSearch(decodedText)
+            if (target === "search") {
+              setSearch(decodedText)
+            } else {
+              setFormData(prev => ({ ...prev, isbn: decodedText }))
+            }
             stopScanner()
             toast({ title: "Berhasil!", description: `Barcode terdeteksi: ${decodedText}` })
           },
@@ -187,20 +199,22 @@ export default function BooksPage() {
         )
         setHasCameraPermission(true)
       } catch (err) {
+        console.error("Scanner error:", err)
         setHasCameraPermission(false)
-        toast({
-          variant: "destructive",
-          title: "Akses Kamera Ditolak",
-          description: "Harap izinkan akses kamera pada browser Anda.",
-        })
       }
-    }, 100)
+    }, 300)
   }
 
   const stopScanner = async () => {
-    if (scannerRef.current && scannerRef.current.isScanning) {
-      await scannerRef.current.stop()
-      scannerRef.current = null
+    if (scannerInstanceRef.current) {
+      try {
+        if (scannerInstanceRef.current.isScanning) {
+          await scannerInstanceRef.current.stop()
+        }
+      } catch (e) {
+        console.error("Error stopping scanner:", e)
+      }
+      scannerInstanceRef.current = null
     }
     setIsScannerOpen(false)
   }
@@ -385,12 +399,18 @@ export default function BooksPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="isbn">ISBN</Label>
-                  <Input 
-                    id="isbn" 
-                    placeholder="978-..." 
-                    value={formData.isbn}
-                    onChange={(e) => setFormData({ ...formData, isbn: e.target.value })}
-                  />
+                  <div className="flex gap-2">
+                    <Input 
+                      id="isbn" 
+                      placeholder="978-..." 
+                      className="flex-1"
+                      value={formData.isbn}
+                      onChange={(e) => setFormData({ ...formData, isbn: e.target.value })}
+                    />
+                    <Button variant="secondary" size="icon" onClick={() => startScanner("isbn")}>
+                      <Camera className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="category">Kategori</Label>
@@ -496,11 +516,17 @@ export default function BooksPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-isbn">ISBN</Label>
-                  <Input 
-                    id="edit-isbn" 
-                    value={formData.isbn}
-                    onChange={(e) => setFormData({ ...formData, isbn: e.target.value })}
-                  />
+                  <div className="flex gap-2">
+                    <Input 
+                      id="edit-isbn" 
+                      value={formData.isbn}
+                      className="flex-1"
+                      onChange={(e) => setFormData({ ...formData, isbn: e.target.value })}
+                    />
+                    <Button variant="secondary" size="icon" onClick={() => startScanner("isbn")}>
+                      <Camera className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-category">Kategori</Label>
@@ -568,7 +594,7 @@ export default function BooksPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Button variant="secondary" className="gap-2" onClick={startScanner}>
+        <Button variant="secondary" className="gap-2" onClick={() => startScanner("search")}>
           <ScanBarcode className="h-4 w-4" />
           Scan Barcode
         </Button>
@@ -579,9 +605,13 @@ export default function BooksPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Scan Barcode Buku</DialogTitle>
-            <DialogDescription>Arahkan kamera ke barcode pada buku.</DialogDescription>
+            <DialogDescription>
+              {scannerTarget === "search" 
+                ? "Arahkan kamera ke barcode untuk mencari buku." 
+                : "Arahkan kamera ke barcode untuk mengisi ISBN."}
+            </DialogDescription>
           </DialogHeader>
-          <div className="relative aspect-square overflow-hidden rounded-xl bg-black">
+          <div className="relative aspect-square overflow-hidden rounded-xl bg-black flex items-center justify-center">
             <div id="scanner-container" className="h-full w-full"></div>
             {hasCameraPermission === false && (
               <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-white bg-black/80">
@@ -589,6 +619,11 @@ export default function BooksPage() {
                   <AlertTitle>Akses Kamera Dibutuhkan</AlertTitle>
                   <AlertDescription>Harap izinkan akses kamera untuk memindai barcode.</AlertDescription>
                 </Alert>
+              </div>
+            )}
+            {hasCameraPermission === null && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-white" />
               </div>
             )}
           </div>
