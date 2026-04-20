@@ -321,7 +321,7 @@ export default function TransactionsPage() {
             </Card>
 
             <div className="grid md:grid-cols-2 gap-6">
-              <Card className="border-none shadow-sm overflow-hidden relative">
+              <Card className="border-none shadow-sm relative">
                 <CardHeader className="bg-slate-50/50 pb-4 border-b">
                   <CardTitle className="text-sm flex items-center gap-2 text-primary uppercase tracking-wider font-bold"><User className="h-4 w-4" /> Data Peminjam</CardTitle>
                 </CardHeader>
@@ -339,7 +339,7 @@ export default function TransactionsPage() {
                       onFocus={() => setShowMemberSuggestions(true)}
                     />
                     {showMemberSuggestions && memberSuggestions.length > 0 && (
-                      <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95">
+                      <div className="absolute z-[100] left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 max-h-[250px] overflow-y-auto">
                         {memberSuggestions.map(m => (
                           <div 
                             key={m.id} 
@@ -382,7 +382,7 @@ export default function TransactionsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border-none shadow-sm overflow-hidden relative">
+              <Card className="border-none shadow-sm relative">
                 <CardHeader className="bg-slate-50/50 pb-4 border-b">
                   <CardTitle className="text-sm flex items-center gap-2 text-secondary uppercase tracking-wider font-bold"><BookOpen className="h-4 w-4" /> Data Buku</CardTitle>
                 </CardHeader>
@@ -400,7 +400,7 @@ export default function TransactionsPage() {
                       onFocus={() => setShowBookSuggestions(true)}
                     />
                     {showBookSuggestions && bookSuggestions.length > 0 && (
-                      <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95">
+                      <div className="absolute z-[100] left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 max-h-[250px] overflow-y-auto">
                         {bookSuggestions.map(b => (
                           <div 
                             key={b.id} 
@@ -449,7 +449,7 @@ export default function TransactionsPage() {
               </Card>
             </div>
 
-            <Button className="w-full h-16 text-lg font-black shadow-lg shadow-primary/20" disabled={!selectedMember || !selectedBook || isProcessing || loadingSettings} onClick={handleProcessBorrow}>
+            <Button className="w-full h-16 text-lg font-black shadow-lg shadow-primary/20 mt-4" disabled={!selectedMember || !selectedBook || isProcessing || loadingSettings} onClick={handleProcessBorrow}>
               {isProcessing ? <Loader2 className="animate-spin h-6 w-6" /> : "KONFIRMASI PEMINJAMAN"}
             </Button>
           </TabsContent>
