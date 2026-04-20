@@ -85,20 +85,27 @@ export default function LoginPage() {
       const user = result.user
 
       // Cek apakah user sudah ada di Firestore
-      const userDoc = await getDoc(doc(db, "users", user.uid))
+      const userDocRef = doc(db, "users", user.uid)
+      const userDoc = await getDoc(userDocRef)
+      
       if (!userDoc.exists()) {
         // Jika belum ada (misal login pertama kali), buat profile default
-        await setDoc(doc(db, "users", user.uid), {
+        // Jika ini user pertama kali di sistem, jadikan Admin
+        const role = noUsersExist ? "Admin" : "Staff"
+        
+        await setDoc(userDocRef, {
           id: user.uid,
           name: user.displayName || "User Baru",
           email: user.email,
-          role: noUsersExist ? "Admin" : "Staff", // User pertama via Google jadi Admin jika sistem kosong
+          role: role,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         })
+        toast({ title: "Pendaftaran Berhasil", description: `Anda masuk sebagai ${role}.` })
+      } else {
+        toast({ title: "Login Berhasil", description: "Selamat datang kembali." })
       }
       
-      toast({ title: "Login Berhasil", description: "Selamat datang kembali." })
       router.push("/dashboard")
     } catch (error: any) {
       toast({ title: "Gagal Login Google", description: error.message, variant: "destructive" })
