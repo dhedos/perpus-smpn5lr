@@ -21,7 +21,8 @@ import {
   Ghost,
   CalendarDays,
   Clock,
-  Library
+  Library,
+  ChevronRight
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -51,7 +52,7 @@ import {
   useDoc,
   useUser
 } from '@/firebase'
-import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc } from 'firebase/firestore'
+import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc, orderBy, limit } from 'firebase/firestore'
 import { differenceInDays, parseISO, format, isAfter, addDays, startOfDay } from "date-fns"
 import { id as localeID } from "date-fns/locale"
 import { cn } from "@/lib/utils"
@@ -73,6 +74,10 @@ export default function TransactionsPage() {
   const [selectedMember, setSelectedMember] = useState<any>(null)
   const [selectedBook, setSelectedBook] = useState<any>(null)
 
+  // Autocomplete suggestions
+  const [showMemberSuggestions, setShowMemberSuggestions] = useState(false)
+  const [showBookSuggestions, setShowBookSuggestions] = useState(false)
+
   // Return Process State
   const [isReturnConfirmOpen, setIsReturnConfirmOpen] = useState(false)
   const [pendingReturnTrans, setPendingReturnTrans] = useState<any>(null)
@@ -80,17 +85,16 @@ export default function TransactionsPage() {
   const [calculatedFine, setCalculatedFine] = useState(0)
   const [lateDays, setLateDays] = useState(0)
 
-  // Settings: Menarik batas pinjam dan tarif denda dari Admin
+  // Settings
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings, isLoading: loadingSettings } = useDoc(settingsRef)
 
-  const membersRef = useMemoFirebase(() => db ? collection(db, 'members') : null, [db])
-  const booksRef = useMemoFirebase(() => db ? collection(db, 'books') : null, [db])
+  const membersRef = useMemoFirebase(() => db ? query(collection(db, 'members'), orderBy('name', 'asc')) : null, [db])
+  const booksRef = useMemoFirebase(() => db ? query(collection(db, 'books'), orderBy('title', 'asc')) : null, [db])
 
   const { data: members } = useCollection(membersRef)
   const { data: books } = useCollection(booksRef)
 
-  // Query sirkulasi aktif
   const activeTransQuery = useMemoFirebase(() => {
     if (!db || !isStaff) return null;
     return query(collection(db, 'transactions'), where('status', '==', 'active'));
@@ -100,13 +104,29 @@ export default function TransactionsPage() {
 
   const loanDays = useMemo(() => settings?.loanPeriod ? Number(settings.loanPeriod) : 7, [settings]);
 
-  // Hitung jumlah buku yang sedang dipinjam oleh siswa terpilih
+  // Suggestions filtering
+  const memberSuggestions = useMemo(() => {
+    if (!memberSearch || memberSearch.length < 1 || !members) return [];
+    return members.filter(m => 
+      m.name?.toLowerCase().includes(memberSearch.toLowerCase()) || 
+      m.memberId?.toLowerCase().startsWith(memberSearch.toLowerCase())
+    ).slice(0, 5);
+  }, [memberSearch, members]);
+
+  const bookSuggestions = useMemo(() => {
+    if (!bookSearch || bookSearch.length < 1 || !books) return [];
+    return books.filter(b => 
+      b.title?.toLowerCase().includes(bookSearch.toLowerCase()) || 
+      b.code?.toLowerCase().startsWith(bookSearch.toLowerCase()) ||
+      b.isbn?.startsWith(bookSearch)
+    ).slice(0, 5);
+  }, [bookSearch, books]);
+
   const selectedMemberActiveLoans = useMemo(() => {
     if (!selectedMember || !activeTrans) return 0;
     return activeTrans.filter(t => t.memberId === selectedMember.memberId).length;
   }, [selectedMember, activeTrans]);
 
-  // Fungsi untuk mendapatkan jumlah pinjaman aktif per siswa untuk tabel
   const getMemberLoanCount = (memberId: string) => {
     if (!activeTrans) return 0;
     return activeTrans.filter(t => t.memberId === memberId).length;
@@ -129,26 +149,24 @@ export default function TransactionsPage() {
     )
   }, [activeTrans, returnSearch])
 
-  // Hitung estimasi jatuh tempo untuk peminjaman baru (Dynamic based on settings)
   const estimatedDueDate = useMemo(() => {
     return addDays(startOfDay(new Date()), loanDays);
   }, [loanDays]);
 
-  const handleScanResult = (text: string) => {
+  const handleLookup = (text: string) => {
     if (!text) return
     const member = members?.find(m => m.memberId?.toLowerCase() === text.toLowerCase())
     const book = books?.find(b => b.code?.toLowerCase() === text.toLowerCase() || b.isbn === text)
 
     if (activeTab === "borrow") {
-      if (member) { setSelectedMember(member); toast({ title: "Anggota Terdeteksi" }) }
-      else if (book) { setSelectedBook(book); toast({ title: "Buku Terdeteksi" }) }
+      if (member) { setSelectedMember(member); setMemberSearch(""); toast({ title: "Anggota Terpilih" }) }
+      else if (book) { setSelectedBook(book); setBookSearch(""); toast({ title: "Buku Terpilih" }) }
     } else {
       const trans = activeTrans?.find(t => { 
         const b = books?.find(bk => bk.id === t.bookId); 
         return b?.code?.toLowerCase() === text.toLowerCase() || b?.isbn === text || t.memberId?.toLowerCase() === text.toLowerCase(); 
       })
       if (trans) { prepareReturn(trans); stopScanner(); }
-      else toast({ title: "Transaksi Aktif Tidak Ditemukan", variant: "destructive" })
     }
   }
 
@@ -166,61 +184,56 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     if (!pendingReturnTrans || !settings) return;
-    
     let fine = 0;
     const finePerDay = Number(settings.fineAmount ?? 500);
     const lostFine = Number(settings.lostBookFine ?? 50000);
-
-    if (lateDays > 0) {
-      fine += lateDays * finePerDay;
-    }
-    
-    if (returnCondition === "lost") {
-      fine += lostFine;
-    } else if (returnCondition === "damaged") {
-      fine += finePerDay * 10;
-    }
-    
+    if (lateDays > 0) fine += lateDays * finePerDay;
+    if (returnCondition === "lost") fine += lostFine;
+    else if (returnCondition === "damaged") fine += finePerDay * 10;
     setCalculatedFine(fine);
   }, [returnCondition, pendingReturnTrans, lateDays, settings]);
 
-  const handleConfirmReturn = async () => {
+  const forceUnlockUI = () => {
+    setTimeout(() => {
+      document.body.style.pointerEvents = 'auto'
+    }, 100)
+  }
+
+  const handleConfirmReturn = () => {
     if (!db || !pendingReturnTrans) return
     setIsProcessing(true)
-    try {
-      await updateDoc(doc(db, 'transactions', pendingReturnTrans.id), { 
-        status: 'returned', 
-        returnDate: new Date().toISOString(), 
-        type: 'return',
-        condition: returnCondition,
-        fineAmount: calculatedFine,
-        isFinePaid: calculatedFine > 0 
-      })
-      
+    
+    const transRef = doc(db, 'transactions', pendingReturnTrans.id)
+    const updateData = { 
+      status: 'returned', 
+      returnDate: new Date().toISOString(), 
+      type: 'return',
+      condition: returnCondition,
+      fineAmount: calculatedFine,
+      isFinePaid: calculatedFine > 0 
+    }
+
+    setIsReturnConfirmOpen(false)
+    forceUnlockUI()
+
+    updateDoc(transRef, updateData).then(async () => {
       const bRef = doc(db, 'books', pendingReturnTrans.bookId)
       const bDoc = await getDoc(bRef)
       if (bDoc.exists()) {
         const currentTotal = bDoc.data().totalStock || 0
         const currentAvail = bDoc.data().availableStock || 0
-        
         if (returnCondition === "lost") {
-          await updateDoc(bRef, { 
+          updateDoc(bRef, { 
             totalStock: Math.max(0, currentTotal - 1),
             availableStock: currentAvail
           })
         } else {
-          await updateDoc(bRef, { 
-            availableStock: currentAvail + 1 
-          })
+          updateDoc(bRef, { availableStock: currentAvail + 1 })
         }
       }
-      
       toast({ title: "Berhasil!", description: "Pengembalian buku telah dicatat." })
-      setIsReturnConfirmOpen(false);
       setReturnSearch("");
-    } catch (err) {
-      toast({ title: "Gagal", variant: "destructive" })
-    } finally { setIsProcessing(false) }
+    }).finally(() => setIsProcessing(false))
   }
 
   const startScanner = async () => {
@@ -231,7 +244,10 @@ export default function TransactionsPage() {
         try {
           const scanner = new Html5Qrcode("smart-scanner")
           scannerInstanceRef.current = scanner
-          await scanner.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (text) => handleScanResult(text), () => {})
+          await scanner.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (text) => {
+            handleLookup(text)
+            if (activeTab === "return") stopScanner()
+          }, () => {})
         } catch (err) {}
       }, 500)
     } catch (e) { setIsScannerOpen(false) }
@@ -240,17 +256,16 @@ export default function TransactionsPage() {
   const stopScanner = async () => {
     if (scannerInstanceRef.current?.isScanning) await scannerInstanceRef.current.stop()
     setIsScannerOpen(false)
+    forceUnlockUI()
   }
 
   const handleProcessBorrow = () => {
     if (!db || !selectedMember || !selectedBook) return
-    
     const today = startOfDay(new Date());
     const finalDueDate = addDays(today, loanDays);
-
     setIsProcessing(true)
 
-    addDoc(collection(db, 'transactions'), {
+    const newBorrow = {
       memberId: selectedMember.memberId, 
       memberName: selectedMember.name, 
       bookId: selectedBook.id, 
@@ -260,7 +275,9 @@ export default function TransactionsPage() {
       borrowDate: today.toISOString(), 
       dueDate: finalDueDate.toISOString(), 
       createdAt: serverTimestamp()
-    }).then(() => {
+    }
+
+    addDoc(collection(db, 'transactions'), newBorrow).then(() => {
       const avail = Number(selectedBook.availableStock ?? 1);
       updateDoc(doc(db, 'books', selectedBook.id), { availableStock: Math.max(0, avail - 1) })
       toast({ 
@@ -304,28 +321,58 @@ export default function TransactionsPage() {
             </Card>
 
             <div className="grid md:grid-cols-2 gap-6">
-              <Card className="border-none shadow-sm overflow-hidden">
+              <Card className="border-none shadow-sm overflow-hidden relative">
                 <CardHeader className="bg-slate-50/50 pb-4 border-b">
                   <CardTitle className="text-sm flex items-center gap-2 text-primary uppercase tracking-wider font-bold"><User className="h-4 w-4" /> Data Peminjam</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6 space-y-4">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Ketik ID Anggota..." className="pl-10 h-12" value={memberSearch} onChange={e => setMemberSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleScanResult(memberSearch)} />
+                    <Input 
+                      placeholder="Ketik Nama atau ID Anggota..." 
+                      className="pl-10 h-12" 
+                      value={memberSearch} 
+                      onChange={e => {
+                        setMemberSearch(e.target.value);
+                        setShowMemberSuggestions(true);
+                      }}
+                      onFocus={() => setShowMemberSuggestions(true)}
+                    />
+                    {showMemberSuggestions && memberSuggestions.length > 0 && (
+                      <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95">
+                        {memberSuggestions.map(m => (
+                          <div 
+                            key={m.id} 
+                            className="p-3 hover:bg-slate-50 cursor-pointer flex items-center justify-between border-b last:border-0"
+                            onClick={() => {
+                              setSelectedMember(m);
+                              setMemberSearch("");
+                              setShowMemberSuggestions(false);
+                            }}
+                          >
+                            <div className="flex flex-col">
+                              <span className="font-bold text-sm">{m.name}</span>
+                              <span className="text-[10px] font-mono text-primary">{m.memberId}</span>
+                            </div>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   {selectedMember && (
                     <div className="p-4 bg-primary/5 rounded-xl border border-primary/20 flex flex-col gap-2 animate-in slide-in-from-left-2">
                       <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-bold text-primary text-lg">{selectedMember.name}</p>
-                          <p className="text-xs font-mono text-muted-foreground">{selectedMember.memberId}</p>
+                        <div className="flex-1">
+                          <div className="font-bold text-primary text-lg">{selectedMember.name}</div>
+                          <div className="text-xs font-mono text-muted-foreground">{selectedMember.memberId}</div>
                         </div>
                         <Button variant="ghost" size="icon" onClick={() => setSelectedMember(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
                       </div>
                       <div className="pt-2 border-t border-primary/10 flex items-center justify-between">
-                         <span className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
-                           <Library className="h-3 w-3" /> Pinjaman Aktif Saat Ini:
-                         </span>
+                         <div className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
+                           <Library className="h-3 w-3" /> Pinjaman Aktif:
+                         </div>
                          <Badge variant={selectedMemberActiveLoans >= 3 ? "destructive" : "secondary"} className="font-bold">
                            {selectedMemberActiveLoans} Buku
                          </Badge>
@@ -335,31 +382,66 @@ export default function TransactionsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border-none shadow-sm overflow-hidden">
+              <Card className="border-none shadow-sm overflow-hidden relative">
                 <CardHeader className="bg-slate-50/50 pb-4 border-b">
                   <CardTitle className="text-sm flex items-center gap-2 text-secondary uppercase tracking-wider font-bold"><BookOpen className="h-4 w-4" /> Data Buku</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6 space-y-4">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Ketik Kode Buku..." className="pl-10 h-12" value={bookSearch} onChange={e => setBookSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleScanResult(bookSearch)} />
+                    <Input 
+                      placeholder="Ketik Judul atau Kode Buku..." 
+                      className="pl-10 h-12" 
+                      value={bookSearch} 
+                      onChange={e => {
+                        setBookSearch(e.target.value);
+                        setShowBookSuggestions(true);
+                      }}
+                      onFocus={() => setShowBookSuggestions(true)}
+                    />
+                    {showBookSuggestions && bookSuggestions.length > 0 && (
+                      <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95">
+                        {bookSuggestions.map(b => (
+                          <div 
+                            key={b.id} 
+                            className="p-3 hover:bg-slate-50 cursor-pointer flex items-center justify-between border-b last:border-0"
+                            onClick={() => {
+                              setSelectedBook(b);
+                              setBookSearch("");
+                              setShowBookSuggestions(false);
+                            }}
+                          >
+                            <div className="flex flex-col">
+                              <span className="font-bold text-sm truncate max-w-[200px]">{b.title}</span>
+                              <span className="text-[10px] font-mono text-secondary-foreground">{b.code}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={b.availableStock <= 0 ? "destructive" : "outline"} className="text-[8px] h-4">
+                                {b.availableStock} Tersedia
+                              </Badge>
+                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   {selectedBook && (
                     <div className="p-4 bg-secondary/5 rounded-xl border border-secondary/20 flex flex-col gap-2 animate-in slide-in-from-right-2">
                       <div className="flex justify-between items-center">
                         <div className="flex-1">
-                          <p className="font-bold text-secondary-foreground leading-tight">{selectedBook.title}</p>
-                          <p className="text-xs font-mono text-muted-foreground">{selectedBook.code}</p>
+                          <div className="font-bold text-secondary-foreground leading-tight">{selectedBook.title}</div>
+                          <div className="text-xs font-mono text-muted-foreground">{selectedBook.code}</div>
                         </div>
                         <Button variant="ghost" size="icon" onClick={() => setSelectedBook(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
                       </div>
                       <div className="pt-2 border-t border-secondary/10 flex items-center justify-between">
-                         <span className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
+                         <div className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
                            <Clock className="h-3 w-3" /> Estimasi Jatuh Tempo:
-                         </span>
-                         <span className="text-xs font-bold text-primary">
+                         </div>
+                         <div className="text-xs font-bold text-primary">
                            {format(estimatedDueDate, 'EEEE, dd MMM yyyy', { locale: localeID })}
-                         </span>
+                         </div>
                       </div>
                     </div>
                   )}
@@ -420,9 +502,9 @@ export default function TransactionsPage() {
                               <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
                               <TableCell>
                                 <div className="space-y-0.5">
-                                  <p className="font-bold text-sm leading-tight">{t.bookTitle}</p>
+                                  <div className="font-bold text-sm leading-tight">{t.bookTitle}</div>
                                   <div className="flex items-center gap-2">
-                                    <p className="text-xs text-muted-foreground">{t.memberName}</p>
+                                    <div className="text-xs text-muted-foreground">{t.memberName}</div>
                                     <Badge variant="outline" className="text-[9px] h-4 py-0 px-1 border-primary/20 bg-primary/5 text-primary">
                                       {totalMemberLoans} Buku
                                     </Badge>
@@ -434,9 +516,9 @@ export default function TransactionsPage() {
                               </TableCell>
                               <TableCell>
                                 <div className="space-y-1">
-                                  <p className={cn("text-xs font-bold", isOverdue ? "text-destructive" : "text-muted-foreground")}>
+                                  <div className={cn("text-xs font-bold", isOverdue ? "text-destructive" : "text-muted-foreground")}>
                                     {format(effectiveDueDate, 'dd/MM/yyyy')}
-                                  </p>
+                                  </div>
                                   {isOverdue && <Badge variant="destructive" className="text-[9px] h-4 px-1">Terlambat</Badge>}
                                 </div>
                               </TableCell>
@@ -458,7 +540,7 @@ export default function TransactionsPage() {
         </div>
       </Tabs>
 
-      <Dialog open={isReturnConfirmOpen} onOpenChange={setIsReturnConfirmOpen}>
+      <Dialog open={isReturnConfirmOpen} onOpenChange={(v) => { setIsReturnConfirmOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-md bg-white">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-primary font-bold">
@@ -475,15 +557,15 @@ export default function TransactionsPage() {
                 <div className="flex items-start gap-3">
                   <BookOpen className="h-4 w-4 text-primary mt-1" />
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Informasi Buku</p>
-                    <p className="text-sm font-black">{pendingReturnTrans.bookTitle}</p>
+                    <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Informasi Buku</div>
+                    <div className="text-sm font-black">{pendingReturnTrans.bookTitle}</div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <User className="h-4 w-4 text-primary mt-1" />
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Peminjam</p>
-                    <p className="text-sm font-bold">{pendingReturnTrans.memberName}</p>
+                    <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Peminjam</div>
+                    <div className="text-sm font-bold">{pendingReturnTrans.memberName}</div>
                   </div>
                 </div>
               </div>
@@ -524,9 +606,9 @@ export default function TransactionsPage() {
                     <span className="text-2xl font-black text-orange-600">Rp{calculatedFine.toLocaleString()}</span>
                   </div>
                   <div className="text-[10px] text-orange-700 font-medium leading-relaxed opacity-80 pt-2 border-t border-orange-200">
-                    {lateDays > 0 && <p className="flex justify-between"><span>• Terlambat {lateDays} hari</span> <span>Rp{(lateDays * Number(settings?.fineAmount || 500)).toLocaleString()}</span></p>}
-                    {returnCondition === 'damaged' && <p className="flex justify-between"><span>• Biaya Kerusakan Buku</span> <span>Rp{(Number(settings?.fineAmount || 500) * 10).toLocaleString()}</span></p>}
-                    {returnCondition === 'lost' && <p className="flex justify-between"><span>• Ganti Buku Hilang</span> <span>Rp{Number(settings?.lostBookFine || 50000).toLocaleString()}</span></p>}
+                    {lateDays > 0 && <div className="flex justify-between"><span>• Terlambat {lateDays} hari</span> <span>Rp{(lateDays * Number(settings?.fineAmount || 500)).toLocaleString()}</span></div>}
+                    {returnCondition === 'damaged' && <div className="flex justify-between"><span>• Biaya Kerusakan Buku</span> <span>Rp{(Number(settings?.fineAmount || 500) * 10).toLocaleString()}</span></div>}
+                    {returnCondition === 'lost' && <div className="flex justify-between"><span>• Ganti Buku Hilang</span> <span>Rp{Number(settings?.lostBookFine || 50000).toLocaleString()}</span></div>}
                   </div>
                 </div>
               )}

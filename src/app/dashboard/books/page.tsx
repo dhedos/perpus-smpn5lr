@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo, useRef, useEffect } from "react"
@@ -192,10 +191,7 @@ export default function BooksPage() {
       const dateStr = new Date().toISOString().split('T')[0]
       writeFile(workbook, `Koleksi_Buku_SMPN5_${dateStr}.xlsx`)
       
-      toast({ 
-        title: "Berhasil Ekspor", 
-        description: "File Excel berhasil dibuat." 
-      })
+      toast({ title: "Berhasil Ekspor", description: "File Excel berhasil dibuat." })
     } catch (error) {
       toast({ title: "Gagal", description: "Gagal mengekspor data.", variant: "destructive" })
     }
@@ -218,14 +214,9 @@ export default function BooksPage() {
       <html>
         <head>
           <title>Cetak Label QR - SMPN 5</title>
-          <style>
-            @page { size: A4; margin: 5mm; }
-            body { margin: 0; display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-start; font-family: sans-serif; background: #fff; }
-          </style>
+          <style>@page { size: A4; margin: 5mm; } body { margin: 0; display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-start; font-family: sans-serif; background: #fff; }</style>
         </head>
-        <body onload="window.print(); window.close();">
-          ${stickersHtml}
-        </body>
+        <body onload="window.print(); window.close();">${stickersHtml}</body>
       </html>
     `)
     printWindow.document.close()
@@ -369,9 +360,7 @@ export default function BooksPage() {
   const stopScanner = async () => {
     if (scannerInstanceRef.current) {
       try {
-        if (scannerInstanceRef.current.isScanning) {
-          await scannerInstanceRef.current.stop()
-        }
+        if (scannerInstanceRef.current.isScanning) await scannerInstanceRef.current.stop()
         await scannerInstanceRef.current.clear()
       } catch (e) {}
       scannerInstanceRef.current = null
