@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo } from "react"
@@ -20,7 +21,8 @@ import {
   Loader2, 
   QrCode,
   Printer,
-  ChevronDown
+  ChevronDown,
+  X
 } from "lucide-react"
 import { 
   Dialog, 
@@ -72,7 +74,7 @@ import { collection, addDoc, deleteDoc, doc, updateDoc, serverTimestamp, query, 
 const INITIAL_MEMBER_DATA = {
   memberId: "",
   name: "",
-  type: "Student",
+  type: "Student" as "Student" | "Teacher",
   classPart: "",
   phone: "",
   joinDate: new Date().toISOString().split('T')[0]
@@ -228,8 +230,8 @@ export default function MembersPage() {
                 <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Nama lengkap" />
               </div>
               <div className="space-y-2">
-                <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas / Unit</Label>
-                <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Contoh: VII A atau Guru Mapel" />
+                <Label className="font-semibold text-xs uppercase text-muted-foreground">{formData.type === 'Teacher' ? 'Unit / Mata Pelajaran' : 'Kelas'}</Label>
+                <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder={formData.type === 'Teacher' ? "Contoh: Guru Matematika" : "Contoh: VII A"} />
               </div>
             </div>
             <DialogFooter><Button onClick={handleSaveMember} className="w-full sm:w-auto h-11 px-8 shadow-lg shadow-primary/20">Simpan Anggota</Button></DialogFooter>
@@ -346,7 +348,7 @@ export default function MembersPage() {
               <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" />
             </div>
             <div className="space-y-2">
-              <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas / Unit</Label>
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">{formData.type === 'Teacher' ? 'Unit / Mapel' : 'Kelas'}</Label>
               <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" />
             </div>
           </div>
