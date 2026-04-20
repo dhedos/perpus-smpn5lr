@@ -27,7 +27,8 @@ import {
   FileDown,
   Eye,
   Info,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Filter
 } from "lucide-react"
 import { 
   Dialog, 
@@ -37,6 +38,13 @@ import {
   DialogFooter,
   DialogTrigger
 } from "@/components/ui/dialog"
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
@@ -65,6 +73,9 @@ export default function BooksPage() {
   const { toast } = useToast()
   
   const [search, setSearch] = useState("")
+  const [filterCategory, setFilterCategory] = useState("all")
+  const [filterYear, setFilterYear] = useState("all")
+  
   const [isGenerating, setIsGenerating] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
@@ -101,6 +112,20 @@ export default function BooksPage() {
 
   const { data: books, loading } = useCollection(booksCollectionRef)
 
+  // Get unique categories for filter
+  const categories = useMemo(() => {
+    if (!books) return []
+    const cats = books.map(b => b.category).filter(Boolean)
+    return Array.from(new Set(cats))
+  }, [books])
+
+  // Get unique years for filter
+  const years = useMemo(() => {
+    if (!books) return []
+    const yrs = books.map(b => b.publicationYear?.toString()).filter(Boolean)
+    return Array.from(new Set(yrs)).sort((a, b) => Number(b) - Number(a))
+  }, [books])
+
   const duplicateBookByCode = useMemo(() => {
     if (!formData.code || !books) return null
     return books.find(b => b.code?.toLowerCase() === formData.code.toLowerCase() && b.id !== editingBookId)
@@ -108,14 +133,19 @@ export default function BooksPage() {
 
   const filteredBooks = useMemo(() => {
     if (!books) return []
-    return books.filter(b => 
-      (b.title?.toLowerCase() || "").includes(search.toLowerCase()) || 
-      (b.author?.toLowerCase() || "").includes(search.toLowerCase()) ||
-      (b.code?.toLowerCase() || "").includes(search.toLowerCase()) ||
-      (b.isbn?.toLowerCase() || "").includes(search.toLowerCase()) ||
-      (b.publicationYear?.toString() || "").includes(search)
-    )
-  }, [books, search])
+    return books.filter(b => {
+      const matchesSearch = 
+        (b.title?.toLowerCase() || "").includes(search.toLowerCase()) || 
+        (b.author?.toLowerCase() || "").includes(search.toLowerCase()) ||
+        (b.code?.toLowerCase() || "").includes(search.toLowerCase()) ||
+        (b.isbn?.toLowerCase() || "").includes(search.toLowerCase());
+      
+      const matchesCategory = filterCategory === "all" || b.category === filterCategory;
+      const matchesYear = filterYear === "all" || b.publicationYear?.toString() === filterYear;
+      
+      return matchesSearch && matchesCategory && matchesYear;
+    })
+  }, [books, search, filterCategory, filterYear])
 
   const handleExportExcel = async () => {
     try {
@@ -127,9 +157,7 @@ export default function BooksPage() {
         "Pengarang": book.author,
         "Thn Terbit": book.publicationYear,
         "Tgl Penerimaan": book.acquisitionDate,
-        "ISBN": book.isbn,
         "Jenis": book.category,
-        "Rak": book.rackLocation,
         "Stok": book.totalStock
       }))
       
@@ -187,7 +215,11 @@ export default function BooksPage() {
   const handleSaveBook = () => {
     if (!db || !booksCollectionRef || duplicateBookByCode) return
     setIsSaving(true)
-    addDoc(booksCollectionRef, { ...formData, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() })
+    addDoc(booksCollectionRef, { 
+      ...formData, 
+      createdAt: new Date().toISOString(), 
+      updatedAt: new Date().toISOString() 
+    })
       .then(() => {
         toast({ title: "Berhasil!", description: "Buku telah terdaftar." })
         setIsOpen(false)
@@ -199,7 +231,10 @@ export default function BooksPage() {
   const handleUpdateBook = () => {
     if (!db || !editingBookId) return
     setIsSaving(true)
-    updateDoc(doc(db, 'books', editingBookId), { ...formData, updatedAt: new Date().toISOString() })
+    updateDoc(doc(db, 'books', editingBookId), { 
+      ...formData, 
+      updatedAt: new Date().toISOString() 
+    })
       .then(() => {
         toast({ title: "Berhasil!", description: "Data diperbarui." })
         setIsEditOpen(false)
@@ -282,12 +317,37 @@ export default function BooksPage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-4 bg-card p-4 rounded-xl shadow-sm">
-        <div className="relative flex-1">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 bg-card p-4 rounded-xl shadow-sm border border-slate-100">
+        <div className="lg:col-span-2 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Cari Kode, Judul, Tahun, atau ISBN..." className="pl-10 bg-white" value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && setSearch(search)} />
+          <Input 
+            placeholder="Cari Judul, Kode, Pengarang..." 
+            className="pl-10 bg-white border-slate-300 h-11" 
+            value={search} 
+            onChange={e => setSearch(e.target.value)} 
+          />
         </div>
-        <Button variant="secondary" onClick={startScanner}><ScanBarcode className="h-4 w-4 mr-2" />Scan</Button>
+        <div className="flex gap-2 lg:col-span-2">
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
+            <SelectTrigger className="bg-white border-slate-300 h-11 flex-1">
+              <div className="flex items-center gap-2"><Filter className="h-3 w-3 text-primary" /><SelectValue placeholder="Kategori" /></div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Jenis</SelectItem>
+              {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={filterYear} onValueChange={setFilterYear}>
+            <SelectTrigger className="bg-white border-slate-300 h-11 flex-1">
+              <div className="flex items-center gap-2"><CalendarIcon className="h-3 w-3 text-primary" /><SelectValue placeholder="Tahun" /></div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Tahun</SelectItem>
+              {years.map(yr => <SelectItem key={yr} value={yr}>{yr}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button variant="secondary" className="h-11 px-4" onClick={startScanner}><ScanBarcode className="h-4 w-4" /></Button>
+        </div>
       </div>
 
       <Card className="border-none shadow-sm overflow-hidden">
@@ -307,7 +367,7 @@ export default function BooksPage() {
             {loading ? (
               <TableRow><TableCell colSpan={7} className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
             ) : filteredBooks.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground">Tidak ada buku.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground">Tidak ada buku ditemukan.</TableCell></TableRow>
             ) : filteredBooks.map((book, index) => (
               <TableRow key={book.id}>
                 <TableCell className="text-center text-xs text-muted-foreground">{index + 1}</TableCell>
