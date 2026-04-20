@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -361,7 +362,8 @@
   "auth": {
     "providers": [
       "password",
-      "anonymous"
+      "anonymous",
+      "google"
     ]
   },
   "firestore": {
@@ -494,7 +496,6 @@
           ]
         }
       }
-    ],
-    "reasoning": "The Firestore data structure is designed to support a modern school library information system, prioritizing secure, scalable, and debuggable access control. The core principle of Authorization Independence is achieved through strategic denormalization, specifically by embedding relevant user IDs directly into documents where access might depend on user identity.\n\nFor example, the 'User' collection (`/users/{userId}`) is the central point for authentication and role management. Each user document stores the `role` (Admin, Officer, Teacher, Student) directly, allowing security rules to instantly determine a user's permissions via `request.auth.uid` without costly `get()` operations. The `userId` in this path corresponds directly to the Firebase Authentication UID.\n\nTo ensure QAPs (Query-Acceptance Policies) and maintain Authorization Independence for user-specific data like library member profiles, borrowing transactions, and overdue notifications, the following denormalization strategies are applied:\n\n1.  **LibraryMember Data:** The `/library_members/{memberId}` collection stores individual library member details. For members who also have an application account, their `userId` (from the `/users` collection) is explicitly included in their `LibraryMember` document. This allows a logged-in user to directly query or retrieve their own `LibraryMember` profile using a `where('userId', '==', request.auth.uid)` clause, and security rules can grant access based on this field without performing a `get()` on the `User` collection.\n\n2.  **BorrowingTransaction Data:** The `/borrowing_transactions/{transactionId}` collection includes two crucial denormalized fields: `memberUserId` (the `userId` of the `User` associated with the borrowing `LibraryMember`) and `processedByUserId` (the `userId` of the staff `User` who processed the transaction). This design allows security rules to evaluate access for both the borrowing member (e.g., `request.auth.uid == resource.data.memberUserId`) and the processing staff (e.g., `request.auth.uid == resource.data.processedByUserId`) atomically. This eliminates the need for `get()` calls to other collections (like 'LibraryMember' or 'User') to determine transaction ownership or processing authority.\n\n3.  **OverdueNotification Data:** Similarly, the `/overdue_notifications/{notificationId}` collection denormalizes the `memberUserId` from the associated `BorrowingTransaction`. This enables a member to easily query for and access notifications directly related to their own overdue books using `where('memberUserId', '==', request.auth.uid)`, with security rules enforcing this ownership without additional `get()` operations.\n\nCollections like `BookCategory`, `ShelfLocation`, and `Book` are designed as top-level collections with a homogeneous security posture (e.g., generally readable by all authenticated users, writable by staff), making their security rules straightforward and avoiding `get()` dependencies. `ActivityLog` entries include the `userId` of the actor, facilitating auditing without external lookups. This structure ensures that common access patterns are simple to secure and performant for QAPs, as relevant authorization fields are always present within the document being accessed or easily queryable."
+    ]
   }
 }

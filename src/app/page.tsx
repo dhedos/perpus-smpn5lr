@@ -5,11 +5,11 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, UserPlus, ShieldCheck, AlertCircle, Library, KeyRound, Mail, X } from "lucide-react"
+import { Loader2, UserPlus, ShieldCheck, AlertCircle, Library, KeyRound, Mail, Chrome } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth, useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase"
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth"
-import { collection, doc, setDoc, query, limit } from "firebase/firestore"
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from "firebase/auth"
+import { collection, doc, setDoc, query, limit, getDoc } from "firebase/firestore"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -71,6 +71,37 @@ export default function LoginPage() {
         description: "Email atau kata sandi salah.", 
         variant: "destructive" 
       })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGoogleLogin = async () => {
+    if (!auth || !db) return
+    setLoading(true)
+    try {
+      const provider = new GoogleAuthProvider()
+      const result = await signInWithPopup(auth, provider)
+      const user = result.user
+
+      // Cek apakah user sudah ada di Firestore
+      const userDoc = await getDoc(doc(db, "users", user.uid))
+      if (!userDoc.exists()) {
+        // Jika belum ada (misal login pertama kali), buat profile default
+        await setDoc(doc(db, "users", user.uid), {
+          id: user.uid,
+          name: user.displayName || "User Baru",
+          email: user.email,
+          role: noUsersExist ? "Admin" : "Staff", // User pertama via Google jadi Admin jika sistem kosong
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        })
+      }
+      
+      toast({ title: "Login Berhasil", description: "Selamat datang kembali." })
+      router.push("/dashboard")
+    } catch (error: any) {
+      toast({ title: "Gagal Login Google", description: error.message, variant: "destructive" })
     } finally {
       setLoading(false)
     }
@@ -157,8 +188,8 @@ export default function LoginPage() {
           </div>
         </CardHeader>
         
-        <form onSubmit={isSetupMode ? handleSetupAdmin : handleLogin}>
-          <CardContent className="space-y-4">
+        <CardContent className="space-y-4">
+          <form onSubmit={isSetupMode ? handleSetupAdmin : handleLogin} className="space-y-4">
             {noUsersExist && !isSetupMode && (
               <Alert className="bg-primary/10 border-primary/20 text-primary">
                 <AlertCircle className="h-4 w-4" />
@@ -172,11 +203,11 @@ export default function LoginPage() {
             {isSetupMode && (
               <div className="space-y-2">
                 <Label htmlFor="name" className="font-semibold">Nama Lengkap Admin</Label>
-                <Input 
+                <input 
                   id="name" 
                   placeholder="Nama Penanggung Jawab" 
                   required 
-                  className="bg-white h-12 border-slate-300"
+                  className="flex h-12 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   value={adminName}
                   onChange={(e) => setAdminName(e.target.value)}
                 />
@@ -217,8 +248,6 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4">
             <Button type="submit" className="w-full h-12 text-base font-bold shadow-lg bg-primary hover:bg-primary/90" disabled={loading || checkingUsers}>
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin mr-2" />
@@ -228,35 +257,60 @@ export default function LoginPage() {
                 "Masuk ke Sistem"
               )}
             </Button>
-            
-            {!checkingUsers && noUsersExist && !isSetupMode && (
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="w-full border-dashed border-primary text-primary hover:bg-primary/5 h-12"
-                onClick={() => setIsSetupMode(true)}
-              >
-                <ShieldCheck className="mr-2 h-4 w-4" />
-                Inisialisasi Admin Pertama
-              </Button>
-            )}
+          </form>
 
-            {isSetupMode && (
+          {!isSetupMode && (
+            <>
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-slate-200"></span>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-muted-foreground font-bold">Atau</span>
+                </div>
+              </div>
+
               <Button 
-                type="button" 
-                variant="ghost" 
-                className="text-xs"
-                onClick={() => setIsSetupMode(false)}
+                variant="outline" 
+                className="w-full h-12 border-slate-200 gap-2 font-semibold"
+                onClick={handleGoogleLogin}
+                disabled={loading}
               >
-                Kembali ke Login
+                <Chrome className="h-5 w-5 text-red-500" />
+                Masuk dengan Google
               </Button>
-            )}
-            
-            <p className="text-[10px] text-muted-foreground text-center uppercase font-bold tracking-widest mt-4">
-              &copy; 2024 Pustaka Nusantara SMPN 5
-            </p>
-          </CardFooter>
-        </form>
+            </>
+          )}
+        </CardContent>
+
+        <CardFooter className="flex flex-col gap-4">
+          {!checkingUsers && noUsersExist && !isSetupMode && (
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="w-full border-dashed border-primary text-primary hover:bg-primary/5 h-12"
+              onClick={() => setIsSetupMode(true)}
+            >
+              <ShieldCheck className="mr-2 h-4 w-4" />
+              Inisialisasi Admin Pertama
+            </Button>
+          )}
+
+          {isSetupMode && (
+            <Button 
+              type="button" 
+              variant="ghost" 
+              className="text-xs"
+              onClick={() => setIsSetupMode(false)}
+            >
+              Kembali ke Login
+            </Button>
+          )}
+          
+          <p className="text-[10px] text-muted-foreground text-center uppercase font-bold tracking-widest mt-4">
+            &copy; 2024 Pustaka Nusantara SMPN 5
+          </p>
+        </CardFooter>
       </Card>
 
       {/* Password Reset Dialog */}
