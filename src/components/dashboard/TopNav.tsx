@@ -1,7 +1,7 @@
 
 "use client"
 
-import { Bell, Search, User, Globe, Wifi, WifiOff, LogOut, Menu } from "lucide-react"
+import { Bell, Search, User, Globe, Wifi, WifiOff, LogOut, Menu, UserCircle, Lock, Loader2, CheckCircle2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { 
@@ -15,8 +15,9 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useState, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
-import { useUser, useAuth } from "@/firebase"
-import { signOut } from "firebase/auth"
+import { useUser, useAuth, useFirestore } from "@/firebase"
+import { signOut, updatePassword } from "firebase/auth"
+import { doc, updateDoc } from "firebase/firestore"
 import { useRouter } from "next/navigation"
 import { 
   Sheet, 
@@ -26,13 +27,38 @@ import {
   SheetTitle,
   SheetDescription
 } from "@/components/ui/sheet"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 import { SidebarNav } from "./SidebarNav"
+import { useToast } from "@/hooks/use-toast"
 
 export function TopNav() {
   const [isOnline, setIsOnline] = useState(true)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const { user } = useUser()
   const auth = useAuth()
+  const db = useFirestore()
   const router = useRouter()
+  const { toast } = useToast()
+
+  const [profileData, setProfileData] = useState({
+    name: "",
+    newPassword: ""
+  })
+
+  useEffect(() => {
+    if (user) {
+      setProfileData(prev => ({ ...prev, name: user.displayNameCustom || "" }))
+    }
+  }, [user])
 
   useEffect(() => {
     setIsOnline(navigator.onLine)
@@ -50,6 +76,43 @@ export function TopNav() {
     if (auth) {
       await signOut(auth)
       router.push("/")
+    }
+  }
+
+  const handleUpdateProfile = async () => {
+    if (!user || !db || !auth.currentUser) return
+    setIsSaving(true)
+
+    try {
+      // 1. Update Name in Firestore
+      const userDocRef = doc(db, 'users', user.uid)
+      await updateDoc(userDocRef, {
+        name: profileData.name,
+        updatedAt: new Date().toISOString()
+      })
+
+      // 2. Update Password if provided
+      if (profileData.newPassword) {
+        if (profileData.newPassword.length < 6) {
+          throw new Error("Password minimal 6 karakter.")
+        }
+        await updatePassword(auth.currentUser, profileData.newPassword)
+      }
+
+      toast({
+        title: "Profil Diperbarui",
+        description: "Nama dan pengaturan Anda telah berhasil disimpan."
+      })
+      setIsProfileOpen(false)
+      setProfileData(prev => ({ ...prev, newPassword: "" }))
+    } catch (error: any) {
+      toast({
+        title: "Gagal Memperbarui",
+        description: error.message || "Terjadi kesalahan. Jika ingin ganti password, Anda mungkin perlu login ulang.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -112,21 +175,74 @@ export function TopNav() {
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="end" forceMount>
-            <DropdownMenuLabel className="font-normal">
+          <DropdownMenuContent className="w-64" align="end" forceMount>
+            <DropdownMenuLabel className="font-normal p-4">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user?.displayNameCustom}</p>
+                <p className="text-sm font-bold leading-none uppercase">{user?.displayNameCustom}</p>
                 <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+            <DropdownMenuItem onClick={() => setIsProfileOpen(true)} className="py-2.5">
+              <UserCircle className="h-4 w-4 mr-2 text-primary" />
+              Profil Saya
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive py-2.5">
               <LogOut className="h-4 w-4 mr-2" />
               Keluar
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Profile Edit Dialog */}
+      <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
+        <DialogContent className="max-w-md bg-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-primary">
+              <UserCircle className="h-5 w-5" />
+              Pengaturan Profil
+            </DialogTitle>
+            <DialogDescription>
+              Perbarui nama tampilan dan kata sandi akun Anda.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="profile-name" className="font-bold text-xs uppercase text-muted-foreground">Nama Lengkap</Label>
+              <Input 
+                id="profile-name" 
+                value={profileData.name} 
+                onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
+                className="h-11 bg-slate-50 border-slate-200"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="profile-pass" className="font-bold text-xs uppercase text-muted-foreground">Kata Sandi Baru (Opsional)</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  id="profile-pass" 
+                  type="password"
+                  placeholder="Kosongkan jika tidak ingin ganti"
+                  value={profileData.newPassword}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, newPassword: e.target.value }))}
+                  className="pl-10 h-11 bg-slate-50 border-slate-200"
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground">Minimal 6 karakter untuk keamanan.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsProfileOpen(false)}>Batal</Button>
+            <Button onClick={handleUpdateProfile} disabled={isSaving} className="gap-2">
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              Simpan Perubahan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </header>
   )
 }
