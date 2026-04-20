@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useRef, useEffect } from "react"
+import { useState, useMemo, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -159,9 +159,11 @@ export default function BooksPage() {
   }, [books, search, filterCategory, filterYear])
 
   const forceUnlockUI = () => {
-    setTimeout(() => {
-      document.body.style.pointerEvents = 'auto'
-    }, 100)
+    if (typeof document !== 'undefined') {
+      setTimeout(() => {
+        document.body.style.pointerEvents = 'auto'
+      }, 100)
+    }
   }
 
   const handleExportExcel = async () => {
@@ -325,7 +327,10 @@ export default function BooksPage() {
     )
     
     getDocs(transQuery).then((snapshot) => {
-      const activeCount = snapshot.size
+      let activeCount = 0;
+      snapshot.forEach(doc => {
+        activeCount += Number(doc.data().quantity || 1);
+      });
       const newAvail = Math.max(0, Number(book.totalStock || 0) - activeCount)
       
       const docRef = doc(db, 'books', book.id)
@@ -467,13 +472,13 @@ export default function BooksPage() {
                         setTimeout(() => {
                           setSelectedBookDetail(book); 
                           setIsDetailOpen(true);
-                        }, 0);
+                        }, 10);
                       }}><Eye className="h-4 w-4 mr-2" />Lihat Detail</DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => { 
                         setTimeout(() => {
                           setSelectedBookQr(book); 
                           setIsQrOpen(true);
-                        }, 0);
+                        }, 10);
                       }}><QrCode className="h-4 w-4 mr-2" />Tampilkan QR</DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => handleSyncAvailability(book)}><RefreshCw className="h-4 w-4 mr-2" />Sinkronkan Stok</DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => { 
@@ -494,13 +499,13 @@ export default function BooksPage() {
                             description: book.description || ""
                           }); 
                           setIsEditOpen(true);
-                        }, 0);
+                        }, 10);
                       }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
                       <DropdownMenuItem className="text-destructive" onSelect={() => { 
                         setTimeout(() => {
                           setBookToDelete(book.id); 
                           setIsDeleteDialogOpen(true);
-                        }, 0);
+                        }, 10);
                       }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -620,7 +625,7 @@ export default function BooksPage() {
             <DialogTitle className="flex items-center gap-2 text-primary"><Info className="h-5 w-5" />Informasi Detail Buku</DialogTitle>
           </DialogHeader>
           {selectedBookDetail && (
-            <div className="grid grid-cols-2 gap-6 py-4">
+            <div className="grid grid-cols-2 gap-6 py-4 text-sm">
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Judul Buku</Label><div className="font-bold text-lg leading-tight">{selectedBookDetail.title ?? ""}</div></div>
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Kode Koleksi</Label><div className="font-mono text-primary font-bold">{selectedBookDetail.code ?? ""}</div></div>
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Pengarang</Label><div>{selectedBookDetail.author ?? ""}</div></div>

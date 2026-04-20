@@ -24,7 +24,8 @@ import {
   Library,
   ChevronRight,
   Minus,
-  Plus
+  Plus,
+  AlertTriangle
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -36,7 +37,6 @@ import {
   DialogFooter,
   DialogDescription
 } from "@/components/ui/dialog"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import {
   Table,
   TableBody,
@@ -54,7 +54,7 @@ import {
   useDoc,
   useUser
 } from '@/firebase'
-import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc, orderBy, limit } from 'firebase/firestore'
+import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc, orderBy } from 'firebase/firestore'
 import { differenceInDays, parseISO, format, isAfter, addDays, startOfDay } from "date-fns"
 import { id as localeID } from "date-fns/locale"
 import { cn } from "@/lib/utils"
@@ -84,7 +84,12 @@ export default function TransactionsPage() {
   // Return Process State
   const [isReturnConfirmOpen, setIsReturnConfirmOpen] = useState(false)
   const [pendingReturnTrans, setPendingReturnTrans] = useState<any>(null)
-  const [returnCondition, setReturnCondition] = useState<"normal" | "damaged" | "lost">("normal")
+  
+  // Rincian jumlah per kondisi
+  const [returnNormalQty, setReturnNormalQty] = useState(0)
+  const [returnDamagedQty, setReturnDamagedQty] = useState(0)
+  const [returnLostQty, setReturnLostQty] = useState(0)
+  
   const [calculatedFine, setCalculatedFine] = useState(0)
   const [lateDays, setLateDays] = useState(0)
 
@@ -169,7 +174,6 @@ export default function TransactionsPage() {
         toast({ title: "Anggota Terpilih" }) 
       }
       else if (book) { 
-        // Logic for double scan / increment
         if (selectedBook && selectedBook.id === book.id) {
           const maxAvail = book.availableStock || 0;
           if (borrowQuantity < maxAvail) {
@@ -191,7 +195,10 @@ export default function TransactionsPage() {
         const b = books?.find(bk => bk.id === t.bookId); 
         return b?.code?.toLowerCase() === text.toLowerCase() || b?.isbn === text || t.memberId?.toLowerCase() === text.toLowerCase(); 
       })
-      if (trans) { prepareReturn(trans); stopScanner(); }
+      if (trans) { 
+        setTimeout(() => prepareReturn(trans), 10);
+        stopScanner(); 
+      }
     }
   }
 
@@ -203,20 +210,37 @@ export default function TransactionsPage() {
     
     setLateDays(diffDays > 0 ? diffDays : 0);
     setPendingReturnTrans(trans);
-    setReturnCondition("normal");
+    
+    // Inisialisasi jumlah: default semua normal
+    const totalQty = Number(trans.quantity || 1);
+    setReturnNormalQty(totalQty);
+    setReturnDamagedQty(0);
+    setReturnLostQty(0);
+    
     setIsReturnConfirmOpen(true);
   }
 
   useEffect(() => {
     if (!pendingReturnTrans || !settings) return;
+    
     let fine = 0;
-    const finePerDay = Number(settings.fineAmount ?? 500);
-    const lostFine = Number(settings.lostBookFine ?? 50000);
-    if (lateDays > 0) fine += lateDays * finePerDay;
-    if (returnCondition === "lost") fine += lostFine;
-    else if (returnCondition === "damaged") fine += finePerDay * 10;
+    const finePerDay = Number(settings.fineAmount || 500);
+    const lostFineBase = Number(settings.lostBookFine || 50000);
+    const totalQty = Number(pendingReturnTrans.quantity || 1);
+
+    // Denda keterlambatan (berlaku untuk seluruh unit)
+    if (lateDays > 0) {
+      fine += lateDays * finePerDay * totalQty;
+    }
+    
+    // Denda kerusakan (per unit)
+    fine += returnDamagedQty * (finePerDay * 10);
+    
+    // Denda kehilangan (per unit)
+    fine += returnLostQty * lostFineBase;
+    
     setCalculatedFine(fine);
-  }, [returnCondition, pendingReturnTrans, lateDays, settings]);
+  }, [pendingReturnTrans, lateDays, settings, returnNormalQty, returnDamagedQty, returnLostQty]);
 
   const forceUnlockUI = () => {
     setTimeout(() => {
@@ -228,6 +252,19 @@ export default function TransactionsPage() {
 
   const handleConfirmReturn = () => {
     if (!db || !pendingReturnTrans) return
+    
+    const totalInput = returnNormalQty + returnDamagedQty + returnLostQty;
+    const expectedTotal = Number(pendingReturnTrans.quantity || 1);
+    
+    if (totalInput !== expectedTotal) {
+      toast({ 
+        title: "Jumlah Tidak Sesuai", 
+        description: `Total unit harus ${expectedTotal}. Saat ini: ${totalInput}.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsProcessing(true)
     
     const transRef = doc(db, 'transactions', pendingReturnTrans.id)
@@ -235,7 +272,11 @@ export default function TransactionsPage() {
       status: 'returned', 
       returnDate: new Date().toISOString(), 
       type: 'return',
-      condition: returnCondition,
+      rincianKondisi: {
+        normal: returnNormalQty,
+        damaged: returnDamagedQty,
+        lost: returnLostQty
+      },
       fineAmount: calculatedFine,
       isFinePaid: calculatedFine > 0 
     }
@@ -247,18 +288,18 @@ export default function TransactionsPage() {
       const bRef = doc(db, 'books', pendingReturnTrans.bookId)
       const bDoc = await getDoc(bRef)
       if (bDoc.exists()) {
-        const currentTotal = bDoc.data().totalStock || 0
-        const currentAvail = bDoc.data().availableStock || 0
-        const transQty = Number(pendingReturnTrans.quantity || 1)
+        const currentTotal = Number(bDoc.data().totalStock || 0)
+        const currentAvail = Number(bDoc.data().availableStock || 0)
         
-        if (returnCondition === "lost") {
-          updateDoc(bRef, { 
-            totalStock: Math.max(0, currentTotal - transQty),
-            availableStock: currentAvail
-          })
-        } else {
-          updateDoc(bRef, { availableStock: currentAvail + transQty })
-        }
+        // Buku Normal & Rusak kembali ke ketersediaan (availableStock)
+        // Buku Hilang mengurangi stok total (totalStock)
+        const backToShelf = returnNormalQty + returnDamagedQty;
+        const permanentLoss = returnLostQty;
+
+        updateDoc(bRef, { 
+          totalStock: Math.max(0, currentTotal - permanentLoss),
+          availableStock: currentAvail + backToShelf
+        })
       }
       toast({ title: "Berhasil!", description: "Pengembalian buku telah dicatat." })
       setReturnSearch("");
@@ -275,7 +316,6 @@ export default function TransactionsPage() {
           scannerInstanceRef.current = scanner
           await scanner.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (text) => {
             handleLookup(text)
-            if (activeTab === "return") stopScanner()
           }, () => {})
         } catch (err) {}
       }, 500)
@@ -322,7 +362,7 @@ export default function TransactionsPage() {
       updateDoc(doc(db, 'books', selectedBook.id), { availableStock: Math.max(0, avail - borrowQuantity) })
       toast({ 
         title: "Peminjaman Berhasil", 
-        description: `Buku: ${selectedBook.title} (${borrowQuantity} unit). Jatuh tempo: ${format(finalDueDate, 'dd MMMM yyyy', { locale: localeID })}.` 
+        description: `Buku: ${selectedBook.title} (${borrowQuantity} unit).` 
       }); 
       setSelectedBook(null); 
       setSelectedMember(null);
@@ -333,7 +373,7 @@ export default function TransactionsPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="space-y-1">
           <h1 className="text-2xl font-bold text-primary flex items-center gap-2"><ArrowRightLeft className="h-6 w-6" /> Sirkulasi & Kondisi Buku</h1>
           <p className="text-sm text-muted-foreground">Proses peminjaman dan pengembalian sesuai kebijakan sekolah.</p>
         </div>
@@ -501,8 +541,6 @@ export default function TransactionsPage() {
                                 setBorrowQuantity(Math.min(max, Math.max(1, val)));
                               }
                             }}
-                            min={1}
-                            max={selectedBook.availableStock || 1}
                           />
                           <Button 
                             variant="outline" 
@@ -636,7 +674,7 @@ export default function TransactionsPage() {
               <CheckCircle className="h-5 w-5" /> Konfirmasi & Kondisi Buku
             </DialogTitle>
             <DialogDescription>
-              Tentukan kondisi fisik buku saat pengembalian.
+              Tentukan rincian kondisi buku yang dikembalikan.
             </DialogDescription>
           </DialogHeader>
           
@@ -648,10 +686,8 @@ export default function TransactionsPage() {
                   <div className="flex-1">
                     <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Informasi Buku</div>
                     <div className="text-sm font-black">
-                      {pendingReturnTrans.bookTitle}
-                      {pendingReturnTrans.quantity && pendingReturnTrans.quantity > 1 && (
-                        <span className="ml-1 text-primary">({pendingReturnTrans.quantity} unit)</span>
-                      )}
+                      {pendingReturnTrans.bookTitle} 
+                      <span className="ml-1 text-primary">({pendingReturnTrans.quantity} unit)</span>
                     </div>
                   </div>
                 </div>
@@ -664,33 +700,60 @@ export default function TransactionsPage() {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <Label className="font-bold text-xs uppercase text-muted-foreground tracking-widest flex items-center gap-2">
-                  <ShieldAlert className="h-3 w-3" /> Pilih Kondisi Fisik
-                </Label>
-                <RadioGroup value={returnCondition} onValueChange={(v: any) => setReturnCondition(v)} className="grid grid-cols-1 gap-2">
-                  <div className={cn("flex items-center space-x-3 p-4 rounded-xl border-2 transition-all cursor-pointer", returnCondition === 'normal' ? "border-primary bg-primary/5" : "hover:bg-slate-50")}>
-                    <RadioGroupItem value="normal" id="c-normal" />
-                    <Label htmlFor="c-normal" className="flex-1 cursor-pointer flex items-center justify-between font-bold">
-                      <span className="flex items-center gap-2"><ThumbsUp className="h-4 w-4 text-green-600" /> Lengkap & Baik</span>
-                      <Badge variant="outline" className="bg-white">Normal</Badge>
-                    </Label>
+              <div className="space-y-4">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                  <ShieldAlert className="h-3 w-3" /> Input Rincian Kondisi
+                </div>
+                
+                <div className="grid gap-3">
+                  <div className="flex items-center justify-between p-3 rounded-xl border bg-green-50/50">
+                    <div className="flex items-center gap-2">
+                      <ThumbsUp className="h-4 w-4 text-green-600" />
+                      <Label className="font-bold text-sm">Kembali Normal</Label>
+                    </div>
+                    <Input 
+                      type="number" 
+                      className="w-16 h-8 text-center font-bold"
+                      value={returnNormalQty}
+                      onChange={(e) => setReturnNormalQty(Number(e.target.value))}
+                    />
                   </div>
-                  <div className={cn("flex items-center space-x-3 p-4 rounded-xl border-2 transition-all cursor-pointer", returnCondition === 'damaged' ? "border-orange-500 bg-orange-50" : "hover:bg-slate-50")}>
-                    <RadioGroupItem value="damaged" id="c-damaged" />
-                    <Label htmlFor="c-damaged" className="flex-1 cursor-pointer flex items-center justify-between font-bold">
-                      <span className="flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-orange-600" /> Rusak (Denda)</span>
-                      <Badge variant="outline" className="bg-white border-orange-200 text-orange-700">Perbaikan</Badge>
-                    </Label>
+
+                  <div className="flex items-center justify-between p-3 rounded-xl border bg-orange-50/50">
+                    <div className="flex items-center gap-2">
+                      <ShieldAlert className="h-4 w-4 text-orange-600" />
+                      <Label className="font-bold text-sm">Rusak (Denda)</Label>
+                    </div>
+                    <Input 
+                      type="number" 
+                      className="w-16 h-8 text-center font-bold"
+                      value={returnDamagedQty}
+                      onChange={(e) => setReturnDamagedQty(Number(e.target.value))}
+                    />
                   </div>
-                  <div className={cn("flex items-center space-x-3 p-4 rounded-xl border-2 transition-all cursor-pointer", returnCondition === 'lost' ? "border-destructive bg-red-50" : "hover:bg-slate-50")}>
-                    <RadioGroupItem value="lost" id="c-lost" />
-                    <Label htmlFor="c-lost" className="flex-1 cursor-pointer flex items-center justify-between font-bold">
-                      <span className="flex items-center gap-2"><Ghost className="h-4 w-4 text-destructive" /> Hilang (Ganti)</span>
-                      <Badge variant="destructive" className="h-5 px-1.5">Penggantian</Badge>
-                    </Label>
+
+                  <div className="flex items-center justify-between p-3 rounded-xl border bg-red-50/50">
+                    <div className="flex items-center gap-2">
+                      <Ghost className="h-4 w-4 text-red-600" />
+                      <Label className="font-bold text-sm">Hilang (Ganti)</Label>
+                    </div>
+                    <Input 
+                      type="number" 
+                      className="w-16 h-8 text-center font-bold"
+                      value={returnLostQty}
+                      onChange={(e) => setReturnLostQty(Number(e.target.value))}
+                    />
                   </div>
-                </RadioGroup>
+                </div>
+
+                <div className={cn(
+                  "p-2 text-center rounded-lg text-[10px] font-bold",
+                  (returnNormalQty + returnDamagedQty + returnLostQty) === Number(pendingReturnTrans.quantity) 
+                    ? "bg-green-100 text-green-700" 
+                    : "bg-red-100 text-red-700"
+                )}>
+                  TOTAL UNIT: {returnNormalQty + returnDamagedQty + returnLostQty} / {pendingReturnTrans.quantity}
+                </div>
               </div>
 
               {calculatedFine > 0 && (
@@ -700,9 +763,9 @@ export default function TransactionsPage() {
                     <span className="text-2xl font-black text-orange-600">Rp{calculatedFine.toLocaleString()}</span>
                   </div>
                   <div className="text-[10px] text-orange-700 font-medium leading-relaxed opacity-80 pt-2 border-t border-orange-200">
-                    {lateDays > 0 && <div className="flex justify-between"><span>• Terlambat {lateDays} hari</span> <span>Rp{(lateDays * Number(settings?.fineAmount || 500)).toLocaleString()}</span></div>}
-                    {returnCondition === 'damaged' && <div className="flex justify-between"><span>• Biaya Kerusakan Buku</span> <span>Rp{(Number(settings?.fineAmount || 500) * 10).toLocaleString()}</span></div>}
-                    {returnCondition === 'lost' && <div className="flex justify-between"><span>• Ganti Buku Hilang</span> <span>Rp{Number(settings?.lostBookFine || 50000).toLocaleString()}</span></div>}
+                    {lateDays > 0 && <div className="flex justify-between"><span>• Terlambat {lateDays} hari ({pendingReturnTrans.quantity} unit)</span> <span>Rp{(lateDays * Number(settings?.fineAmount || 500) * Number(pendingReturnTrans.quantity)).toLocaleString()}</span></div>}
+                    {returnDamagedQty > 0 && <div className="flex justify-between"><span>• Denda Kerusakan ({returnDamagedQty} unit)</span> <span>Rp{(returnDamagedQty * Number(settings?.fineAmount || 500) * 10).toLocaleString()}</span></div>}
+                    {returnLostQty > 0 && <div className="flex justify-between"><span>• Denda Kehilangan ({returnLostQty} unit)</span> <span>Rp{(returnLostQty * Number(settings?.lostBookFine || 50000)).toLocaleString()}</span></div>}
                   </div>
                 </div>
               )}
@@ -711,7 +774,7 @@ export default function TransactionsPage() {
 
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setIsReturnConfirmOpen(false)} disabled={isProcessing} className="flex-1">Batal</Button>
-            <Button onClick={handleConfirmReturn} disabled={isProcessing} className="flex-1 shadow-lg shadow-primary/20">{isProcessing ? <Loader2 className="animate-spin" /> : "Simpan Data"}</Button>
+            <Button onClick={handleConfirmReturn} disabled={isProcessing || (returnNormalQty + returnDamagedQty + returnLostQty) !== Number(pendingReturnTrans?.quantity)} className="flex-1 shadow-lg shadow-primary/20">{isProcessing ? <Loader2 className="animate-spin" /> : "Simpan Data"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
