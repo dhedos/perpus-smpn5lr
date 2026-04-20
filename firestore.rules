@@ -1,18 +1,11 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
      * SCHOOL LIBRARY SYSTEM SECURITY RULES
-     *
-     * CORE PHILOSOPHY:
-     * This ruleset implements a hybrid Role-Based Access Control (RBAC) and Ownership model.
-     * It prioritizes "Authorization Independence" by leveraging denormalized identifiers 
-     * (like userId and memberUserId) to permit high-performance security checks without 
-     * excessive cross-document lookups.
      */
-
-    // --- GLOBAL HELPER FUNCTIONS ---
 
     function isSignedIn() {
       return request.auth != null;
@@ -38,12 +31,6 @@ service cloud.firestore {
       return hasRole('Admin') || hasRole('Officer');
     }
 
-    // --- COLLECTION RULES ---
-
-    /**
-     * @description Rules for the User collection.
-     * allow list: if true; -> Diperlukan agar halaman login bisa mendeteksi apakah sistem sudah memiliki admin (inisialisasi).
-     */
     match /users/{userId} {
       allow get: if isOwner(userId) || isStaff();
       allow list: if true; 
@@ -80,7 +67,7 @@ service cloud.firestore {
     }
 
     match /activity_logs/{logId} {
-      allow get, list: if hasRole('Admin');
+      allow get, list: if isStaff();
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if false; 
     }
@@ -91,18 +78,15 @@ service cloud.firestore {
       allow create, update, delete: if isStaff();
     }
 
-    // Allow staff to manage settings
     match /settings/{settingId} {
       allow read: if isSignedIn();
       allow write: if isStaff();
     }
     
-    // Allow managing members collection (from previous request)
     match /members/{memberId} {
       allow read, write: if isStaff();
     }
 
-    // Allow managing transactions collection
     match /transactions/{transactionId} {
       allow read, write: if isStaff();
     }

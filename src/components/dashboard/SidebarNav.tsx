@@ -13,7 +13,8 @@ import {
   Database,
   LogOut,
   Library,
-  UserCog
+  UserCog,
+  ClipboardCheck
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -29,6 +30,7 @@ const menuItems = [
 ]
 
 const adminOnlyItems = [
+  { icon: ClipboardCheck, label: "Stok Opname", href: "/dashboard/stock-opname" },
   { icon: UserCog, label: "Petugas Perpustakaan", href: "/dashboard/staff" },
   { icon: Database, label: "Backup & Sync", href: "/dashboard/sync" },
   { icon: Settings, label: "Pengaturan", href: "/dashboard/settings" },
