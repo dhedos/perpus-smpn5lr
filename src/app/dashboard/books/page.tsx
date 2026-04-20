@@ -26,7 +26,8 @@ import {
   QrCode,
   Printer,
   X,
-  Download
+  Download,
+  FileDown
 } from "lucide-react"
 import { 
   Dialog, 
@@ -85,6 +86,8 @@ export default function BooksPage() {
     code: "",
     title: "",
     author: "",
+    publisher: "",
+    publicationYear: new Date().getFullYear(),
     isbn: "",
     category: "",
     rackLocation: "",
@@ -111,6 +114,32 @@ export default function BooksPage() {
       (b.isbn?.toLowerCase() || "").includes(search.toLowerCase())
     )
   }, [books, search])
+
+  const handleExportExcel = async () => {
+    try {
+      const { utils, writeFile } = await import("xlsx")
+      const dataToExport = filteredBooks.map(book => ({
+        "Kode": book.code,
+        "Judul": book.title,
+        "Pengarang": book.author,
+        "Penerbit": book.publisher,
+        "Tahun": book.publicationYear,
+        "ISBN": book.isbn,
+        "Kategori": book.category,
+        "Rak": book.rackLocation,
+        "Total Stok": book.totalStock,
+        "Tersedia": book.availableStock
+      }))
+      
+      const worksheet = utils.json_to_sheet(dataToExport)
+      const workbook = utils.book_new()
+      utils.book_append_sheet(workbook, worksheet, "Koleksi Buku")
+      writeFile(workbook, "Koleksi_Buku_SMPN5.xlsx")
+      toast({ title: "Berhasil", description: "Daftar buku telah diunduh." })
+    } catch (error) {
+      toast({ title: "Gagal", description: "Gagal mengekspor data.", variant: "destructive" })
+    }
+  }
 
   const handleImportClick = () => {
     fileInputRef.current?.click()
@@ -140,9 +169,11 @@ export default function BooksPage() {
 
           for (const row of json) {
             const bookData = {
-              code: String(row.code || row.id || ""),
+              code: String(row.code || row.id || row.Kode || ""),
               title: String(row.title || row.Judul || ""),
               author: String(row.author || row.Pengarang || ""),
+              publisher: String(row.publisher || row.Penerbit || ""),
+              publicationYear: Number(row.publicationYear || row.Tahun || new Date().getFullYear()),
               isbn: String(row.isbn || row.ISBN || ""),
               category: String(row.category || row.Kategori || ""),
               rackLocation: String(row.rackLocation || row.Rak || ""),
@@ -278,6 +309,7 @@ export default function BooksPage() {
     
     addDoc(booksCollectionRef, {
       ...formData,
+      publicationYear: Number(formData.publicationYear),
       totalStock: Number(formData.totalStock),
       availableStock: Number(formData.availableStock),
       createdAt: new Date().toISOString()
@@ -285,8 +317,8 @@ export default function BooksPage() {
       toast({ title: "Berhasil!", description: "Buku baru telah ditambahkan." })
       setIsOpen(false)
       setFormData({
-        code: "", title: "", author: "", isbn: "", category: "",
-        rackLocation: "", totalStock: 1, availableStock: 1, description: ""
+        code: "", title: "", author: "", publisher: "", publicationYear: new Date().getFullYear(),
+        isbn: "", category: "", rackLocation: "", totalStock: 1, availableStock: 1, description: ""
       })
     }).catch(async (error) => {
       const permissionError = new FirestorePermissionError({
@@ -308,6 +340,7 @@ export default function BooksPage() {
     
     updateDoc(bookDocRef, {
       ...formData,
+      publicationYear: Number(formData.publicationYear),
       totalStock: Number(formData.totalStock),
       availableStock: Number(formData.availableStock),
       updatedAt: new Date().toISOString()
@@ -343,6 +376,7 @@ export default function BooksPage() {
     setEditingBookId(book.id)
     setFormData({
       code: book.code || "", title: book.title || "", author: book.author || "",
+      publisher: book.publisher || "", publicationYear: Number(book.publicationYear || new Date().getFullYear()),
       isbn: book.isbn || "", category: book.category || "", rackLocation: book.rackLocation || "",
       totalStock: Number(book.totalStock || 1), availableStock: Number(book.availableStock || 1),
       description: book.description || ""
@@ -428,6 +462,10 @@ export default function BooksPage() {
         
         <div className="flex flex-wrap gap-2">
           <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".xlsx, .xls, .csv" className="hidden" />
+          <Button variant="outline" size="sm" className="gap-2" onClick={handleExportExcel}>
+            <FileDown className="h-4 w-4" />
+            <span className="hidden sm:inline">Ekspor Excel</span>
+          </Button>
           <Button variant="outline" size="sm" className="gap-2" onClick={handleImportClick}>
             <FileSpreadsheet className="h-4 w-4" />
             <span className="hidden sm:inline">Import Excel</span>
@@ -456,6 +494,14 @@ export default function BooksPage() {
                 <div className="space-y-2">
                   <Label htmlFor="author">Pengarang</Label>
                   <Input id="author" value={formData.author} onChange={(e) => setFormData({ ...formData, author: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="publisher">Penerbit</Label>
+                  <Input id="publisher" value={formData.publisher} onChange={(e) => setFormData({ ...formData, publisher: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="year">Tahun Terbit</Label>
+                  <Input id="year" type="number" value={formData.publicationYear} onChange={(e) => setFormData({ ...formData, publicationYear: Number(e.target.value) })} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="isbn">ISBN / Barcode</Label>
@@ -623,6 +669,14 @@ export default function BooksPage() {
               <Input id="edit-author" value={formData.author} onChange={(e) => setFormData({ ...formData, author: e.target.value })} />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="edit-publisher">Penerbit</Label>
+              <Input id="edit-publisher" value={formData.publisher} onChange={(e) => setFormData({ ...formData, publisher: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-year">Tahun Terbit</Label>
+              <Input id="edit-year" type="number" value={formData.publicationYear} onChange={(e) => setFormData({ ...formData, publicationYear: Number(e.target.value) })} />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="edit-isbn">ISBN / Barcode</Label>
               <div className="flex gap-2">
                 <Input id="edit-isbn" value={formData.isbn} className="flex-1" onChange={(e) => setFormData({ ...formData, isbn: e.target.value })} />
@@ -667,7 +721,7 @@ export default function BooksPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Kode</TableHead>
-              <TableHead>Judul</TableHead>
+              <TableHead>Judul & Tahun</TableHead>
               <TableHead className="hidden md:table-cell">Kategori</TableHead>
               <TableHead>Stok</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
@@ -684,7 +738,7 @@ export default function BooksPage() {
                 <TableCell>
                   <div className="flex flex-col">
                     <span className="font-semibold line-clamp-1">{book.title}</span>
-                    <span className="text-[10px] text-muted-foreground">{book.author}</span>
+                    <span className="text-[10px] text-muted-foreground">{book.author} {book.publicationYear ? `(${book.publicationYear})` : ''}</span>
                   </div>
                 </TableCell>
                 <TableCell className="hidden md:table-cell"><Badge variant="outline">{book.category || 'N/A'}</Badge></TableCell>
