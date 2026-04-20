@@ -30,6 +30,7 @@ export default function SyncPage() {
     setSyncing(true)
     setProgress(0)
     
+    // Simulasi sinkronisasi untuk user experience
     const interval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) {
