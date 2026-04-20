@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
@@ -56,7 +57,7 @@ import {
   useMemoFirebase,
   errorEmitter 
 } from '@/firebase'
-import { collection, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore'
+import { collection, addDoc, deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors'
 
 export default function MembersPage() {
@@ -66,6 +67,7 @@ export default function MembersPage() {
   const [search, setSearch] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+  const [isEditOpen, setIsEditOpen] = useState(false)
   
   const [formData, setFormData] = useState({
     memberId: "",
@@ -75,6 +77,8 @@ export default function MembersPage() {
     phone: "",
     joinDate: new Date().toISOString().split('T')[0]
   })
+
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
 
   // Get members from Firestore
   const membersCollectionRef = useMemoFirebase(() => {
@@ -153,6 +157,31 @@ export default function MembersPage() {
     })
   }
 
+  const handleUpdateMember = () => {
+    if (!db || !editingMemberId) return
+    
+    setIsSaving(true)
+    const memberDocRef = doc(db, 'members', editingMemberId)
+    
+    updateDoc(memberDocRef, {
+      ...formData,
+      updatedAt: serverTimestamp()
+    }).then(() => {
+      toast({ title: "Berhasil!", description: `Data anggota ${formData.name} telah diperbarui.` })
+      setIsEditOpen(false)
+      setEditingMemberId(null)
+    }).catch(async (error) => {
+      const permissionError = new FirestorePermissionError({
+        path: memberDocRef.path,
+        operation: 'update',
+        requestResourceData: formData,
+      } satisfies SecurityRuleContext);
+      errorEmitter.emit('permission-error', permissionError);
+    }).finally(() => {
+      setIsSaving(false)
+    })
+  }
+
   const handleDeleteMember = (id: string, name: string) => {
     if (!db) return
     const memberDocRef = doc(db, 'members', id)
@@ -166,6 +195,19 @@ export default function MembersPage() {
       } satisfies SecurityRuleContext);
       errorEmitter.emit('permission-error', permissionError);
     })
+  }
+
+  const openEditDialog = (member: any) => {
+    setEditingMemberId(member.id)
+    setFormData({
+      memberId: member.memberId || "",
+      name: member.name || "",
+      type: member.type || "Student",
+      classOrSubject: member.classOrSubject || "",
+      phone: member.phone || "",
+      joinDate: member.joinDate || new Date().toISOString().split('T')[0]
+    })
+    setIsEditOpen(true)
   }
 
   return (
@@ -252,6 +294,75 @@ export default function MembersPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Ubah Data Anggota</DialogTitle>
+              <DialogDescription>Perbarui profil anggota sekolah SMPN 5 LANGKE REMBONG.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-memberId">ID Anggota</Label>
+                  <Input 
+                    id="edit-memberId" 
+                    value={formData.memberId}
+                    readOnly
+                    className="bg-muted font-mono"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-type">Tipe Anggota</Label>
+                  <Select 
+                    value={formData.type} 
+                    onValueChange={(v) => setFormData({ ...formData, type: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Student">Siswa</SelectItem>
+                      <SelectItem value="Teacher">Guru</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Nama Lengkap</Label>
+                <Input 
+                  id="edit-name" 
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-class">Kelas / Mata Pelajaran</Label>
+                <Input 
+                  id="edit-class" 
+                  value={formData.classOrSubject}
+                  onChange={(e) => setFormData({ ...formData, classOrSubject: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-phone">No. Telepon</Label>
+                <Input 
+                  id="edit-phone" 
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditOpen(false)}>Batal</Button>
+              <Button onClick={handleUpdateMember} disabled={isSaving}>
+                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Perbarui Anggota
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="flex items-center gap-4 bg-card p-4 rounded-xl shadow-sm border-none">
@@ -322,7 +433,7 @@ export default function MembersPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem className="gap-2">
+                      <DropdownMenuItem className="gap-2" onClick={() => openEditDialog(member)}>
                         <Edit className="h-4 w-4" /> Ubah
                       </DropdownMenuItem>
                       <DropdownMenuItem 

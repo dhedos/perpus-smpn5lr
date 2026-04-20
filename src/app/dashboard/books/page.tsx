@@ -55,7 +55,7 @@ import {
   useMemoFirebase,
   errorEmitter 
 } from '@/firebase'
-import { collection, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore'
+import { collection, addDoc, deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors'
 
 export default function BooksPage() {
@@ -66,6 +66,7 @@ export default function BooksPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+  const [isEditOpen, setIsEditOpen] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null)
   
@@ -83,6 +84,8 @@ export default function BooksPage() {
     availableStock: 1,
     description: ""
   })
+
+  const [editingBookId, setEditingBookId] = useState<string | null>(null)
 
   // Get books from Firestore
   const booksCollectionRef = useMemoFirebase(() => {
@@ -264,6 +267,33 @@ export default function BooksPage() {
     })
   }
 
+  const handleUpdateBook = () => {
+    if (!db || !editingBookId) return
+    
+    setIsSaving(true)
+    const bookDocRef = doc(db, 'books', editingBookId)
+    
+    updateDoc(bookDocRef, {
+      ...formData,
+      totalStock: Number(formData.totalStock),
+      availableStock: Number(formData.availableStock),
+      updatedAt: new Date().toISOString()
+    }).then(() => {
+      toast({ title: "Berhasil!", description: "Data buku telah diperbarui." })
+      setIsEditOpen(false)
+      setEditingBookId(null)
+    }).catch(async (error) => {
+      const permissionError = new FirestorePermissionError({
+        path: bookDocRef.path,
+        operation: 'update',
+        requestResourceData: formData,
+      } satisfies SecurityRuleContext);
+      errorEmitter.emit('permission-error', permissionError);
+    }).finally(() => {
+      setIsSaving(false)
+    })
+  }
+
   const handleDeleteBook = (bookId: string) => {
     if (!db) return
     const bookDocRef = doc(db, 'books', bookId)
@@ -275,6 +305,22 @@ export default function BooksPage() {
       } satisfies SecurityRuleContext);
       errorEmitter.emit('permission-error', permissionError);
     })
+  }
+
+  const openEditDialog = (book: any) => {
+    setEditingBookId(book.id)
+    setFormData({
+      code: book.code || "",
+      title: book.title || "",
+      author: book.author || "",
+      isbn: book.isbn || "",
+      category: book.category || "",
+      rackLocation: book.rackLocation || "",
+      totalStock: Number(book.totalStock || 1),
+      availableStock: Number(book.availableStock || 1),
+      description: book.description || ""
+    })
+    setIsEditOpen(true)
   }
 
   return (
@@ -415,6 +461,100 @@ export default function BooksPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          {/* Edit Dialog */}
+          <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Ubah Data Buku</DialogTitle>
+                <DialogDescription>Perbarui informasi katalog buku yang sudah terdaftar.</DialogDescription>
+              </DialogHeader>
+              <div className="grid grid-cols-2 gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-code">Kode Buku</Label>
+                  <Input 
+                    id="edit-code" 
+                    value={formData.code}
+                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-title">Judul Buku</Label>
+                  <Input 
+                    id="edit-title" 
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-author">Pengarang</Label>
+                  <Input 
+                    id="edit-author" 
+                    value={formData.author}
+                    onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-isbn">ISBN</Label>
+                  <Input 
+                    id="edit-isbn" 
+                    value={formData.isbn}
+                    onChange={(e) => setFormData({ ...formData, isbn: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-category">Kategori</Label>
+                  <Input 
+                    id="edit-category" 
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-rack">Lokasi Rak</Label>
+                  <Input 
+                    id="edit-rack" 
+                    value={formData.rackLocation}
+                    onChange={(e) => setFormData({ ...formData, rackLocation: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-totalStock">Total Stok</Label>
+                  <Input 
+                    id="edit-totalStock" 
+                    type="number" 
+                    value={formData.totalStock}
+                    onChange={(e) => setFormData({ ...formData, totalStock: Number(e.target.value) })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-availableStock">Stok Tersedia</Label>
+                  <Input 
+                    id="edit-availableStock" 
+                    type="number" 
+                    value={formData.availableStock}
+                    onChange={(e) => setFormData({ ...formData, availableStock: Number(e.target.value) })}
+                  />
+                </div>
+                <div className="col-span-2 space-y-2">
+                  <Label htmlFor="edit-description">Deskripsi</Label>
+                  <Textarea 
+                    id="edit-description" 
+                    className="min-h-[120px]"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsEditOpen(false)}>Batal</Button>
+                <Button onClick={handleUpdateBook} disabled={isSaving}>
+                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Perbarui Data
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -515,6 +655,9 @@ export default function BooksPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem className="gap-2" onClick={() => openEditDialog(book)}>
+                        <Edit className="h-4 w-4" /> Ubah
+                      </DropdownMenuItem>
                       <DropdownMenuItem className="gap-2 text-destructive" onClick={() => handleDeleteBook(book.id)}>
                         <Trash2 className="h-4 w-4" /> Hapus
                       </DropdownMenuItem>
