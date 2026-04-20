@@ -162,8 +162,30 @@ export default function TransactionsPage() {
     const book = books?.find(b => b.code?.toLowerCase() === text.toLowerCase() || b.isbn === text)
 
     if (activeTab === "borrow") {
-      if (member) { setSelectedMember(member); setMemberSearch(""); setShowMemberSuggestions(false); toast({ title: "Anggota Terpilih" }) }
-      else if (book) { setSelectedBook(book); setBookSearch(""); setShowBookSuggestions(false); setBorrowQuantity(1); toast({ title: "Buku Terpilih" }) }
+      if (member) { 
+        setSelectedMember(member); 
+        setMemberSearch(""); 
+        setShowMemberSuggestions(false); 
+        toast({ title: "Anggota Terpilih" }) 
+      }
+      else if (book) { 
+        // Logic for double scan / increment
+        if (selectedBook && selectedBook.id === book.id) {
+          const maxAvail = book.availableStock || 0;
+          if (borrowQuantity < maxAvail) {
+            setBorrowQuantity(prev => prev + 1);
+            toast({ title: "Jumlah Bertambah", description: `${book.title} +1` });
+          } else {
+            toast({ title: "Stok Maksimal", description: "Tidak bisa menambah jumlah lagi.", variant: "destructive" });
+          }
+        } else {
+          setSelectedBook(book); 
+          setBookSearch(""); 
+          setShowBookSuggestions(false); 
+          setBorrowQuantity(1); 
+          toast({ title: "Buku Terpilih" }) 
+        }
+      }
     } else {
       const trans = activeTrans?.find(t => { 
         const b = books?.find(bk => bk.id === t.bookId); 
@@ -198,7 +220,9 @@ export default function TransactionsPage() {
 
   const forceUnlockUI = () => {
     setTimeout(() => {
-      document.body.style.pointerEvents = 'auto'
+      if (typeof document !== 'undefined') {
+        document.body.style.pointerEvents = 'auto'
+      }
     }, 100)
   }
 
@@ -333,7 +357,7 @@ export default function TransactionsPage() {
             <Card className="bg-primary/5 border-primary/20 overflow-hidden">
               <CardContent className="pt-8 pb-8 text-center space-y-4">
                 <Button size="lg" className="h-16 px-12 gap-3 shadow-xl hover:shadow-2xl transition-all" onClick={startScanner}><ScanBarcode className="h-6 w-6" /> Buka Smart Scan</Button>
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Arahkan kamera ke QR Code Anggota atau Buku</p>
+                <div className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Arahkan kamera ke QR Code Anggota atau Buku</div>
               </CardContent>
             </Card>
 
@@ -466,7 +490,20 @@ export default function TransactionsPage() {
                           >
                             <Minus className="h-3 w-3" />
                           </Button>
-                          <span className="text-xl font-black w-8 text-center">{borrowQuantity}</span>
+                          <Input 
+                            type="number"
+                            className="w-20 text-center font-black text-xl h-10 border-primary/20 bg-white"
+                            value={borrowQuantity}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value);
+                              const max = selectedBook.availableStock || 1;
+                              if (!isNaN(val)) {
+                                setBorrowQuantity(Math.min(max, Math.max(1, val)));
+                              }
+                            }}
+                            min={1}
+                            max={selectedBook.availableStock || 1}
+                          />
                           <Button 
                             variant="outline" 
                             size="icon" 
@@ -608,7 +645,7 @@ export default function TransactionsPage() {
               <div className="p-4 bg-slate-50 rounded-xl border space-y-2">
                 <div className="flex items-start gap-3">
                   <BookOpen className="h-4 w-4 text-primary mt-1" />
-                  <div>
+                  <div className="flex-1">
                     <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Informasi Buku</div>
                     <div className="text-sm font-black">
                       {pendingReturnTrans.bookTitle}
@@ -620,7 +657,7 @@ export default function TransactionsPage() {
                 </div>
                 <div className="flex items-start gap-3">
                   <User className="h-4 w-4 text-primary mt-1" />
-                  <div>
+                  <div className="flex-1">
                     <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Peminjam</div>
                     <div className="text-sm font-bold">{pendingReturnTrans.memberName}</div>
                   </div>
