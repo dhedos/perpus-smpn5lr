@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress"
 import { RefreshCw, Zap, Layers, Info, ShieldCheck, AlertTriangle, CheckCircle2, Database, CloudUpload, HardDrive, MousePointer2, HelpCircle } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
-import { Badge } from "@/badge"
+import { Badge } from "@/components/ui/badge"
 
 const STORAGE_KEY = 'perpus_local_queue_v2'
 
