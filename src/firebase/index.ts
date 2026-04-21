@@ -4,7 +4,12 @@
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, enableMultiTabIndexedDbPersistence } from 'firebase/firestore'
+import { 
+  getFirestore, 
+  initializeFirestore, 
+  persistentLocalCache, 
+  persistentMultipleTabManager 
+} from 'firebase/firestore'
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
@@ -19,22 +24,20 @@ export function initializeFirebase() {
       firebaseApp = initializeApp(firebaseConfig);
     }
 
-    const sdks = getSdks(firebaseApp);
-    
-    // Aktifkan Offline Persistence (Caching) jika di browser
+    // Aktifkan Offline Persistence (Caching) menggunakan API modern jika di browser
     if (typeof window !== 'undefined') {
-      enableMultiTabIndexedDbPersistence(sdks.firestore).catch((err) => {
-        if (err.code === 'failed-precondition') {
-          // Biasanya karena membuka banyak tab sekaligus
-          console.warn('Firestore persistence failed: Multiple tabs open');
-        } else if (err.code === 'unimplemented') {
-          // Browser tidak mendukung (sangat jarang di browser modern)
-          console.warn('Firestore persistence is not supported by this browser');
-        }
-      });
+      try {
+        initializeFirestore(firebaseApp, {
+          localCache: persistentLocalCache({
+            tabManager: persistentMultipleTabManager()
+          })
+        });
+      } catch (e) {
+        console.warn('Firestore persistence initialization failed. Falling back to default.', e);
+      }
     }
 
-    return sdks;
+    return getSdks(firebaseApp);
   }
 
   return getSdks(getApp());
