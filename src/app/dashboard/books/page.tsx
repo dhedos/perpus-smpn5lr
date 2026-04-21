@@ -82,7 +82,7 @@ import {
   errorEmitter 
 } from '@/firebase'
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors'
-import { collection, addDoc, deleteDoc, doc, updateDoc, query, limit, orderBy, getDocs, where } from 'firebase/firestore'
+import { collection, addDoc, deleteDoc, doc, updateDoc, query, limit, orderBy, getDocs, where, serverTimestamp } from 'firebase/firestore'
 
 const INITIAL_FORM_DATA = {
   code: "",
@@ -128,26 +128,24 @@ export default function BooksPage() {
   const [formData, setFormData] = useState(INITIAL_FORM_DATA)
   const [editingBookId, setEditingBookId] = useState<string | null>(null)
   
-  // Local Queue State
-  const [localQueue, setLocalQueue] = useState<any[]>([])
+  // Local Queue State with robust initialization from LocalStorage
+  const [localQueue, setLocalQueue] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('perpus_local_queue')
+      try {
+        return saved ? JSON.parse(saved) : []
+      } catch (e) {
+        return []
+      }
+    }
+    return []
+  })
 
   // Load Settings for Kop Surat
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
 
-  // Load Queue from LocalStorage
-  useEffect(() => {
-    const savedQueue = localStorage.getItem('perpus_local_queue')
-    if (savedQueue) {
-      try {
-        setLocalQueue(JSON.parse(savedQueue))
-      } catch (e) {
-        console.error("Failed to parse local queue", e)
-      }
-    }
-  }, [])
-
-  // Save Queue to LocalStorage
+  // Save Queue to LocalStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('perpus_local_queue', JSON.stringify(localQueue))
   }, [localQueue])
@@ -212,6 +210,7 @@ export default function BooksPage() {
       updatedAt: new Date().toISOString()
     }
 
+    // Immediately update local state which will be synced to localStorage by useEffect
     setLocalQueue(prev => [newLocalBook, ...prev])
     setIsOpen(false)
     setFormData(INITIAL_FORM_DATA)
@@ -233,7 +232,13 @@ export default function BooksPage() {
 
       for (const book of localQueue) {
         const { tempId, ...dataToSave } = book
-        await addDoc(booksRef, dataToSave)
+        // Add Firestore metadata
+        const firestoreData = {
+          ...dataToSave,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        }
+        await addDoc(booksRef, firestoreData)
         successCount++
       }
 
@@ -267,7 +272,6 @@ export default function BooksPage() {
 
       const { utils, writeFile } = await import("xlsx")
       
-      // Building AOA with Headers (Kop Surat)
       const header = [
         [settings?.govtInstitution || "PEMERINTAH KABUPATEN MANGGARAI"],
         [settings?.eduDept || "DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA"],
