@@ -21,7 +21,7 @@ Jika build di Vercel masih gagal dengan pesan "Module not found", ikuti langkah 
     - Centang kotak **"Clear Build Cache"**.
     - Klik **Redeploy**.
 
-Ini akan memaksa Vercel membuang data lama yang rusak dan mengunduh semua modul dengan benar menggunakan konfigurasi baru.
+Ini akan memaksa Vercel membuang data lama yang rusak dan mengunduh semua paket dengan benar menggunakan konfigurasi baru.
 
 ---
 &copy; 2026 SMPN 5 LANGKE REMBONG.

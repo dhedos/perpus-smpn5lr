@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "push": "git remote add origin https://github.com/dhedos/perpus-smpn5lr.git || git remote set-url origin https://github.com/dhedos/perpus-smpn5lr.git; git add .; git commit -m 'Fix: Build dependency resolution for React 19' || echo 'No changes'; git push -u origin main"
+    "push": "git remote add origin https://github.com/dhedos/perpus-smpn5lr.git || git remote set-url origin https://github.com/dhedos/perpus-smpn5lr.git; git add .; git commit -m 'Fix: Resolve qrcode.react dependency for React 19' || echo 'No changes'; git push -u origin main"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.28.0",
