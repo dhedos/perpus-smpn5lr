@@ -4,7 +4,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Database, CloudUpload, CloudDownload, RefreshCw, CheckCircle2, AlertTriangle, Zap, FileSpreadsheet, Info, History, ShieldCheck, Layers } from "lucide-react"
+import { RefreshCw, Zap, Layers, Info, ShieldCheck, AlertTriangle, CheckCircle2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
@@ -30,16 +30,20 @@ export default function SyncPage() {
     setSyncing(true)
     setProgress(0)
     
+    let currentProgress = 0
     const interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          setSyncing(false)
-          toast({ title: "Caching Berhasil", description: "Database lokal telah disinkronkan dengan server cloud." })
-          return 100
-        }
-        return prev + 20
-      })
+      currentProgress += 20
+      setProgress(currentProgress)
+      
+      if (currentProgress >= 100) {
+        clearInterval(interval)
+        setSyncing(false)
+        // Toast dipanggil di luar setState updater untuk menghindari "Cannot update a component while rendering"
+        toast({ 
+          title: "Caching Berhasil", 
+          description: "Database lokal telah disinkronkan dengan server cloud." 
+        })
+      }
     }, 150)
   }
 
@@ -62,7 +66,7 @@ export default function SyncPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Penyimpanan Lokal</span>
-              <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">Optimasi Reads Aktif</Badge>
+              <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100 border-none">Optimasi Reads Aktif</Badge>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Kecepatan Akses</span>
@@ -87,7 +91,7 @@ export default function SyncPage() {
           <CardContent className="space-y-4">
             <div className="p-4 rounded-lg bg-blue-50 border border-blue-100 space-y-3">
               <p className="text-xs text-blue-800 leading-relaxed">
-                <strong>Penting:</strong> 1 Jenis Buku (misal: Matematika) hanya dihitung <strong>1 Pembacaan (Read)</strong> oleh Firebase, berapapun jumlah stok fisiknya (misal: 30 atau 100 eksemplar).
+                <strong>Penting:</strong> 1 Jenis Buku (misal: Matematika) hanya dihitung <strong>1 Pembacaan (Read)</strong> oleh Firebase, berapapun jumlah stok fisiknya.
               </p>
               <div className="text-[10px] text-blue-600 font-medium">
                 Sistem ini sangat hemat kuota meskipun sekolah memiliki ribuan buku fisik.
@@ -112,11 +116,11 @@ export default function SyncPage() {
           <CardContent className="space-y-4 text-xs text-blue-700 leading-relaxed">
             <p>
               <strong>1. Apakah Data Akan Mendobel?</strong> <br/>
-              Ekspor ke Excel bersifat <strong>Snapshot</strong>. Jika Anda menempelkan data ini berulang kali ke Google Sheet tanpa menghapus data lama, maka akan terlihat ganda. <strong>Solusinya:</strong> Hapus data lama di Google Sheets sebelum menempelkan data baru.
+              Ekspor ke Excel bersifat <strong>Snapshot</strong>. Hapus data lama di Google Sheets sebelum menempelkan data baru dari Excel ini.
             </p>
             <p>
               <strong>2. Apakah Bisa Google Sheets Jadi Database?</strong> <br/>
-              Google Sheets <strong>tidak disarankan</strong> menjadi database "mesin" aplikasi karena tidak aman dan lambat. Gunakan Google Sheets hanya untuk <strong>Arsip & Backup</strong>.
+              Google Sheets tidak disarankan menjadi database utama karena masalah keamanan. Gunakan hanya untuk backup.
             </p>
           </CardContent>
         </Card>
@@ -130,10 +134,10 @@ export default function SyncPage() {
           </CardHeader>
           <CardContent className="space-y-4 text-xs text-purple-700 leading-relaxed">
             <p>
-              Firestore (Firebase) sangat kuat untuk 1.000 bahkan 10.000 buku. Pembengkakan data (Storage) 1.000 buku hanya memakan sekitar 1-2 MB dari jatah 1.000 MB gratis Anda.
+              Firestore sangat kuat untuk 10.000+ buku. Storage 1.000 buku hanya memakan sekitar 1-2 MB dari jatah 1.000 MB gratis Anda.
             </p>
             <p>
-              <strong>Tips Hemat:</strong> Lakukan pembersihan riwayat transaksi (sirkulasi) setiap akhir tahun ajaran dengan mengekspornya ke Excel terlebih dahulu sebagai arsip sekolah.
+              <strong>Tips Hemat:</strong> Lakukan pembersihan riwayat transaksi setiap akhir tahun ajaran setelah mengekspornya ke Excel.
             </p>
           </CardContent>
         </Card>
@@ -145,7 +149,7 @@ export default function SyncPage() {
           <div className="space-y-1">
             <p className="font-bold text-orange-800 text-sm">Peringatan Kuota Reads</p>
             <p className="text-xs text-orange-700 leading-relaxed">
-              Sistem caching kami memastikan bahwa meskipun Anda memiliki 1.000 buku, aplikasi tidak akan membaca ulang database setiap saat. Penggunaan Firebase tetap <strong>GRATIS</strong> karena data yang sudah pernah dibuka akan disimpan di memori lokal petugas.
+              Sistem caching memastikan penggunaan Firebase tetap <strong>GRATIS</strong> karena data yang sudah pernah dibuka disimpan di memori lokal perangkat.
             </p>
           </div>
         </CardContent>

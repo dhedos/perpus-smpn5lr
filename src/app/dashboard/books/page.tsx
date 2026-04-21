@@ -31,7 +31,8 @@ import {
   Filter,
   ChevronDown,
   RefreshCw,
-  MapPin
+  MapPin,
+  BookOpen
 } from "lucide-react"
 import { 
   Dialog, 
@@ -181,6 +182,8 @@ export default function BooksPage() {
         "Kode": book.code,
         "Judul": book.title,
         "Pengarang": book.author,
+        "Penerbit": book.publisher,
+        "ISBN": book.isbn,
         "Thn Terbit": book.publicationYear,
         "Tgl Penerimaan": book.acquisitionDate,
         "Jenis": book.category,
@@ -212,7 +215,9 @@ export default function BooksPage() {
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${book.code}" style="width: 100px; height: 100px; margin: 5px 0;" />
         <div style="font-size: 9px; font-weight: bold; margin-bottom: 1px; color: #000; height: 22px; overflow: hidden; line-height: 11px;">${book.title}</div>
         <div style="font-size: 8px; color: #555;">${book.author}</div>
-        <div style="font-size: 8px; color: #555;">${book.category} | ${book.publicationYear}</div>
+        <div style="font-size: 7px; color: #666; margin-top: 2px;">${book.publisher || '-'}</div>
+        <div style="font-size: 7px; color: #666;">ISBN: ${book.isbn || '-'}</div>
+        <div style="font-size: 8px; color: #555; margin-top: 2px;">${book.category} | ${book.publicationYear}</div>
         <div style="font-size: 11px; font-weight: bold; color: #2E6ECE; margin-top: 4px; border-top: 1px solid #eee; width: 100%; padding-top: 4px;">${book.code}</div>
         <div style="font-size: 8px; font-weight: bold; background: #f0f0f0; padding: 2px 4px; border-radius: 2px; margin-top: 2px;">RAK: ${book.rackLocation || '-'}</div>
       </div>
@@ -549,6 +554,10 @@ export default function BooksPage() {
               <Input value={formData.author ?? ""} onChange={e => setFormData({ ...formData, author: e.target.value })} className="bg-white border-slate-300 h-11" />
             </div>
             <div className="space-y-2">
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">Penerbit</Label>
+              <Input value={formData.publisher ?? ""} onChange={e => setFormData({ ...formData, publisher: e.target.value })} className="bg-white border-slate-300 h-11" />
+            </div>
+            <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">Tahun Terbit</Label>
               <Input type="number" value={formData.publicationYear ?? ""} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300 h-11" />
             </div>
@@ -597,7 +606,9 @@ export default function BooksPage() {
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Kode Buku</Label><Input value={formData.code ?? ""} disabled className="bg-muted border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Judul Buku</Label><Input value={formData.title ?? ""} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Pengarang</Label><Input value={formData.author ?? ""} onChange={e => setFormData({ ...formData, author: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Penerbit</Label><Input value={formData.publisher ?? ""} onChange={e => setFormData({ ...formData, publisher: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Tahun Terbit</Label><Input type="number" value={formData.publicationYear ?? ""} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">ISBN</Label><Input value={formData.isbn ?? ""} onChange={e => setFormData({ ...formData, isbn: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Jumlah Stok Total</Label><Input type="number" value={formData.totalStock ?? 0} onChange={e => setFormData({ ...formData, totalStock: Number(e.target.value) })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Tgl. Penerimaan</Label><Input type="date" value={formData.acquisitionDate ?? ""} onChange={e => setFormData({ ...formData, acquisitionDate: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Jenis / Kategori</Label><Input value={formData.category ?? ""} onChange={e => setFormData({ ...formData, category: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
@@ -634,9 +645,10 @@ export default function BooksPage() {
             <div className="grid grid-cols-2 gap-6 py-4 text-sm">
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Judul Buku</Label><div className="font-bold text-lg leading-tight">{selectedBookDetail.title ?? ""}</div></div>
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Kode Koleksi</Label><div className="font-mono text-primary font-bold">{selectedBookDetail.code ?? ""}</div></div>
-              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Pengarang</Label><div>{selectedBookDetail.author ?? ""}</div></div>
+              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Pengarang & Penerbit</Label><div>{selectedBookDetail.author ?? ""} | {selectedBookDetail.publisher ?? "-"}</div></div>
+              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">ISBN</Label><div>{selectedBookDetail.isbn || "-"}</div></div>
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Tgl. Penerimaan</Label><div className="flex items-center gap-2"><CalendarIcon className="h-3 w-3 text-muted-foreground" /><div>{selectedBookDetail.acquisitionDate ? new Date(selectedBookDetail.acquisitionDate).toLocaleDateString('id-ID', { dateStyle: 'long' }) : '-'}</div></div></div>
-              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Jenis & Lokasi Rak</Label><div className="flex items-center gap-2"><Badge variant="secondary">{selectedBookDetail.category ?? ""}</Badge> <span>{selectedBookDetail.rackLocation || 'Rak belum diatur'}</span></div></div>
+              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Jenis & Lokasi Rak</Label><div className="flex items-center gap-2"><Badge variant="secondary" className="border-none">{selectedBookDetail.category ?? ""}</Badge> <span>{selectedBookDetail.rackLocation || 'Rak belum diatur'}</span></div></div>
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Status Ketersediaan</Label><div className="font-semibold text-blue-600">{selectedBookDetail.availableStock ?? 0} dari {selectedBookDetail.totalStock ?? 0} tersedia</div></div>
               <div className="col-span-2 space-y-1 pt-2 border-t">
                 <Label className="text-[10px] uppercase font-bold text-muted-foreground">Deskripsi / Ringkasan AI</Label>
@@ -661,8 +673,9 @@ export default function BooksPage() {
                 <QRCodeSVG value={selectedBookQr.code} size={200} level="H" includeMargin />
                 <div className="text-center space-y-1">
                   <div className="font-bold text-lg leading-tight">{selectedBookQr.title}</div>
-                  <div className="text-sm text-muted-foreground">{selectedBookQr.author}</div>
-                  <div className="text-xs font-medium bg-slate-100 py-1 px-3 rounded-full inline-block">
+                  <div className="text-[10px] text-muted-foreground font-semibold">{selectedBookQr.author}</div>
+                  <div className="text-[9px] text-slate-500">{selectedBookQr.publisher || "-"} | ISBN: {selectedBookQr.isbn || "-"}</div>
+                  <div className="text-[9px] font-medium bg-slate-100 py-1 px-3 rounded-full inline-block">
                     {selectedBookQr.category} • {selectedBookQr.publicationYear}
                   </div>
                   <div className="pt-2">
