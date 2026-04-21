@@ -210,15 +210,17 @@ export default function BooksPage() {
     if (!printWindow) return
 
     const stickersHtml = filteredBooks.map(book => `
-      <div style="border: 1px solid #000; padding: 6px; text-align: center; width: 140px; height: auto; display: flex; flex-direction: column; align-items: center; page-break-inside: avoid; margin: 4px; font-family: sans-serif; border-radius: 4px; background: #fff;">
-        <div style="font-size: 8px; font-weight: 800; color: #2E6ECE; margin-bottom: 2px; text-transform: uppercase;">SMPN 5 L. REMBONG</div>
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${book.code}" style="width: 85px; height: 85px; margin: 2px 0;" />
-        <div style="font-size: 8px; font-weight: bold; margin-bottom: 1px; color: #000; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${book.title}</div>
-        <div style="font-size: 7px; color: #333; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${book.author}</div>
+      <div style="border: 1px solid #000; padding: 4px; text-align: center; width: 130px; display: inline-block; vertical-align: top; page-break-inside: avoid; margin: 4px; font-family: 'Inter', sans-serif; border-radius: 2px; background: #fff;">
+        <div style="font-size: 7px; font-weight: 900; color: #2E6ECE; margin-bottom: 2px; text-transform: uppercase; border-bottom: 0.5px solid #eee; padding-bottom: 2px;">SMPN 5 LANGKE REMBONG</div>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${book.code}" style="width: 85px; height: 85px; margin: 3px 0;" />
+        <div style="font-size: 8px; font-weight: bold; margin-bottom: 1px; color: #000; line-height: 1.1; max-height: 2.2em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${book.title}</div>
+        <div style="font-size: 7px; color: #333; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${book.author}</div>
         <div style="font-size: 6px; color: #666; margin-top: 1px;">${book.publisher || '-'} | ${book.publicationYear}</div>
-        <div style="font-size: 6px; color: #666;">ISBN: ${book.isbn || '-'}</div>
-        <div style="font-size: 9px; font-weight: 900; color: #2E6ECE; margin-top: 3px; border-top: 0.5px solid #eee; width: 100%; padding-top: 2px; font-family: monospace;">${book.code}</div>
-        <div style="font-size: 7px; font-weight: bold; background: #f0f0f0; padding: 1px 3px; border-radius: 2px; margin-top: 2px; text-transform: uppercase;">RAK: ${book.rackLocation || '-'}</div>
+        <div style="font-size: 6px; color: #666; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">ISBN: ${book.isbn || '-'}</div>
+        <div style="border-top: 0.5px solid #eee; margin-top: 3px; padding-top: 3px;">
+           <div style="font-size: 10px; font-weight: 900; color: #2E6ECE; font-family: monospace;">${book.code}</div>
+           <div style="font-size: 7px; font-weight: bold; background: #f0f0f0; display: inline-block; padding: 1px 5px; border-radius: 2px; margin-top: 2px; text-transform: uppercase;">RAK: ${book.rackLocation || '-'}</div>
+        </div>
       </div>
     `).join('')
 
@@ -226,9 +228,15 @@ export default function BooksPage() {
       <html>
         <head>
           <title>Cetak Label QR - SMPN 5</title>
-          <style>@page { size: A4; margin: 5mm; } body { margin: 0; display: flex; flex-wrap: wrap; gap: 2px; justify-content: flex-start; font-family: sans-serif; background: #fff; }</style>
+          <style>
+            @page { size: A4; margin: 5mm; } 
+            body { margin: 0; padding: 0; background: #fff; }
+            .container { display: block; font-size: 0; }
+          </style>
         </head>
-        <body onload="window.print(); window.close();">${stickersHtml}</body>
+        <body onload="window.print(); window.close();">
+          <div class="container">${stickersHtml}</div>
+        </body>
       </html>
     `)
     printWindow.document.close()
@@ -665,19 +673,21 @@ export default function BooksPage() {
           <DialogHeader>
             <DialogTitle>Stiker QR Koleksi</DialogTitle>
           </DialogHeader>
-          <div className="bg-white p-4 rounded-md border-2 border-black flex flex-col items-center gap-2 shadow-sm w-[200px] mx-auto">
+          <div className="bg-white p-2 rounded-sm border-2 border-black inline-block text-center shadow-sm w-[150px] mx-auto font-sans">
             {selectedBookQr && (
               <>
-                <div className="text-[8px] font-black text-primary uppercase tracking-tighter">SMPN 5 LANGKE REMBONG</div>
-                <QRCodeSVG value={selectedBookQr.code} size={110} level="M" includeMargin />
-                <div className="text-center w-full overflow-hidden">
-                  <div className="font-bold text-[9px] leading-tight truncate">{selectedBookQr.title}</div>
+                <div className="text-[7px] font-black text-primary uppercase tracking-tighter border-bottom-0.5 border-slate-200 pb-0.5 mb-1">SMPN 5 LANGKE REMBONG</div>
+                <div className="flex justify-center mb-1">
+                  <QRCodeSVG value={selectedBookQr.code} size={100} level="M" includeMargin />
+                </div>
+                <div className="text-center w-full px-1">
+                  <div className="font-bold text-[8px] leading-tight line-clamp-2 mb-0.5">{selectedBookQr.title}</div>
                   <div className="text-[7px] text-slate-700 truncate">{selectedBookQr.author}</div>
                   <div className="text-[6px] text-slate-500 truncate">{selectedBookQr.publisher || "-"} | {selectedBookQr.publicationYear}</div>
-                  <div className="text-[6px] text-slate-500">ISBN: {selectedBookQr.isbn || "-"}</div>
-                  <div className="pt-1 border-t border-slate-100 mt-1 w-full">
-                    <div className="text-xs font-black text-primary font-mono">{selectedBookQr.code}</div>
-                    <div className="text-[7px] font-bold text-muted-foreground uppercase">
+                  <div className="text-[6px] text-slate-500 truncate">ISBN: {selectedBookQr.isbn || "-"}</div>
+                  <div className="pt-1 border-t border-slate-100 mt-1">
+                    <div className="text-[10px] font-black text-primary font-mono">{selectedBookQr.code}</div>
+                    <div className="text-[7px] font-bold text-muted-foreground uppercase bg-slate-100 rounded px-1 mt-0.5 inline-block">
                       RAK: {selectedBookQr.rackLocation || '-'}
                     </div>
                   </div>
