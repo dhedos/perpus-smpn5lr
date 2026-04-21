@@ -3,32 +3,19 @@
 
 Sistem Informasi Perpustakaan Modern dengan integrasi AI, Scan QR, dan Sinkronisasi Cloud.
 
-## ⚠️ JIKA GAGAL SAAT PUSH (ERROR: 'origin' not found)
-Jika Anda melihat pesan error seperti di gambar Anda, jalankan perintah ini **SATU KALI SAJA** di Terminal untuk menyambungkan ke GitHub:
-
-```bash
-git remote add origin https://github.com/dhedos/perpus-smpn5lr.git
-```
-*Jika perintah di atas error karena sudah ada, gunakan ini:*
-```bash
-git remote set-url origin https://github.com/dhedos/perpus-smpn5lr.git
-```
-
----
-
-## CARA KIRIM KE GITHUB (SETELAH DISAMBUNGKAN)
-Cukup ketik ini di Terminal:
+## 🚀 CARA CEPAT KIRIM KE GITHUB
+Jika Anda melihat pesan error `'origin' not found`, sekarang cukup ketik ini di Terminal:
 
 ```bash
 npm run push
 ```
 
-*Perintah di atas akan menjalankan `git add .`, `git commit`, dan `git push` secara otomatis.*
+*Skrip ini sudah saya perbarui untuk otomatis menyambungkan folder ke GitHub Anda (`https://github.com/dhedos/perpus-smpn5lr.git`) sebelum mengirim kode.*
 
 ---
 
-## Panduan Deployment ke Vercel
-Setelah kode berhasil terkirim ke GitHub:
+## 🛠️ Panduan Deployment ke Vercel
+Setelah `npm run push` berhasil:
 1. Masuk ke [Vercel](https://vercel.com).
 2. Klik **Add New Project** lalu pilih repositori `perpus-smpn5lr`.
 3. **PENTING**: Di bagian **Environment Variables**, tambahkan:
