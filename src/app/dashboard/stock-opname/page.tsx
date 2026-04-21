@@ -126,6 +126,7 @@ export default function StockOpnamePage() {
       actionType: 'STOCK_AUDIT', 
       bookId: selectedBook.id || "unknown",
       bookTitle: selectedBook.title || "Buku Tanpa Judul",
+      bookCode: selectedBook.code || "-",
       expectedQty: Number(expected),
       physicalQty: Number(physical),
       diffQty: Number(diff),
@@ -156,6 +157,7 @@ export default function StockOpnamePage() {
       actionType: 'STOCK_AUDIT', 
       bookId: audit.bookId,
       bookTitle: audit.bookTitle || "Buku",
+      bookCode: audit.bookCode || "-",
       expectedQty: Number(audit.expectedQty || 0),
       physicalQty: Number(audit.expectedQty || 0), 
       diffQty: 0,
@@ -196,13 +198,14 @@ export default function StockOpnamePage() {
         ["LAPORAN HASIL AUDIT STOK PERPUSTAKAAN (STOCK OPNAME)"],
         [`Tanggal Cetak: ${new Date().toLocaleString('id-ID')}`],
         [""],
-        ["No", "Waktu", "Judul Buku", "Stok Sistem", "Fisik", "Selisih", "Status", "Petugas"]
+        ["No", "Waktu", "Kode Buku", "Judul Buku", "Stok Sistem", "Fisik", "Selisih", "Status", "Petugas"]
       ];
 
       // Menyiapkan Data Laporan
       const dataRows = stockAudits.map((a, index) => [
         index + 1,
         new Date(a.timestamp).toLocaleString('id-ID'),
+        a.bookCode || "-",
         a.bookTitle,
         a.expectedQty,
         a.physicalQty,
@@ -215,14 +218,14 @@ export default function StockOpnamePage() {
       const footer = [
         [""],
         [""],
-        ["", "", "", "", "", "", `${settings?.reportCity || "Mando"}, ${todayStr}`],
-        ["", "", "", "", "", "", "Mengetahui,"],
-        ["", "", "", "", "", "", "Kepala Sekolah,"],
+        ["", "", "", "", "", "", "", "", `${settings?.reportCity || "Mando"}, ${todayStr}`],
+        ["", "", "", "", "", "", "", "", "Mengetahui,"],
+        ["", "", "", "", "", "", "", "", "Kepala Sekolah,"],
         [""],
         [""],
         [""],
-        ["", "", "", "", "", "", settings?.principalName || "Lodovikus Jangkar, S.Pd.Gr"],
-        ["", "", "", "", "", "", `NIP. ${settings?.principalNip || "198507272011011020"}`]
+        ["", "", "", "", "", "", "", "", settings?.principalName || "Lodovikus Jangkar, S.Pd.Gr"],
+        ["", "", "", "", "", "", "", "", `NIP. ${settings?.principalNip || "198507272011011020"}`]
       ];
 
       // Menggabungkan Header, Data, dan Footer
@@ -368,13 +371,13 @@ export default function StockOpnamePage() {
                 <div key={a.id} className="p-4 flex justify-between items-center hover:bg-muted/30 transition-colors">
                   <div className="space-y-1 flex-1 pr-2">
                     <p className="font-bold leading-tight truncate max-w-[150px]">{a.bookTitle}</p>
-                    <p className="text-[10px] text-muted-foreground">{new Date(a.timestamp).toLocaleTimeString('id-ID')}</p>
+                    <p className="text-[10px] text-muted-foreground font-mono">{a.bookCode || "-"}</p>
                     <div className="flex items-center gap-1.5 mt-1">
                        <Badge 
                         variant={a.auditStatus === 'LENGKAP' ? 'secondary' : 'destructive'}
                         className="h-4 px-1.5 text-[8px] font-bold border-none"
                        >
-                        {a.auditStatus === 'KURANG' ? `KURANG ${a.diffQty || ''}` : a.auditStatus}
+                        {a.auditStatus === 'KURANG' ? `KURANG ${Math.abs(a.diffQty) || ''}` : a.auditStatus}
                        </Badge>
                        {a.auditStatus === 'KURANG' && (
                          <Button 
