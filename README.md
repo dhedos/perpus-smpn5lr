@@ -12,6 +12,17 @@ Sistem Informasi Perpustakaan Modern dengan integrasi AI, Scan QR, dan Sinkronis
     ```
 3.  **Cek Dashboard Vercel**: Buka [vercel.com](https://vercel.com). Anda akan melihat status "Building" berubah menjadi hijau "Ready" setelah beberapa menit.
 
+## ⚠️ JIKA MASIH ERROR (MODUL TIDAK DITEMUKAN)
+
+Jika di Vercel muncul tulisan merah "Module not found: Can't resolve 'qrcode.react'":
+1. Masuk ke Dashboard Vercel proyek Anda.
+2. Klik tab **Deployments**.
+3. Cari deployment terbaru (yang statusnya Failed).
+4. Klik tombol tiga titik **(...)** di sebelah kanan.
+5. Pilih **Redeploy**.
+6. Centang kotak **"Clear Build Cache"**.
+7. Klik **Redeploy**. (Ini akan memaksa Vercel membuang data lama dan mengunduh ulang semua modul dengan benar).
+
 ## 🚀 PENGATURAN AWAL (WAJIB)
 
 Agar AI bekerja, Anda harus memasukkan API Key di Vercel:
