@@ -388,8 +388,8 @@ export default function StockOpnamePage() {
                 return (
                   <div key={a.id} className="p-4 flex justify-between items-center hover:bg-muted/30 transition-colors">
                     <div className="space-y-1 flex-1 pr-2">
-                      <p className="font-bold leading-tight truncate max-w-[150px]">{a.bookTitle}</p>
-                      <p className="text-[10px] text-muted-foreground font-mono">{displayCode}</p>
+                      <p className="font-bold leading-tight truncate max-w-[150px]">{a.bookTitle || "-"}</p>
+                      <p className="text-[10px] text-muted-foreground font-mono">{displayCode || "-"}</p>
                       <div className="flex items-center gap-1.5 mt-1">
                          <Badge 
                           variant={a.auditStatus === 'LENGKAP' ? 'secondary' : 'destructive'}
