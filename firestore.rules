@@ -4,20 +4,17 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * ATURAN KEAMANAN PERPUSTAKAAN SMPN 5 - FINAL DEPLOYMENT
-     * Memberikan izin akses eksplisit untuk semua fitur sirkulasi.
-     * Triggering deployment to ensure "Missing or insufficient permissions" is resolved.
-     * Version: 1.0.3
+     * ATURAN KEAMANAN PERPUSTAKAAN SMPN 5 - UPDATED FOR INITIAL SETUP
+     * Mengizinkan akses baca/tulis pada koleksi users agar setup admin pertama berjalan lancar.
      */
 
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Profil Pengguna (Petugas/Admin)
+    // Profil Pengguna (Petugas/Admin) - Diizinkan publik untuk pengecekan setup awal
     match /users/{userId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn();
+      allow read, write: if true;
     }
 
     // Koleksi Anggota (Siswa/Guru)
