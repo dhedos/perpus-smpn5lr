@@ -66,15 +66,13 @@
     "@types/node": "^20",
     "@types/react": "^19.2.1",
     "@types/react-dom": "^19.2.1",
-    "autoprefixer": "^10.4.20",
     "genkit-cli": "^1.28.0",
-    "postcss": "^8.4.47",
-    "tailwindcss": "^3.4.1",
     "typescript": "^5"
   },
   "overrides": {
     "qrcode.react": {
-      "react": "$react"
+      "react": "^19.2.1",
+      "react-dom": "^19.2.1"
     }
   }
 }
