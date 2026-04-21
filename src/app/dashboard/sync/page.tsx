@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress"
 import { RefreshCw, Zap, Layers, Info, ShieldCheck, AlertTriangle, CheckCircle2, Database, CloudUpload, HardDrive, MousePointer2, HelpCircle } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@/badge"
 
 const STORAGE_KEY = 'perpus_local_queue_v2'
 
@@ -164,23 +164,34 @@ export default function SyncPage() {
             Tanya Jawab Teknis: Apakah Reload Menguras Kuota?
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 text-xs text-slate-700 leading-relaxed">
+        <CardContent className="space-y-6 text-xs text-slate-700 leading-relaxed">
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <p className="font-bold text-primary">Skenario: Anda baru saja kirim 10 buku ke database.</p>
+              <p className="font-bold text-primary">Skenario 1: Reload Halaman Normal</p>
               <p>
-                Saat Anda menekan <strong>Kirim ke Database</strong>, data tersebut dikirim ke Cloud dan sekaligus disimpan di memori browser Anda.
+                Aplikasi mengambil data dari memori browser Anda (Offline Cache). Tidak ada data yang diunduh ulang dari Cloud.
+              </p>
+              <p className="font-bold bg-green-100 text-green-700 px-2 py-1 rounded inline-block">
+                HASIL: 0 READS (GRATIS)
               </p>
             </div>
             <div className="space-y-2">
-              <p className="font-bold text-green-600">Hasil Saat Reload:</p>
+              <p className="font-bold text-orange-600">Skenario 2: Setelah Hapus Cache Browser</p>
               <p>
-                Ketika Anda me-reload halaman, sistem akan melihat bahwa data di memori browser sudah sama persis dengan yang ada di Cloud. Sistem tidak akan mendownload ulang data tersebut, melainkan langsung menampilkannya dari browser.
+                Jika Anda menghapus riwayat browser (IndexedDB), memori lokal aplikasi akan hilang. Aplikasi harus mengunduh ulang data dari Cloud untuk satu kali saja.
               </p>
-              <p className="font-bold bg-green-100 text-green-700 px-2 py-1 rounded inline-block">
-                KESIMPULAN: RELOAD = 0 READS (GRATIS)
+              <p className="font-bold bg-orange-100 text-orange-700 px-2 py-1 rounded inline-block">
+                HASIL: 1x READ SESUAI JUMLAH DATA
               </p>
             </div>
+          </div>
+          <div className="pt-4 border-t border-slate-200">
+             <p className="font-bold flex items-center gap-2 text-destructive">
+               <AlertTriangle className="h-3 w-3" /> PENTING:
+             </p>
+             <p className="mt-1">
+               Hindari menghapus Cache Browser atau menggunakan mode "Incognito/Private" jika Anda ingin menghemat kuota Read secara maksimal. Mode normal akan menyimpan data selamanya di perangkat Anda.
+             </p>
           </div>
         </CardContent>
       </Card>
