@@ -7,11 +7,11 @@
     "dev": "next dev --turbopack -p 9002",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
-    "build": "NODE_ENV=production next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "push": "git remote add origin https://github.com/dhedos/perpus-smpn5lr.git || git remote set-url origin https://github.com/dhedos/perpus-smpn5lr.git; git add .; git commit -m 'Fix: Resolve qrcode.react dependency for React 19' || echo 'No changes'; git push -u origin main"
+    "push": "git add .; git commit -m 'Fix: Resolve build dependencies for Vercel' || echo 'No changes'; git push origin main"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.28.0",
