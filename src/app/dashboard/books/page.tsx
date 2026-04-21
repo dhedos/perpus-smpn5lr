@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo, useRef } from "react"
@@ -211,7 +210,7 @@ export default function BooksPage() {
         <div style="font-size: 7px; font-weight: 900; color: #2E6ECE; margin-bottom: 3px; text-transform: uppercase;">SMPN 5 LANGKE REMBONG</div>
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${book.code}" style="width: 100px; height: 100px; margin: 2px 0;" />
         <div style="font-size: 9px; font-weight: 800; margin-bottom: 2px; color: #000; line-height: 1.1;">${book.title}</div>
-        <div style="font-size: 7px; color: #333; margin-bottom: 1px;">${book.publisher || '-'}</div>
+        <div style="font-size: 7px; color: #333; margin-bottom: 1px;">${book.author || '-'} | ${book.publisher || '-'}</div>
         <div style="font-size: 7px; color: #666;">${book.category || '-'} | ${book.publicationYear}</div>
         <div style="font-size: 7px; color: #666; margin-bottom: 4px;">ISBN: ${book.isbn || '-'}</div>
         <div style="border-top: 0.5px solid #eee; margin: 2px 0; padding-top: 4px;">
@@ -669,7 +668,7 @@ export default function BooksPage() {
                 </div>
                 <div className="text-center w-full mt-[2px]">
                   <div className="font-extrabold text-[9px] leading-[1.1] mb-[2px]">{selectedBookQr.title}</div>
-                  <div className="text-[7px] text-slate-700 mb-[1px]">{selectedBookQr.publisher || "-"}</div>
+                  <div className="text-[7px] text-slate-700 mb-[1px]">{selectedBookQr.author || "-"} | {selectedBookQr.publisher || "-"}</div>
                   <div className="text-[7px] text-slate-500">{selectedBookQr.category || '-'} | {selectedBookQr.publicationYear}</div>
                   <div className="text-[7px] text-slate-500">ISBN: {selectedBookQr.isbn || "-"}</div>
                   <div className="pt-[4px] border-t border-slate-100 mt-[4px]">
@@ -704,4 +703,3 @@ export default function BooksPage() {
     </div>
   )
 }
-    

@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo } from "react"
@@ -231,7 +230,7 @@ export default function MembersPage() {
                 <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Nama lengkap" />
               </div>
               <div className="space-y-2">
-                <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas</Label>
+                <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas / Unit</Label>
                 <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Masukkan Kelas (Contoh: VII A)" />
               </div>
             </div>
@@ -344,7 +343,7 @@ export default function MembersPage() {
               <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" />
             </div>
             <div className="space-y-2">
-              <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas</Label>
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas / Unit</Label>
               <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" />
             </div>
           </div>

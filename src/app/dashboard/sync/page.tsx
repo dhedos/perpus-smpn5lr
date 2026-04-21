@@ -1,4 +1,3 @@
-
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -38,7 +37,8 @@ export default function SyncPage() {
       if (currentProgress >= 100) {
         clearInterval(interval)
         setSyncing(false)
-        // Jalankan toast setelah render cycle selesai untuk menghindari hydration/render error
+        
+        // Membungkus toast dalam setTimeout untuk menghindari error render
         setTimeout(() => {
           toast({ 
             title: "Caching Berhasil", 

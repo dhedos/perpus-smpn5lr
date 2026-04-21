@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo, useRef, useEffect } from "react"
@@ -690,6 +689,9 @@ export default function TransactionsPage() {
 
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
         <DialogContent className="p-0 border-none bg-black max-w-xl h-[400px] overflow-hidden">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Pemindai QR Code</DialogTitle>
+          </DialogHeader>
           <div id="smart-scanner" className="w-full h-full"></div>
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>
         </DialogContent>
