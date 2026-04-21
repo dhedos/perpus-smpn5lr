@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A Genkit flow for generating book descriptions based on provided book details.
@@ -12,7 +13,6 @@ import {z} from 'genkit';
 
 const GenerateBookDescriptionInputSchema = z.object({
   title: z.string().describe('The title of the book.').optional(),
-  author: z.string().describe('The author of the book.').optional(),
   isbn: z.string().describe('The International Standard Book Number (ISBN) of the book.').optional(),
 });
 export type GenerateBookDescriptionInput = z.infer<typeof GenerateBookDescriptionInputSchema>;
@@ -57,7 +57,6 @@ If the provided input seems like gibberish or random characters, try to imagine 
 
 Information:
 {{#if title}}Title: {{{title}}}{{/if}}
-{{#if author}}Author: {{{author}}}{{/if}}
 {{#if isbn}}ISBN: {{{isbn}}}{{/if}}
 
 Generate the description based on the available information.`,

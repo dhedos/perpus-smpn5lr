@@ -103,7 +103,8 @@ export default function StockOpnamePage() {
     setIsProcessing(true)
 
     const expected = Number(selectedBook.totalStock || 0);
-    const diff = expected - physicalCount;
+    const physical = Number(physicalCount);
+    const diff = expected - physical;
     
     let statusText = 'LENGKAP';
     let auditStatus = 'LENGKAP';
@@ -123,7 +124,7 @@ export default function StockOpnamePage() {
       bookId: selectedBook.id || "unknown",
       bookTitle: selectedBook.title || "Buku Tanpa Judul",
       expectedQty: Number(expected),
-      physicalQty: Number(physicalCount),
+      physicalQty: Number(physical),
       diffQty: Number(diff),
       description: `Audit: ${selectedBook.title} - ${statusText}`, 
       auditStatus: auditStatus, 
@@ -264,7 +265,7 @@ export default function StockOpnamePage() {
                     <div className="space-y-1">
                       <Badge variant="outline" className="font-mono text-[10px] uppercase font-bold">{selectedBook.code}</Badge>
                       <h3 className="text-xl font-black text-primary leading-tight">{selectedBook.title}</h3>
-                      <p className="text-xs text-muted-foreground font-medium">{selectedBook.author}</p>
+                      <p className="text-xs text-muted-foreground font-medium">Rek: {selectedBook.accountCode}</p>
                     </div>
                     <div className="text-right p-3 bg-slate-50 rounded-xl border">
                       <p className="text-[10px] font-black text-muted-foreground uppercase tracking-tighter">Stok Sistem</p>

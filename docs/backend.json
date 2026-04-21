@@ -21,7 +21,9 @@
       "properties": {
         "code": { "type": "string" },
         "title": { "type": "string" },
-        "author": { "type": "string" },
+        "accountCode": { "type": "string", "description": "Kode rekening atau anggaran buku." },
+        "publisher": { "type": "string" },
+        "publicationYear": { "type": "number" },
         "totalStock": { "type": "number" },
         "availableStock": { "type": "number" }
       }

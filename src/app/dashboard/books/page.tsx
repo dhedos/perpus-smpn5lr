@@ -83,7 +83,7 @@ import { collection, addDoc, deleteDoc, doc, updateDoc, query, limit, orderBy, g
 const INITIAL_FORM_DATA = {
   code: "",
   title: "",
-  author: "",
+  accountCode: "",
   publisher: "",
   publicationYear: new Date().getFullYear(),
   acquisitionDate: new Date().toISOString().split('T')[0],
@@ -148,7 +148,7 @@ export default function BooksPage() {
     return books.filter(b => {
       const matchesSearch = 
         (b.title?.toLowerCase() || "").includes(search.toLowerCase()) || 
-        (b.author?.toLowerCase() || "").includes(search.toLowerCase()) ||
+        (b.accountCode?.toLowerCase() || "").includes(search.toLowerCase()) ||
         (b.code?.toLowerCase() || "").includes(search.toLowerCase()) ||
         (b.isbn?.toLowerCase() || "").includes(search.toLowerCase());
       
@@ -179,7 +179,7 @@ export default function BooksPage() {
         "No": index + 1,
         "Kode": book.code,
         "Judul": book.title,
-        "Pengarang": book.author,
+        "Kode Rekening": book.accountCode,
         "Penerbit": book.publisher,
         "ISBN": book.isbn,
         "Thn Terbit": book.publicationYear,
@@ -211,7 +211,7 @@ export default function BooksPage() {
         <div style="font-size: 7px; font-weight: 900; color: #2E6ECE; margin-bottom: 3px; text-transform: uppercase; line-height: 1;">SMPN 5 LANGKE REMBONG</div>
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${book.code}" style="width: 100px; height: 100px; margin: 2px 0;" />
         <div style="font-size: 9px; font-weight: 800; margin-bottom: 2px; color: #000; line-height: 1.1;">${book.title}</div>
-        <div style="font-size: 7px; color: #333; margin-bottom: 1px; line-height: 1.2;">${book.author || '-'} | ${book.publisher || '-'}</div>
+        <div style="font-size: 7px; color: #333; margin-bottom: 1px; line-height: 1.2;">Rek: ${book.accountCode || '-'} | ${book.publisher || '-'}</div>
         <div style="font-size: 7px; color: #666; line-height: 1.2;">${book.category || '-'} | ${book.publicationYear}</div>
         <div style="font-size: 7px; color: #666; margin-bottom: 4px; line-height: 1.2;">ISBN: ${book.isbn || '-'}</div>
         <div style="border-top: 0.5px solid #eee; margin: 2px 0; padding-top: 4px;">
@@ -243,7 +243,7 @@ export default function BooksPage() {
     if (!formData.title) return
     setIsGenerating(true)
     try {
-      const result = await generateBookDescription({ title: formData.title, author: formData.author, isbn: formData.isbn })
+      const result = await generateBookDescription({ title: formData.title, isbn: formData.isbn })
       setFormData(prev => ({ ...prev, description: result.description || "" }))
     } catch (e) { toast({ title: "AI Sibuk", variant: "destructive" }) }
     finally { setIsGenerating(false) }
@@ -407,7 +407,7 @@ export default function BooksPage() {
         <div className="lg:col-span-2 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
-            placeholder="Cari Judul, Kode, Pengarang..." 
+            placeholder="Cari Judul, Kode, Rekening..." 
             className="pl-10 bg-white border-slate-300 h-11" 
             value={search ?? ""} 
             onChange={e => setSearch(e.target.value)} 
@@ -442,7 +442,7 @@ export default function BooksPage() {
             <TableRow className="bg-muted/50">
               <TableHead className="w-12 text-center">No.</TableHead>
               <TableHead>Kode</TableHead>
-              <TableHead>Judul & Pengarang</TableHead>
+              <TableHead>Judul & Rekening</TableHead>
               <TableHead>Thn Terbit</TableHead>
               <TableHead>Stok</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
@@ -460,7 +460,7 @@ export default function BooksPage() {
                 <TableCell>
                   <div className="space-y-0.5">
                     <div className="font-semibold leading-none">{book.title}</div>
-                    <div className="text-[10px] text-muted-foreground">{book.author}</div>
+                    <div className="text-[10px] text-muted-foreground">Rek: {book.accountCode}</div>
                   </div>
                 </TableCell>
                 <TableCell className="text-xs">{book.publicationYear}</TableCell>
@@ -494,7 +494,7 @@ export default function BooksPage() {
                           setFormData({
                             code: book.code || "",
                             title: book.title || "",
-                            author: book.author || "",
+                            accountCode: book.accountCode || "",
                             publisher: book.publisher || "",
                             publicationYear: Number(book.publicationYear || new Date().getFullYear()),
                             acquisitionDate: book.acquisitionDate || new Date().toISOString().split('T')[0],
@@ -546,8 +546,8 @@ export default function BooksPage() {
               <Input value={formData.title ?? ""} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" />
             </div>
             <div className="space-y-2">
-              <Label className="font-semibold text-xs uppercase text-muted-foreground">Pengarang</Label>
-              <Input value={formData.author ?? ""} onChange={e => setFormData({ ...formData, author: e.target.value })} className="bg-white border-slate-300 h-11" />
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">Kode Rekening</Label>
+              <Input value={formData.accountCode ?? ""} onChange={e => setFormData({ ...formData, accountCode: e.target.value })} className="bg-white border-slate-300 h-11" />
             </div>
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">Penerbit</Label>
@@ -601,7 +601,7 @@ export default function BooksPage() {
           <div className="grid grid-cols-2 gap-4 py-4">
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Kode Buku</Label><Input value={formData.code ?? ""} disabled className="bg-muted border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Judul Buku</Label><Input value={formData.title ?? ""} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
-            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Pengarang</Label><Input value={formData.author ?? ""} onChange={e => setFormData({ ...formData, author: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Kode Rekening</Label><Input value={formData.accountCode ?? ""} onChange={e => setFormData({ ...formData, accountCode: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Penerbit</Label><Input value={formData.publisher ?? ""} onChange={e => setFormData({ ...formData, publisher: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Tahun Terbit</Label><Input type="number" value={formData.publicationYear ?? ""} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">ISBN</Label><Input value={formData.isbn ?? ""} onChange={e => setFormData({ ...formData, isbn: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
@@ -641,7 +641,7 @@ export default function BooksPage() {
             <div className="grid grid-cols-2 gap-6 py-4 text-sm">
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Judul Buku</Label><div className="font-bold text-lg leading-tight">{selectedBookDetail.title ?? ""}</div></div>
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Kode Koleksi</Label><div className="font-mono text-primary font-bold">{selectedBookDetail.code ?? ""}</div></div>
-              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Pengarang & Penerbit</Label><div>{selectedBookDetail.author ?? ""} | {selectedBookDetail.publisher ?? "-"}</div></div>
+              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Rekening & Penerbit</Label><div>Rek: {selectedBookDetail.accountCode ?? "-"} | {selectedBookDetail.publisher ?? "-"}</div></div>
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">ISBN</Label><div>{selectedBookDetail.isbn || "-"}</div></div>
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Jenis & Lokasi Rak</Label><div className="flex items-center gap-2"><Badge variant="secondary" className="border-none">{selectedBookDetail.category ?? ""}</Badge> <span>{selectedBookDetail.rackLocation || 'Rak belum diatur'}</span></div></div>
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Status Ketersediaan</Label><div className="font-semibold text-blue-600">{selectedBookDetail.availableStock ?? 0} dari {selectedBookDetail.totalStock ?? 0} tersedia</div></div>
@@ -669,7 +669,7 @@ export default function BooksPage() {
                 </div>
                 <div className="text-center w-full mt-[2px]">
                   <div className="font-extrabold text-[9px] leading-[1.1] mb-[2px]">{selectedBookQr.title}</div>
-                  <div className="text-[7px] text-slate-700 mb-[1px]">{selectedBookQr.author || "-"} | {selectedBookQr.publisher || "-"}</div>
+                  <div className="text-[7px] text-slate-700 mb-[1px]">Rek: {selectedBookQr.accountCode || "-"} | {selectedBookQr.publisher || "-"}</div>
                   <div className="text-[7px] text-slate-500">{selectedBookQr.category || '-'} | {selectedBookQr.publicationYear}</div>
                   <div className="text-[7px] text-slate-500">ISBN: {selectedBookQr.isbn || "-"}</div>
                   <div className="pt-[4px] border-t border-slate-100 mt-[4px]">
