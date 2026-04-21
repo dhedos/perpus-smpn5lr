@@ -78,6 +78,7 @@ import {
   useFirestore, 
   useCollection, 
   useMemoFirebase,
+  useDoc,
   errorEmitter 
 } from '@/firebase'
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors'
@@ -129,6 +130,10 @@ export default function BooksPage() {
   
   // Local Queue State
   const [localQueue, setLocalQueue] = useState<any[]>([])
+
+  // Load Settings for Kop Surat
+  const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
+  const { data: settings } = useDoc(settingsRef)
 
   // Load Queue from LocalStorage
   useEffect(() => {
@@ -226,8 +231,6 @@ export default function BooksPage() {
       const booksRef = collection(db, 'books')
       let successCount = 0
 
-      // We process sequentially to avoid overwhelming the client or quota if the queue is huge, 
-      // though for 10-50 books it's fine.
       for (const book of localQueue) {
         const { tempId, ...dataToSave } = book
         await addDoc(booksRef, dataToSave)
@@ -263,27 +266,56 @@ export default function BooksPage() {
       }
 
       const { utils, writeFile } = await import("xlsx")
-      const dataToExport = filteredBooks.map((book, index) => ({
-        "No": index + 1,
-        "Kode": book.code,
-        "Judul": book.title,
-        "Kode Rekening": book.accountCode,
-        "Penerbit": book.publisher,
-        "ISBN": book.isbn,
-        "Thn Terbit": book.publicationYear,
-        "Jenis": book.category,
-        "Stok": book.totalStock,
-        "Lokasi": book.rackLocation
-      }))
       
-      const worksheet = utils.json_to_sheet(dataToExport)
+      // Building AOA with Headers (Kop Surat)
+      const header = [
+        [settings?.govtInstitution || "PEMERINTAH KABUPATEN MANGGARAI"],
+        [settings?.eduDept || "DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA"],
+        [settings?.schoolName || "SMP NEGERI 5 LANGKE REMBONG"],
+        [`Alamat: ${settings?.schoolAddress || "Mando, Kelurahan Compang Carep, Kecamatan Langke Rembong"}`],
+        [""],
+        ["DAFTAR KOLEKSI BUKU PERPUSTAKAAN"],
+        [`Tanggal Cetak: ${new Date().toLocaleString('id-ID')}`],
+        [""],
+        ["No", "Kode", "Judul", "Kode Rekening", "Penerbit", "ISBN", "Thn Terbit", "Jenis", "Stok", "Lokasi"]
+      ];
+
+      const dataRows = filteredBooks.map((book, index) => [
+        index + 1,
+        book.code,
+        book.title,
+        book.accountCode,
+        book.publisher,
+        book.isbn,
+        book.publicationYear,
+        book.category,
+        book.totalStock,
+        book.rackLocation
+      ]);
+
+      const footer = [
+        [""],
+        [""],
+        ["", "", "", "", "", "", "", "", `${settings?.reportCity || "Mando"}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`],
+        ["", "", "", "", "", "", "", "", "Mengetahui,"],
+        ["", "", "", "", "", "", "", "", "Kepala Sekolah,"],
+        [""],
+        [""],
+        [""],
+        ["", "", "", "", "", "", "", "", settings?.principalName || "Lodovikus Jangkar, S.Pd.Gr"],
+        ["", "", "", "", "", "", "", "", `NIP. ${settings?.principalNip || "198507272011011020"}`]
+      ];
+
+      const finalAOA = [...header, ...dataRows, ...footer];
+      
+      const worksheet = utils.aoa_to_sheet(finalAOA)
       const workbook = utils.book_new()
       utils.book_append_sheet(workbook, worksheet, "Koleksi Buku")
       
       const dateStr = new Date().toISOString().split('T')[0]
-      writeFile(workbook, `Koleksi_Buku_SMPN5_${dateStr}.xlsx`)
+      writeFile(workbook, `Daftar_Koleksi_Buku_SMPN5_${dateStr}.xlsx`)
       
-      toast({ title: "Berhasil Ekspor", description: "File Excel berhasil dibuat." })
+      toast({ title: "Berhasil Ekspor", description: "File Excel berhasil dibuat dengan Kop Surat." })
     } catch (error) {
       toast({ title: "Gagal", description: "Gagal mengekspor data.", variant: "destructive" })
     }
