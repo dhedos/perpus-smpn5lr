@@ -180,25 +180,42 @@ export default function StockOpnamePage() {
         return
       }
 
-      const dataToExport = stockAudits.map((a, index) => ({
-        "No": index + 1,
-        "Waktu": new Date(a.timestamp).toLocaleString('id-ID'),
-        "Judul Buku": a.bookTitle,
-        "Stok Sistem": a.expectedQty,
-        "Fisik": a.physicalQty,
-        "Selisih": a.diffQty,
-        "Status": a.auditStatus,
-        "Petugas": a.userName
-      }))
+      // Menyiapkan Kop Surat (Header)
+      const header = [
+        ["PEMERINTAH KABUPATEN MANGGARAI"],
+        ["DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA"],
+        ["SMP NEGERI 5 LANGKE REMBONG"],
+        ["Alamat: Jl. Satar Tacik, Ruteng, Flores, NTT"],
+        [""],
+        ["LAPORAN HASIL AUDIT STOK PERPUSTAKAAN (STOCK OPNAME)"],
+        [`Tanggal Cetak: ${new Date().toLocaleString('id-ID')}`],
+        [""],
+        ["No", "Waktu", "Judul Buku", "Stok Sistem", "Fisik", "Selisih", "Status", "Petugas"]
+      ];
+
+      // Menyiapkan Data Laporan
+      const dataRows = stockAudits.map((a, index) => [
+        index + 1,
+        new Date(a.timestamp).toLocaleString('id-ID'),
+        a.bookTitle,
+        a.expectedQty,
+        a.physicalQty,
+        a.diffQty,
+        a.auditStatus,
+        a.userName
+      ]);
+
+      // Menggabungkan Header dan Data
+      const finalAOA = [...header, ...dataRows];
       
-      const worksheet = utils.json_to_sheet(dataToExport)
+      const worksheet = utils.aoa_to_sheet(finalAOA)
       const workbook = utils.book_new()
       utils.book_append_sheet(workbook, worksheet, "Laporan Opname")
       
       const dateStr = new Date().toISOString().split('T')[0]
-      writeFile(workbook, `Laporan_Audit_Stok_${dateStr}.xlsx`)
+      writeFile(workbook, `Laporan_Audit_Stok_SMPN5_${dateStr}.xlsx`)
       
-      toast({ title: "Ekspor Berhasil", description: "Laporan audit telah diunduh." })
+      toast({ title: "Ekspor Berhasil", description: "Laporan audit dengan Kop Surat telah diunduh." })
     } catch (error) {
       toast({ title: "Gagal Ekspor", variant: "destructive" })
     } finally {
@@ -217,7 +234,7 @@ export default function StockOpnamePage() {
         </div>
         <Button variant="outline" size="sm" onClick={handleExportAudit} disabled={isExporting}>
           {isExporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileDown className="h-4 w-4 mr-2" />}
-          Export Excel
+          Export Excel (Kop Surat)
         </Button>
       </div>
 
@@ -366,8 +383,8 @@ export default function StockOpnamePage() {
 
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
         <DialogContent className="sm:max-w-xl p-0 h-[100dvh] sm:h-auto border-none bg-black overflow-hidden">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Pemindai Stok Opname</DialogTitle>
+          <DialogHeader>
+            <DialogTitle className="sr-only">Pemindai Stok Opname</DialogTitle>
           </DialogHeader>
           <div id="audit-scanner" className="w-full h-full bg-black min-h-[300px]"></div>
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>
