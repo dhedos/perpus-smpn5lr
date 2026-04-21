@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo, useRef } from "react"
@@ -29,7 +30,8 @@ import {
   Calendar as CalendarIcon,
   Filter,
   ChevronDown,
-  RefreshCw
+  RefreshCw,
+  MapPin
 } from "lucide-react"
 import { 
   Dialog, 
@@ -205,10 +207,14 @@ export default function BooksPage() {
     if (!printWindow) return
 
     const stickersHtml = filteredBooks.map(book => `
-      <div style="border: 0.5px solid #eee; padding: 6px; text-align: center; width: 120px; height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; page-break-inside: avoid; margin: 2px;">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${book.code}" style="width: 85px; height: 85px; margin-bottom: 4px;" />
-        <div style="font-size: 7px; font-weight: bold; margin: 1px 0; height: 18px; overflow: hidden;">${book.title}</div>
-        <div style="font-size: 9px; font-weight: bold; color: #2E6ECE;">${book.code}</div>
+      <div style="border: 1px solid #ddd; padding: 10px; text-align: center; width: 160px; height: auto; display: flex; flex-direction: column; align-items: center; page-break-inside: avoid; margin: 5px; font-family: sans-serif; border-radius: 8px;">
+        <div style="font-size: 10px; font-weight: 800; color: #2E6ECE; margin-bottom: 2px;">SMPN 5 LANGKE REMBONG</div>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${book.code}" style="width: 100px; height: 100px; margin: 5px 0;" />
+        <div style="font-size: 9px; font-weight: bold; margin-bottom: 1px; color: #000; height: 22px; overflow: hidden; line-height: 11px;">${book.title}</div>
+        <div style="font-size: 8px; color: #555;">${book.author}</div>
+        <div style="font-size: 8px; color: #555;">${book.category} | ${book.publicationYear}</div>
+        <div style="font-size: 11px; font-weight: bold; color: #2E6ECE; margin-top: 4px; border-top: 1px solid #eee; width: 100%; padding-top: 4px;">${book.code}</div>
+        <div style="font-size: 8px; font-weight: bold; background: #f0f0f0; padding: 2px 4px; border-radius: 2px; margin-top: 2px;">RAK: ${book.rackLocation || '-'}</div>
       </div>
     `).join('')
 
@@ -646,13 +652,30 @@ export default function BooksPage() {
       <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-sm text-center">
           <DialogHeader>
-            <DialogTitle>QR Code Buku</DialogTitle>
+            <DialogTitle>Label Barcode Buku</DialogTitle>
           </DialogHeader>
-          <div className="bg-white p-6 rounded-xl border flex justify-center">
-            {selectedBookQr && <QRCodeSVG value={selectedBookQr.code} size={240} includeMargin />}
+          <div className="bg-white p-6 rounded-xl border flex flex-col items-center gap-4 shadow-xl">
+            {selectedBookQr && (
+              <>
+                <div className="text-[10px] font-black text-primary uppercase tracking-widest">SMPN 5 LANGKE REMBONG</div>
+                <QRCodeSVG value={selectedBookQr.code} size={200} level="H" includeMargin />
+                <div className="text-center space-y-1">
+                  <div className="font-bold text-lg leading-tight">{selectedBookQr.title}</div>
+                  <div className="text-sm text-muted-foreground">{selectedBookQr.author}</div>
+                  <div className="text-xs font-medium bg-slate-100 py-1 px-3 rounded-full inline-block">
+                    {selectedBookQr.category} • {selectedBookQr.publicationYear}
+                  </div>
+                  <div className="pt-2">
+                    <div className="text-xl font-black text-primary font-mono">{selectedBookQr.code}</div>
+                    <div className="text-[10px] font-bold text-muted-foreground uppercase flex items-center justify-center gap-1">
+                      <MapPin className="h-2 w-2" /> LOKASI: {selectedBookQr.rackLocation || '-'}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
-          <div className="font-bold"><div>{selectedBookQr?.title ?? ""}</div><div className="text-primary">{selectedBookQr?.code ?? ""}</div></div>
-          <DialogFooter className="grid grid-cols-2 gap-2">
+          <DialogFooter className="grid grid-cols-2 gap-2 mt-4">
             <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" />Cetak</Button>
             <Button onClick={() => setIsQrOpen(false)}>Tutup</Button>
           </DialogFooter>

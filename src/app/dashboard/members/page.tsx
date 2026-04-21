@@ -230,8 +230,8 @@ export default function MembersPage() {
                 <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Nama lengkap" />
               </div>
               <div className="space-y-2">
-                <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas / Unit</Label>
-                <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder={formData.type === 'Teacher' ? "Contoh: Guru Matematika" : "Contoh: VII A"} />
+                <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas</Label>
+                <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder={formData.type === 'Teacher' ? "Contoh: Unit Kerja / Mapel" : "Contoh: VII A"} />
               </div>
             </div>
             <DialogFooter><Button onClick={handleSaveMember} className="w-full sm:w-auto h-11 px-8 shadow-lg shadow-primary/20">Simpan Anggota</Button></DialogFooter>
