@@ -3,25 +3,29 @@
 
 Sistem Informasi Perpustakaan Modern dengan integrasi AI, Scan QR, dan Sinkronisasi Cloud.
 
-## CARA KIRIM KE GITHUB (VIA TERMINAL)
+## ⚠️ JIKA GAGAL SAAT PUSH (ERROR: 'origin' not found)
+Jika Anda melihat pesan error seperti di gambar Anda, jalankan perintah ini **SATU KALI SAJA** di Terminal untuk menyambungkan ke GitHub:
 
-Jika Anda melihat tombol di bawah ini, klik untuk mengirim kode secara otomatis:
+```bash
+git remote add origin https://github.com/dhedos/perpus-smpn5lr.git
+```
+*Jika perintah di atas error karena sudah ada, gunakan ini:*
+```bash
+git remote set-url origin https://github.com/dhedos/perpus-smpn5lr.git
+```
+
+---
+
+## CARA KIRIM KE GITHUB (SETELAH DISAMBUNGKAN)
+Cukup ketik ini di Terminal:
 
 ```bash
 npm run push
 ```
 
-*Perintah di atas akan menjalankan `git add .`, `git commit`, dan `git push` ke GitHub Anda sekaligus.*
+*Perintah di atas akan menjalankan `git add .`, `git commit`, dan `git push` secara otomatis.*
 
 ---
-
-## JIKA GAGAL SAAT PUSH
-
-Jika Terminal meminta akses ditolak, jalankan ini sekali untuk menyambungkan ulang repositori:
-
-```bash
-git remote set-url origin https://github.com/dhedos/perpus-smpn5lr.git
-```
 
 ## Panduan Deployment ke Vercel
 Setelah kode berhasil terkirim ke GitHub:
