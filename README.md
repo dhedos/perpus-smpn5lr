@@ -3,25 +3,20 @@
 
 Sistem Informasi Perpustakaan Modern dengan integrasi AI, Scan QR, dan Sinkronisasi Cloud.
 
-## 🚀 CARA CEPAT KIRIM KE GITHUB
-Jika Anda melihat pesan error `'origin' not found`, sekarang cukup ketik ini di Terminal:
+## 🚀 CARA MENGATASI ERROR VERCEL
+Jika Anda melihat pesan `DEPLOYMENT_NOT_FOUND`, ikuti langkah ini:
 
-```bash
-npm run push
-```
-
-*Skrip ini sudah saya perbarui untuk otomatis menyambungkan folder ke GitHub Anda (`https://github.com/dhedos/perpus-smpn5lr.git`) sebelum mengirim kode.*
-
----
-
-## 🛠️ Panduan Deployment ke Vercel
-Setelah `npm run push` berhasil:
-1. Masuk ke [Vercel](https://vercel.com).
-2. Klik **Add New Project** lalu pilih repositori `perpus-smpn5lr`.
-3. **PENTING**: Di bagian **Environment Variables**, tambahkan:
-   - **Key**: `GOOGLE_GENAI_API_KEY`
-   - **Value**: Masukkan API Key Gemini Anda (Dapatkan di https://aistudio.google.com/app/apikey)
-4. Klik **Deploy**.
+1.  **Ketik di Terminal**:
+    ```bash
+    npm run push
+    ```
+2.  **Cek GitHub**: Buka `https://github.com/dhedos/perpus-smpn5lr` di browser. Pastikan file-file seperti `package.json`, `src`, dll muncul di sana.
+3.  **Cek Vercel Dashboard**: 
+    - Buka [vercel.com](https://vercel.com).
+    - Klik proyek `perpus-smpn5lr`.
+    - Di tab **Deployments**, pastikan statusnya **Ready** (Centang Hijau).
+    - Jika statusnya **Building**, tunggu sebentar.
+    - Jika **Failed**, klik untuk melihat error build-nya.
 
 ---
 &copy; 2026 SMPN 5 LANGKE REMBONG.
