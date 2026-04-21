@@ -4,7 +4,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { RefreshCw, Zap, Layers, Info, ShieldCheck, AlertTriangle, CheckCircle2, Database, CloudUpload, HardDrive, MousePointer2 } from "lucide-react"
+import { RefreshCw, Zap, Layers, Info, ShieldCheck, AlertTriangle, CheckCircle2, Database, CloudUpload, HardDrive, MousePointer2, HelpCircle } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
@@ -156,6 +156,34 @@ export default function SyncPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-none shadow-sm bg-slate-50 border-slate-200">
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center gap-2 text-slate-800">
+            <HelpCircle className="h-4 w-4 text-primary" />
+            Tanya Jawab Teknis: Apakah Reload Menguras Kuota?
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 text-xs text-slate-700 leading-relaxed">
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <p className="font-bold text-primary">Skenario: Anda baru saja kirim 10 buku ke database.</p>
+              <p>
+                Saat Anda menekan <strong>Kirim ke Database</strong>, data tersebut dikirim ke Cloud dan sekaligus disimpan di memori browser Anda.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <p className="font-bold text-green-600">Hasil Saat Reload:</p>
+              <p>
+                Ketika Anda me-reload halaman, sistem akan melihat bahwa data di memori browser sudah sama persis dengan yang ada di Cloud. Sistem tidak akan mendownload ulang data tersebut, melainkan langsung menampilkannya dari browser.
+              </p>
+              <p className="font-bold bg-green-100 text-green-700 px-2 py-1 rounded inline-block">
+                KESIMPULAN: RELOAD = 0 READS (GRATIS)
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="border-none shadow-sm border-blue-200 bg-blue-50/30">
