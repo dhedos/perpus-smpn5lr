@@ -4,7 +4,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { RefreshCw, Zap, Layers, Info, ShieldCheck, AlertTriangle, CheckCircle2, Database, CloudUpload, HardDrive, MousePointer2, HelpCircle } from "lucide-react"
+import { RefreshCw, Zap, Layers, Info, ShieldCheck, AlertTriangle, CheckCircle2, Database, CloudUpload, HardDrive, MousePointer2, HelpCircle, Calculator } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
@@ -156,6 +156,31 @@ export default function SyncPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-none shadow-sm border-orange-200 bg-orange-50/20">
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center gap-2 text-orange-800">
+            <Calculator className="h-4 w-4" />
+            Simulasi Kuota: Input 1.000 Jenis Buku
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 text-xs text-orange-700 leading-relaxed">
+          <p>Jika Anda menginput dan mengunduh <strong>1.000 jenis buku</strong>, berikut rincian kuota yang terpakai:</p>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="bg-white/80 p-3 rounded-lg border border-orange-100">
+              <p className="font-bold mb-1">1. Saat Kirim (Upload)</p>
+              <p>Terhitung <strong>1.000 Writes</strong>.</p>
+              <p className="text-[10px] opacity-70">Jatah gratis harian: 20.000 (Hanya terpakai 5%).</p>
+            </div>
+            <div className="bg-white/80 p-3 rounded-lg border border-orange-100">
+              <p className="font-bold mb-1">2. Saat Buka/Reload</p>
+              <p>Terhitung <strong>0 Reads</strong> (Gratis).</p>
+              <p className="text-[10px] opacity-70">Data langsung diambil dari memori laptop Anda berkat fitur Caching.</p>
+            </div>
+          </div>
+          <p className="italic font-medium">Kesimpulan: Mengelola ribuan buku di SMPN 5 tetap GRATIS dan AMAN menggunakan sistem ini.</p>
+        </CardContent>
+      </Card>
 
       <Card className="border-none shadow-sm bg-slate-50 border-slate-200">
         <CardHeader>
