@@ -129,20 +129,20 @@ export default function SyncPage() {
                   <span className="text-[10px] font-bold uppercase text-muted-foreground">Writes</span>
                 </div>
                 <div className="text-sm font-black">1 Buku = 1 Write</div>
-                <div className="text-[9px] text-muted-foreground">Jatah: 20rb/hari</div>
+                <div className="text-[9px] text-muted-foreground">Hanya dihitung saat Kirim Data.</div>
               </div>
               <div className="p-3 bg-slate-50 rounded-lg border">
                 <div className="flex items-center gap-2 mb-1">
                   <HardDrive className="h-3 w-3 text-secondary" />
-                  <span className="text-[10px] font-bold uppercase text-muted-foreground">Storage</span>
+                  <span className="text-[10px] font-bold uppercase text-muted-foreground">Reads</span>
                 </div>
-                <div className="text-sm font-black">~1KB / Buku</div>
-                <div className="text-[9px] text-muted-foreground">Jatah: 1.000.000 KB (1GB)</div>
+                <div className="text-sm font-black">Gratis (Cached)</div>
+                <div className="text-[9px] text-muted-foreground">Reload tidak menambah biaya.</div>
               </div>
             </div>
             <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
               <p className="text-[10px] text-blue-800 leading-relaxed italic">
-                *Sistem ini dirancang untuk tetap gratis selamanya meskipun memiliki puluhan ribu buku, berkat metode penginputan massal dari antrean lokal.
+                *Data yang sudah dikirim ke Cloud tidak akan memakan jatah "Write" lagi saat halaman dibuka kembali atau di-reload. Sistem hanya membaca data baru jika ada perubahan.
               </p>
             </div>
           </CardContent>
