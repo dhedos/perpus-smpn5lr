@@ -4,7 +4,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { RefreshCw, Zap, Layers, Info, ShieldCheck, AlertTriangle, CheckCircle2, Database, CloudUpload, HardDrive, activity } from "lucide-react"
+import { RefreshCw, Zap, Layers, Info, ShieldCheck, AlertTriangle, CheckCircle2, Database, CloudUpload, HardDrive, MousePointer2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
@@ -70,9 +70,14 @@ export default function SyncPage() {
 
   return (
     <div className="max-w-4xl space-y-6 animate-in fade-in duration-500">
-      <div>
-        <h1 className="text-2xl font-bold font-headline tracking-tight text-primary">Caching & Sinkronisasi</h1>
-        <p className="text-muted-foreground text-sm">Kelola penyimpanan lokal untuk menghemat kuota data SMPN 5.</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold font-headline tracking-tight text-primary">Caching & Sinkronisasi</h1>
+          <p className="text-muted-foreground text-sm">Kelola penyimpanan lokal untuk menghemat kuota data SMPN 5.</p>
+        </div>
+        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 py-1.5 px-3 flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4" /> Reload Aman (0 Reads Extra)
+        </Badge>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -87,22 +92,24 @@ export default function SyncPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Penyimpanan Lokal</span>
-              <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100 border-none">Optimasi Reads Aktif</Badge>
+              <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100 border-none font-bold">OPTIMASI AKTIF</Badge>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Antrean Localhost</span>
-              <Badge variant={pendingCount > 0 ? "destructive" : "outline"} className="border-none">
+              <Badge variant={pendingCount > 0 ? "destructive" : "outline"} className="border-none font-bold">
                 {pendingCount} Buku Menunggu
               </Badge>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Kecepatan Akses</span>
-              <span className="font-bold text-primary">Instan (0 Reads Extra)</span>
+              <span className="text-muted-foreground">Efisiensi Reload</span>
+              <span className="font-bold text-primary flex items-center gap-1">
+                <MousePointer2 className="h-3 w-3" /> Gratis (Tanpa Biaya)
+              </span>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <Button variant="outline" className="gap-2" onClick={handleSync} disabled={syncing}>
                 <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-                Segarkan Status
+                Segarkan
               </Button>
               <Button className="gap-2 shadow-md bg-orange-600 hover:bg-orange-700" onClick={() => window.location.href = '/dashboard/books'}>
                 <CloudUpload className="h-4 w-4" />
@@ -117,32 +124,33 @@ export default function SyncPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Layers className="h-5 w-5 text-blue-600" />
-              Rincian Penggunaan Kuota
+              Keamanan Kuota (Spark Plan)
             </CardTitle>
-            <CardDescription>Analisis efisiensi database (Spark Plan).</CardDescription>
+            <CardDescription>Analisis penggunaan data sekolah Anda.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="p-3 bg-slate-50 rounded-lg border">
                 <div className="flex items-center gap-2 mb-1">
                   <Database className="h-3 w-3 text-primary" />
-                  <span className="text-[10px] font-bold uppercase text-muted-foreground">Writes</span>
+                  <span className="text-[10px] font-bold uppercase text-muted-foreground">Writes (Tulis)</span>
                 </div>
-                <div className="text-sm font-black">1 Buku = 1 Write</div>
-                <div className="text-[9px] text-muted-foreground">Hanya dihitung saat Kirim Data.</div>
+                <div className="text-sm font-black">Hanya Saat Sync</div>
+                <div className="text-[9px] text-muted-foreground leading-tight">1 Buku = 1 Write. Tidak dihitung ulang saat reload.</div>
               </div>
               <div className="p-3 bg-slate-50 rounded-lg border">
                 <div className="flex items-center gap-2 mb-1">
                   <HardDrive className="h-3 w-3 text-secondary" />
-                  <span className="text-[10px] font-bold uppercase text-muted-foreground">Reads</span>
+                  <span className="text-[10px] font-bold uppercase text-muted-foreground">Reads (Baca)</span>
                 </div>
-                <div className="text-sm font-black">Gratis (Cached)</div>
-                <div className="text-[9px] text-muted-foreground">Reload tidak menambah biaya.</div>
+                <div className="text-sm font-black">Bebas Reload</div>
+                <div className="text-[9px] text-muted-foreground leading-tight">Data diambil dari memori HP/Laptop Anda. GRATIS.</div>
               </div>
             </div>
-            <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
-              <p className="text-[10px] text-blue-800 leading-relaxed italic">
-                *Data yang sudah dikirim ke Cloud tidak akan memakan jatah "Write" lagi saat halaman dibuka kembali atau di-reload. Sistem hanya membaca data baru jika ada perubahan.
+            <div className="p-3 rounded-xl bg-blue-50 border border-blue-100 flex gap-3">
+              <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+              <p className="text-[10px] text-blue-800 leading-relaxed font-medium italic">
+                Anda bebas membuka menu apapun berkali-kali. Sistem ini dirancang untuk kemandirian data sekolah dengan biaya operasional Rp 0,- (Gratis Selamanya).
               </p>
             </div>
           </CardContent>
@@ -153,16 +161,13 @@ export default function SyncPage() {
         <Card className="border-none shadow-sm border-blue-200 bg-blue-50/30">
           <CardHeader>
             <CardTitle className="text-sm flex items-center gap-2 text-blue-800">
-              <Info className="h-4 w-4" />
-              Penjelasan Antrean Lokal
+              <ShieldCheck className="h-4 w-4" />
+              Kenapa Aman?
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-xs text-blue-700 leading-relaxed">
             <p>
-              <strong>Persistensi Terjamin:</strong> Data yang Anda input tidak akan hilang meskipun browser ditutup atau komputer dimatikan. Data baru akan dihapus dari antrean hanya setelah server Cloud memberikan konfirmasi sukses.
-            </p>
-            <p>
-              <strong>Tips Hemat Kuota:</strong> Input semua buku secara offline di rumah atau sekolah saat sinyal buruk, lalu kirim sekaligus saat mendapatkan koneksi stabil.
+              Setiap kali Anda membuka halaman, aplikasi tidak langsung "mendownload" semua buku. Aplikasi mengecek apakah data di laptop Anda sudah sama dengan data di server. Jika sama, aplikasi tidak akan mendownload lagi. Inilah rahasia kenapa kuota Anda tetap awet.
             </p>
           </CardContent>
         </Card>
@@ -170,16 +175,13 @@ export default function SyncPage() {
         <Card className="border-none shadow-sm border-purple-200 bg-purple-50/30">
           <CardHeader>
             <CardTitle className="text-sm flex items-center gap-2 text-purple-800">
-              <ShieldCheck className="h-4 w-4" />
-              Keamanan & Sinkronisasi
+              <Info className="h-4 w-4" />
+              Tips Pengoperasian
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-xs text-purple-700 leading-relaxed">
             <p>
-              Antrean lokal menggunakan kunci enkripsi peramban versi terbaru (v2) untuk mencegah data terhapus secara tidak sengaja oleh pembaruan sistem.
-            </p>
-            <p>
-              <strong>Status:</strong> Sistem saat ini memonitor koneksi Anda. Pastikan ikon sinyal berwarna biru sebelum menekan tombol Kirim.
+              Gunakan mode <strong>Input Lokal</strong> (Antrean) sesering mungkin. Anda bisa input 500 buku seharian secara offline, lalu kirim sekaligus saat sinyal stabil atau kuota tersedia. Data antrean akan tetap tersimpan berhari-hari sampai berhasil terkirim.
             </p>
           </CardContent>
         </Card>
