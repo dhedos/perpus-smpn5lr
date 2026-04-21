@@ -4,7 +4,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { RefreshCw, Zap, Layers, Info, ShieldCheck, AlertTriangle, CheckCircle2, Database, CloudUpload } from "lucide-react"
+import { RefreshCw, Zap, Layers, Info, ShieldCheck, AlertTriangle, CheckCircle2, Database, CloudUpload, HardDrive, activity } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
@@ -39,7 +39,6 @@ export default function SyncPage() {
     }
 
     checkQueue()
-    // Optional: poll for changes if multiple tabs are open
     const interval = setInterval(checkQueue, 2000)
 
     return () => {
@@ -118,22 +117,33 @@ export default function SyncPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Layers className="h-5 w-5 text-blue-600" />
-              Efisien: Dokumen vs Stok
+              Rincian Penggunaan Kuota
             </CardTitle>
-            <CardDescription>Bagaimana sistem menghitung penggunaan data.</CardDescription>
+            <CardDescription>Analisis efisiensi database (Spark Plan).</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="p-4 rounded-lg bg-blue-50 border border-blue-100 space-y-3">
-              <p className="text-xs text-blue-800 leading-relaxed">
-                <strong>Penting:</strong> 1 Jenis Buku hanya dihitung <strong>1 Pembacaan (Read)</strong> oleh Firebase, berapapun jumlah stok fisiknya.
-              </p>
-              <div className="text-[10px] text-blue-600 font-medium">
-                Data antrean lokal tetap tersimpan permanen di komputer ini sampai Anda berhasil mengirimnya ke server.
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 bg-slate-50 rounded-lg border">
+                <div className="flex items-center gap-2 mb-1">
+                  <Database className="h-3 w-3 text-primary" />
+                  <span className="text-[10px] font-bold uppercase text-muted-foreground">Writes</span>
+                </div>
+                <div className="text-sm font-black">1 Buku = 1 Write</div>
+                <div className="text-[9px] text-muted-foreground">Jatah: 20rb/hari</div>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-lg border">
+                <div className="flex items-center gap-2 mb-1">
+                  <HardDrive className="h-3 w-3 text-secondary" />
+                  <span className="text-[10px] font-bold uppercase text-muted-foreground">Storage</span>
+                </div>
+                <div className="text-sm font-black">~1KB / Buku</div>
+                <div className="text-[9px] text-muted-foreground">Jatah: 1.000.000 KB (1GB)</div>
               </div>
             </div>
-            <div className="flex items-center justify-between text-xs text-muted-foreground italic">
-              <span>*Berlaku untuk Spark Plan (Gratis)</span>
-              <CheckCircle2 className="h-3 w-3 text-green-500" />
+            <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
+              <p className="text-[10px] text-blue-800 leading-relaxed italic">
+                *Sistem ini dirancang untuk tetap gratis selamanya meskipun memiliki puluhan ribu buku, berkat metode penginputan massal dari antrean lokal.
+              </p>
             </div>
           </CardContent>
         </Card>
