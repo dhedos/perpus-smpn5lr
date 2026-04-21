@@ -215,7 +215,7 @@ export default function LoginPage() {
             </Button>
           )}
           {isSetupMode && <Button variant="ghost" className="text-xs" onClick={() => setIsSetupMode(false)}>Kembali ke Login</Button>}
-          <p className="text-[10px] text-muted-foreground text-center uppercase font-bold tracking-widest mt-4">&copy; 2024 Pustaka Nusantara SMPN 5</p>
+          <p className="text-[10px] text-muted-foreground text-center uppercase font-bold tracking-widest mt-4">&copy; 2026 Pustaka Nusantara SMPN 5</p>
         </CardFooter>
       </Card>
 

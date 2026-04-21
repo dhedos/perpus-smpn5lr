@@ -23,4 +23,4 @@ Setelah `npm run push` berhasil:
 4. Klik **Deploy**.
 
 ---
-&copy; 2024 SMPN 5 LANGKE REMBONG.
+&copy; 2026 SMPN 5 LANGKE REMBONG.
