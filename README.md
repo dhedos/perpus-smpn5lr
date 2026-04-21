@@ -19,7 +19,8 @@ Setelah `npm run push` berhasil:
 1. Masuk ke [Vercel](https://vercel.com).
 2. Klik **Add New Project** lalu pilih repositori `perpus-smpn5lr`.
 3. **PENTING**: Di bagian **Environment Variables**, tambahkan:
-   - `GOOGLE_GENAI_API_KEY`: Masukkan API Key Gemini Anda.
+   - **Key**: `GOOGLE_GENAI_API_KEY`
+   - **Value**: Masukkan API Key Gemini Anda (Dapatkan di https://aistudio.google.com/app/apikey)
 4. Klik **Deploy**.
 
 ---
