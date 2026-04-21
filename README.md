@@ -1,31 +1,27 @@
+
 # Pustaka Nusantara - SMPN 5 LANGKE REMBONG
 
-Sistem Informasi Perpustakaan Modern dengan integrasi AI, Scan QR, dan Sinkronisasi Cloud yang dioptimalkan untuk efisiensi kuota.
+Sistem Informasi Perpustakaan Modern dengan integrasi AI, Scan QR, dan Sinkronisasi Cloud.
 
-## Repositori GitHub
-**URL**: [https://github.com/dhedos/perpus-smpn5lr.git](https://github.com/dhedos/perpus-smpn5lr.git)
+## Cara Mengunggah ke GitHub (Tanpa Terminal)
+Jika Anda tidak memiliki akses ke terminal, ikuti langkah ini:
 
-## Cara Mengunggah ke GitHub (Langkah Manual)
-Jalankan perintah berikut satu per satu di terminal komputer Anda (di dalam folder proyek ini):
-
-1. `git init` (Inisialisasi git jika belum)
-2. `git remote add origin https://github.com/dhedos/perpus-smpn5lr.git` (Hubungkan ke repo)
-3. `git add .` (Menambahkan semua file)
-4. `git commit -m "Siap untuk Deployment Vercel - Sistem Perpustakaan Modern"`
-5. `git branch -M main` (Pastikan nama branch utama adalah main)
-6. `git push -u origin main` (Kirim kode ke GitHub)
+1. **Download Kode**: Unduh seluruh folder proyek ini ke komputer Anda.
+2. **Buka GitHub**: Masuk ke repositori [https://github.com/dhedos/perpus-smpn5lr](https://github.com/dhedos/perpus-smpn5lr).
+3. **Upload Manual**:
+   - Klik tombol **Add file** lalu pilih **Upload files**.
+   - Seret (drag & drop) semua isi folder proyek ini ke halaman GitHub tersebut (kecuali folder `node_modules` jika ada).
+   - Klik **Commit changes**.
 
 ## Panduan Deployment ke Vercel
-Setelah kode berhasil di-push ke GitHub:
+Setelah kode ada di GitHub:
 
 1. Masuk ke [Vercel](https://vercel.com).
-2. Klik **Add New Project** -> **Import from GitHub**.
-3. Pilih repositori `perpus-smpn5lr`.
-4. **PENTING: Pengaturan Variabel Lingkungan**:
+2. Klik **Add New Project** lalu pilih repositori `perpus-smpn5lr`.
+3. **PENTING: Variabel Lingkungan**:
    Di bagian **Environment Variables**, tambahkan:
-   - `GOOGLE_GENAI_API_KEY`: Masukkan API Key Google AI (Gemini) Anda agar fitur AI Deskripsi berfungsi.
-5. Klik **Deploy**.
-6. Vercel akan memberikan link domain (contoh: `perpus-smpn5lr.vercel.app`).
+   - `GOOGLE_GENAI_API_KEY`: Masukkan API Key Gemini Anda agar fitur AI Deskripsi berfungsi.
+4. Klik **Deploy**.
 
 ---
 &copy; 2024 SMPN 5 LANGKE REMBONG. Dirancang untuk efisiensi dan kemandirian data sekolah.
