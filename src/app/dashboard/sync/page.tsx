@@ -38,11 +38,13 @@ export default function SyncPage() {
       if (currentProgress >= 100) {
         clearInterval(interval)
         setSyncing(false)
-        // Toast dipanggil di luar setState updater untuk menghindari "Cannot update a component while rendering"
-        toast({ 
-          title: "Caching Berhasil", 
-          description: "Database lokal telah disinkronkan dengan server cloud." 
-        })
+        // Jalankan toast setelah render cycle selesai untuk menghindari hydration/render error
+        setTimeout(() => {
+          toast({ 
+            title: "Caching Berhasil", 
+            description: "Database lokal telah disinkronkan dengan server cloud." 
+          })
+        }, 10)
       }
     }, 150)
   }
