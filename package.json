@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "push": "git remote add origin https://github.com/dhedos/perpus-smpn5lr.git || git remote set-url origin https://github.com/dhedos/perpus-smpn5lr.git; git add .; git commit -m 'Update sistem 2026' || echo 'Tidak ada perubahan'; git push -u origin main"
+    "push": "git remote add origin https://github.com/dhedos/perpus-smpn5lr.git || git remote set-url origin https://github.com/dhedos/perpus-smpn5lr.git; git add .; git commit -m 'Fix: Resolving react 19 dependency conflict' || echo 'No changes'; git push -u origin main"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.28.0",

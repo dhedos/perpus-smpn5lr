@@ -3,29 +3,23 @@
 
 Sistem Informasi Perpustakaan Modern dengan integrasi AI, Scan QR, dan Sinkronisasi Cloud.
 
-## 🚀 CARA MENGATASI ERROR (TANDA X MERAH) DI GITHUB/VERCEL
+## ✅ LANGKAH SETELAH PERBAIKAN (ERESOLVE)
 
-Jika Anda melihat tanda **X merah** di GitHub atau pesan `DEPLOYMENT_NOT_FOUND` di Vercel, ikuti langkah ini:
-
-1.  **Cek Log di Vercel**:
-    - Buka [vercel.com](https://vercel.com) dan masuk ke dashboard proyek Anda.
-    - Klik pada tab **Deployments**.
-    - Klik pada deployment yang berstatus **Error** (merah).
-    - Klik tombol **View Logs**. Di sana akan tertulis teks berwarna merah yang menjelaskan penyebab kegagalannya.
-
-2.  **Masalah Umum (Missing Environment Variable)**:
-    - AI tidak akan bekerja jika Anda belum memasukkan API Key.
-    - Di Vercel, buka menu **Settings** -> **Environment Variables**.
-    - Tambahkan:
-        - **Key**: `GOOGLE_GENAI_API_KEY`
-        - **Value**: (Masukkan API Key Gemini Anda)
-    - Setelah simpan, lakukan **Redeploy**.
-
-3.  **Ketik di Terminal Kembali**:
-    Setelah Anda mengeklik **Apply** pada perubahan kode saya, jalankan kembali:
+1.  **Klik Tombol "Apply"**: Pastikan Anda sudah mengeklik tombol biru **Apply** pada pesan saya agar kode `overrides` tersimpan.
+2.  **Jalankan Push**: Ketik perintah ini di terminal Anda:
     ```bash
     npm run push
     ```
+3.  **Cek Dashboard Vercel**: Buka [vercel.com](https://vercel.com). Anda akan melihat status "Building" berubah menjadi hijau "Ready" setelah beberapa menit.
+
+## 🚀 PENGATURAN AWAL (WAJIB)
+
+Agar AI bekerja, Anda harus memasukkan API Key di Vercel:
+1. Masuk ke **Settings** -> **Environment Variables** di Vercel.
+2. Tambahkan:
+    - **Key**: `GOOGLE_GENAI_API_KEY`
+    - **Value**: (Masukkan API Key Gemini Anda dari Google AI Studio)
+3. Klik **Save** dan lakukan **Redeploy**.
 
 ---
 &copy; 2026 SMPN 5 LANGKE REMBONG.
