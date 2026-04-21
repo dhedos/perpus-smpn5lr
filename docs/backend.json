@@ -25,7 +25,8 @@
         "publisher": { "type": "string" },
         "publicationYear": { "type": "number" },
         "totalStock": { "type": "number" },
-        "availableStock": { "type": "number" }
+        "availableStock": { "type": "number" },
+        "stickerHeader": { "type": "string", "description": "Teks header pada stiker QR (contoh: Nama Sekolah)." }
       }
     },
     "LibraryMember": {

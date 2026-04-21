@@ -92,7 +92,8 @@ const INITIAL_FORM_DATA = {
   rackLocation: "",
   totalStock: 1,
   availableStock: 1,
-  description: ""
+  description: "",
+  stickerHeader: "SMPN 5 LANGKE REMBONG"
 }
 
 export default function BooksPage() {
@@ -208,7 +209,7 @@ export default function BooksPage() {
 
     const stickersHtml = filteredBooks.map(book => `
       <div style="border: 1px solid #000; padding: 6px; text-align: center; width: 140px; display: inline-block; vertical-align: top; page-break-inside: avoid; margin: 4px; font-family: 'Inter', sans-serif; border-radius: 2px; background: #fff;">
-        <div style="font-size: 7px; font-weight: 900; color: #2E6ECE; margin-bottom: 3px; text-transform: uppercase; line-height: 1;">SMPN 5 LANGKE REMBONG</div>
+        <div style="font-size: 7px; font-weight: 900; color: #2E6ECE; margin-bottom: 3px; text-transform: uppercase; line-height: 1;">${book.stickerHeader || 'SMPN 5 LANGKE REMBONG'}</div>
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${book.code}" style="width: 100px; height: 100px; margin: 2px 0;" />
         <div style="font-size: 9px; font-weight: 800; margin-bottom: 2px; color: #000; line-height: 1.1;">${book.title}</div>
         <div style="font-size: 7px; color: #333; margin-bottom: 1px; line-height: 1.2;">Rek: ${book.accountCode || '-'} | ${book.publisher || '-'}</div>
@@ -503,7 +504,8 @@ export default function BooksPage() {
                             rackLocation: book.rackLocation || "",
                             totalStock: Number(book.totalStock || 0),
                             availableStock: Number(book.availableStock || 0),
-                            description: book.description || ""
+                            description: book.description || "",
+                            stickerHeader: book.stickerHeader || "SMPN 5 LANGKE REMBONG"
                           }); 
                           setIsEditOpen(true);
                         }, 10);
@@ -537,6 +539,10 @@ export default function BooksPage() {
             <DialogTitle>Tambah Buku Baru</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="space-y-2 col-span-2">
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">Judul Header Stiker (Misal: Nama Sekolah)</Label>
+              <Input value={formData.stickerHeader ?? ""} onChange={e => setFormData({ ...formData, stickerHeader: e.target.value })} className="bg-white border-slate-300 h-11" placeholder="SMPN 5 LANGKE REMBONG" />
+            </div>
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">Kode Buku</Label>
               <Input value={formData.code ?? ""} onChange={e => setFormData({ ...formData, code: e.target.value })} className="bg-white border-slate-300 h-11" />
@@ -599,6 +605,10 @@ export default function BooksPage() {
             <DialogTitle>Ubah Data Buku</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="space-y-2 col-span-2">
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">Judul Header Stiker</Label>
+              <Input value={formData.stickerHeader ?? ""} onChange={e => setFormData({ ...formData, stickerHeader: e.target.value })} className="bg-white border-slate-300 h-11" />
+            </div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Kode Buku</Label><Input value={formData.code ?? ""} disabled className="bg-muted border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Judul Buku</Label><Input value={formData.title ?? ""} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Kode Rekening</Label><Input value={formData.accountCode ?? ""} onChange={e => setFormData({ ...formData, accountCode: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
@@ -663,7 +673,7 @@ export default function BooksPage() {
           </DialogHeader>
           {selectedBookQr && (
             <div className="bg-white p-[8px] rounded-sm border-[1px] border-black inline-block text-center shadow-sm w-[150px] mx-auto font-sans leading-tight">
-                <div className="text-[7px] font-black text-primary uppercase tracking-tighter mb-[3px] leading-none">SMPN 5 LANGKE REMBONG</div>
+                <div className="text-[7px] font-black text-primary uppercase tracking-tighter mb-[3px] leading-none">{selectedBookQr.stickerHeader || 'SMPN 5 LANGKE REMBONG'}</div>
                 <div className="flex justify-center my-[2px]">
                   <QRCodeSVG value={selectedBookQr.code} size={110} level="M" includeMargin={false} />
                 </div>
