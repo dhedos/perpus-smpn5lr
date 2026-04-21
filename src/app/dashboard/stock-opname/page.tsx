@@ -52,7 +52,7 @@ export default function StockOpnamePage() {
   const { data: books } = useCollection(booksRef)
 
   const auditLogsQuery = useMemoFirebase(() => 
-    db ? query(collection(db, 'activity_logs'), orderBy('timestamp', 'desc'), limit(50)) : null, 
+    db ? query(collection(db, 'activity_logs'), orderBy('timestamp', 'desc'), limit(100)) : null, 
   [db])
   const { data: audits } = useCollection(auditLogsQuery)
 
@@ -151,13 +151,17 @@ export default function StockOpnamePage() {
     }
     setIsProcessing(true)
 
+    // Cari kode buku terbaru dari master data jika di log lama kosong
+    const masterBook = books?.find(b => b.id === audit.bookId);
+    const bookCode = audit.bookCode && audit.bookCode !== "-" ? audit.bookCode : (masterBook?.code || "-");
+
     const logData = {
       userId: user.uid, 
       userName: user.displayNameCustom || "Admin", 
       actionType: 'STOCK_AUDIT', 
       bookId: audit.bookId,
       bookTitle: audit.bookTitle || "Buku",
-      bookCode: audit.bookCode || "-",
+      bookCode: bookCode,
       expectedQty: Number(audit.expectedQty || 0),
       physicalQty: Number(audit.expectedQty || 0), 
       diffQty: 0,
@@ -202,17 +206,26 @@ export default function StockOpnamePage() {
       ];
 
       // Menyiapkan Data Laporan
-      const dataRows = stockAudits.map((a, index) => [
-        index + 1,
-        new Date(a.timestamp).toLocaleString('id-ID'),
-        a.bookCode || "-",
-        a.bookTitle,
-        a.expectedQty,
-        a.physicalQty,
-        a.diffQty,
-        a.auditStatus,
-        a.userName
-      ]);
+      const dataRows = stockAudits.map((a, index) => {
+        // Fallback: Jika bookCode di log kosong, cari di master data buku
+        let displayCode = a.bookCode;
+        if (!displayCode || displayCode === "-") {
+          const masterBook = books?.find(b => b.id === a.bookId);
+          displayCode = masterBook?.code || "-";
+        }
+
+        return [
+          index + 1,
+          new Date(a.timestamp).toLocaleString('id-ID'),
+          displayCode,
+          a.bookTitle,
+          a.expectedQty,
+          a.physicalQty,
+          a.diffQty,
+          a.auditStatus,
+          a.userName
+        ];
+      });
 
       // Menyiapkan Tanda Tangan (Footer)
       const footer = [
@@ -367,38 +380,44 @@ export default function StockOpnamePage() {
             <div className="divide-y text-xs max-h-[500px] overflow-y-auto">
               {!audits || audits.filter(a => a.actionType === 'STOCK_AUDIT').length === 0 ? (
                 <div className="p-10 text-center text-muted-foreground italic">Belum ada audit hari ini.</div>
-              ) : audits.filter(a => a.actionType === 'STOCK_AUDIT').map(a => (
-                <div key={a.id} className="p-4 flex justify-between items-center hover:bg-muted/30 transition-colors">
-                  <div className="space-y-1 flex-1 pr-2">
-                    <p className="font-bold leading-tight truncate max-w-[150px]">{a.bookTitle}</p>
-                    <p className="text-[10px] text-muted-foreground font-mono">{a.bookCode || "-"}</p>
-                    <div className="flex items-center gap-1.5 mt-1">
-                       <Badge 
-                        variant={a.auditStatus === 'LENGKAP' ? 'secondary' : 'destructive'}
-                        className="h-4 px-1.5 text-[8px] font-bold border-none"
-                       >
-                        {a.auditStatus === 'KURANG' ? `KURANG ${Math.abs(a.diffQty) || ''}` : a.auditStatus}
-                       </Badge>
-                       {a.auditStatus === 'KURANG' && (
-                         <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-6 w-6 text-blue-600 hover:bg-blue-50"
-                          title="Lengkapi (Buku Ketemu)"
-                          onClick={() => handleLengkapiBuku(a)}
-                          disabled={isProcessing}
+              ) : audits.filter(a => a.actionType === 'STOCK_AUDIT').map(a => {
+                // Fallback untuk riwayat list juga
+                const masterBook = books?.find(b => b.id === a.bookId);
+                const displayCode = (a.bookCode && a.bookCode !== "-") ? a.bookCode : (masterBook?.code || "-");
+                
+                return (
+                  <div key={a.id} className="p-4 flex justify-between items-center hover:bg-muted/30 transition-colors">
+                    <div className="space-y-1 flex-1 pr-2">
+                      <p className="font-bold leading-tight truncate max-w-[150px]">{a.bookTitle}</p>
+                      <p className="text-[10px] text-muted-foreground font-mono">{displayCode}</p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                         <Badge 
+                          variant={a.auditStatus === 'LENGKAP' ? 'secondary' : 'destructive'}
+                          className="h-4 px-1.5 text-[8px] font-bold border-none"
                          >
-                           <RefreshCcw className="h-3 w-3" />
-                         </Button>
-                       )}
+                          {a.auditStatus === 'KURANG' ? `KURANG ${Math.abs(a.diffQty) || ''}` : a.auditStatus}
+                         </Badge>
+                         {a.auditStatus === 'KURANG' && (
+                           <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 text-blue-600 hover:bg-blue-50"
+                            title="Lengkapi (Buku Ketemu)"
+                            onClick={() => handleLengkapiBuku(a)}
+                            disabled={isProcessing}
+                           >
+                             <RefreshCcw className="h-3 w-3" />
+                           </Button>
+                         )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[8px] font-bold text-muted-foreground uppercase">Fisik</p>
+                      <p className="font-black text-lg leading-none">{a.physicalQty ?? '-'}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[8px] font-bold text-muted-foreground uppercase">Fisik</p>
-                    <p className="font-black text-lg leading-none">{a.physicalQty ?? '-'}</p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
