@@ -235,7 +235,7 @@ export default function StockOpnamePage() {
       const dateStr = new Date().toISOString().split('T')[0]
       writeFile(workbook, `Laporan_Audit_Stok_SMPN5_${dateStr}.xlsx`)
       
-      toast({ title: "Ekspor Berhasil", description: "Laporan audit dengan Kop Surat dan Tanda Tangan telah diunduh." })
+      toast({ title: "Ekspor Berhasil", description: "Laporan audit telah diunduh." })
     } catch (error) {
       toast({ title: "Gagal Ekspor", variant: "destructive" })
     } finally {
@@ -254,7 +254,7 @@ export default function StockOpnamePage() {
         </div>
         <Button variant="outline" size="sm" onClick={handleExportAudit} disabled={isExporting}>
           {isExporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileDown className="h-4 w-4 mr-2" />}
-          Export Excel (Kop Surat)
+          Export Excel
         </Button>
       </div>
 
