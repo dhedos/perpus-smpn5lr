@@ -6,12 +6,14 @@ Sistem Informasi Perpustakaan Modern dengan integrasi AI, Scan QR, dan Sinkronis
 ## Cara Mengunggah ke GitHub (Tanpa Terminal)
 Jika Anda tidak memiliki akses ke terminal, ikuti langkah ini:
 
-1. **Download Kode**: Unduh seluruh folder proyek ini ke komputer Anda.
-2. **Buka GitHub**: Masuk ke repositori [https://github.com/dhedos/perpus-smpn5lr](https://github.com/dhedos/perpus-smpn5lr).
-3. **Upload Manual**:
+1. **Simpan Perubahan**: Pastikan Anda sudah mengeklik tombol **Apply** di editor ini.
+2. **Unduh/Siapkan Folder**: Pastikan semua berkas di editor ini sudah tersimpan di folder proyek Anda.
+3. **Buka GitHub**: Masuk ke repositori Anda di [https://github.com/dhedos/perpus-smpn5lr](https://github.com/dhedos/perpus-smpn5lr).
+4. **Upload Manual**:
    - Klik tombol **Add file** lalu pilih **Upload files**.
-   - Seret (drag & drop) semua isi folder proyek ini ke halaman GitHub tersebut (kecuali folder `node_modules` jika ada).
-   - Klik **Commit changes**.
+   - Seret (drag & drop) semua isi folder proyek ini ke halaman GitHub tersebut. 
+   - *Catatan: Jangan khawatir tentang folder besar seperti node_modules, GitHub akan mengabaikannya secara otomatis jika Anda menggunakan cara ini.*
+5. **Konfirmasi**: Klik **Commit changes**.
 
 ## Panduan Deployment ke Vercel
 Setelah kode ada di GitHub:
