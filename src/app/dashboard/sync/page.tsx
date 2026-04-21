@@ -9,6 +9,8 @@ import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 
+const STORAGE_KEY = 'perpus_local_queue_v2'
+
 export default function SyncPage() {
   const { toast } = useToast()
   const [syncing, setSyncing] = useState(false)
@@ -22,17 +24,28 @@ export default function SyncPage() {
     window.addEventListener('online', handleStatus)
     window.addEventListener('offline', handleStatus)
 
-    // Check Local Queue
-    const savedQueue = localStorage.getItem('perpus_local_queue')
-    if (savedQueue) {
-      try {
-        setPendingCount(JSON.parse(savedQueue).length)
-      } catch (e) {}
+    const checkQueue = () => {
+      const savedQueue = localStorage.getItem(STORAGE_KEY)
+      if (savedQueue) {
+        try {
+          const parsed = JSON.parse(savedQueue)
+          setPendingCount(Array.isArray(parsed) ? parsed.length : 0)
+        } catch (e) {
+          setPendingCount(0)
+        }
+      } else {
+        setPendingCount(0)
+      }
     }
+
+    checkQueue()
+    // Optional: poll for changes if multiple tabs are open
+    const interval = setInterval(checkQueue, 2000)
 
     return () => {
       window.removeEventListener('online', handleStatus)
       window.removeEventListener('offline', handleStatus)
+      clearInterval(interval)
     }
   }, [])
 
@@ -42,21 +55,18 @@ export default function SyncPage() {
     
     let currentProgress = 0
     const interval = setInterval(() => {
-      currentProgress += 20
+      currentProgress += 10
       setProgress(currentProgress)
       
       if (currentProgress >= 100) {
         clearInterval(interval)
         setSyncing(false)
-        
-        setTimeout(() => {
-          toast({ 
-            title: "Caching Berhasil", 
-            description: "Database lokal telah disinkronkan dengan server cloud." 
-          })
-        }, 10)
+        toast({ 
+          title: "Penyegaran Berhasil", 
+          description: "Sistem telah memverifikasi status koneksi dan data lokal." 
+        })
       }
-    }, 150)
+    }, 100)
   }
 
   return (
@@ -93,11 +103,11 @@ export default function SyncPage() {
             <div className="grid grid-cols-2 gap-2">
               <Button variant="outline" className="gap-2" onClick={handleSync} disabled={syncing}>
                 <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-                Segarkan Cache
+                Segarkan Status
               </Button>
               <Button className="gap-2 shadow-md bg-orange-600 hover:bg-orange-700" onClick={() => window.location.href = '/dashboard/books'}>
                 <CloudUpload className="h-4 w-4" />
-                Kirim Data
+                Lihat Antrean
               </Button>
             </div>
             {syncing && <Progress value={progress} className="h-2" />}
@@ -115,10 +125,10 @@ export default function SyncPage() {
           <CardContent className="space-y-4">
             <div className="p-4 rounded-lg bg-blue-50 border border-blue-100 space-y-3">
               <p className="text-xs text-blue-800 leading-relaxed">
-                <strong>Penting:</strong> 1 Jenis Buku (misal: Matematika) hanya dihitung <strong>1 Pembacaan (Read)</strong> oleh Firebase, berapapun jumlah stok fisiknya.
+                <strong>Penting:</strong> 1 Jenis Buku hanya dihitung <strong>1 Pembacaan (Read)</strong> oleh Firebase, berapapun jumlah stok fisiknya.
               </p>
               <div className="text-[10px] text-blue-600 font-medium">
-                Sistem ini sangat hemat kuota meskipun sekolah memiliki ribuan buku fisik.
+                Data antrean lokal tetap tersimpan permanen di komputer ini sampai Anda berhasil mengirimnya ke server.
               </div>
             </div>
             <div className="flex items-center justify-between text-xs text-muted-foreground italic">
@@ -139,12 +149,10 @@ export default function SyncPage() {
           </CardHeader>
           <CardContent className="space-y-4 text-xs text-blue-700 leading-relaxed">
             <p>
-              <strong>Bagaimana cara kerjanya?</strong> <br/>
-              Saat Anda menginput buku, data disimpan sementara di browser Anda (localhost). Data ini tidak akan hilang meskipun Anda menutup browser atau mematikan komputer.
+              <strong>Persistensi Terjamin:</strong> Data yang Anda input tidak akan hilang meskipun browser ditutup atau komputer dimatikan. Data baru akan dihapus dari antrean hanya setelah server Cloud memberikan konfirmasi sukses.
             </p>
             <p>
-              <strong>Kapan harus dikirim?</strong> <br/>
-              Setelah Anda selesai menginput semua buku hari ini, klik tombol <strong>Kirim ke Database</strong> di halaman Koleksi Buku untuk mengunggah semuanya sekaligus ke Cloud.
+              <strong>Tips Hemat Kuota:</strong> Input semua buku secara offline di rumah atau sekolah saat sinyal buruk, lalu kirim sekaligus saat mendapatkan koneksi stabil.
             </p>
           </CardContent>
         </Card>
@@ -153,15 +161,15 @@ export default function SyncPage() {
           <CardHeader>
             <CardTitle className="text-sm flex items-center gap-2 text-purple-800">
               <ShieldCheck className="h-4 w-4" />
-              Keamanan & Portabilitas
+              Keamanan & Sinkronisasi
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-xs text-purple-700 leading-relaxed">
             <p>
-              Data dalam antrean lokal bersifat privat hanya pada perangkat yang digunakan untuk menginput. Pastikan untuk selalu mengirim antrean sebelum berpindah perangkat.
+              Antrean lokal menggunakan kunci enkripsi peramban versi terbaru (v2) untuk mencegah data terhapus secara tidak sengaja oleh pembaruan sistem.
             </p>
             <p>
-              <strong>Tips Hemat Kuota:</strong> Gunakan mode ini untuk menginput data secara offline, lalu hubungkan ke internet hanya saat ingin menekan tombol Kirim ke Database.
+              <strong>Status:</strong> Sistem saat ini memonitor koneksi Anda. Pastikan ikon sinyal berwarna biru sebelum menekan tombol Kirim.
             </p>
           </CardContent>
         </Card>

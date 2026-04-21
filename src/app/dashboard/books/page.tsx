@@ -100,6 +100,8 @@ const INITIAL_FORM_DATA = {
   stickerHeader: "SMPN 5 LANGKE REMBONG"
 }
 
+const STORAGE_KEY = 'perpus_local_queue_v2'
+
 export default function BooksPage() {
   const db = useFirestore()
   const { toast } = useToast()
@@ -118,6 +120,7 @@ export default function BooksPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isQueueOpen, setIsQueueOpen] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
+  const [isHydrated, setIsHydrated] = useState(false)
   
   const [bookToDelete, setBookToDelete] = useState<string | null>(null)
   const [selectedBookQr, setSelectedBookQr] = useState<any>(null)
@@ -128,27 +131,37 @@ export default function BooksPage() {
   const [formData, setFormData] = useState(INITIAL_FORM_DATA)
   const [editingBookId, setEditingBookId] = useState<string | null>(null)
   
-  // Local Queue State with robust initialization from LocalStorage
-  const [localQueue, setLocalQueue] = useState<any[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('perpus_local_queue')
-      try {
-        return saved ? JSON.parse(saved) : []
-      } catch (e) {
-        return []
-      }
-    }
-    return []
-  })
+  // Local Queue State
+  const [localQueue, setLocalQueue] = useState<any[]>([])
 
   // Load Settings for Kop Surat
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
 
-  // Save Queue to LocalStorage whenever it changes
+  // 1. Initial Load from LocalStorage (Run once on mount)
   useEffect(() => {
-    localStorage.setItem('perpus_local_queue', JSON.stringify(localQueue))
-  }, [localQueue])
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          if (Array.isArray(parsed)) {
+            setLocalQueue(parsed)
+          }
+        } catch (e) {
+          console.error("Failed to load local queue:", e)
+        }
+      }
+      setIsHydrated(true)
+    }
+  }, [])
+
+  // 2. Persistent Save to LocalStorage (Only after hydrated)
+  useEffect(() => {
+    if (isHydrated) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(localQueue))
+    }
+  }, [localQueue, isHydrated])
 
   const booksCollectionQuery = useMemoFirebase(() => {
     if (!db) return null
@@ -205,20 +218,19 @@ export default function BooksPage() {
 
     const newLocalBook = {
       ...formData,
-      tempId: Date.now().toString(),
+      tempId: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }
 
-    // Immediately update local state which will be synced to localStorage by useEffect
     setLocalQueue(prev => [newLocalBook, ...prev])
     setIsOpen(false)
     setFormData(INITIAL_FORM_DATA)
     forceUnlockUI()
 
     toast({ 
-      title: "Tersimpan di Lokal", 
-      description: "Buku masuk antrean. Klik 'Kirim ke Database' untuk menyimpan permanen.",
+      title: "Tersimpan di Localhost", 
+      description: "Buku masuk antrean permanen di komputer ini sampai Anda mengirimnya.",
     })
   }
 
@@ -230,9 +242,11 @@ export default function BooksPage() {
       const booksRef = collection(db, 'books')
       let successCount = 0
 
-      for (const book of localQueue) {
+      // We use a clone to avoid mutation issues during loop
+      const queueToSync = [...localQueue]
+
+      for (const book of queueToSync) {
         const { tempId, ...dataToSave } = book
-        // Add Firestore metadata
         const firestoreData = {
           ...dataToSave,
           createdAt: serverTimestamp(),
@@ -242,15 +256,17 @@ export default function BooksPage() {
         successCount++
       }
 
+      // Clear only after full success
       setLocalQueue([])
       toast({ 
         title: "Sinkronisasi Berhasil", 
         description: `${successCount} buku telah dikirim ke database pusat.` 
       })
     } catch (error: any) {
+      console.error("Sync error:", error)
       toast({ 
         title: "Sinkronisasi Gagal", 
-        description: error.message || "Pastikan Anda terhubung ke internet.", 
+        description: "Pastikan koneksi internet stabil. Data tetap aman di antrean lokal.", 
         variant: "destructive" 
       })
     } finally {
@@ -483,7 +499,7 @@ export default function BooksPage() {
           <p className="text-muted-foreground text-sm">Manajemen katalog dan inventaris perpustakaan.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {localQueue.length > 0 && (
+          {isHydrated && localQueue.length > 0 && (
             <Button 
               variant="default" 
               size="sm" 
@@ -641,15 +657,14 @@ export default function BooksPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-orange-600" />
-              Antrean Buku (Simpan di Localhost)
+              Antrean Buku (Penyimpanan Lokal)
             </DialogTitle>
           </DialogHeader>
           <div className="py-4 space-y-4">
             <div className="bg-orange-50 border border-orange-100 p-4 rounded-lg flex items-start gap-3">
               <Info className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />
               <p className="text-xs text-orange-800 leading-relaxed">
-                Buku-buku di bawah ini saat ini hanya tersimpan di komputer Anda (localhost). 
-                Klik <strong>Kirim ke Database</strong> untuk menyimpan secara permanen ke server cloud.
+                Buku-buku ini tersimpan aman di komputer Anda. Klik <strong>Kirim ke Database</strong> untuk menyimpan ke Cloud secara permanen.
               </p>
             </div>
             
@@ -700,7 +715,7 @@ export default function BooksPage() {
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-4">
             <div className="space-y-2 col-span-2">
-              <Label className="font-semibold text-xs uppercase text-muted-foreground">Judul Header Stiker (Misal: Nama Sekolah)</Label>
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">Judul Header Stiker</Label>
               <Input value={formData.stickerHeader ?? ""} onChange={e => setFormData({ ...formData, stickerHeader: e.target.value })} className="bg-white border-slate-300 h-11" placeholder="SMPN 5 LANGKE REMBONG" />
             </div>
             <div className="space-y-2">
@@ -708,7 +723,7 @@ export default function BooksPage() {
               <Input value={formData.code ?? ""} onChange={e => setFormData({ ...formData, code: e.target.value })} className="bg-white border-slate-300 h-11" placeholder="Cth: 001" />
             </div>
             <div className="space-y-2">
-              <Label className="font-semibold text-xs uppercase text-muted-foreground">Judul Buku (Nama Spesifik)</Label>
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">Judul Buku</Label>
               <Input value={formData.title ?? ""} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" placeholder="Cth: Matematika Kelas VII" />
             </div>
             <div className="space-y-2">
@@ -728,8 +743,8 @@ export default function BooksPage() {
               <Input value={formData.isbn ?? ""} onChange={e => setFormData({ ...formData, isbn: e.target.value })} className="bg-white border-slate-300 h-11" />
             </div>
             <div className="space-y-2">
-              <Label className="font-semibold text-xs uppercase text-muted-foreground">Jenis / Kategori (Klasifikasi)</Label>
-              <Input value={formData.category ?? ""} onChange={e => setFormData({ ...formData, category: e.target.value })} placeholder="Cth: Matematika, Fiksi, Sains" className="bg-white border-slate-300 h-11" />
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">Jenis / Kategori</Label>
+              <Input value={formData.category ?? ""} onChange={e => setFormData({ ...formData, category: e.target.value })} placeholder="Cth: Matematika, Fiksi" className="bg-white border-slate-300 h-11" />
             </div>
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">Jumlah Stok Total</Label>
@@ -737,14 +752,14 @@ export default function BooksPage() {
             </div>
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">Lokasi Rak</Label>
-              <Input value={formData.rackLocation ?? ""} onChange={e => setFormData({ ...formData, rackLocation: e.target.value })} className="bg-white border-slate-300 h-11" placeholder="Cth: A1, B4" />
+              <Input value={formData.rackLocation ?? ""} onChange={e => setFormData({ ...formData, rackLocation: e.target.value })} className="bg-white border-slate-300 h-11" placeholder="Cth: A1" />
             </div>
             <div className="col-span-2 space-y-2">
               <div className="flex justify-between items-center">
                 <Label className="font-semibold text-xs uppercase text-muted-foreground">Deskripsi / Ringkasan AI</Label>
-                <Button variant="ghost" type="button" size="sm" onClick={handleGenerateDescription} disabled={isGenerating} className="h-6 text-[10px] font-bold">
-                  <Sparkles className="h-3 w-3 mr-1" />AI Deskripsi
-                </Button>
+                <button type="button" onClick={handleGenerateDescription} disabled={isGenerating} className="flex items-center gap-1 text-[10px] font-bold text-primary hover:opacity-80 transition-opacity">
+                  <Sparkles className="h-3 w-3" /> AI Deskripsi
+                </button>
               </div>
               <Textarea value={formData.description ?? ""} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" />
             </div>
@@ -770,14 +785,14 @@ export default function BooksPage() {
               <Input value={formData.stickerHeader ?? ""} onChange={e => setFormData({ ...formData, stickerHeader: e.target.value })} className="bg-white border-slate-300 h-11" />
             </div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Kode Buku</Label><Input value={formData.code ?? ""} disabled className="bg-muted border-slate-300 h-11" /></div>
-            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Judul Buku (Nama Spesifik)</Label><Input value={formData.title ?? ""} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Judul Buku</Label><Input value={formData.title ?? ""} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Kode Rekening</Label><Input value={formData.accountCode ?? ""} onChange={e => setFormData({ ...formData, accountCode: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Penerbit</Label><Input value={formData.publisher ?? ""} onChange={e => setFormData({ ...formData, publisher: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Tahun Terbit</Label><Input type="number" value={formData.publicationYear ?? ""} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">ISBN</Label><Input value={formData.isbn ?? ""} onChange={e => setFormData({ ...formData, isbn: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Jumlah Stok Total</Label><Input type="number" value={formData.totalStock ?? 0} onChange={e => setFormData({ ...formData, totalStock: Number(e.target.value) })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Tgl. Penerimaan</Label><Input type="date" value={formData.acquisitionDate ?? ""} onChange={e => setFormData({ ...formData, acquisitionDate: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
-            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Jenis / Kategori (Klasifikasi)</Label><Input value={formData.category ?? ""} onChange={e => setFormData({ ...formData, category: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Jenis / Kategori</Label><Input value={formData.category ?? ""} onChange={e => setFormData({ ...formData, category: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
             <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Lokasi Rak</Label><Input value={formData.rackLocation ?? ""} onChange={e => setFormData({ ...formData, rackLocation: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
             <div className="col-span-2 space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Deskripsi</Label><Textarea value={formData.description ?? ""} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" /></div>
           </div>
