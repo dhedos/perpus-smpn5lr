@@ -47,12 +47,13 @@ export default function StockOpnamePage() {
   const { data: books } = useCollection(booksRef)
 
   const auditLogsQuery = useMemoFirebase(() => 
-    db ? query(collection(db, 'activity_logs'), orderBy('timestamp', 'desc'), limit(15)) : null, 
+    db ? query(collection(db, 'activity_logs'), orderBy('timestamp', 'desc'), limit(20)) : null, 
   [db])
   const { data: audits } = useCollection(auditLogsQuery)
 
   const handleLookup = (code: string) => {
-    const b = books?.find(bk => bk.code === code || bk.isbn === code)
+    if (!books) return;
+    const b = books.find(bk => bk.code === code || bk.isbn === code)
     if (b) { 
       setSelectedBook(b); 
       setPhysicalCount(Number(b.totalStock || 0));
@@ -66,12 +67,14 @@ export default function StockOpnamePage() {
     try {
       const { Html5Qrcode } = await import("html5-qrcode")
       setTimeout(async () => {
+        const scannerElement = document.getElementById("audit-scanner")
+        if (!scannerElement) return;
         const sc = new Html5Qrcode("audit-scanner")
         scannerInstanceRef.current = sc
         try {
           await sc.start(
             { facingMode: "environment" }, 
-            { fps: 10, qrbox: { width: 250, height: 150 } }, 
+            { fps: 15, qrbox: { width: 250, height: 150 } }, 
             (txt) => { handleLookup(txt); stopScanner(); }, 
             () => {}
           )
@@ -115,26 +118,30 @@ export default function StockOpnamePage() {
       userId: user.uid, 
       userName: user.displayNameCustom || "Admin", 
       actionType: 'STOCK_AUDIT', 
-      bookId: selectedBook.id,
-      bookTitle: selectedBook.title,
-      expectedQty: expected,
-      physicalQty: physicalCount,
-      diffQty: diff,
+      bookId: selectedBook.id || "unknown",
+      bookTitle: selectedBook.title || "Unknown Book",
+      expectedQty: Number(expected),
+      physicalQty: Number(physicalCount),
+      diffQty: Number(diff),
       description: `Audit: ${selectedBook.title} - ${statusText}`, 
       auditStatus: auditStatus, 
       timestamp: new Date().toISOString()
     }
 
     addDoc(collection(db, 'activity_logs'), logData).then(() => {
-      // Jika statusnya KURANG, kita beri opsi untuk update stok sistem atau biarkan sebagai selisih audit
-      toast({ title: "Audit Tersimpan", description: `Buku ${selectedBook.title} tercatat ${statusText}.` }); 
+      toast({ title: "Audit Tersimpan", description: `Buku "${selectedBook.title}" tercatat ${statusText}.` }); 
       setSelectedBook(null); 
       setSearch("")
+    }).catch((e) => {
+      toast({ title: "Gagal Menyimpan", description: "Terjadi kesalahan saat menyimpan audit.", variant: "destructive" })
     }).finally(() => setIsProcessing(false))
   }
 
   const handleLengkapiBuku = (audit: any) => {
-    if (!db || !user) return
+    if (!db || !user || !audit.bookId) {
+       toast({ title: "Gagal", description: "Data audit tidak lengkap untuk diproses.", variant: "destructive" });
+       return;
+    }
     setIsProcessing(true)
 
     const logData = {
@@ -142,14 +149,19 @@ export default function StockOpnamePage() {
       userName: user.displayNameCustom || "Admin", 
       actionType: 'STOCK_AUDIT', 
       bookId: audit.bookId,
-      bookTitle: audit.bookTitle,
-      description: `Audit: ${audit.bookTitle} - LENGKAPI LAGI (Buku Ketemu)`, 
+      bookTitle: audit.bookTitle || "Unknown Book",
+      expectedQty: Number(audit.expectedQty || 0),
+      physicalQty: Number(audit.expectedQty || 0), // Now it matches
+      diffQty: 0,
+      description: `Audit: ${audit.bookTitle || 'Buku'} - LENGKAPI LAGI (Buku Ketemu)`, 
       auditStatus: 'LENGKAP', 
       timestamp: new Date().toISOString()
     }
 
     addDoc(collection(db, 'activity_logs'), logData).then(() => {
       toast({ title: "Status Diperbarui", description: "Buku kini ditandai sebagai LENGKAP." });
+    }).catch((e) => {
+      toast({ title: "Gagal", description: "Gagal memperbarui status audit.", variant: "destructive" });
     }).finally(() => setIsProcessing(false))
   }
 
@@ -186,7 +198,7 @@ export default function StockOpnamePage() {
                 <div className="bg-white p-6 rounded-2xl border-2 border-primary/20 space-y-6 animate-in zoom-in-95">
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">
-                      <Badge variant="outline" className="font-mono text-[10px]">{selectedBook.code}</Badge>
+                      <Badge variant="outline" className="font-mono text-[10px] uppercase font-bold">{selectedBook.code}</Badge>
                       <h3 className="text-xl font-black text-primary leading-tight">{selectedBook.title}</h3>
                       <p className="text-xs text-muted-foreground font-medium">{selectedBook.author}</p>
                     </div>
@@ -197,13 +209,14 @@ export default function StockOpnamePage() {
                   </div>
 
                   <div className="space-y-3 pt-4 border-t">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Jumlah Fisik Ditemukan</Label>
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Jumlah Fisik Ditemukan</div>
                     <div className="flex items-center justify-center gap-6">
                       <Button 
                         variant="outline" 
                         size="icon" 
                         className="h-12 w-12 rounded-full border-2"
                         onClick={() => setPhysicalCount(p => Math.max(0, p - 1))}
+                        disabled={isProcessing}
                       >
                         <Minus className="h-6 w-6" />
                       </Button>
@@ -213,14 +226,16 @@ export default function StockOpnamePage() {
                           className="w-24 text-center text-4xl font-black h-16 border-none bg-transparent"
                           value={physicalCount}
                           onChange={(e) => setPhysicalCount(Number(e.target.value))}
+                          disabled={isProcessing}
                         />
-                        <span className="text-[10px] font-bold text-muted-foreground">UNIT FISIK</span>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Unit Fisik</span>
                       </div>
                       <Button 
                         variant="outline" 
                         size="icon" 
                         className="h-12 w-12 rounded-full border-2"
                         onClick={() => setPhysicalCount(p => p + 1)}
+                        disabled={isProcessing}
                       >
                         <Plus className="h-6 w-6" />
                       </Button>
@@ -263,9 +278,9 @@ export default function StockOpnamePage() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y text-xs max-h-[500px] overflow-y-auto">
-              {audits?.filter(a => a.actionType === 'STOCK_AUDIT').length === 0 ? (
+              {!audits || audits.filter(a => a.actionType === 'STOCK_AUDIT').length === 0 ? (
                 <div className="p-10 text-center text-muted-foreground italic">Belum ada audit hari ini.</div>
-              ) : audits?.filter(a => a.actionType === 'STOCK_AUDIT').map(a => (
+              ) : audits.filter(a => a.actionType === 'STOCK_AUDIT').map(a => (
                 <div key={a.id} className="p-4 flex justify-between items-center hover:bg-muted/30 transition-colors">
                   <div className="space-y-1 flex-1 pr-2">
                     <p className="font-bold leading-tight truncate max-w-[150px]">{a.bookTitle}</p>
@@ -273,15 +288,15 @@ export default function StockOpnamePage() {
                     <div className="flex items-center gap-1.5 mt-1">
                        <Badge 
                         variant={a.auditStatus === 'LENGKAP' ? 'secondary' : 'destructive'}
-                        className="h-4 px-1.5 text-[8px] font-bold"
+                        className="h-4 px-1.5 text-[8px] font-bold border-none"
                        >
-                        {a.auditStatus}
+                        {a.auditStatus === 'KURANG' ? `KURANG ${a.diffQty || ''}` : a.auditStatus}
                        </Badge>
                        {a.auditStatus === 'KURANG' && (
                          <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-5 w-5 text-blue-600 hover:bg-blue-50"
+                          className="h-6 w-6 text-blue-600 hover:bg-blue-50"
                           title="Lengkapi (Buku Ketemu)"
                           onClick={() => handleLengkapiBuku(a)}
                           disabled={isProcessing}

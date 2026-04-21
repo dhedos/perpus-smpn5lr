@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo, useRef } from "react"
@@ -207,12 +208,12 @@ export default function BooksPage() {
 
     const stickersHtml = filteredBooks.map(book => `
       <div style="border: 1px solid #000; padding: 6px; text-align: center; width: 140px; display: inline-block; vertical-align: top; page-break-inside: avoid; margin: 4px; font-family: 'Inter', sans-serif; border-radius: 2px; background: #fff;">
-        <div style="font-size: 7px; font-weight: 900; color: #2E6ECE; margin-bottom: 3px; text-transform: uppercase;">SMPN 5 LANGKE REMBONG</div>
+        <div style="font-size: 7px; font-weight: 900; color: #2E6ECE; margin-bottom: 3px; text-transform: uppercase; line-height: 1;">SMPN 5 LANGKE REMBONG</div>
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${book.code}" style="width: 100px; height: 100px; margin: 2px 0;" />
         <div style="font-size: 9px; font-weight: 800; margin-bottom: 2px; color: #000; line-height: 1.1;">${book.title}</div>
-        <div style="font-size: 7px; color: #333; margin-bottom: 1px;">${book.author || '-'} | ${book.publisher || '-'}</div>
-        <div style="font-size: 7px; color: #666;">${book.category || '-'} | ${book.publicationYear}</div>
-        <div style="font-size: 7px; color: #666; margin-bottom: 4px;">ISBN: ${book.isbn || '-'}</div>
+        <div style="font-size: 7px; color: #333; margin-bottom: 1px; line-height: 1.2;">${book.author || '-'} | ${book.publisher || '-'}</div>
+        <div style="font-size: 7px; color: #666; line-height: 1.2;">${book.category || '-'} | ${book.publicationYear}</div>
+        <div style="font-size: 7px; color: #666; margin-bottom: 4px; line-height: 1.2;">ISBN: ${book.isbn || '-'}</div>
         <div style="border-top: 0.5px solid #eee; margin: 2px 0; padding-top: 4px;">
            <div style="font-size: 14px; font-weight: 900; color: #2E6ECE; font-family: monospace; line-height: 1;">${book.code}</div>
            <div style="font-size: 8px; font-weight: 900; color: #000; margin-top: 2px; text-transform: uppercase;">RAK: ${book.rackLocation || '-'}</div>
@@ -465,7 +466,7 @@ export default function BooksPage() {
                 <TableCell className="text-xs">{book.publicationYear}</TableCell>
                 <TableCell>
                    <div className="flex items-center gap-1">
-                    <Badge variant={book.availableStock === 0 ? "destructive" : "secondary"} className="h-5 px-1.5 text-[10px]">
+                    <Badge variant={book.availableStock === 0 ? "destructive" : "secondary"} className="h-5 px-1.5 text-[10px] border-none">
                       {book.availableStock}/{book.totalStock}
                     </Badge>
                    </div>
