@@ -17,7 +17,8 @@ import {
   Minus,
   Plus,
   RefreshCcw,
-  AlertTriangle
+  AlertTriangle,
+  FileDown
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -38,6 +39,7 @@ export default function StockOpnamePage() {
   const [search, setSearch] = useState("")
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   const [selectedBook, setSelectedBook] = useState<any>(null)
   const [physicalCount, setPhysicalCount] = useState(0)
   
@@ -47,7 +49,7 @@ export default function StockOpnamePage() {
   const { data: books } = useCollection(booksRef)
 
   const auditLogsQuery = useMemoFirebase(() => 
-    db ? query(collection(db, 'activity_logs'), orderBy('timestamp', 'desc'), limit(20)) : null, 
+    db ? query(collection(db, 'activity_logs'), orderBy('timestamp', 'desc'), limit(50)) : null, 
   [db])
   const { data: audits } = useCollection(auditLogsQuery)
 
@@ -119,7 +121,7 @@ export default function StockOpnamePage() {
       userName: user.displayNameCustom || "Admin", 
       actionType: 'STOCK_AUDIT', 
       bookId: selectedBook.id || "unknown",
-      bookTitle: selectedBook.title || "Unknown Book",
+      bookTitle: selectedBook.title || "Buku Tanpa Judul",
       expectedQty: Number(expected),
       physicalQty: Number(physicalCount),
       diffQty: Number(diff),
@@ -138,7 +140,7 @@ export default function StockOpnamePage() {
   }
 
   const handleLengkapiBuku = (audit: any) => {
-    if (!db || !user || !audit.bookId) {
+    if (!db || !user || !audit?.bookId) {
        toast({ title: "Gagal", description: "Data audit tidak lengkap untuk diproses.", variant: "destructive" });
        return;
     }
@@ -149,9 +151,9 @@ export default function StockOpnamePage() {
       userName: user.displayNameCustom || "Admin", 
       actionType: 'STOCK_AUDIT', 
       bookId: audit.bookId,
-      bookTitle: audit.bookTitle || "Unknown Book",
+      bookTitle: audit.bookTitle || "Buku",
       expectedQty: Number(audit.expectedQty || 0),
-      physicalQty: Number(audit.expectedQty || 0), // Now it matches
+      physicalQty: Number(audit.expectedQty || 0), 
       diffQty: 0,
       description: `Audit: ${audit.bookTitle || 'Buku'} - LENGKAPI LAGI (Buku Ketemu)`, 
       auditStatus: 'LENGKAP', 
@@ -165,13 +167,58 @@ export default function StockOpnamePage() {
     }).finally(() => setIsProcessing(false))
   }
 
+  const handleExportAudit = async () => {
+    if (!audits) return
+    setIsExporting(true)
+    try {
+      const { utils, writeFile } = await import("xlsx")
+      const stockAudits = audits.filter(a => a.actionType === 'STOCK_AUDIT')
+      
+      if (stockAudits.length === 0) {
+        toast({ title: "Data Kosong", description: "Tidak ada riwayat audit untuk diekspor." })
+        setIsExporting(false)
+        return
+      }
+
+      const dataToExport = stockAudits.map((a, index) => ({
+        "No": index + 1,
+        "Waktu": new Date(a.timestamp).toLocaleString('id-ID'),
+        "Judul Buku": a.bookTitle,
+        "Stok Sistem": a.expectedQty,
+        "Fisik": a.physicalQty,
+        "Selisih": a.diffQty,
+        "Status": a.auditStatus,
+        "Petugas": a.userName
+      }))
+      
+      const worksheet = utils.json_to_sheet(dataToExport)
+      const workbook = utils.book_new()
+      utils.book_append_sheet(workbook, worksheet, "Laporan Opname")
+      
+      const dateStr = new Date().toISOString().split('T')[0]
+      writeFile(workbook, `Laporan_Audit_Stok_${dateStr}.xlsx`)
+      
+      toast({ title: "Ekspor Berhasil", description: "Laporan audit telah diunduh." })
+    } catch (error) {
+      toast({ title: "Gagal Ekspor", variant: "destructive" })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
-      <div>
-        <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
-          <ClipboardCheck className="h-7 w-7" /> Cek Stok Buku (Opname)
-        </h1>
-        <p className="text-muted-foreground text-sm">Verifikasi fisik koleksi perpustakaan dengan data sistem.</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
+            <ClipboardCheck className="h-7 w-7" /> Cek Stok Buku (Opname)
+          </h1>
+          <p className="text-muted-foreground text-sm">Verifikasi fisik koleksi perpustakaan dengan data sistem.</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={handleExportAudit} disabled={isExporting}>
+          {isExporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileDown className="h-4 w-4 mr-2" />}
+          Export Excel
+        </Button>
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
