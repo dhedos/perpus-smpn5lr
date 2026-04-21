@@ -111,7 +111,8 @@ export default function MembersPage() {
     if (!members) return []
     return members.filter(m => 
       (m.name?.toLowerCase() || "").includes(search.toLowerCase()) || 
-      (m.memberId?.toLowerCase() || "").includes(search.toLowerCase())
+      (m.memberId?.toLowerCase() || "").includes(search.toLowerCase()) ||
+      (m.classOrSubject?.toLowerCase() || "").includes(search.toLowerCase())
     )
   }, [members, search])
 
@@ -231,7 +232,7 @@ export default function MembersPage() {
               </div>
               <div className="space-y-2">
                 <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas</Label>
-                <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder={formData.type === 'Teacher' ? "Contoh: Unit Kerja / Mapel" : "Contoh: VII A"} />
+                <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Masukkan Kelas (Contoh: VII A)" />
               </div>
             </div>
             <DialogFooter><Button onClick={handleSaveMember} className="w-full sm:w-auto h-11 px-8 shadow-lg shadow-primary/20">Simpan Anggota</Button></DialogFooter>
@@ -242,7 +243,7 @@ export default function MembersPage() {
       <Card className="p-4 rounded-xl shadow-sm border-none bg-white">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Cari anggota berdasarkan nama atau ID..." className="pl-10 h-11 border-slate-200" value={search ?? ""} onChange={e => setSearch(e.target.value)} />
+          <Input placeholder="Cari anggota berdasarkan nama, ID, atau kelas..." className="pl-10 h-11 border-slate-200" value={search ?? ""} onChange={e => setSearch(e.target.value)} />
         </div>
       </Card>
 
@@ -251,7 +252,8 @@ export default function MembersPage() {
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead className="w-12 text-center">No.</TableHead>
-              <TableHead>Identitas</TableHead>
+              <TableHead>Nama Anggota</TableHead>
+              <TableHead>ID Anggota</TableHead>
               <TableHead>Tipe</TableHead>
               <TableHead>Kelas</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
@@ -259,22 +261,16 @@ export default function MembersPage() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
             ) : filteredMembers.length === 0 ? (
-              <TableRow><TableCell colSpan={5} className="text-center py-10 text-muted-foreground">Belum ada anggota terdaftar.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Belum ada anggota terdaftar.</TableCell></TableRow>
             ) : filteredMembers.map((member, index) => (
               <TableRow key={member.id}>
                 <TableCell className="text-center text-xs text-muted-foreground">{index + 1}</TableCell>
-                <TableCell>
-                  <div className="space-y-0.5">
-                    <div className="font-semibold leading-tight">{member.name ?? ""}</div>
-                    <div className="text-xs text-primary font-bold font-mono">{member.memberId ?? ""}</div>
-                  </div>
-                </TableCell>
+                <TableCell className="font-semibold">{member.name ?? ""}</TableCell>
+                <TableCell className="font-mono text-xs text-primary font-bold">{member.memberId ?? ""}</TableCell>
                 <TableCell><Badge variant="outline" className="h-5 px-1.5 text-[10px] font-bold">{member.type === 'Teacher' ? 'GURU' : 'SISWA'}</Badge></TableCell>
-                <TableCell>
-                  <div className="text-sm font-medium">{member.classOrSubject || '-'}</div>
-                </TableCell>
+                <TableCell className="text-sm font-medium">{member.classOrSubject || '-'}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
@@ -329,7 +325,7 @@ export default function MembersPage() {
             <div>
               <div className="font-bold text-lg leading-tight">{selectedMemberQr?.name ?? ""}</div>
               <div className="font-mono text-primary font-bold">{selectedMemberQr?.memberId ?? ""}</div>
-              <div className="text-xs text-muted-foreground mt-1">{selectedMemberQr?.classOrSubject}</div>
+              <div className="text-xs text-muted-foreground mt-1">Kelas: {selectedMemberQr?.classOrSubject}</div>
             </div>
           </div>
           <DialogFooter className="grid grid-cols-2 gap-2">
@@ -348,7 +344,7 @@ export default function MembersPage() {
               <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" />
             </div>
             <div className="space-y-2">
-              <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas / Unit</Label>
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas</Label>
               <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" />
             </div>
           </div>

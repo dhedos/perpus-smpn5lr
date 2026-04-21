@@ -30,9 +30,7 @@ import {
   Calendar as CalendarIcon,
   Filter,
   ChevronDown,
-  RefreshCw,
-  MapPin,
-  BookOpen
+  RefreshCw
 } from "lucide-react"
 import { 
   Dialog, 
@@ -41,13 +39,6 @@ import {
   DialogTitle, 
   DialogFooter
 } from "@/components/ui/dialog"
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
@@ -80,7 +71,7 @@ import {
   errorEmitter 
 } from '@/firebase'
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors'
-import { collection, addDoc, deleteDoc, doc, updateDoc, query, limit, orderBy, where, getDocs } from 'firebase/firestore'
+import { collection, addDoc, deleteDoc, doc, updateDoc, query, limit, orderBy, getDocs, where } from 'firebase/firestore'
 
 const INITIAL_FORM_DATA = {
   code: "",
@@ -185,10 +176,9 @@ export default function BooksPage() {
         "Penerbit": book.publisher,
         "ISBN": book.isbn,
         "Thn Terbit": book.publicationYear,
-        "Tgl Penerimaan": book.acquisitionDate,
         "Jenis": book.category,
         "Stok": book.totalStock,
-        "Tersedia": book.availableStock
+        "Lokasi": book.rackLocation
       }))
       
       const worksheet = utils.json_to_sheet(dataToExport)
@@ -210,16 +200,16 @@ export default function BooksPage() {
     if (!printWindow) return
 
     const stickersHtml = filteredBooks.map(book => `
-      <div style="border: 1px solid #000; padding: 4px; text-align: center; width: 130px; display: inline-block; vertical-align: top; page-break-inside: avoid; margin: 4px; font-family: 'Inter', sans-serif; border-radius: 2px; background: #fff;">
-        <div style="font-size: 7px; font-weight: 900; color: #2E6ECE; margin-bottom: 2px; text-transform: uppercase; border-bottom: 0.5px solid #eee; padding-bottom: 2px;">SMPN 5 LANGKE REMBONG</div>
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${book.code}" style="width: 85px; height: 85px; margin: 3px 0;" />
-        <div style="font-size: 8px; font-weight: bold; margin-bottom: 1px; color: #000; line-height: 1.1; max-height: 2.2em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${book.title}</div>
-        <div style="font-size: 7px; color: #333; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${book.author}</div>
-        <div style="font-size: 6px; color: #666; margin-top: 1px;">${book.publisher || '-'} | ${book.publicationYear}</div>
-        <div style="font-size: 6px; color: #666; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">ISBN: ${book.isbn || '-'}</div>
-        <div style="border-top: 0.5px solid #eee; margin-top: 3px; padding-top: 3px;">
-           <div style="font-size: 10px; font-weight: 900; color: #2E6ECE; font-family: monospace;">${book.code}</div>
-           <div style="font-size: 7px; font-weight: bold; background: #f0f0f0; display: inline-block; padding: 1px 5px; border-radius: 2px; margin-top: 2px; text-transform: uppercase;">RAK: ${book.rackLocation || '-'}</div>
+      <div style="border: 1px solid #000; padding: 6px; text-align: center; width: 140px; display: inline-block; vertical-align: top; page-break-inside: avoid; margin: 4px; font-family: 'Inter', sans-serif; border-radius: 2px; background: #fff;">
+        <div style="font-size: 7px; font-weight: 900; color: #2E6ECE; margin-bottom: 3px; text-transform: uppercase;">SMPN 5 LANGKE REMBONG</div>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${book.code}" style="width: 100px; height: 100px; margin: 2px 0;" />
+        <div style="font-size: 9px; font-weight: 800; margin-bottom: 2px; color: #000; line-height: 1.1;">${book.title}</div>
+        <div style="font-size: 7px; color: #333; margin-bottom: 1px;">${book.publisher || '-'}</div>
+        <div style="font-size: 7px; color: #666;">${book.category || '-'} | ${book.publicationYear}</div>
+        <div style="font-size: 7px; color: #666; margin-bottom: 4px;">ISBN: ${book.isbn || '-'}</div>
+        <div style="border-top: 0.5px solid #eee; margin: 2px 0; padding-top: 4px;">
+           <div style="font-size: 14px; font-weight: 900; color: #2E6ECE; font-family: monospace; line-height: 1;">${book.code}</div>
+           <div style="font-size: 8px; font-weight: 900; color: #000; margin-top: 2px; text-transform: uppercase;">RAK: ${book.rackLocation || '-'}</div>
         </div>
       </div>
     `).join('')
@@ -287,16 +277,8 @@ export default function BooksPage() {
     const originalBook = books.find(b => b.id === editingBookId)
     if (!originalBook) { setIsEditOpen(false); forceUnlockUI(); return; }
 
-    const currentTotal = Number(originalBook.totalStock || 0)
-    const newTotal = Number(formData.totalStock || 0)
-    const currentAvail = Number(originalBook.availableStock || 0)
-    const diff = newTotal - currentTotal
-    const calculatedAvail = Math.max(0, currentAvail + diff)
-
     const updatedData = {
       ...formData,
-      totalStock: newTotal,
-      availableStock: calculatedAvail,
       updatedAt: new Date().toISOString()
     }
 
@@ -654,7 +636,6 @@ export default function BooksPage() {
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Kode Koleksi</Label><div className="font-mono text-primary font-bold">{selectedBookDetail.code ?? ""}</div></div>
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Pengarang & Penerbit</Label><div>{selectedBookDetail.author ?? ""} | {selectedBookDetail.publisher ?? "-"}</div></div>
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">ISBN</Label><div>{selectedBookDetail.isbn || "-"}</div></div>
-              <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Tgl. Penerimaan</Label><div className="flex items-center gap-2"><CalendarIcon className="h-3 w-3 text-muted-foreground" /><div>{selectedBookDetail.acquisitionDate ? new Date(selectedBookDetail.acquisitionDate).toLocaleDateString('id-ID', { dateStyle: 'long' }) : '-'}</div></div></div>
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Jenis & Lokasi Rak</Label><div className="flex items-center gap-2"><Badge variant="secondary" className="border-none">{selectedBookDetail.category ?? ""}</Badge> <span>{selectedBookDetail.rackLocation || 'Rak belum diatur'}</span></div></div>
               <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Status Ketersediaan</Label><div className="font-semibold text-blue-600">{selectedBookDetail.availableStock ?? 0} dari {selectedBookDetail.totalStock ?? 0} tersedia</div></div>
               <div className="col-span-2 space-y-1 pt-2 border-t">
@@ -673,28 +654,26 @@ export default function BooksPage() {
           <DialogHeader>
             <DialogTitle>Stiker QR Koleksi</DialogTitle>
           </DialogHeader>
-          <div className="bg-white p-2 rounded-sm border-2 border-black inline-block text-center shadow-sm w-[150px] mx-auto font-sans">
-            {selectedBookQr && (
-              <>
-                <div className="text-[7px] font-black text-primary uppercase tracking-tighter border-bottom-0.5 border-slate-200 pb-0.5 mb-1">SMPN 5 LANGKE REMBONG</div>
-                <div className="flex justify-center mb-1">
-                  <QRCodeSVG value={selectedBookQr.code} size={100} level="M" includeMargin />
+          {selectedBookQr && (
+            <div className="bg-white p-[8px] rounded-sm border-[1px] border-black inline-block text-center shadow-sm w-[150px] mx-auto font-sans leading-tight">
+                <div className="text-[7px] font-black text-primary uppercase tracking-tighter mb-[3px] leading-none">SMPN 5 LANGKE REMBONG</div>
+                <div className="flex justify-center my-[2px]">
+                  <QRCodeSVG value={selectedBookQr.code} size={110} level="M" includeMargin={false} />
                 </div>
-                <div className="text-center w-full px-1">
-                  <div className="font-bold text-[8px] leading-tight line-clamp-2 mb-0.5">{selectedBookQr.title}</div>
-                  <div className="text-[7px] text-slate-700 truncate">{selectedBookQr.author}</div>
-                  <div className="text-[6px] text-slate-500 truncate">{selectedBookQr.publisher || "-"} | {selectedBookQr.publicationYear}</div>
-                  <div className="text-[6px] text-slate-500 truncate">ISBN: {selectedBookQr.isbn || "-"}</div>
-                  <div className="pt-1 border-t border-slate-100 mt-1">
-                    <div className="text-[10px] font-black text-primary font-mono">{selectedBookQr.code}</div>
-                    <div className="text-[7px] font-bold text-muted-foreground uppercase bg-slate-100 rounded px-1 mt-0.5 inline-block">
+                <div className="text-center w-full mt-[2px]">
+                  <div className="font-extrabold text-[9px] leading-[1.1] mb-[2px]">{selectedBookQr.title}</div>
+                  <div className="text-[7px] text-slate-700 mb-[1px]">{selectedBookQr.publisher || "-"}</div>
+                  <div className="text-[7px] text-slate-500">{selectedBookQr.category || '-'} | {selectedBookQr.publicationYear}</div>
+                  <div className="text-[7px] text-slate-500">ISBN: {selectedBookQr.isbn || "-"}</div>
+                  <div className="pt-[4px] border-t border-slate-100 mt-[4px]">
+                    <div className="text-[14px] font-black text-primary font-mono leading-none">{selectedBookQr.code}</div>
+                    <div className="text-[8px] font-black text-black uppercase mt-[2px] leading-none">
                       RAK: {selectedBookQr.rackLocation || '-'}
                     </div>
                   </div>
                 </div>
-              </>
-            )}
-          </div>
+            </div>
+          )}
           <DialogFooter className="grid grid-cols-2 gap-2 mt-4">
             <Button variant="outline" size="sm" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" />Cetak</Button>
             <Button size="sm" onClick={() => setIsQrOpen(false)}>Tutup</Button>
