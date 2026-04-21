@@ -3,9 +3,9 @@
 
 Sistem Informasi Perpustakaan Modern dengan integrasi AI, Scan QR, dan Sinkronisasi Cloud.
 
-## ✅ LANGKAH SETELAH PERBAIKAN (ERESOLVE)
+## ✅ LANGKAH SETELAH PERBAIKAN (AUTOPREFIXER FIXED)
 
-1.  **Klik Tombol "Apply"**: Pastikan Anda sudah mengeklik tombol biru **Apply** pada pesan saya agar kode `overrides` tersimpan.
+1.  **Klik Tombol "Apply"**: Pastikan Anda sudah mengeklik tombol biru **Apply** pada pesan saya agar kode perbaikan tersimpan.
 2.  **Jalankan Push**: Ketik perintah ini di terminal Anda:
     ```bash
     npm run push
