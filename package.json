@@ -71,9 +71,6 @@
   },
   "overrides": {
     "react": "$react",
-    "react-dom": "$react-dom",
-    "qrcode.react": {
-      "react": "$react"
-    }
+    "react-dom": "$react-dom"
   }
 }
