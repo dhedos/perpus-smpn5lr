@@ -5,30 +5,30 @@ Sistem Informasi Perpustakaan Modern dengan integrasi AI, Scan QR, dan Sinkronis
 
 ## CARA KIRIM KE GITHUB (VIA TERMINAL)
 
-Jika Anda ingin menggunakan terminal seperti di gambar Anda, ketik perintah ini dan tekan Enter:
+Jika Anda melihat pesan "nothing to commit" atau ingin mengirim kode, ketik perintah ini dan tekan Enter:
 
 ```bash
 npm run push
 ```
 
-*Perintah di atas akan otomatis menjalankan `git add .`, `git commit`, dan `git push` sekaligus.*
+*Perintah di atas akan otomatis menjalankan `git add .`, mencoba `git commit`, dan langsung melakukan `git push` ke GitHub Anda.*
 
 ---
 
-## CARA CEPAT (TANPA KETIK)
+## JIKA GAGAL SAAT PUSH
 
-1. **Gunakan Ikon Git di Sidebar**:
-   - Cari ikon **Source Control** (gambar cabang pohon) di sebelah kiri layar ini.
-   - Klik ikon tersebut, lalu ketik pesan (misal: "update") di kotak pesan.
-   - Klik tombol **Commit** (ikon centang).
-   - Klik ikon tiga titik `...` lalu pilih **Push**.
+Jika Terminal meminta password atau akses ditolak, jalankan ini sekali saja untuk menyambungkan ulang:
+
+```bash
+git remote set-url origin https://github.com/dhedos/perpus-smpn5lr.git
+```
 
 ## Panduan Deployment ke Vercel
-Setelah kode ada di GitHub:
+Setelah kode berhasil terkirim ke GitHub:
 1. Masuk ke [Vercel](https://vercel.com).
 2. Klik **Add New Project** lalu pilih repositori `perpus-smpn5lr`.
 3. **PENTING**: Di bagian **Environment Variables**, tambahkan:
-   - `GOOGLE_GENAI_API_KEY`: Masukkan API Key Gemini Anda.
+   - `GOOGLE_GENAI_API_KEY`: Masukkan API Key Gemini Anda agar fitur AI Deskripsi aktif.
 4. Klik **Deploy**.
 
 ---

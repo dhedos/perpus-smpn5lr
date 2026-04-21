@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "push": "git add . && git commit -m 'Pembaruan otomatis' && git push origin main"
+    "push": "git add . && (git commit -m 'Pembaruan otomatis' || echo 'Tidak ada perubahan baru') && git push origin main"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.28.0",
