@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo, useRef } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -30,7 +30,10 @@ import {
   Calendar as CalendarIcon,
   Filter,
   ChevronDown,
-  RefreshCw
+  RefreshCw,
+  Database,
+  CloudUpload,
+  Clock
 } from "lucide-react"
 import { 
   Dialog, 
@@ -112,6 +115,9 @@ export default function BooksPage() {
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [isQrOpen, setIsQrOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isQueueOpen, setIsQueueOpen] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
+  
   const [bookToDelete, setBookToDelete] = useState<string | null>(null)
   const [selectedBookQr, setSelectedBookQr] = useState<any>(null)
   const [selectedBookDetail, setSelectedBookDetail] = useState<any>(null)
@@ -120,6 +126,26 @@ export default function BooksPage() {
 
   const [formData, setFormData] = useState(INITIAL_FORM_DATA)
   const [editingBookId, setEditingBookId] = useState<string | null>(null)
+  
+  // Local Queue State
+  const [localQueue, setLocalQueue] = useState<any[]>([])
+
+  // Load Queue from LocalStorage
+  useEffect(() => {
+    const savedQueue = localStorage.getItem('perpus_local_queue')
+    if (savedQueue) {
+      try {
+        setLocalQueue(JSON.parse(savedQueue))
+      } catch (e) {
+        console.error("Failed to parse local queue", e)
+      }
+    }
+  }, [])
+
+  // Save Queue to LocalStorage
+  useEffect(() => {
+    localStorage.setItem('perpus_local_queue', JSON.stringify(localQueue))
+  }, [localQueue])
 
   const booksCollectionQuery = useMemoFirebase(() => {
     if (!db) return null
@@ -166,6 +192,67 @@ export default function BooksPage() {
         document.body.style.pointerEvents = 'auto'
       }, 100)
     }
+  }
+
+  const handleSaveToLocalQueue = () => {
+    if (!formData.title || !formData.code) {
+      toast({ title: "Gagal", description: "Judul dan Kode Buku wajib diisi.", variant: "destructive" })
+      return
+    }
+
+    const newLocalBook = {
+      ...formData,
+      tempId: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+
+    setLocalQueue(prev => [newLocalBook, ...prev])
+    setIsOpen(false)
+    setFormData(INITIAL_FORM_DATA)
+    forceUnlockUI()
+
+    toast({ 
+      title: "Tersimpan di Lokal", 
+      description: "Buku masuk antrean. Klik 'Kirim ke Database' untuk menyimpan permanen.",
+    })
+  }
+
+  const handleSyncToDatabase = async () => {
+    if (!db || localQueue.length === 0) return
+    setIsSyncing(true)
+
+    try {
+      const booksRef = collection(db, 'books')
+      let successCount = 0
+
+      // We process sequentially to avoid overwhelming the client or quota if the queue is huge, 
+      // though for 10-50 books it's fine.
+      for (const book of localQueue) {
+        const { tempId, ...dataToSave } = book
+        await addDoc(booksRef, dataToSave)
+        successCount++
+      }
+
+      setLocalQueue([])
+      toast({ 
+        title: "Sinkronisasi Berhasil", 
+        description: `${successCount} buku telah dikirim ke database pusat.` 
+      })
+    } catch (error: any) {
+      toast({ 
+        title: "Sinkronisasi Gagal", 
+        description: error.message || "Pastikan Anda terhubung ke internet.", 
+        variant: "destructive" 
+      })
+    } finally {
+      setIsSyncing(false)
+      setIsQueueOpen(false)
+    }
+  }
+
+  const removeFromQueue = (tempId: string) => {
+    setLocalQueue(prev => prev.filter(b => b.tempId !== tempId))
   }
 
   const handleExportExcel = async () => {
@@ -248,36 +335,6 @@ export default function BooksPage() {
       setFormData(prev => ({ ...prev, description: result.description || "" }))
     } catch (e) { toast({ title: "AI Sibuk", variant: "destructive" }) }
     finally { setIsGenerating(false) }
-  }
-
-  const handleSaveBook = () => {
-    if (!db) return
-    if (!formData.title || !formData.code) {
-      toast({ title: "Gagal", description: "Judul dan Kode Buku wajib diisi.", variant: "destructive" })
-      return
-    }
-
-    const newBook = { 
-      ...formData, 
-      createdAt: new Date().toISOString(), 
-      updatedAt: new Date().toISOString() 
-    }
-
-    setIsOpen(false)
-    forceUnlockUI()
-
-    addDoc(collection(db, 'books'), newBook)
-      .catch(async (error) => {
-        const permissionError = new FirestorePermissionError({
-          path: 'books',
-          operation: 'create',
-          requestResourceData: newBook,
-        } satisfies SecurityRuleContext);
-        errorEmitter.emit('permission-error', permissionError);
-      });
-    
-    toast({ title: "Berhasil!", description: "Buku telah didaftarkan." })
-    setTimeout(() => { setFormData(INITIAL_FORM_DATA) }, 200)
   }
 
   const handleUpdateBook = () => {
@@ -390,6 +447,16 @@ export default function BooksPage() {
           <p className="text-muted-foreground text-sm">Manajemen katalog dan inventaris perpustakaan.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {localQueue.length > 0 && (
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="bg-orange-600 hover:bg-orange-700 animate-pulse"
+              onClick={() => setIsQueueOpen(true)}
+            >
+              <CloudUpload className="h-4 w-4 mr-2" /> Antrean ({localQueue.length})
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={handlePrintAllQrs} className="hidden md:flex"><Printer className="h-4 w-4 mr-2" />Cetak Semua QR</Button>
           <Button variant="outline" size="sm" onClick={handleExportExcel}><FileDown className="h-4 w-4 mr-2" />Excel</Button>
           <Button 
@@ -532,6 +599,63 @@ export default function BooksPage() {
         )}
       </Card>
 
+      {/* DIALOG ANTREAN LOKAL */}
+      <Dialog open={isQueueOpen} onOpenChange={setIsQueueOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-orange-600" />
+              Antrean Buku (Simpan di Localhost)
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="bg-orange-50 border border-orange-100 p-4 rounded-lg flex items-start gap-3">
+              <Info className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />
+              <p className="text-xs text-orange-800 leading-relaxed">
+                Buku-buku di bawah ini saat ini hanya tersimpan di komputer Anda (localhost). 
+                Klik <strong>Kirim ke Database</strong> untuk menyimpan secara permanen ke server cloud.
+              </p>
+            </div>
+            
+            <div className="border rounded-lg overflow-hidden max-h-[300px] overflow-y-auto">
+              <Table>
+                <TableHeader className="bg-slate-50">
+                  <TableRow>
+                    <TableHead>Kode</TableHead>
+                    <TableHead>Judul Buku</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {localQueue.map((item) => (
+                    <TableRow key={item.tempId}>
+                      <TableCell className="font-mono text-xs">{item.code}</TableCell>
+                      <TableCell className="text-xs font-bold">{item.title}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" onClick={() => removeFromQueue(item.tempId)} className="h-8 w-8 text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsQueueOpen(false)}>Tutup</Button>
+            <Button 
+              className="bg-primary shadow-lg shadow-primary/20 gap-2" 
+              onClick={handleSyncToDatabase}
+              disabled={isSyncing}
+            >
+              {isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
+              Kirim ke Database
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* DIALOG TAMBAH */}
       <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-2xl bg-slate-50">
@@ -591,8 +715,8 @@ export default function BooksPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsOpen(false)}>Batal</Button>
-            <Button onClick={handleSaveBook} className="px-8 shadow-lg shadow-primary/20">
-              Simpan Data
+            <Button onClick={handleSaveToLocalQueue} className="px-8 shadow-lg shadow-primary/20">
+              Simpan di Localhost
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,9 +1,10 @@
+
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { RefreshCw, Zap, Layers, Info, ShieldCheck, AlertTriangle, CheckCircle2 } from "lucide-react"
+import { RefreshCw, Zap, Layers, Info, ShieldCheck, AlertTriangle, CheckCircle2, Database, CloudUpload } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
@@ -13,12 +14,22 @@ export default function SyncPage() {
   const [syncing, setSyncing] = useState(false)
   const [progress, setProgress] = useState(0)
   const [isOnline, setIsOnline] = useState(true)
+  const [pendingCount, setPendingCount] = useState(0)
 
   useEffect(() => {
     setIsOnline(navigator.onLine)
     const handleStatus = () => setIsOnline(navigator.onLine)
     window.addEventListener('online', handleStatus)
     window.addEventListener('offline', handleStatus)
+
+    // Check Local Queue
+    const savedQueue = localStorage.getItem('perpus_local_queue')
+    if (savedQueue) {
+      try {
+        setPendingCount(JSON.parse(savedQueue).length)
+      } catch (e) {}
+    }
+
     return () => {
       window.removeEventListener('online', handleStatus)
       window.removeEventListener('offline', handleStatus)
@@ -38,7 +49,6 @@ export default function SyncPage() {
         clearInterval(interval)
         setSyncing(false)
         
-        // Membungkus toast dalam setTimeout untuk menghindari error render
         setTimeout(() => {
           toast({ 
             title: "Caching Berhasil", 
@@ -71,13 +81,25 @@ export default function SyncPage() {
               <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100 border-none">Optimasi Reads Aktif</Badge>
             </div>
             <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Antrean Localhost</span>
+              <Badge variant={pendingCount > 0 ? "destructive" : "outline"} className="border-none">
+                {pendingCount} Buku Menunggu
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Kecepatan Akses</span>
               <span className="font-bold text-primary">Instan (0 Reads Extra)</span>
             </div>
-            <Button className="w-full gap-2 shadow-md" onClick={handleSync} disabled={syncing}>
-              <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-              {syncing ? 'Sinkronisasi...' : 'Segarkan Cache'}
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" className="gap-2" onClick={handleSync} disabled={syncing}>
+                <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+                Segarkan Cache
+              </Button>
+              <Button className="gap-2 shadow-md bg-orange-600 hover:bg-orange-700" onClick={() => window.location.href = '/dashboard/books'}>
+                <CloudUpload className="h-4 w-4" />
+                Kirim Data
+              </Button>
+            </div>
             {syncing && <Progress value={progress} className="h-2" />}
           </CardContent>
         </Card>
@@ -112,17 +134,17 @@ export default function SyncPage() {
           <CardHeader>
             <CardTitle className="text-sm flex items-center gap-2 text-blue-800">
               <Info className="h-4 w-4" />
-              Penjelasan Ekspor & Google Sheets
+              Penjelasan Antrean Lokal
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-xs text-blue-700 leading-relaxed">
             <p>
-              <strong>1. Apakah Data Akan Mendobel?</strong> <br/>
-              Ekspor ke Excel bersifat <strong>Snapshot</strong>. Hapus data lama di Google Sheets sebelum menempelkan data baru dari Excel ini.
+              <strong>Bagaimana cara kerjanya?</strong> <br/>
+              Saat Anda menginput buku, data disimpan sementara di browser Anda (localhost). Data ini tidak akan hilang meskipun Anda menutup browser atau mematikan komputer.
             </p>
             <p>
-              <strong>2. Apakah Bisa Google Sheets Jadi Database?</strong> <br/>
-              Google Sheets tidak disarankan menjadi database utama karena masalah keamanan. Gunakan hanya untuk backup.
+              <strong>Kapan harus dikirim?</strong> <br/>
+              Setelah Anda selesai menginput semua buku hari ini, klik tombol <strong>Kirim ke Database</strong> di halaman Koleksi Buku untuk mengunggah semuanya sekaligus ke Cloud.
             </p>
           </CardContent>
         </Card>
@@ -131,31 +153,19 @@ export default function SyncPage() {
           <CardHeader>
             <CardTitle className="text-sm flex items-center gap-2 text-purple-800">
               <ShieldCheck className="h-4 w-4" />
-              Strategi Keamanan 1.000+ Buku
+              Keamanan & Portabilitas
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-xs text-purple-700 leading-relaxed">
             <p>
-              Firestore sangat kuat untuk 10.000+ buku. Storage 1.000 buku hanya memakan sekitar 1-2 MB dari jatah 1.000 MB gratis Anda.
+              Data dalam antrean lokal bersifat privat hanya pada perangkat yang digunakan untuk menginput. Pastikan untuk selalu mengirim antrean sebelum berpindah perangkat.
             </p>
             <p>
-              <strong>Tips Hemat:</strong> Lakukan pembersihan riwayat transaksi setiap akhir tahun ajaran setelah mengekspornya ke Excel.
+              <strong>Tips Hemat Kuota:</strong> Gunakan mode ini untuk menginput data secara offline, lalu hubungkan ke internet hanya saat ingin menekan tombol Kirim ke Database.
             </p>
           </CardContent>
         </Card>
       </div>
-
-      <Card className="border-none shadow-sm border-orange-200 bg-orange-50/50">
-        <CardContent className="flex items-start gap-4 p-6">
-          <AlertTriangle className="h-6 w-6 text-orange-500 shrink-0" />
-          <div className="space-y-1">
-            <p className="font-bold text-orange-800 text-sm">Peringatan Kuota Reads</p>
-            <p className="text-xs text-orange-700 leading-relaxed">
-              Sistem caching memastikan penggunaan Firebase tetap <strong>GRATIS</strong> karena data yang sudah pernah dibuka disimpan di memori lokal perangkat.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }
