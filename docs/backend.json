@@ -64,7 +64,14 @@
         "loanPeriod": { "type": "number", "description": "Lama pinjam dalam hari." },
         "fineAmount": { "type": "number", "description": "Denda per hari terlambat." },
         "lostBookFine": { "type": "number", "description": "Denda flat jika buku hilang." },
-        "libraryName": { "type": "string" }
+        "libraryName": { "type": "string" },
+        "govtInstitution": { "type": "string" },
+        "eduDept": { "type": "string" },
+        "schoolName": { "type": "string" },
+        "schoolAddress": { "type": "string" },
+        "reportCity": { "type": "string" },
+        "principalName": { "type": "string" },
+        "principalNip": { "type": "string" }
       }
     }
   },

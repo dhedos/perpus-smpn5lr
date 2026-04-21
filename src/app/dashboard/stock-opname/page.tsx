@@ -28,7 +28,7 @@ import {
   DialogHeader, 
   DialogTitle 
 } from "@/components/ui/dialog"
-import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase"
+import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from "@/firebase"
 import { collection, addDoc, query, orderBy, limit, doc, updateDoc, serverTimestamp } from "firebase/firestore"
 
 export default function StockOpnamePage() {
@@ -44,6 +44,9 @@ export default function StockOpnamePage() {
   const [physicalCount, setPhysicalCount] = useState(0)
   
   const scannerInstanceRef = useRef<any>(null)
+
+  const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
+  const { data: settings } = useDoc(settingsRef)
 
   const booksRef = useMemoFirebase(() => db ? collection(db, 'books') : null, [db])
   const { data: books } = useCollection(booksRef)
@@ -181,12 +184,14 @@ export default function StockOpnamePage() {
         return
       }
 
-      // Menyiapkan Kop Surat (Header)
+      const todayStr = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+      // Menyiapkan Kop Surat (Header) dari Pengaturan
       const header = [
-        ["PEMERINTAH KABUPATEN MANGGARAI"],
-        ["DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA"],
-        ["SMP NEGERI 5 LANGKE REMBONG"],
-        ["Alamat: Jl. Satar Tacik, Ruteng, Flores, NTT"],
+        [settings?.govtInstitution || "PEMERINTAH KABUPATEN MANGGARAI"],
+        [settings?.eduDept || "DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA"],
+        [settings?.schoolName || "SMP NEGERI 5 LANGKE REMBONG"],
+        [`Alamat: ${settings?.schoolAddress || "Jl. Satar Tacik, Ruteng, Flores, NTT"}`],
         [""],
         ["LAPORAN HASIL AUDIT STOK PERPUSTAKAAN (STOCK OPNAME)"],
         [`Tanggal Cetak: ${new Date().toLocaleString('id-ID')}`],
@@ -206,8 +211,22 @@ export default function StockOpnamePage() {
         a.userName
       ]);
 
-      // Menggabungkan Header dan Data
-      const finalAOA = [...header, ...dataRows];
+      // Menyiapkan Tanda Tangan (Footer)
+      const footer = [
+        [""],
+        [""],
+        ["", "", "", "", "", "", `${settings?.reportCity || "Mando"}, ${todayStr}`],
+        ["", "", "", "", "", "", "Mengetahui,"],
+        ["", "", "", "", "", "", "Kepala Sekolah,"],
+        [""],
+        [""],
+        [""],
+        ["", "", "", "", "", "", settings?.principalName || "Lodovikus Jangkar, S.Pd.Gr"],
+        ["", "", "", "", "", "", `NIP. ${settings?.principalNip || "198507272011011020"}`]
+      ];
+
+      // Menggabungkan Header, Data, dan Footer
+      const finalAOA = [...header, ...dataRows, ...footer];
       
       const worksheet = utils.aoa_to_sheet(finalAOA)
       const workbook = utils.book_new()
@@ -216,7 +235,7 @@ export default function StockOpnamePage() {
       const dateStr = new Date().toISOString().split('T')[0]
       writeFile(workbook, `Laporan_Audit_Stok_SMPN5_${dateStr}.xlsx`)
       
-      toast({ title: "Ekspor Berhasil", description: "Laporan audit dengan Kop Surat telah diunduh." })
+      toast({ title: "Ekspor Berhasil", description: "Laporan audit dengan Kop Surat dan Tanda Tangan telah diunduh." })
     } catch (error) {
       toast({ title: "Gagal Ekspor", variant: "destructive" })
     } finally {
