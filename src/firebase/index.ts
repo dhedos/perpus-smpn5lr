@@ -25,6 +25,7 @@ export function initializeFirebase() {
     }
 
     // Aktifkan Offline Persistence (Caching) menggunakan API modern jika di browser
+    // Ini adalah kunci utama penghematan kuota (0-Reads pada reload)
     if (typeof window !== 'undefined') {
       try {
         initializeFirestore(firebaseApp, {
