@@ -166,24 +166,25 @@ export default function MembersPage() {
             }
             .header {
               width: 100%;
-              padding: 12px 0 8px 0;
+              padding: 12px 0 6px 0;
               text-align: center;
             }
             .school-name {
-              font-size: 10px;
+              font-size: 11px;
               font-weight: 900;
               color: #1e4b8f;
               text-transform: uppercase;
-              line-height: 1.2;
+              line-height: 1.1;
             }
             .school-address {
               font-size: 6px;
-              color: #777;
+              font-weight: 600;
+              color: #888;
               margin-top: 2px;
             }
             .divider {
               width: 100%;
-              height: 4px;
+              height: 6px;
               background: #1e4b8f !important;
               margin-bottom: 12px;
               -webkit-print-color-adjust: exact;
@@ -192,19 +193,19 @@ export default function MembersPage() {
             .card-title {
               font-size: 9px;
               font-weight: 800;
-              margin-bottom: 10px;
+              margin-bottom: 8px;
               color: #333;
               text-transform: uppercase;
               letter-spacing: 0.5px;
             }
             .qr-wrapper {
-              margin-bottom: 12px;
+              margin-bottom: 8px;
               display: flex;
               justify-content: center;
             }
             .qr-code {
-              width: 40mm;
-              height: 40mm;
+              width: 42mm;
+              height: 42mm;
               display: block;
             }
             .member-info {
@@ -216,30 +217,30 @@ export default function MembersPage() {
               font-size: 13px;
               font-weight: 900;
               color: #000;
-              margin-bottom: 2px;
+              margin-bottom: 1px;
               text-transform: uppercase;
-              line-height: 1.2;
+              line-height: 1.1;
             }
             .member-id {
               font-size: 14px;
               font-weight: 900;
               color: #1e4b8f;
               font-family: monospace;
-              margin-bottom: 1px;
+              margin-bottom: 0px;
             }
             .member-class {
               font-size: 8px;
               color: #666;
-              font-weight: 700;
+              font-weight: 800;
               text-transform: uppercase;
             }
             .footer {
               width: 100%;
               background: #1e4b8f !important;
               color: #ffffff !important;
-              font-size: 10px;
+              font-size: 11px;
               padding: 10px 0;
-              font-weight: 800;
+              font-weight: 900;
               text-transform: uppercase;
               letter-spacing: 1.5px;
               position: absolute;
