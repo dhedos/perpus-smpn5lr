@@ -5,7 +5,7 @@ service cloud.firestore {
 
     /**
      * ATURAN KEAMANAN PERPUSTAKAAN SMPN 5
-     * Memastikan akses terkontrol berdasarkan status login.
+     * Deployment Trigger: 2024-05-20 10:45 UTC
      */
 
     function isSignedIn() {
@@ -13,35 +13,34 @@ service cloud.firestore {
     }
 
     // Profil Pengguna (Petugas/Admin)
-    // Diizinkan publik untuk pengecekan setup awal.
     match /users/{userId} {
-      allow read, write: if true;
+      allow get, list, create, update, delete: if true;
     }
 
     // Koleksi Anggota (Siswa/Guru)
     match /members/{memberId} {
-      allow read, write: if isSignedIn();
+      allow get, list, create, update, delete: if isSignedIn();
     }
 
     // Koleksi Buku
     match /books/{bookId} {
-      allow read, write: if isSignedIn();
+      allow get, list, create, update, delete: if isSignedIn();
     }
 
     // Koleksi Transaksi & Sirkulasi (Peminjaman/Pengembalian)
-    // Perbaikan: Menggunakan 'read' agar mencakup 'get' dan 'list'
+    // Menggunakan izin eksplisit 'list' untuk memastikan query koleksi diizinkan
     match /transactions/{transactionId} {
-      allow read, write: if isSignedIn();
+      allow get, list, create, update, delete: if isSignedIn();
     }
 
     // Koleksi Pengaturan Sistem
     match /settings/{settingId} {
-      allow read, write: if isSignedIn();
+      allow get, list, create, update, delete: if isSignedIn();
     }
 
     // Log Aktivitas & Audit Stok
     match /activity_logs/{logId} {
-      allow read, create: if isSignedIn();
+      allow get, list, create: if isSignedIn();
     }
   }
 }
