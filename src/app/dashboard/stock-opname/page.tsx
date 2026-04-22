@@ -18,7 +18,7 @@ import {
   Plus,
   RefreshCcw,
   AlertTriangle,
-  FileDown
+  Printer
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -39,7 +39,6 @@ export default function StockOpnamePage() {
   const [search, setSearch] = useState("")
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
-  const [isExporting, setIsExporting] = useState(false)
   const [selectedBook, setSelectedBook] = useState<any>(null)
   const [physicalCount, setPhysicalCount] = useState(0)
   
@@ -145,13 +144,9 @@ export default function StockOpnamePage() {
   }
 
   const handleLengkapiBuku = (audit: any) => {
-    if (!db || !user || !audit?.bookId) {
-       toast({ title: "Gagal", description: "Data audit tidak lengkap untuk diproses.", variant: "destructive" });
-       return;
-    }
+    if (!db || !user || !audit?.bookId) return;
     setIsProcessing(true)
 
-    // Cari kode buku terbaru dari master data jika di log lama kosong
     const masterBook = books?.find(b => b.id === audit.bookId);
     const bookCode = audit.bookCode && audit.bookCode !== "-" ? audit.bookCode : (masterBook?.code || "-");
 
@@ -172,91 +167,83 @@ export default function StockOpnamePage() {
 
     addDoc(collection(db, 'activity_logs'), logData).then(() => {
       toast({ title: "Status Diperbarui", description: "Buku kini ditandai sebagai LENGKAP." });
-    }).catch((e) => {
-      toast({ title: "Gagal", description: "Gagal memperbarui status audit.", variant: "destructive" });
     }).finally(() => setIsProcessing(false))
   }
 
-  const handleExportAudit = async () => {
+  const handlePrintAudit = () => {
     if (!audits) return
-    setIsExporting(true)
-    try {
-      const { utils, writeFile } = await import("xlsx")
-      const stockAudits = audits.filter(a => a.actionType === 'STOCK_AUDIT')
+    const stockAudits = audits.filter(a => a.actionType === 'STOCK_AUDIT')
+    if (stockAudits.length === 0) return
+
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+
+    const rowsHtml = stockAudits.map((a, index) => {
+      const masterBook = books?.find(b => b.id === a.bookId);
+      const displayCode = (a.bookCode && a.bookCode !== "-") ? a.bookCode : (masterBook?.code || "-");
       
-      if (stockAudits.length === 0) {
-        toast({ title: "Data Kosong", description: "Tidak ada riwayat audit untuk diekspor." })
-        setIsExporting(false)
-        return
-      }
+      return `
+        <tr>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
+          <td style="border: 1px solid #ccc; padding: 8px;">${new Date(a.timestamp).toLocaleString('id-ID')}</td>
+          <td style="border: 1px solid #ccc; padding: 8px; font-family: monospace;">${displayCode}</td>
+          <td style="border: 1px solid #ccc; padding: 8px;">${a.bookTitle}</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${a.expectedQty}</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${a.physicalQty}</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center; font-weight: bold; color: ${a.diffQty !== 0 ? 'red' : 'black'}">${a.diffQty}</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${a.auditStatus}</td>
+        </tr>
+      `
+    }).join('')
 
-      const todayStr = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-
-      // Menyiapkan Kop Surat (Header) dari Pengaturan
-      const header = [
-        [settings?.govtInstitution || "PEMERINTAH KABUPATEN MANGGARAI"],
-        [settings?.eduDept || "DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA"],
-        [settings?.schoolName || "SMP NEGERI 5 LANGKE REMBONG"],
-        [`Alamat: ${settings?.schoolAddress || "Jl. Satar Tacik, Ruteng, Flores, NTT"}`],
-        [""],
-        ["LAPORAN HASIL AUDIT STOK PERPUSTAKAAN (STOCK OPNAME)"],
-        [`Tanggal Cetak: ${new Date().toLocaleString('id-ID')}`],
-        [""],
-        ["No", "Waktu", "Kode Buku", "Judul Buku", "Stok Sistem", "Fisik", "Selisih", "Status", "Petugas"]
-      ];
-
-      // Menyiapkan Data Laporan
-      const dataRows = stockAudits.map((a, index) => {
-        // Fallback: Jika bookCode di log kosong, cari di master data buku
-        let displayCode = a.bookCode;
-        if (!displayCode || displayCode === "-") {
-          const masterBook = books?.find(b => b.id === a.bookId);
-          displayCode = masterBook?.code || "-";
-        }
-
-        return [
-          index + 1,
-          new Date(a.timestamp).toLocaleString('id-ID'),
-          displayCode,
-          a.bookTitle,
-          a.expectedQty,
-          a.physicalQty,
-          a.diffQty,
-          a.auditStatus,
-          a.userName
-        ];
-      });
-
-      // Menyiapkan Tanda Tangan (Footer)
-      const footer = [
-        [""],
-        [""],
-        ["", "", "", "", "", "", "", "", `${settings?.reportCity || "Mando"}, ${todayStr}`],
-        ["", "", "", "", "", "", "", "", "Mengetahui,"],
-        ["", "", "", "", "", "", "", "", "Kepala Sekolah,"],
-        [""],
-        [""],
-        [""],
-        ["", "", "", "", "", "", "", "", settings?.principalName || "Lodovikus Jangkar, S.Pd.Gr"],
-        ["", "", "", "", "", "", "", "", `NIP. ${settings?.principalNip || "198507272011011020"}`]
-      ];
-
-      // Menggabungkan Header, Data, dan Footer
-      const finalAOA = [...header, ...dataRows, ...footer];
-      
-      const worksheet = utils.aoa_to_sheet(finalAOA)
-      const workbook = utils.book_new()
-      utils.book_append_sheet(workbook, worksheet, "Laporan Opname")
-      
-      const dateStr = new Date().toISOString().split('T')[0]
-      writeFile(workbook, `Laporan_Audit_Stok_SMPN5_${dateStr}.xlsx`)
-      
-      toast({ title: "Ekspor Berhasil", description: "Laporan audit telah diunduh." })
-    } catch (error) {
-      toast({ title: "Gagal Ekspor", variant: "destructive" })
-    } finally {
-      setIsExporting(false)
-    }
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Laporan Stock Opname - SMPN 5</title>
+          <style>
+            @page { size: A4 landscape; margin: 10mm; }
+            body { font-family: 'Inter', sans-serif; font-size: 11px; }
+            .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
+            .school-name { font-size: 16px; font-weight: 900; }
+            .title { text-align: center; font-size: 14px; font-weight: 800; margin: 20px 0; text-transform: uppercase; }
+            table { width: 100%; border-collapse: collapse; }
+            th { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; }
+            .footer { margin-top: 40px; float: right; text-align: center; width: 250px; }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          <div class="header">
+            <div>${settings?.govtInstitution || 'PEMERINTAH KABUPATEN MANGGARAI'}</div>
+            <div>${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
+            <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
+            <div style="font-size: 9px;">Alamat: ${settings?.schoolAddress || 'Mando, Compang Carep'}</div>
+          </div>
+          <div class="title">LAPORAN HASIL AUDIT STOK PERPUSTAKAAN (STOCK OPNAME)</div>
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Waktu</th>
+                <th>Kode Buku</th>
+                <th>Judul Buku</th>
+                <th>Stok Sistem</th>
+                <th>Fisik</th>
+                <th>Selisih</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+          <div class="footer">
+            ${settings?.reportCity || 'Mando'}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>
+            Kepala Sekolah,<br/><br/><br/><br/>
+            <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
+            NIP. ${settings?.principalNip || '198507272011011020'}
+          </div>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
   }
 
   return (
@@ -268,9 +255,8 @@ export default function StockOpnamePage() {
           </h1>
           <p className="text-muted-foreground text-sm">Verifikasi fisik koleksi perpustakaan dengan data sistem.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={handleExportAudit} disabled={isExporting}>
-          {isExporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileDown className="h-4 w-4 mr-2" />}
-          Export Excel
+        <Button variant="outline" size="sm" onClick={handlePrintAudit}>
+          <Printer className="h-4 w-4 mr-2" /> Cetak Laporan
         </Button>
       </div>
 
@@ -381,7 +367,6 @@ export default function StockOpnamePage() {
               {!audits || audits.filter(a => a.actionType === 'STOCK_AUDIT').length === 0 ? (
                 <div className="p-10 text-center text-muted-foreground italic">Belum ada audit hari ini.</div>
               ) : audits.filter(a => a.actionType === 'STOCK_AUDIT').map(a => {
-                // Fallback untuk riwayat list juga
                 const masterBook = books?.find(b => b.id === a.bookId);
                 const displayCode = (a.bookCode && a.bookCode !== "-") ? a.bookCode : (masterBook?.code || "-");
                 
