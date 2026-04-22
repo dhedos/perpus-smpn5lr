@@ -248,6 +248,7 @@ function TransactionsContent() {
     setReturnNormalQty(total - returnDamagedQty - newLost)
   }
 
+  // Perhitungan denda menyesuaikan pengaturan sistem (loanPeriod, fineAmount, lostBookFine)
   useEffect(() => {
     if (!pendingReturnTrans || !settings) return;
     
@@ -255,11 +256,15 @@ function TransactionsContent() {
     const finePerDay = Number(settings.fineAmount || 500);
     const lostFineBase = Number(settings.lostBookFine || 50000);
 
+    // Denda keterlambatan dihitung untuk buku yang kembali (Normal + Rusak)
     if (lateDays > 0) {
       fine += lateDays * finePerDay * (returnNormalQty + returnDamagedQty);
     }
     
-    fine += returnDamagedQty * (finePerDay * 10);
+    // Denda khusus kerusakan (opsional: misal 10x lipat denda harian per unit)
+    // fine += returnDamagedQty * (finePerDay * 10);
+    
+    // Denda buku hilang (menggunakan harga tetap dari settings)
     fine += returnLostQty * lostFineBase;
     
     setCalculatedFine(fine);
@@ -708,16 +713,20 @@ function TransactionsContent() {
                 </div>
               </div>
 
+              {/* Tampilan Denda menyesuaikan pengaturan sistem */}
               {calculatedFine > 0 && (
-                <div className="p-4 bg-orange-50 rounded-xl border border-orange-200 flex items-center justify-between">
+                <div className="p-4 bg-orange-50 rounded-xl border border-orange-200 flex items-center justify-between animate-in fade-in zoom-in-95">
                   <div className="flex items-center gap-3">
-                    <Coins className="h-5 w-5 text-orange-600" />
+                    <div className="p-2 bg-orange-200 rounded-full">
+                      <Coins className="h-5 w-5 text-orange-700" />
+                    </div>
                     <div>
-                      <div className="text-[10px] font-bold text-orange-800 uppercase">Total Denda</div>
-                      <div className="text-lg font-black text-orange-700">Rp {calculatedFine.toLocaleString('id-ID')}</div>
+                      <div className="text-[10px] font-bold text-orange-800 uppercase tracking-tighter">Estimasi Denda (Denda: Rp{settings?.fineAmount || 500}/hari)</div>
+                      <div className="text-xl font-black text-orange-700">Rp {calculatedFine.toLocaleString('id-ID')}</div>
+                      {lateDays > 0 && <div className="text-[10px] text-orange-600 font-bold">Terlambat {lateDays} Hari</div>}
                     </div>
                   </div>
-                  <Badge variant="outline" className="border-orange-300 text-orange-700 text-[8px]">Tagihan</Badge>
+                  <Badge variant="outline" className="border-orange-300 text-orange-700 text-[8px] font-bold bg-white/50">WAJIB BAYAR</Badge>
                 </div>
               )}
             </div>
