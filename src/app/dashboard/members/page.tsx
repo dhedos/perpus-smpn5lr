@@ -144,7 +144,7 @@ export default function MembersPage() {
       <div class="member-info">
         <div class="member-name">${member.name}</div>
         <div class="member-id">${member.memberId}</div>
-        <div class="member-class">KELAS: ${member.classOrSubject || '-'}</div>
+        <div class="member-class">${member.type === 'Teacher' ? 'JABATAN' : 'KELAS'}: ${member.classOrSubject || '-'}</div>
       </div>
       <div class="footer">PUSTAKA NUSANTARA</div>
     </div>
@@ -481,7 +481,7 @@ export default function MembersPage() {
     updateDoc(docRef, dataToUpdate)
       .catch(async (error) => {
         const permissionError = new FirestorePermissionError({
-          path: docRef.path,
+          path: parseInt(docRef.path) === 0 ? 'members' : docRef.path,
           operation: 'update',
           requestResourceData: dataToUpdate,
         } satisfies SecurityRuleContext);
@@ -543,8 +543,15 @@ export default function MembersPage() {
                   <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Nama lengkap" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas</Label>
-                  <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Masukkan Kelas (Contoh: VII A)" />
+                  <Label className="font-semibold text-xs uppercase text-muted-foreground">
+                    {formData.type === 'Teacher' ? 'Kelas / Jabatan' : 'Kelas'}
+                  </Label>
+                  <Input 
+                    value={formData.classPart ?? ""} 
+                    onChange={e => setFormData({...formData, classPart: e.target.value})} 
+                    className="bg-white border-slate-300 h-11" 
+                    placeholder={formData.type === 'Teacher' ? "Cth: Guru Mapel / Wali Kelas" : "Masukkan Kelas (Contoh: VII A)"} 
+                  />
                 </div>
               </div>
               <DialogFooter><Button onClick={handleSaveMember} className="w-full sm:w-auto h-11 px-8 shadow-lg shadow-primary/20">Simpan Anggota</Button></DialogFooter>
@@ -568,7 +575,7 @@ export default function MembersPage() {
               <TableHead>Nama Anggota</TableHead>
               <TableHead>ID Anggota</TableHead>
               <TableHead>Tipe</TableHead>
-              <TableHead>Kelas</TableHead>
+              <TableHead>Kelas / Jabatan</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
@@ -638,7 +645,7 @@ export default function MembersPage() {
             <div>
               <div className="font-bold text-lg leading-tight">{selectedMemberQr?.name ?? ""}</div>
               <div className="font-mono text-primary font-bold">{selectedMemberQr?.memberId ?? ""}</div>
-              <div className="text-xs text-muted-foreground mt-1">Kelas: {selectedMemberQr?.classOrSubject}</div>
+              <div className="text-xs text-muted-foreground mt-1">{selectedMemberQr?.type === 'Teacher' ? 'Jabatan' : 'Kelas'}: {selectedMemberQr?.classOrSubject}</div>
             </div>
           </div>
           <DialogFooter className="grid grid-cols-2 gap-2">
@@ -649,16 +656,30 @@ export default function MembersPage() {
       </Dialog>
 
       <Dialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); if(!v) { setFormData(INITIAL_MEMBER_DATA); setEditingMemberId(null); forceUnlockUI(); } }}>
-        <DialogContent className="bg-slate-50 max-w-md">
+        <DialogContent className="bg-slate-50 max-md">
           <DialogHeader><DialogTitle>Ubah Data Anggota</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">Tipe</Label>
+              <Select value={formData.type} onValueChange={v => setFormData({...formData, type: v as any})}>
+                <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="Student">Siswa</SelectItem><SelectItem value="Teacher">Guru</SelectItem></SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label>
               <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" />
             </div>
             <div className="space-y-2">
-              <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas</Label>
-              <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" />
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">
+                {formData.type === 'Teacher' ? 'Kelas / Jabatan' : 'Kelas'}
+              </Label>
+              <Input 
+                value={formData.classPart ?? ""} 
+                onChange={e => setFormData({...formData, classPart: e.target.value})} 
+                className="bg-white border-slate-300 h-11" 
+                placeholder={formData.type === 'Teacher' ? "Cth: Guru Mapel / Wali Kelas" : "Masukkan Kelas (Contoh: VII A)"} 
+              />
             </div>
           </div>
           <DialogFooter><Button onClick={handleUpdateMember} className="w-full h-11">Simpan Perubahan</Button></DialogFooter>
