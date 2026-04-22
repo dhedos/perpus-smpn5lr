@@ -13,35 +13,35 @@ service cloud.firestore {
     }
 
     // Profil Pengguna (Petugas/Admin)
-    // Diizinkan publik untuk pengecekan setup awal, namun sebaiknya dikunci setelah setup.
+    // Diizinkan publik untuk pengecekan setup awal.
     match /users/{userId} {
-      allow get, list, create, update, delete: if true;
+      allow read, write: if true;
     }
 
     // Koleksi Anggota (Siswa/Guru)
     match /members/{memberId} {
-      allow get, list, create, update, delete: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
 
     // Koleksi Buku
     match /books/{bookId} {
-      allow get, list, create, update, delete: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
 
     // Koleksi Transaksi & Sirkulasi (Peminjaman/Pengembalian)
-    // Error sebelumnya terjadi di sini karena permintaan 'list' ditolak.
+    // Perbaikan: Menggunakan 'read' agar mencakup 'get' dan 'list'
     match /transactions/{transactionId} {
-      allow get, list, create, update, delete: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
 
     // Koleksi Pengaturan Sistem
     match /settings/{settingId} {
-      allow get, list, create, update, delete: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
 
     // Log Aktivitas & Audit Stok
     match /activity_logs/{logId} {
-      allow get, list, create: if isSignedIn();
+      allow read, create: if isSignedIn();
     }
   }
 }
