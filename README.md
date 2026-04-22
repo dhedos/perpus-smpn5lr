@@ -3,36 +3,28 @@
 
 Sistem Informasi Perpustakaan Modern dengan integrasi AI, Scan QR, dan Sinkronisasi Cloud.
 
-## 🚀 SOLUSI ERROR 404 / DEPLOYMENT NOT FOUND
+## 🚀 SOLUSI ERROR DEPLOYMENT DI VERCEL
 
-Jika Anda melihat pesan **"Deployment Not Found"** atau error build di Vercel, ikuti langkah-langkah ini secara berurutan:
+Jika Anda melihat pesan **"Deployment Not Found"** atau error **"No Output Directory"**, ikuti langkah-langkah ini:
 
-### 1. Update Kode di Terminal
-Pastikan Anda sudah mengeklik tombol **Apply** pada pesan terbaru saya, lalu jalankan:
-```bash
-npm run push
-```
+### 1. Atur Framework Preset (PENTING)
+Vercel terkadang salah mendeteksi proyek ini sebagai "Other".
+1. Buka **Vercel Dashboard**.
+2. Masuk ke **Settings** proyek Anda.
+3. Pada bagian **Framework Preset**, pastikan terpilih **Next.js**.
+4. Klik **Save**.
 
-### 2. Paksa Vercel Buang Cache (PENTING)
-Vercel sering menyimpan paket lama yang rusak. Untuk membersihkannya:
-1. Buka **[Vercel Dashboard](https://vercel.com)**.
-2. Pilih proyek Anda.
-3. Klik tab **Deployments**.
-4. Cari deployment yang statusnya **"Failed"** (biasanya yang paling atas).
-5. Klik tombol tiga titik **(...)** di sebelah kanan baris tersebut.
-6. Pilih **Redeploy**.
-7. **CENTANG KOTAK** bertuliskan **"Clear Build Cache"**.
-8. Klik tombol **Redeploy**.
+### 2. Redeploy dengan Hapus Cache
+1. Masuk ke tab **Deployments** di Vercel.
+2. Cari deployment yang gagal (paling atas).
+3. Klik tombol tiga titik **(...)** -> Pilih **Redeploy**.
+4. **Centang kotak** "Clear Build Cache".
+5. Klik **Redeploy**.
 
-### 3. Cek Framework Preset
-Jika Anda melihat error **"No Output Directory named public found"**:
-1. Buka **Project Settings** di Vercel.
-2. Pastikan **Framework Preset** diatur ke **Next.js** (bukan "Other").
-
-### 4. Cek Environment Variables
-Pastikan Anda sudah mengisi API Key Gemini:
-- Buka **Settings** > **Environment Variables** di Vercel.
-- Pastikan ada `GOOGLE_GENAI_API_KEY` dengan nilai API Key dari Google AI Studio.
+### 3. Tambahkan Environment Variable
+Pastikan Anda sudah menambahkan API Key Gemini untuk fitur AI Deskripsi Buku:
+- Nama: `GOOGLE_GENAI_API_KEY`
+- Nilai: (Dapatkan dari Google AI Studio)
 
 ---
 &copy; 2026 SMPN 5 LANGKE REMBONG.

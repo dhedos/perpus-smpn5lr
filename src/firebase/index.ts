@@ -11,25 +11,19 @@ import {
   persistentMultipleTabManager 
 } from 'firebase/firestore'
 
-// Inisialisasi Firebase dengan penanganan lingkungan (Environment) yang lebih kuat
+/**
+ * Inisialisasi Firebase SDK.
+ * Di Vercel, kita wajib memasukkan firebaseConfig secara eksplisit
+ * untuk menghindari error 'app/no-options'.
+ */
 export function initializeFirebase() {
-  if (!getApps().length) {
-    let firebaseApp;
-    
-    // Selalu prioritaskan config object jika tersedia untuk menghindari error 'no-options' pada deployment non-hosting
-    if (firebaseConfig && firebaseConfig.apiKey) {
-      firebaseApp = initializeApp(firebaseConfig);
-    } else {
-      try {
-        firebaseApp = initializeApp();
-      } catch (e) {
-        console.error('Firebase initialization failed: No config found.', e);
-        // Fallback terakhir agar aplikasi tidak crash total
-        firebaseApp = initializeApp(firebaseConfig);
-      }
-    }
+  const apps = getApps();
+  
+  if (!apps.length) {
+    // Selalu gunakan firebaseConfig secara eksplisit untuk kompatibilitas Vercel
+    const firebaseApp = initializeApp(firebaseConfig);
 
-    // Aktifkan Offline Persistence (Caching) untuk penghematan kuota
+    // Aktifkan Offline Persistence (Caching) agar aplikasi tetap kencang dan hemat kuota
     if (typeof window !== 'undefined') {
       try {
         initializeFirestore(firebaseApp, {
@@ -38,7 +32,7 @@ export function initializeFirebase() {
           })
         });
       } catch (e) {
-        console.warn('Firestore persistence initialization failed. Falling back to default.', e);
+        console.warn('Firestore persistence failed to initialize:', e);
       }
     }
 
