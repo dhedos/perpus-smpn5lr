@@ -66,6 +66,7 @@ import {
   useFirestore, 
   useCollection, 
   useMemoFirebase,
+  useDoc,
   errorEmitter 
 } from '@/firebase'
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors'
@@ -96,6 +97,10 @@ export default function MembersPage() {
   const [formData, setFormData] = useState(INITIAL_MEMBER_DATA)
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
 
+  // Load Settings for Card Header
+  const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
+  const { data: settings } = useDoc(settingsRef)
+
   const membersCollectionQuery = useMemoFirebase(() => {
     if (!db) return null
     return query(
@@ -122,6 +127,147 @@ export default function MembersPage() {
         document.body.style.pointerEvents = 'auto'
       }, 100)
     }
+  }
+
+  const handlePrintIdCard = () => {
+    if (!selectedMemberQr) return
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+
+    const cardHtml = `
+      <html>
+        <head>
+          <title>Cetak Kartu Anggota - ${selectedMemberQr.name}</title>
+          <style>
+            @page { size: 54mm 86mm; margin: 0; }
+            body { 
+              margin: 0; 
+              padding: 0; 
+              font-family: 'Inter', -apple-system, sans-serif; 
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              height: 100vh;
+              background: #f0f0f0;
+            }
+            .card-container {
+              width: 54mm;
+              height: 86mm;
+              background: #fff;
+              border: 0.5px solid #ddd;
+              box-sizing: border-box;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              padding: 8px;
+              text-align: center;
+              position: relative;
+              overflow: hidden;
+              box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            }
+            .header {
+              width: 100%;
+              border-bottom: 1.5px solid #2E6ECE;
+              padding-bottom: 4px;
+              margin-bottom: 8px;
+            }
+            .school-name {
+              font-size: 7px;
+              font-weight: 900;
+              color: #2E6ECE;
+              text-transform: uppercase;
+              line-height: 1.1;
+            }
+            .school-dept {
+              font-size: 5px;
+              color: #666;
+              line-height: 1.1;
+              margin-top: 1px;
+            }
+            .card-title {
+              font-size: 8px;
+              font-weight: 800;
+              margin: 4px 0;
+              color: #333;
+              letter-spacing: 0.5px;
+            }
+            .qr-wrapper {
+              margin: 4px 0;
+              padding: 4px;
+              background: #f9f9f9;
+              border-radius: 4px;
+            }
+            .qr-code {
+              width: 38mm;
+              height: 38mm;
+              display: block;
+            }
+            .member-info {
+              margin-top: 6px;
+              width: 100%;
+            }
+            .member-name {
+              font-size: 10px;
+              font-weight: 900;
+              color: #000;
+              line-height: 1.2;
+              margin-bottom: 2px;
+              text-transform: uppercase;
+            }
+            .member-id {
+              font-size: 11px;
+              font-weight: 900;
+              color: #2E6ECE;
+              font-family: monospace;
+              margin-bottom: 2px;
+            }
+            .member-class {
+              font-size: 7px;
+              color: #666;
+              font-weight: 600;
+            }
+            .footer {
+              position: absolute;
+              bottom: 0;
+              left: 0;
+              width: 100%;
+              background: #2E6ECE;
+              color: #fff;
+              font-size: 7px;
+              padding: 5px 0;
+              font-weight: 800;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+            }
+            @media print {
+              body { background: none; }
+              .card-container { box-shadow: none; border: 0.2px solid #ccc; }
+            }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          <div class="card-container">
+            <div class="header">
+              <div class="school-name">${settings?.schoolName || 'SMPN 5 LANGKE REMBONG'}</div>
+              <div class="school-dept">${settings?.eduDept || 'DINAS PENDIDIKAN PEMUDA DAN OLAHRAGA'}</div>
+            </div>
+            <div class="card-title">KARTU ANGGOTA PERPUSTAKAAN</div>
+            <div class="qr-wrapper">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${selectedMemberQr.memberId}" class="qr-code" />
+            </div>
+            <div class="member-info">
+              <div class="member-name">${selectedMemberQr.name}</div>
+              <div class="member-id">${selectedMemberQr.memberId}</div>
+              <div class="member-class">KELAS: ${selectedMemberQr.classOrSubject || '-'}</div>
+            </div>
+            <div class="footer">Pustaka Nusantara</div>
+          </div>
+        </body>
+      </html>
+    `
+
+    printWindow.document.write(cardHtml)
+    printWindow.document.close()
   }
 
   const handleSaveMember = () => {
@@ -329,7 +475,7 @@ export default function MembersPage() {
             </div>
           </div>
           <DialogFooter className="grid grid-cols-2 gap-2">
-            <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" /> Cetak</Button>
+            <Button variant="outline" onClick={handlePrintIdCard}><Printer className="h-4 w-4 mr-2" /> Cetak Kartu</Button>
             <Button onClick={() => setIsQrOpen(false)}>Tutup</Button>
           </DialogFooter>
         </DialogContent>
