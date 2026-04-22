@@ -4,42 +4,44 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * ATURAN KEAMANAN PERPUSTAKAAN SMPN 5 - UPDATED FOR INITIAL SETUP
-     * Mengizinkan akses baca/tulis pada koleksi users agar setup admin pertama berjalan lancar.
+     * ATURAN KEAMANAN PERPUSTAKAAN SMPN 5
+     * Memastikan akses terkontrol berdasarkan status login.
      */
 
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Profil Pengguna (Petugas/Admin) - Diizinkan publik untuk pengecekan setup awal
+    // Profil Pengguna (Petugas/Admin)
+    // Diizinkan publik untuk pengecekan setup awal, namun sebaiknya dikunci setelah setup.
     match /users/{userId} {
-      allow read, write: if true;
+      allow get, list, create, update, delete: if true;
     }
 
     // Koleksi Anggota (Siswa/Guru)
     match /members/{memberId} {
-      allow list, get, create, update, delete: if isSignedIn();
+      allow get, list, create, update, delete: if isSignedIn();
     }
 
     // Koleksi Buku
     match /books/{bookId} {
-      allow read, write: if isSignedIn();
+      allow get, list, create, update, delete: if isSignedIn();
     }
 
-    // Koleksi Transaksi & Sirkulasi
+    // Koleksi Transaksi & Sirkulasi (Peminjaman/Pengembalian)
+    // Error sebelumnya terjadi di sini karena permintaan 'list' ditolak.
     match /transactions/{transactionId} {
-      allow read, write: if isSignedIn();
+      allow get, list, create, update, delete: if isSignedIn();
     }
 
     // Koleksi Pengaturan Sistem
     match /settings/{settingId} {
-      allow read, write: if isSignedIn();
+      allow get, list, create, update, delete: if isSignedIn();
     }
 
     // Log Aktivitas & Audit Stok
     match /activity_logs/{logId} {
-      allow read, create: if isSignedIn();
+      allow get, list, create: if isSignedIn();
     }
   }
 }
