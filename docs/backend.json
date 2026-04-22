@@ -26,7 +26,8 @@
         "publicationYear": { "type": "number" },
         "totalStock": { "type": "number" },
         "availableStock": { "type": "number" },
-        "stickerHeader": { "type": "string", "description": "Teks header pada stiker QR (contoh: Nama Sekolah)." }
+        "mainHeader": { "type": "string", "description": "Teks paling atas pada stiker (contoh: Nama Sekolah)." },
+        "budgetSource": { "type": "string", "description": "Sumber dana buku (contoh: BOSP, Hibah)." }
       }
     },
     "LibraryMember": {

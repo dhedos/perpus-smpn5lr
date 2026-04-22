@@ -97,10 +97,11 @@ const INITIAL_FORM_DATA = {
   totalStock: 1,
   availableStock: 1,
   description: "",
-  stickerHeader: "BOSP"
+  mainHeader: "PUSTAKA NUSANTARA",
+  budgetSource: "BOSP"
 }
 
-const STORAGE_KEY = 'perpus_local_queue_v2'
+const STORAGE_KEY = 'perpus_local_queue_v3'
 
 export default function BooksPage() {
   const db = useFirestore()
@@ -138,7 +139,7 @@ export default function BooksPage() {
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
 
-  // 1. Initial Load from LocalStorage (Run once on mount)
+  // 1. Initial Load from LocalStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(STORAGE_KEY)
@@ -156,7 +157,7 @@ export default function BooksPage() {
     }
   }, [])
 
-  // 2. Persistent Save to LocalStorage (Only after hydrated)
+  // 2. Persistent Save to LocalStorage
   useEffect(() => {
     if (isHydrated) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(localQueue))
@@ -229,8 +230,8 @@ export default function BooksPage() {
     forceUnlockUI()
 
     toast({ 
-      title: "Tersimpan di Localhost", 
-      description: "Buku masuk antrean permanen di komputer ini sampai Anda mengirimnya.",
+      title: "Tersimpan Lokal", 
+      description: "Buku masuk antrean. Jangan lupa kirim ke database pusat.",
     })
   }
 
@@ -242,9 +243,7 @@ export default function BooksPage() {
       const booksRef = collection(db, 'books')
       let successCount = 0
 
-      const queueToSync = [...localQueue]
-
-      for (const book of queueToSync) {
+      for (const book of localQueue) {
         const { tempId, ...dataToSave } = book
         const firestoreData = {
           ...dataToSave,
@@ -258,15 +257,10 @@ export default function BooksPage() {
       setLocalQueue([])
       toast({ 
         title: "Sinkronisasi Berhasil", 
-        description: `${successCount} buku telah dikirim ke database pusat.` 
+        description: `${successCount} buku telah disimpan ke Cloud.` 
       })
     } catch (error: any) {
-      console.error("Sync error:", error)
-      toast({ 
-        title: "Sinkronisasi Gagal", 
-        description: "Pastikan koneksi internet stabil. Data tetap aman di antrean lokal.", 
-        variant: "destructive" 
-      })
+      toast({ title: "Gagal", description: "Terjadi kesalahan koneksi.", variant: "destructive" })
     } finally {
       setIsSyncing(false)
       setIsQueueOpen(false)
@@ -288,7 +282,7 @@ export default function BooksPage() {
         <td style="border: 1px solid #ccc; padding: 8px; font-family: monospace;">${book.code}</td>
         <td style="border: 1px solid #ccc; padding: 8px;">
           <div style="font-weight: bold;">${book.title}</div>
-          <div style="font-size: 10px; color: #666;">Sumber: ${book.stickerHeader || '-'} | Rek: ${book.accountCode || '-'}</div>
+          <div style="font-size: 10px; color: #666;">Sumber: ${book.budgetSource || '-'} | Rek: ${book.accountCode || '-'}</div>
         </td>
         <td style="border: 1px solid #ccc; padding: 8px;">${book.publisher || '-'}</td>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${book.publicationYear || '-'}</td>
@@ -321,10 +315,9 @@ export default function BooksPage() {
             <div class="dept-name">${settings?.govtInstitution || 'PEMERINTAH KABUPATEN MANGGARAI'}</div>
             <div class="dept-name">${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
             <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
-            <div class="address">Alamat: ${settings?.schoolAddress || 'Mando, Kelurahan Compang Carep, Kecamatan Langke Rembong'}</div>
+            <div class="address">Alamat: ${settings?.schoolAddress || 'Mando, Kelurahan Compang Carep'}</div>
           </div>
           <div class="title">DAFTAR KOLEKSI BUKU PERPUSTAKAAN</div>
-          <div style="margin-bottom: 10px; font-size: 10px;">Tanggal Cetak: ${new Date().toLocaleString('id-ID')}</div>
           <table>
             <thead>
               <tr>
@@ -340,19 +333,15 @@ export default function BooksPage() {
             </thead>
             <tbody>${rowsHtml}</tbody>
           </table>
-          <table class="footer-table">
-            <tr>
-              <td></td>
-              <td></td>
-              <td>
-                ${settings?.reportCity || 'Mando'}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>
-                Mengetahui,<br/>
-                Kepala Sekolah,<br/><br/><br/><br/>
-                <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
-                NIP. ${settings?.principalNip || '198507272011011020'}
-              </td>
-            </tr>
-          </table>
+          <div class="footer-table">
+            <div style="float: right; text-align: center; width: 250px;">
+              ${settings?.reportCity || 'Mando'}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>
+              Mengetahui,<br/>
+              Kepala Sekolah,<br/><br/><br/><br/>
+              <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
+              NIP. ${settings?.principalNip || '198507272011011020'}
+            </div>
+          </div>
         </body>
       </html>
     `)
@@ -367,7 +356,8 @@ export default function BooksPage() {
     const stickersHtml = filteredBooks.map(book => `
       <div class="label-card">
         <div class="info-section">
-          <div class="header-text">${book.stickerHeader || 'BOSP'}</div>
+          <div class="header-text">${book.mainHeader || 'PUSTAKA NUSANTARA'}</div>
+          <div class="source-text">${book.budgetSource || 'BOSP'}</div>
           <div class="book-title">${book.title}</div>
           <div class="book-details">
             <div>Rek: ${book.accountCode || '-'} | ${book.publisher || '-'}</div>
@@ -422,6 +412,13 @@ export default function BooksPage() {
               font-weight: 800;
               color: #2E6ECE;
               text-transform: uppercase;
+              line-height: 1;
+            }
+
+            .source-text {
+              font-size: 6pt;
+              font-weight: 600;
+              color: #444;
               margin-bottom: 0.5mm;
               line-height: 1;
             }
@@ -501,16 +498,10 @@ export default function BooksPage() {
   }
 
   const handleUpdateBook = () => {
-    if (!db || !editingBookId || !books) return
-    const originalBook = books.find(b => b.id === editingBookId)
-    if (!originalBook) { setIsEditOpen(false); forceUnlockUI(); return; }
-
-    const updatedData = {
-      ...formData,
-      updatedAt: new Date().toISOString()
-    }
-
+    if (!db || !editingBookId) return
     const docRef = doc(db, 'books', editingBookId)
+    const updatedData = { ...formData, updatedAt: new Date().toISOString() }
+
     setIsEditOpen(false)
     forceUnlockUI()
 
@@ -525,13 +516,11 @@ export default function BooksPage() {
       });
     
     toast({ title: "Berhasil!", description: "Data buku telah diperbarui." })
-    setTimeout(() => { setEditingBookId(null); setFormData(INITIAL_FORM_DATA); }, 200)
   }
 
   const handleDeleteBook = () => {
     if (!db || !bookToDelete) return
-    const docRef = db ? doc(db, 'books', bookToDelete) : null
-    if (!docRef) return;
+    const docRef = doc(db, 'books', bookToDelete)
     
     setIsDeleteDialogOpen(false)
     forceUnlockUI()
@@ -545,32 +534,6 @@ export default function BooksPage() {
         errorEmitter.emit('permission-error', permissionError);
       });
     toast({ title: "Terhapus", description: "Buku dihapus dari koleksi." })
-    setTimeout(() => { setBookToDelete(null) }, 200)
-  }
-
-  const handleSyncAvailability = (book: any) => {
-    if (!db) return
-    const transQuery = query(
-      collection(db, 'transactions'),
-      where('bookId', '==', book.id),
-      where('status', '==', 'active')
-    )
-    
-    getDocs(transQuery).then((snapshot) => {
-      let activeCount = 0;
-      snapshot.forEach(doc => {
-        activeCount += Number(doc.data().quantity || 1);
-      });
-      const newAvail = Math.max(0, Number(book.totalStock || 0) - activeCount)
-      
-      const docRef = doc(db, 'books', book.id)
-      updateDoc(docRef, { availableStock: newAvail })
-      
-      toast({ 
-        title: "Stok Disinkronkan", 
-        description: `Buku "${book.title}" sekarang memiliki ${newAvail} unit tersedia.` 
-      })
-    })
   }
 
   const startScanner = async () => {
@@ -578,8 +541,6 @@ export default function BooksPage() {
     try {
       const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
       setTimeout(async () => {
-        const scannerElement = document.getElementById("scanner-view")
-        if (!scannerElement) return;
         const scanner = new Html5Qrcode("scanner-view")
         scannerInstanceRef.current = scanner
         await scanner.start(
@@ -694,7 +655,7 @@ export default function BooksPage() {
                   <div className="space-y-0.5">
                     <div className="font-semibold leading-none">{book.title}</div>
                     <div className="text-[10px] text-muted-foreground">
-                       Sumber: {book.stickerHeader || '-'} | Rek: {book.accountCode || '-'}
+                       Sumber: {book.budgetSource || '-'} | Rek: {book.accountCode || '-'}
                     </div>
                   </div>
                 </TableCell>
@@ -722,7 +683,6 @@ export default function BooksPage() {
                           setIsQrOpen(true);
                         }, 10);
                       }}><QrCode className="h-4 w-4 mr-2" />Tampilkan QR</DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => handleSyncAvailability(book)}><RefreshCw className="h-4 w-4 mr-2" />Sinkronkan Stok</DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => { 
                         setTimeout(() => {
                           setEditingBookId(book.id); 
@@ -739,7 +699,8 @@ export default function BooksPage() {
                             totalStock: Number(book.totalStock || 0),
                             availableStock: Number(book.availableStock || 0),
                             description: book.description || "",
-                            stickerHeader: book.stickerHeader || "BOSP"
+                            mainHeader: book.mainHeader || "PUSTAKA NUSANTARA",
+                            budgetSource: book.budgetSource || "BOSP"
                           }); 
                           setIsEditOpen(true);
                         }, 10);
@@ -757,70 +718,7 @@ export default function BooksPage() {
             ))}
           </TableBody>
         </Table>
-        {books && books.length >= displayLimit && (
-          <div className="p-4 text-center border-t bg-slate-50">
-            <Button variant="ghost" size="sm" onClick={() => setDisplayLimit(prev => prev + 50)} className="text-primary font-bold">
-              <ChevronDown className="h-4 w-4 mr-2" /> Muat Lebih Banyak
-            </Button>
-          </div>
-        )}
       </Card>
-
-      {/* DIALOG ANTREAN LOKAL */}
-      <Dialog open={isQueueOpen} onOpenChange={setIsQueueOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-orange-600" />
-              Antrean Buku (Penyimpanan Lokal)
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div className="bg-orange-50 border border-orange-100 p-4 rounded-lg flex items-start gap-3">
-              <Info className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />
-              <p className="text-xs text-orange-800 leading-relaxed">
-                Buku-buku ini tersimpan aman di komputer Anda. Klik <strong>Kirim ke Database</strong> untuk menyimpan ke Cloud secara permanen.
-              </p>
-            </div>
-            
-            <div className="border rounded-lg overflow-hidden max-h-[300px] overflow-y-auto">
-              <Table>
-                <TableHeader className="bg-slate-50">
-                  <TableRow>
-                    <TableHead>Kode</TableHead>
-                    <TableHead>Judul Buku</TableHead>
-                    <TableHead className="text-right">Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {localQueue.map((item) => (
-                    <TableRow key={item.tempId}>
-                      <TableCell className="font-mono text-xs">{item.code}</TableCell>
-                      <TableCell className="text-xs font-bold">{item.title}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => removeFromQueue(item.tempId)} className="h-8 w-8 text-destructive">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-          <DialogFooter className="flex gap-2">
-            <Button variant="outline" onClick={() => setIsQueueOpen(false)}>Tutup</Button>
-            <Button 
-              className="bg-primary shadow-lg shadow-primary/20 gap-2" 
-              onClick={handleSyncToDatabase}
-              disabled={isSyncing}
-            >
-              {isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
-              Kirim ke Database
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* DIALOG TAMBAH */}
       <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) forceUnlockUI(); }}>
@@ -831,8 +729,12 @@ export default function BooksPage() {
           <ScrollArea className="flex-1 px-6 py-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2 col-span-1 sm:col-span-2">
-                <Label className="font-semibold text-xs uppercase text-muted-foreground">Sumber Buku / Anggaran</Label>
-                <Input value={formData.stickerHeader ?? ""} onChange={e => setFormData({ ...formData, stickerHeader: e.target.value })} className="bg-white border-slate-300 h-11" placeholder="Cth: BOSP, Hibah" />
+                <Label className="font-bold text-xs uppercase text-primary">Header Utama (Stiker)</Label>
+                <Input value={formData.mainHeader ?? ""} onChange={e => setFormData({ ...formData, mainHeader: e.target.value })} className="bg-white border-slate-300 h-11" placeholder="Cth: NAMA SEKOLAH / PERPUSTAKAAN" />
+              </div>
+              <div className="space-y-2 col-span-1 sm:col-span-2">
+                <Label className="font-bold text-xs uppercase text-muted-foreground">Sumber Buku / Anggaran</Label>
+                <Input value={formData.budgetSource ?? ""} onChange={e => setFormData({ ...formData, budgetSource: e.target.value })} className="bg-white border-slate-300 h-11" placeholder="Cth: BOSP, Hibah" />
               </div>
               <div className="space-y-2">
                 <Label className="font-semibold text-xs uppercase text-muted-foreground">Kode Buku (Unik)</Label>
@@ -901,8 +803,12 @@ export default function BooksPage() {
           <ScrollArea className="flex-1 px-6 py-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2 col-span-1 sm:col-span-2">
-                <Label className="font-semibold text-xs uppercase text-muted-foreground">Sumber Buku / Anggaran</Label>
-                <Input value={formData.stickerHeader ?? ""} onChange={e => setFormData({ ...formData, stickerHeader: e.target.value })} className="bg-white border-slate-300 h-11" />
+                <Label className="font-bold text-xs uppercase text-primary">Header Utama</Label>
+                <Input value={formData.mainHeader ?? ""} onChange={e => setFormData({ ...formData, mainHeader: e.target.value })} className="bg-white border-slate-300 h-11" />
+              </div>
+              <div className="space-y-2 col-span-1 sm:col-span-2">
+                <Label className="font-bold text-xs uppercase text-muted-foreground">Sumber Buku / Anggaran</Label>
+                <Input value={formData.budgetSource ?? ""} onChange={e => setFormData({ ...formData, budgetSource: e.target.value })} className="bg-white border-slate-300 h-11" />
               </div>
               <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Kode Buku</Label><Input value={formData.code ?? ""} disabled className="bg-muted border-slate-300 h-11" /></div>
               <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Judul Buku</Label><Input value={formData.title ?? ""} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
@@ -910,8 +816,6 @@ export default function BooksPage() {
               <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Penerbit</Label><Input value={formData.publisher ?? ""} onChange={e => setFormData({ ...formData, publisher: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
               <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Tahun Terbit</Label><Input type="number" value={formData.publicationYear ?? ""} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300 h-11" /></div>
               <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">ISBN</Label><Input value={formData.isbn ?? ""} onChange={e => setFormData({ ...formData, isbn: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
-              <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Jumlah Stok Total</Label><Input type="number" value={formData.totalStock ?? 0} onChange={e => setFormData({ ...formData, totalStock: Number(e.target.value) })} className="bg-white border-slate-300 h-11" /></div>
-              <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Tgl. Penerimaan</Label><Input type="date" value={formData.acquisitionDate ?? ""} onChange={e => setFormData({ ...formData, acquisitionDate: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
               <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Jenis / Kategori</Label><Input value={formData.category ?? ""} onChange={e => setFormData({ ...formData, category: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
               <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Lokasi Rak</Label><Input value={formData.rackLocation ?? ""} onChange={e => setFormData({ ...formData, rackLocation: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
               <div className="col-span-1 sm:col-span-2 space-y-2">
@@ -952,11 +856,10 @@ export default function BooksPage() {
             <ScrollArea className="flex-1 p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
                 <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Judul Buku</Label><div className="font-bold text-lg leading-tight">{selectedBookDetail.title ?? ""}</div></div>
-                <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Sumber & Kode Koleksi</Label><div><Badge variant="outline" className="font-mono text-primary font-bold">{selectedBookDetail.stickerHeader || 'BOSP'}</Badge> <span className="font-mono font-bold ml-2">{selectedBookDetail.code ?? ""}</span></div></div>
+                <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Header & Sumber</Label><div><Badge variant="outline" className="font-mono text-primary font-bold">{selectedBookDetail.mainHeader}</Badge> <Badge variant="secondary" className="ml-2">{selectedBookDetail.budgetSource}</Badge></div></div>
+                <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Kode Koleksi & Rak</Label><div className="font-mono font-bold">{selectedBookDetail.code ?? ""} (RAK: {selectedBookDetail.rackLocation || '-'})</div></div>
                 <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Rekening & Penerbit</Label><div>Rek: {selectedBookDetail.accountCode ?? "-"} | {selectedBookDetail.publisher ?? "-"}</div></div>
-                <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">ISBN</Label><div>{selectedBookDetail.isbn || "-"}</div></div>
-                <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Jenis & Lokasi Rak</Label><div className="flex items-center gap-2"><Badge variant="secondary" className="border-none">{selectedBookDetail.category ?? ""}</Badge> <span>{selectedBookDetail.rackLocation || 'Rak belum diatur'}</span></div></div>
-                <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Status Ketersediaan</Label><div className="font-semibold text-blue-600">{selectedBookDetail.availableStock ?? 0} dari {selectedBookDetail.totalStock ?? 0} tersedia</div></div>
+                <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Ketersediaan</Label><div className="font-semibold text-blue-600">{selectedBookDetail.availableStock ?? 0} dari {selectedBookDetail.totalStock ?? 0} tersedia</div></div>
                 <div className="col-span-1 sm:col-span-2 space-y-1 pt-2 border-t">
                   <Label className="text-[10px] uppercase font-bold text-muted-foreground">Deskripsi / Ringkasan AI</Label>
                   <div className="text-sm bg-muted/30 p-4 rounded-lg italic leading-relaxed">{selectedBookDetail.description || 'Tidak ada deskripsi.'}</div>
@@ -990,8 +893,11 @@ export default function BooksPage() {
                 overflow: 'hidden'
               }}>
                   <div style={{ flex: 1, textAlign: 'left', display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden' }}>
-                    <div style={{ fontSize: '7pt', fontWeight: 800, color: '#2E6ECE', textTransform: 'uppercase', marginBottom: '0.5mm', lineHeight: 1 }}>
-                      {selectedBookQr.stickerHeader || 'BOSP'}
+                    <div style={{ fontSize: '7pt', fontWeight: 800, color: '#2E6ECE', textTransform: 'uppercase', lineHeight: 1 }}>
+                      {selectedBookQr.mainHeader || 'PUSTAKA NUSANTARA'}
+                    </div>
+                    <div style={{ fontSize: '6pt', fontWeight: 600, color: '#444', marginBottom: '0.5mm', lineHeight: 1 }}>
+                      {selectedBookQr.budgetSource || 'BOSP'}
                     </div>
                     <div style={{ 
                       fontSize: '7.5pt', 
@@ -1036,6 +942,62 @@ export default function BooksPage() {
               }
             }}><Printer className="h-4 w-4 mr-2" />Cetak Stiker</Button>
             <Button size="sm" onClick={() => setIsQrOpen(false)}>Tutup</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* DIALOG ANTREAN LOKAL */}
+      <Dialog open={isQueueOpen} onOpenChange={setIsQueueOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-orange-600" />
+              Antrean Buku (Penyimpanan Lokal)
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="bg-orange-50 border border-orange-100 p-4 rounded-lg flex items-start gap-3">
+              <Info className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />
+              <p className="text-xs text-orange-800 leading-relaxed">
+                Buku-buku ini tersimpan aman di komputer Anda. Klik <strong>Kirim ke Database</strong> untuk menyimpan ke Cloud secara permanen.
+              </p>
+            </div>
+            
+            <div className="border rounded-lg overflow-hidden max-h-[300px] overflow-y-auto">
+              <Table>
+                <TableHeader className="bg-slate-50">
+                  <TableRow>
+                    <TableHead>Kode</TableHead>
+                    <TableHead>Judul Buku</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {localQueue.map((item) => (
+                    <TableRow key={item.tempId}>
+                      <TableCell className="font-mono text-xs">{item.code}</TableCell>
+                      <TableCell className="text-xs font-bold">{item.title}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" onClick={() => removeFromQueue(item.tempId)} className="h-8 w-8 text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsQueueOpen(false)}>Tutup</Button>
+            <Button 
+              className="bg-primary shadow-lg shadow-primary/20 gap-2" 
+              onClick={handleSyncToDatabase}
+              disabled={isSyncing}
+            >
+              {isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
+              Kirim ke Database
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
