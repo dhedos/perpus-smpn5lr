@@ -24,7 +24,6 @@ import {
   QrCode,
   Printer,
   X,
-  FileDown,
   Eye,
   Info,
   Calendar as CalendarIcon,
