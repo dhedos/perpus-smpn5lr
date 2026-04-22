@@ -13,17 +13,18 @@ import {
 
 /**
  * Inisialisasi Firebase SDK.
- * Di Vercel, kita wajib memasukkan firebaseConfig secara eksplisit
- * untuk menghindari error 'app/no-options'.
+ * Dioptimalisasi untuk deployment Vercel dengan selalu menyertakan config object
+ * guna menghindari error 'app/no-options'.
  */
 export function initializeFirebase() {
   const apps = getApps();
-  
-  if (!apps.length) {
-    // Selalu gunakan firebaseConfig secara eksplisit untuk kompatibilitas Vercel
-    const firebaseApp = initializeApp(firebaseConfig);
+  let firebaseApp: FirebaseApp;
 
-    // Aktifkan Offline Persistence (Caching) agar aplikasi tetap kencang dan hemat kuota
+  if (!apps.length) {
+    // Selalu gunakan config secara eksplisit untuk lingkungan non-Firebase Hosting (seperti Vercel)
+    firebaseApp = initializeApp(firebaseConfig);
+
+    // Aktifkan Offline Persistence (Caching) hanya di sisi Client (Browser)
     if (typeof window !== 'undefined') {
       try {
         initializeFirestore(firebaseApp, {
@@ -32,14 +33,15 @@ export function initializeFirebase() {
           })
         });
       } catch (e) {
-        console.warn('Firestore persistence failed to initialize:', e);
+        // Jika firestore sudah terinisialisasi oleh modul lain, abaikan error ini
+        console.warn('Firestore persistence already initialized or failed.');
       }
     }
-
-    return getSdks(firebaseApp);
+  } else {
+    firebaseApp = apps[0];
   }
 
-  return getSdks(getApp());
+  return getSdks(firebaseApp);
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
