@@ -4,39 +4,36 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * ATURAN KEAMANAN PERPUSTAKAAN SMPN 5 LANGKE REMBONG
-     * Pemicu Pembaruan Paksa: 2024-05-23 10:00 UTC
-     * Mengizinkan akses penuh (read/write) untuk Admin dan Petugas yang telah login.
+     * PERPUSTAKAAN SMPN 5 LANGKE REMBONG - SECURITY RULES
+     * Versi Update: 2.0 (Pemicu Redeploy: 2024-05-23 11:30 UTC)
+     * Mengizinkan akses baca dan tulis bagi seluruh personil yang telah login.
      */
 
-    // Akses Global: Diperlukan agar query 'list' pada koleksi seperti transactions tidak terhambat
+    // Rule Global: Mengizinkan akses get, list, create, update, delete bagi user yang login
     match /{document=**} {
       allow read, write: if request.auth != null;
     }
 
-    // Aturan khusus per koleksi untuk kejelasan (opsional namun disarankan)
-    match /transactions/{transactionId} {
-      allow get, list, create, update, delete: if request.auth != null;
-    }
-
-    match /members/{memberId} {
-      allow get, list, create, update, delete: if request.auth != null;
-    }
-
-    match /books/{bookId} {
-      allow get, list, create, update, delete: if request.auth != null;
-    }
-
+    // Rule Khusus Profil: Diperlukan untuk proses registrasi awal/google login
     match /users/{userId} {
-      allow get, list, create, update, delete: if true;
+      allow read, write: if true;
     }
 
-    match /settings/{settingId} {
-      allow get, list, create, update, delete: if request.auth != null;
+    // Rule Khusus Koleksi: Memastikan list operation (pencarian) tidak terblokir
+    match /transactions/{id} {
+      allow read, write: if request.auth != null;
+    }
+    
+    match /members/{id} {
+      allow read, write: if request.auth != null;
     }
 
-    match /activity_logs/{logId} {
-      allow get, list, create, update, delete: if request.auth != null;
+    match /books/{id} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /settings/{id} {
+      allow read, write: if request.auth != null;
     }
   }
 }
