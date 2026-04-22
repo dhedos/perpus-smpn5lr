@@ -24,7 +24,12 @@ Vercel sering menyimpan paket lama yang rusak. Untuk membersihkannya:
 7. **CENTANG KOTAK** bertuliskan **"Clear Build Cache"**.
 8. Klik tombol **Redeploy**.
 
-### 3. Cek Environment Variables
+### 3. Cek Framework Preset
+Jika Anda melihat error **"No Output Directory named public found"**:
+1. Buka **Project Settings** di Vercel.
+2. Pastikan **Framework Preset** diatur ke **Next.js** (bukan "Other").
+
+### 4. Cek Environment Variables
 Pastikan Anda sudah mengisi API Key Gemini:
 - Buka **Settings** > **Environment Variables** di Vercel.
 - Pastikan ada `GOOGLE_GENAI_API_KEY` dengan nilai API Key dari Google AI Studio.

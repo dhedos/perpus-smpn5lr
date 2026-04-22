@@ -11,21 +11,25 @@ import {
   persistentMultipleTabManager 
 } from 'firebase/firestore'
 
-// IMPORTANT: DO NOT MODIFY THIS FUNCTION
+// Inisialisasi Firebase dengan penanganan lingkungan (Environment) yang lebih kuat
 export function initializeFirebase() {
   if (!getApps().length) {
     let firebaseApp;
-    try {
-      firebaseApp = initializeApp();
-    } catch (e) {
-      if (process.env.NODE_ENV === "production") {
-        console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
-      }
+    
+    // Selalu prioritaskan config object jika tersedia untuk menghindari error 'no-options' pada deployment non-hosting
+    if (firebaseConfig && firebaseConfig.apiKey) {
       firebaseApp = initializeApp(firebaseConfig);
+    } else {
+      try {
+        firebaseApp = initializeApp();
+      } catch (e) {
+        console.error('Firebase initialization failed: No config found.', e);
+        // Fallback terakhir agar aplikasi tidak crash total
+        firebaseApp = initializeApp(firebaseConfig);
+      }
     }
 
-    // Aktifkan Offline Persistence (Caching) menggunakan API modern jika di browser
-    // Ini adalah kunci utama penghematan kuota (0-Reads pada reload)
+    // Aktifkan Offline Persistence (Caching) untuk penghematan kuota
     if (typeof window !== 'undefined') {
       try {
         initializeFirestore(firebaseApp, {
