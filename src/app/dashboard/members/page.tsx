@@ -162,14 +162,15 @@ export default function MembersPage() {
               text-align: center;
               position: relative;
               overflow: hidden;
+              border: 0.1mm solid #eee; /* Garis batas luar tipis untuk panduan potong */
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
             }
             .header {
               width: 100%;
-              border-bottom: 1px solid #1e4b8f;
-              padding-bottom: 6px;
-              margin-bottom: 12px;
+              border-bottom: 2px solid #1e4b8f; /* Garis batas biru bawah kop */
+              padding-bottom: 8px;
+              margin-bottom: 14px;
             }
             .school-name {
               font-size: 8px;
@@ -187,7 +188,7 @@ export default function MembersPage() {
             .card-title {
               font-size: 8px;
               font-weight: 900;
-              margin-bottom: 10px;
+              margin-bottom: 12px;
               color: #333;
               text-transform: uppercase;
               letter-spacing: 0.5px;
@@ -198,8 +199,8 @@ export default function MembersPage() {
               background: #fff;
             }
             .qr-code {
-              width: 35mm;
-              height: 35mm;
+              width: 38mm;
+              height: 38mm;
               display: block;
             }
             .member-info {
@@ -229,9 +230,9 @@ export default function MembersPage() {
             }
             .footer {
               position: absolute;
-              bottom: 0;
-              left: 0;
-              width: 100%;
+              bottom: 10px;
+              left: 5mm;
+              right: 5mm;
               background: #1e4b8f !important;
               color: #ffffff !important;
               font-size: 8px;
@@ -244,7 +245,7 @@ export default function MembersPage() {
             }
             @media print {
               body { background: none; }
-              .card-container { border: none; }
+              .card-container { border: 0.1mm solid #eee; }
             }
           </style>
         </head>
@@ -256,7 +257,7 @@ export default function MembersPage() {
             </div>
             <div class="card-title">KARTU ANGGOTA PERPUSTAKAAN</div>
             <div class="qr-wrapper">
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${selectedMemberQr.memberId}" class="qr-code" />
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${selectedMemberQr.memberId}" class="qr-code" />
             </div>
             <div class="member-info">
               <div class="member-name">${selectedMemberQr.name}</div>
