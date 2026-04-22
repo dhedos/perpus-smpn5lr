@@ -71,7 +71,6 @@ import {
 import { generateBookDescription } from "@/ai/flows/generate-book-description-flow"
 import { useToast } from "@/hooks/use-toast"
 import { QRCodeSVG } from "qrcode.react"
-import { ScrollArea } from "@/components/ui/scroll-area"
 
 // Firebase imports
 import { 
@@ -82,7 +81,7 @@ import {
   errorEmitter 
 } from '@/firebase'
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors'
-import { collection, addDoc, deleteDoc, doc, updateDoc, query, limit, orderBy, getDocs, where, serverTimestamp } from 'firebase/firestore'
+import { collection, addDoc, deleteDoc, doc, updateDoc, query, limit, orderBy, serverTimestamp } from 'firebase/firestore'
 
 const INITIAL_FORM_DATA = {
   mainHeader: "PUSTAKA NUSANTARA",
@@ -722,68 +721,77 @@ export default function BooksPage() {
 
       {/* DIALOG TAMBAH */}
       <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="max-w-2xl bg-white max-h-[90vh] flex flex-col p-0 overflow-hidden">
-          <DialogHeader className="p-6 pb-2 border-b bg-slate-50/50">
-            <DialogTitle>Tambah Buku Baru</DialogTitle>
+        <DialogContent className="max-w-2xl bg-white max-h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl border-none">
+          <DialogHeader className="p-6 pb-4 border-b bg-white shrink-0">
+            <DialogTitle className="text-xl font-bold text-primary">Tambah Buku Baru</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="flex-1 w-full">
-            <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div className="space-y-2 col-span-1 sm:col-span-2">
-                <Label className="font-bold text-[10px] uppercase text-primary tracking-widest">Header Utama (Stiker)</Label>
-                <Input value={formData.mainHeader ?? ""} onChange={e => setFormData({ ...formData, mainHeader: e.target.value })} className="bg-white border-slate-300 h-11" placeholder="Cth: NAMA SEKOLAH / PERPUSTAKAAN" />
-              </div>
-              <div className="space-y-2 col-span-1 sm:col-span-2">
-                <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">Sumber Buku / Anggaran</Label>
-                <Input value={formData.budgetSource ?? ""} onChange={e => setFormData({ ...formData, budgetSource: e.target.value })} className="bg-white border-slate-300 h-11" placeholder="Cth: BOSP, Hibah" />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Kode Buku (Unik)</Label>
-                <Input value={formData.code ?? ""} onChange={e => setFormData({ ...formData, code: e.target.value })} className="bg-white border-slate-300 h-11" placeholder="Cth: 001" />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Judul Buku</Label>
-                <Input value={formData.title ?? ""} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" placeholder="Cth: Matematika Kelas VII" />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Kode Rekening</Label>
-                <Input value={formData.accountCode ?? ""} onChange={e => setFormData({ ...formData, accountCode: e.target.value })} className="bg-white border-slate-300 h-11" />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Penerbit</Label>
-                <Input value={formData.publisher ?? ""} onChange={e => setFormData({ ...formData, publisher: e.target.value })} className="bg-white border-slate-300 h-11" />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Tahun Terbit</Label>
-                <Input type="number" value={formData.publicationYear ?? ""} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300 h-11" />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">ISBN</Label>
-                <Input value={formData.isbn ?? ""} onChange={e => setFormData({ ...formData, isbn: e.target.value })} className="bg-white border-slate-300 h-11" />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Jenis / Kategori</Label>
-                <Input value={formData.category ?? ""} onChange={e => setFormData({ ...formData, category: e.target.value })} placeholder="Cth: Matematika, Fiksi" className="bg-white border-slate-300 h-11" />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Jumlah Stok Total</Label>
-                <Input type="number" value={formData.totalStock ?? 0} onChange={e => setFormData({ ...formData, totalStock: Number(e.target.value), availableStock: Number(e.target.value) })} className="bg-white border-slate-300 h-11" />
-              </div>
-              <div className="col-span-1 sm:col-span-2 space-y-2">
-                <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Lokasi Rak</Label>
-                <Input value={formData.rackLocation ?? ""} onChange={e => setFormData({ ...formData, rackLocation: e.target.value })} className="bg-white border-slate-300 h-11" placeholder="Cth: A1" />
-              </div>
-              <div className="col-span-1 sm:col-span-2 space-y-2 pb-6">
-                <div className="flex justify-between items-center">
-                  <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Deskripsi / Ringkasan AI</Label>
-                  <button type="button" onClick={handleGenerateDescription} disabled={isGenerating} className="flex items-center gap-1 text-[10px] font-bold text-primary hover:opacity-80 transition-opacity">
-                    <Sparkles className="h-3 w-3" /> AI Deskripsi
-                  </button>
+          
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-6 space-y-6">
+              {/* Header Group */}
+              <div className="space-y-4 pb-4 border-b">
+                <div className="space-y-2">
+                  <Label className="font-bold text-[10px] uppercase text-primary tracking-widest">Header Utama (Stiker)</Label>
+                  <Input value={formData.mainHeader ?? ""} onChange={e => setFormData({ ...formData, mainHeader: e.target.value })} className="bg-slate-50 h-12 text-base" placeholder="Cth: NAMA SEKOLAH / PERPUSTAKAAN" />
                 </div>
-                <Textarea value={formData.description ?? ""} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" />
+                <div className="space-y-2">
+                  <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">Sumber Buku / Anggaran</Label>
+                  <Input value={formData.budgetSource ?? ""} onChange={e => setFormData({ ...formData, budgetSource: e.target.value })} className="bg-slate-50 h-12 text-base" placeholder="Cth: BOSP, Hibah" />
+                </div>
+              </div>
+
+              {/* Main Info Group */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="space-y-2">
+                  <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Kode Buku (Unik)</Label>
+                  <Input value={formData.code ?? ""} onChange={e => setFormData({ ...formData, code: e.target.value })} className="h-11" placeholder="Cth: 001" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Judul Buku</Label>
+                  <Input value={formData.title ?? ""} onChange={e => setFormData({ ...formData, title: e.target.value })} className="h-11" placeholder="Cth: Matematika Kelas VII" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Kode Rekening</Label>
+                  <Input value={formData.accountCode ?? ""} onChange={e => setFormData({ ...formData, accountCode: e.target.value })} className="h-11" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Penerbit</Label>
+                  <Input value={formData.publisher ?? ""} onChange={e => setFormData({ ...formData, publisher: e.target.value })} className="h-11" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Tahun Terbit</Label>
+                  <Input type="number" value={formData.publicationYear ?? ""} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="h-11" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">ISBN</Label>
+                  <Input value={formData.isbn ?? ""} onChange={e => setFormData({ ...formData, isbn: e.target.value })} className="h-11" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Jenis / Kategori</Label>
+                  <Input value={formData.category ?? ""} onChange={e => setFormData({ ...formData, category: e.target.value })} placeholder="Cth: Matematika, Fiksi" className="h-11" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Jumlah Stok Total</Label>
+                  <Input type="number" value={formData.totalStock ?? 0} onChange={e => setFormData({ ...formData, totalStock: Number(e.target.value), availableStock: Number(e.target.value) })} className="h-11" />
+                </div>
+                <div className="col-span-1 sm:col-span-2 space-y-2">
+                  <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Lokasi Rak</Label>
+                  <Input value={formData.rackLocation ?? ""} onChange={e => setFormData({ ...formData, rackLocation: e.target.value })} className="h-11" placeholder="Cth: A1" />
+                </div>
+                <div className="col-span-1 sm:col-span-2 space-y-2 pb-4">
+                  <div className="flex justify-between items-center">
+                    <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Deskripsi / Ringkasan AI</Label>
+                    <button type="button" onClick={handleGenerateDescription} disabled={isGenerating} className="flex items-center gap-1 text-[10px] font-bold text-primary hover:opacity-80 transition-opacity">
+                      <Sparkles className="h-3 w-3" /> AI Deskripsi
+                    </button>
+                  </div>
+                  <Textarea value={formData.description ?? ""} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" />
+                </div>
               </div>
             </div>
-          </ScrollArea>
-          <DialogFooter className="p-4 bg-slate-50 border-t">
+          </div>
+
+          <DialogFooter className="p-4 bg-slate-50 border-t shrink-0">
             <Button variant="outline" onClick={() => setIsOpen(false)}>Batal</Button>
             <Button onClick={handleSaveToLocalQueue} className="px-8 shadow-lg shadow-primary/20">
               Simpan di Localhost
@@ -794,35 +802,42 @@ export default function BooksPage() {
 
       {/* DIALOG UBAH */}
       <Dialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="max-w-2xl bg-white max-h-[90vh] flex flex-col p-0 overflow-hidden">
-          <DialogHeader className="p-6 pb-2 border-b bg-slate-50/50">
-            <DialogTitle>Ubah Data Buku</DialogTitle>
+        <DialogContent className="max-w-2xl bg-white max-h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl border-none">
+          <DialogHeader className="p-6 pb-4 border-b bg-white shrink-0">
+            <DialogTitle className="text-xl font-bold text-primary">Ubah Data Buku</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="flex-1 w-full">
-            <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div className="space-y-2 col-span-1 sm:col-span-2">
-                <Label className="font-bold text-[10px] uppercase text-primary tracking-widest">Header Utama</Label>
-                <Input value={formData.mainHeader ?? ""} onChange={e => setFormData({ ...formData, mainHeader: e.target.value })} className="bg-white border-slate-300 h-11" />
+          
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-6 space-y-6">
+              <div className="space-y-4 pb-4 border-b">
+                <div className="space-y-2">
+                  <Label className="font-bold text-[10px] uppercase text-primary tracking-widest">Header Utama</Label>
+                  <Input value={formData.mainHeader ?? ""} onChange={e => setFormData({ ...formData, mainHeader: e.target.value })} className="bg-slate-50 h-12" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">Sumber Buku / Anggaran</Label>
+                  <Input value={formData.budgetSource ?? ""} onChange={e => setFormData({ ...formData, budgetSource: e.target.value })} className="bg-slate-50 h-12" />
+                </div>
               </div>
-              <div className="space-y-2 col-span-1 sm:col-span-2">
-                <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">Sumber Buku / Anggaran</Label>
-                <Input value={formData.budgetSource ?? ""} onChange={e => setFormData({ ...formData, budgetSource: e.target.value })} className="bg-white border-slate-300 h-11" />
-              </div>
-              <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Kode Buku</Label><Input value={formData.code ?? ""} disabled className="bg-muted border-slate-300 h-11" /></div>
-              <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Judul Buku</Label><Input value={formData.title ?? ""} onChange={e => setFormData({ ...formData, title: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
-              <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Kode Rekening</Label><Input value={formData.accountCode ?? ""} onChange={e => setFormData({ ...formData, accountCode: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
-              <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Penerbit</Label><Input value={formData.publisher ?? ""} onChange={e => setFormData({ ...formData, publisher: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
-              <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Tahun Terbit</Label><Input type="number" value={formData.publicationYear ?? ""} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="bg-white border-slate-300 h-11" /></div>
-              <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">ISBN</Label><Input value={formData.isbn ?? ""} onChange={e => setFormData({ ...formData, isbn: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
-              <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Jenis / Kategori</Label><Input value={formData.category ?? ""} onChange={e => setFormData({ ...formData, category: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
-              <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Lokasi Rak</Label><Input value={formData.rackLocation ?? ""} onChange={e => setFormData({ ...formData, rackLocation: e.target.value })} className="bg-white border-slate-300 h-11" /></div>
-              <div className="col-span-1 sm:col-span-2 space-y-2 pb-6">
-                <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Deskripsi</Label>
-                <Textarea value={formData.description ?? ""} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Kode Buku</Label><Input value={formData.code ?? ""} disabled className="bg-muted h-11" /></div>
+                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Judul Buku</Label><Input value={formData.title ?? ""} onChange={e => setFormData({ ...formData, title: e.target.value })} className="h-11" /></div>
+                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Kode Rekening</Label><Input value={formData.accountCode ?? ""} onChange={e => setFormData({ ...formData, accountCode: e.target.value })} className="h-11" /></div>
+                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Penerbit</Label><Input value={formData.publisher ?? ""} onChange={e => setFormData({ ...formData, publisher: e.target.value })} className="h-11" /></div>
+                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Tahun Terbit</Label><Input type="number" value={formData.publicationYear ?? ""} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="h-11" /></div>
+                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">ISBN</Label><Input value={formData.isbn ?? ""} onChange={e => setFormData({ ...formData, isbn: e.target.value })} className="h-11" /></div>
+                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Jenis / Kategori</Label><Input value={formData.category ?? ""} onChange={e => setFormData({ ...formData, category: e.target.value })} className="h-11" /></div>
+                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Lokasi Rak</Label><Input value={formData.rackLocation ?? ""} onChange={e => setFormData({ ...formData, rackLocation: e.target.value })} className="h-11" /></div>
+                <div className="col-span-1 sm:col-span-2 space-y-2 pb-4">
+                  <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Deskripsi</Label>
+                  <Textarea value={formData.description ?? ""} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" />
+                </div>
               </div>
             </div>
-          </ScrollArea>
-          <DialogFooter className="p-4 bg-slate-50 border-t">
+          </div>
+
+          <DialogFooter className="p-4 bg-slate-50 border-t shrink-0">
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>Batal</Button>
             <Button onClick={handleUpdateBook} className="px-8 shadow-lg shadow-primary/20">
               Simpan Perubahan
@@ -844,26 +859,28 @@ export default function BooksPage() {
 
       {/* DIALOG DETAIL */}
       <Dialog open={isDetailOpen} onOpenChange={(v) => { setIsDetailOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="max-w-2xl bg-white max-h-[90vh] flex flex-col p-0">
-          <DialogHeader className="p-6 pb-0">
-            <DialogTitle className="flex items-center gap-2 text-primary"><Info className="h-5 w-5" />Informasi Detail Buku</DialogTitle>
+        <DialogContent className="max-w-2xl bg-white max-h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl border-none">
+          <DialogHeader className="p-6 pb-4 border-b shrink-0">
+            <DialogTitle className="flex items-center gap-2 text-primary font-bold"><Info className="h-5 w-5" />Informasi Detail Buku</DialogTitle>
           </DialogHeader>
-          {selectedBookDetail && (
-            <ScrollArea className="flex-1 p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
-                <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Judul Buku</Label><div className="font-bold text-lg leading-tight">{selectedBookDetail.title ?? ""}</div></div>
-                <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Header & Sumber</Label><div><Badge variant="outline" className="font-mono text-primary font-bold">{selectedBookDetail.mainHeader}</Badge> <Badge variant="secondary" className="ml-2">{selectedBookDetail.budgetSource}</Badge></div></div>
-                <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Kode Koleksi & Rak</Label><div className="font-mono font-bold">{selectedBookDetail.code ?? ""} (RAK: {selectedBookDetail.rackLocation || '-'})</div></div>
-                <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Rekening & Penerbit</Label><div>Rek: {selectedBookDetail.accountCode ?? "-"} | {selectedBookDetail.publisher ?? "-"}</div></div>
-                <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Ketersediaan</Label><div className="font-semibold text-blue-600">{selectedBookDetail.availableStock ?? 0} dari {selectedBookDetail.totalStock ?? 0} tersedia</div></div>
-                <div className="col-span-1 sm:col-span-2 space-y-1 pt-2 border-t">
-                  <Label className="text-[10px] uppercase font-bold text-muted-foreground">Deskripsi / Ringkasan AI</Label>
-                  <div className="text-sm bg-muted/30 p-4 rounded-lg italic leading-relaxed">{selectedBookDetail.description || 'Tidak ada deskripsi.'}</div>
+          <div className="flex-1 overflow-y-auto">
+            {selectedBookDetail && (
+              <div className="p-6 space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+                  <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Judul Buku</Label><div className="font-bold text-lg leading-tight">{selectedBookDetail.title ?? ""}</div></div>
+                  <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Header & Sumber</Label><div><Badge variant="outline" className="font-mono text-primary font-bold">{selectedBookDetail.mainHeader}</Badge> <Badge variant="secondary" className="ml-2">{selectedBookDetail.budgetSource}</Badge></div></div>
+                  <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Kode Koleksi & Rak</Label><div className="font-mono font-bold">{selectedBookDetail.code ?? ""} (RAK: {selectedBookDetail.rackLocation || '-'})</div></div>
+                  <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Rekening & Penerbit</Label><div>Rek: {selectedBookDetail.accountCode ?? "-"} | {selectedBookDetail.publisher ?? "-"}</div></div>
+                  <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground">Ketersediaan</Label><div className="font-semibold text-blue-600">{selectedBookDetail.availableStock ?? 0} dari {selectedBookDetail.totalStock ?? 0} tersedia</div></div>
+                  <div className="col-span-1 sm:col-span-2 space-y-1 pt-4 border-t">
+                    <Label className="text-[10px] uppercase font-bold text-muted-foreground">Deskripsi / Ringkasan AI</Label>
+                    <div className="text-sm bg-muted/30 p-4 rounded-lg italic leading-relaxed">{selectedBookDetail.description || 'Tidak ada deskripsi.'}</div>
+                  </div>
                 </div>
               </div>
-            </ScrollArea>
-          )}
-          <DialogFooter className="p-6 border-t"><Button onClick={() => setIsDetailOpen(false)}>Tutup</Button></DialogFooter>
+            )}
+          </div>
+          <DialogFooter className="p-6 border-t shrink-0"><Button onClick={() => setIsDetailOpen(false)}>Tutup</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -909,9 +926,9 @@ export default function BooksPage() {
                       {selectedBookQr.title}
                     </div>
                     <div style={{ fontSize: '5pt', color: '#444', lineHeight: 1.2 }}>
-                      <div>Rek: {selectedBookQr.accountCode || '-'} | ${selectedBookQr.publisher || '-'}</div>
-                      <div>${selectedBookQr.category || '-'} | ${selectedBookQr.publicationYear}</div>
-                      <div>ISBN: ${selectedBookQr.isbn || '-'}</div>
+                      <div>Rek: {selectedBookQr.accountCode || '-'} | {selectedBookQr.publisher || '-'}</div>
+                      <div>{selectedBookQr.category || '-'} | {selectedBookQr.publicationYear}</div>
+                      <div>ISBN: {selectedBookQr.isbn || '-'}</div>
                     </div>
                     <div style={{ fontSize: '6pt', fontWeight: 800, color: '#000', textTransform: 'uppercase', marginTop: '1mm', borderTop: '0.2pt solid #ddd', paddingTop: '0.5mm' }}>
                       RAK: {selectedBookQr.rackLocation || '-'}
