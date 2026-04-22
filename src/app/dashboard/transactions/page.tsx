@@ -331,7 +331,7 @@ function TransactionsContent() {
         return `
           <tr>
             <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
-            <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle} (${t.quantity} unit)</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle} ${t.quantity > 1 ? `(${t.quantity} unit)` : ''}</td>
             <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold;">${t.memberName}</td>
             <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.memberId}</td>
             <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.classOrSubject || '-'}</td>
@@ -370,8 +370,8 @@ function TransactionsContent() {
                 <th>No</th>
                 <th>Judul Buku</th>
                 <th>Nama Peminjam</th>
-                <th>ID (NIS)</th>
-                <th>Kelas</th>
+                <th>ID (NIS/NIP)</th>
+                <th>Mengajar / Kelas</th>
                 <th>Tgl Pinjam</th>
                 <th>Jatuh Tempo</th>
               </tr>
@@ -434,6 +434,7 @@ function TransactionsContent() {
       memberId: selectedMember.memberId, 
       memberName: selectedMember.name, 
       memberType: selectedMember.type || "Student",
+      classOrSubject: selectedMember.classOrSubject || "-",
       bookId: selectedBook.id, 
       bookTitle: selectedBook.title, 
       quantity: borrowQuantity,
