@@ -130,15 +130,22 @@ export default function MembersPage() {
     }
   }
 
-  // Handle Export to Excel
-  const handleExportExcel = async () => {
+  // Handle Export to Excel (Separated by type)
+  const handleExportExcel = async (type: 'Student' | 'Teacher') => {
     try {
-      if (filteredMembers.length === 0) {
-        toast({ title: "Data Kosong", description: "Tidak ada data untuk diekspor." })
+      const targetData = members?.filter(m => m.type === type) || []
+      
+      if (targetData.length === 0) {
+        toast({ 
+          title: "Data Kosong", 
+          description: `Tidak ada data ${type === 'Student' ? 'Siswa' : 'Guru'} untuk diekspor.`, 
+          variant: "destructive" 
+        })
         return
       }
 
       const { utils, writeFile } = await import("xlsx")
+      const titleLabel = type === 'Student' ? 'SISWA' : 'GURU'
       
       const header = [
         [settings?.govtInstitution || "PEMERINTAH KABUPATEN MANGGARAI"],
@@ -146,13 +153,13 @@ export default function MembersPage() {
         [settings?.schoolName || "SMP NEGERI 5 LANGKE REMBONG"],
         [`Alamat: ${settings?.schoolAddress || "Mando, Kelurahan Compang Carep, Kecamatan Langke Rembong"}`],
         [""],
-        ["DAFTAR ANGGOTA PERPUSTAKAAN"],
+        [`DAFTAR ANGGOTA PERPUSTAKAAN (${titleLabel})`],
         [`Tanggal Cetak: ${new Date().toLocaleString('id-ID')}`],
         [""],
         ["No", "ID Anggota", "Nama Lengkap", "Kategori", "Mengajar / Kelas", "Tgl Terdaftar"]
       ];
 
-      const dataRows = filteredMembers.map((member, index) => [
+      const dataRows = targetData.map((member, index) => [
         index + 1,
         member.memberId,
         member.name,
@@ -178,12 +185,12 @@ export default function MembersPage() {
       
       const worksheet = utils.aoa_to_sheet(finalAOA)
       const workbook = utils.book_new()
-      utils.book_append_sheet(workbook, worksheet, "Daftar Anggota")
+      utils.book_append_sheet(workbook, worksheet, `Daftar ${titleLabel}`)
       
       const dateStr = new Date().toISOString().split('T')[0]
-      writeFile(workbook, `Daftar_Anggota_Perpus_SMPN5_${dateStr}.xlsx`)
+      writeFile(workbook, `Daftar_${titleLabel}_Perpus_SMPN5_${dateStr}.xlsx`)
       
-      toast({ title: "Berhasil Ekspor", description: "Daftar anggota berhasil diunduh dalam format Excel." })
+      toast({ title: "Berhasil Ekspor", description: `Daftar ${type === 'Student' ? 'Siswa' : 'Guru'} berhasil diunduh.` })
     } catch (error) {
       toast({ title: "Gagal", description: "Gagal mengekspor data anggota.", variant: "destructive" })
     }
@@ -526,7 +533,7 @@ export default function MembersPage() {
   const handleUpdateMember = () => {
     if (!db || !editingMemberId) return
     
-    const docRef = doc(db, 'members', BirdId)
+    const docRef = doc(db, 'members', editingMemberId)
     const dataToUpdate = { 
       memberId: formData.memberId,
       name: formData.name,
@@ -579,9 +586,22 @@ export default function MembersPage() {
           <p className="text-muted-foreground text-sm">Kelola data siswa dan guru yang terdaftar.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExportExcel} className="gap-2">
-            <FileDown className="h-4 w-4" /> Excel
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <FileDown className="h-4 w-4" /> Download Excel
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => handleExportExcel('Student')}>
+                Daftar Siswa
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportExcel('Teacher')}>
+                Daftar Guru
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Button variant="outline" onClick={handlePrintAllCards} className="gap-2 hidden md:flex">
             <Printer className="h-4 w-4" /> Cetak Semua Kartu
           </Button>
