@@ -144,7 +144,7 @@ export default function MembersPage() {
       <div class="member-info">
         <div class="member-name">${member.name}</div>
         <div class="member-id">${member.memberId}</div>
-        <div class="member-class">${member.type === 'Teacher' ? 'JABATAN' : 'KELAS'}: ${member.classOrSubject || '-'}</div>
+        <div class="member-class">${member.classOrSubject || '-'}</div>
       </div>
       <div class="footer">PUSTAKA NUSANTARA</div>
     </div>
@@ -546,13 +546,13 @@ export default function MembersPage() {
                 </div>
                 <div className="space-y-2">
                   <Label className="font-semibold text-xs uppercase text-muted-foreground">
-                    {formData.type === 'Teacher' ? 'Jabatan / Guru Bidang' : 'Kelas'}
+                    {formData.type === 'Teacher' ? 'Guru / Kelas Mengajar' : 'Kelas'}
                   </Label>
                   <Input 
                     value={formData.classPart ?? ""} 
                     onChange={e => setFormData({...formData, classPart: e.target.value})} 
                     className="bg-white border-slate-300 h-11" 
-                    placeholder={formData.type === 'Teacher' ? "Cth: Guru Matematika / Wali Kelas" : "Cth: VII A"} 
+                    placeholder={formData.type === 'Teacher' ? "Cth: VII / Bahasa Inggris" : "Cth: VII A"} 
                   />
                 </div>
               </div>
@@ -577,7 +577,7 @@ export default function MembersPage() {
               <TableHead>Nama Anggota</TableHead>
               <TableHead>ID Anggota</TableHead>
               <TableHead>Tipe</TableHead>
-              <TableHead>Kelas / Jabatan</TableHead>
+              <TableHead>Kelas / Mengajar</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
@@ -647,7 +647,7 @@ export default function MembersPage() {
             <div>
               <div className="font-bold text-lg leading-tight">{selectedMemberQr?.name ?? ""}</div>
               <div className="font-mono text-primary font-bold">{selectedMemberQr?.memberId ?? ""}</div>
-              <div className="text-xs text-muted-foreground mt-1">{selectedMemberQr?.type === 'Teacher' ? 'Jabatan' : 'Kelas'}: {selectedMemberQr?.classOrSubject}</div>
+              <div className="text-xs text-muted-foreground mt-1">{selectedMemberQr?.classOrSubject}</div>
             </div>
           </div>
           <DialogFooter className="grid grid-cols-2 gap-2">
@@ -674,13 +674,13 @@ export default function MembersPage() {
             </div>
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">
-                {formData.type === 'Teacher' ? 'Jabatan / Guru Bidang' : 'Kelas'}
+                {formData.type === 'Teacher' ? 'Guru / Kelas Mengajar' : 'Kelas'}
               </Label>
               <Input 
                 value={formData.classPart ?? ""} 
                 onChange={e => setFormData({...formData, classPart: e.target.value})} 
                 className="bg-white border-slate-300 h-11" 
-                placeholder={formData.type === 'Teacher' ? "Cth: Guru Matematika / Wali Kelas" : "Cth: VII A"} 
+                placeholder={formData.type === 'Teacher' ? "Cth: VII / Bahasa Inggris" : "Cth: VII A"} 
               />
             </div>
           </div>
