@@ -815,7 +815,7 @@ function TransactionsContent() {
           <DialogHeader className="sr-only">
             <DialogTitle>Pemindai QR Code</DialogTitle>
           </DialogHeader>
-          <div id="smart-scanner" className="w-full h-full"></div>
+          <div id="smart-scanner" className="w-full h-full bg-black"></div>
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>
         </DialogContent>
       </Dialog>

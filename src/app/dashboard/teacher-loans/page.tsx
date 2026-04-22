@@ -79,7 +79,6 @@ export default function TeacherLoansPage() {
   // Query sederhana untuk menghindari Permission Error akibat indexing
   const teacherTransQuery = useMemoFirebase(() => {
     if (!db) return null
-    // Menggunakan query dasar terlebih dahulu
     return query(
       collection(db, 'transactions'), 
       where('type', '==', 'teacher_handbook')
@@ -463,7 +462,7 @@ export default function TeacherLoansPage() {
 
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
         <DialogContent className="p-0 border-none bg-black max-w-xl h-[400px] overflow-hidden">
-          <div id="teacher-scanner" className="w-full h-full"></div>
+          <div id="teacher-scanner" className="w-full h-full bg-black"></div>
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>
         </DialogContent>
       </Dialog>
