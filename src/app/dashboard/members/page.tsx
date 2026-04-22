@@ -148,66 +148,66 @@ export default function MembersPage() {
               justify-content: center;
               align-items: center;
               height: 100vh;
-              background: #f0f0f0;
+              background: #fff;
             }
             .card-container {
               width: 54mm;
               height: 86mm;
               background: #fff;
-              border: 0.5px solid #ddd;
               box-sizing: border-box;
               display: flex;
               flex-direction: column;
               align-items: center;
-              padding: 8px;
+              padding: 12px 10px;
               text-align: center;
               position: relative;
               overflow: hidden;
-              box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
             }
             .header {
               width: 100%;
-              border-bottom: 1.5px solid #2E6ECE;
-              padding-bottom: 4px;
-              margin-bottom: 8px;
+              border-bottom: 1px solid #1e4b8f;
+              padding-bottom: 6px;
+              margin-bottom: 12px;
             }
             .school-name {
-              font-size: 7px;
+              font-size: 8px;
               font-weight: 900;
-              color: #2E6ECE;
+              color: #1e4b8f;
               text-transform: uppercase;
               line-height: 1.1;
             }
-            .school-dept {
+            .school-address {
               font-size: 5px;
-              color: #666;
+              color: #777;
               line-height: 1.1;
-              margin-top: 1px;
+              margin-top: 2px;
             }
             .card-title {
               font-size: 8px;
-              font-weight: 800;
-              margin: 4px 0;
+              font-weight: 900;
+              margin-bottom: 10px;
               color: #333;
+              text-transform: uppercase;
               letter-spacing: 0.5px;
             }
             .qr-wrapper {
-              margin: 4px 0;
-              padding: 4px;
-              background: #f9f9f9;
-              border-radius: 4px;
+              margin-bottom: 12px;
+              padding: 5px;
+              background: #fff;
             }
             .qr-code {
-              width: 38mm;
-              height: 38mm;
+              width: 35mm;
+              height: 35mm;
               display: block;
             }
             .member-info {
-              margin-top: 6px;
               width: 100%;
+              margin-bottom: 20px;
             }
             .member-name {
-              font-size: 10px;
+              font-size: 11px;
               font-weight: 900;
               color: #000;
               line-height: 1.2;
@@ -215,33 +215,36 @@ export default function MembersPage() {
               text-transform: uppercase;
             }
             .member-id {
-              font-size: 11px;
+              font-size: 12px;
               font-weight: 900;
-              color: #2E6ECE;
+              color: #1e4b8f;
               font-family: monospace;
-              margin-bottom: 2px;
+              margin-bottom: 1px;
             }
             .member-class {
               font-size: 7px;
               color: #666;
-              font-weight: 600;
+              font-weight: 700;
+              text-transform: uppercase;
             }
             .footer {
               position: absolute;
               bottom: 0;
               left: 0;
               width: 100%;
-              background: #2E6ECE;
-              color: #fff;
-              font-size: 7px;
-              padding: 5px 0;
+              background: #1e4b8f !important;
+              color: #ffffff !important;
+              font-size: 8px;
+              padding: 8px 0;
               font-weight: 800;
               text-transform: uppercase;
               letter-spacing: 1px;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
             }
             @media print {
               body { background: none; }
-              .card-container { box-shadow: none; border: 0.2px solid #ccc; }
+              .card-container { border: none; }
             }
           </style>
         </head>
@@ -249,7 +252,7 @@ export default function MembersPage() {
           <div class="card-container">
             <div class="header">
               <div class="school-name">${settings?.schoolName || 'SMPN 5 LANGKE REMBONG'}</div>
-              <div class="school-dept">${settings?.schoolAddress || 'Mando, Compang Carep Kab. Manggarai NTT'}</div>
+              <div class="school-address">Mando, Compang Carep Kab. Manggarai NTT</div>
             </div>
             <div class="card-title">KARTU ANGGOTA PERPUSTAKAAN</div>
             <div class="qr-wrapper">
