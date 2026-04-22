@@ -1011,7 +1011,7 @@ export default function BooksPage() {
                       <div>${selectedBookQr.category || '-'} | ${selectedBookQr.publicationYear}</div>
                       <div>ISBN: ${selectedBookQr.isbn || '-'}</div>
                     </div>
-                    <div style={{ fontSize: '6pt', fontWeight: 800, color: '#000', textTransform: 'uppercase', marginTop: '1mm', border_top: '0.2pt solid #ddd', padding_top: '0.5mm' }}>
+                    <div style={{ fontSize: '6pt', fontWeight: 800, color: '#000', textTransform: 'uppercase', marginTop: '1mm', borderTop: '0.2pt solid #ddd', paddingTop: '0.5mm' }}>
                       RAK: {selectedBookQr.rackLocation || '-'}
                     </div>
                   </div>
