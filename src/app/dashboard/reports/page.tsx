@@ -26,8 +26,8 @@ import {
   ResponsiveContainer,
   Cell
 } from "recharts"
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
-import { collection, query, where, orderBy } from "firebase/firestore"
+import { useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
+import { collection, query, where, orderBy, doc } from "firebase/firestore"
 import { isAfter, parseISO, startOfMonth, isWithinInterval, endOfMonth } from "date-fns"
 
 export default function ReportsPage() {
@@ -40,9 +40,11 @@ export default function ReportsPage() {
 
   const transRef = useMemoFirebase(() => db ? collection(db, 'transactions') : null, [db])
   const membersRef = useMemoFirebase(() => db ? collection(db, 'members') : null, [db])
+  const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   
   const { data: allTrans, isLoading: loadingTrans } = useCollection(transRef)
   const { data: members, isLoading: loadingMembers } = useCollection(membersRef)
+  const { data: settings } = useDoc(settingsRef)
 
   // 1. Statistik Kondisi Buku (Berdasarkan Buku yang Kembali)
   const conditionStats = useMemo(() => {
@@ -59,7 +61,6 @@ export default function ReportsPage() {
         damaged += Number(t.rincianKondisi.damaged || 0);
         normal += Number(t.rincianKondisi.normal || 0);
       } else {
-        // Fallback untuk data lama
         if (t.condition === 'lost') lost++;
         else if (t.condition === 'damaged') damaged++;
         else normal++;
@@ -77,14 +78,12 @@ export default function ReportsPage() {
     const now = new Date();
     const overdueLoans = activeLoans.filter(t => t.dueDate && isAfter(now, parseISO(t.dueDate)));
 
-    // Hitung denda bulan ini
     const startOfCurrentMonth = startOfMonth(now);
     const endOfCurrentMonth = endOfMonth(now);
     const finesThisMonth = allTrans
       .filter(t => t.status === 'returned' && t.returnDate && isWithinInterval(parseISO(t.returnDate), { start: startOfCurrentMonth, end: endOfCurrentMonth }))
       .reduce((acc, t) => acc + (t.fineAmount || 0), 0);
 
-    // Hitung rata-rata peminjaman (Total pinjam / 30 hari sebagai sampel)
     const totalBorrowings = allTrans.filter(t => t.type === 'borrow' || t.status === 'active').length;
     const avgBorrowing = (totalBorrowings / 30).toFixed(1);
 
@@ -105,6 +104,102 @@ export default function ReportsPage() {
 
   const isLoading = loadingTrans || loadingMembers;
 
+  const handlePrintFullReport = () => {
+    if (!statsData) return
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Laporan Bulanan Perpustakaan - SMPN 5</title>
+          <style>
+            @page { size: A4; margin: 15mm; }
+            body { font-family: 'Inter', sans-serif; font-size: 12px; line-height: 1.6; }
+            .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 30px; }
+            .school-name { font-size: 20px; font-weight: 900; }
+            .report-title { text-align: center; font-size: 16px; font-weight: 800; margin-bottom: 30px; text-decoration: underline; }
+            .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; }
+            .stat-box { border: 1px solid #ccc; padding: 15px; border-radius: 8px; }
+            .stat-label { font-size: 10px; color: #666; font-weight: bold; text-transform: uppercase; }
+            .stat-value { font-size: 18px; font-weight: 900; margin-top: 5px; }
+            .section-title { font-size: 14px; font-weight: bold; margin-bottom: 10px; border-left: 4px solid #1e4b8f; padding-left: 10px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+            th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+            th { background: #f9f9f9; }
+            .footer { margin-top: 60px; float: right; text-align: center; width: 250px; }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          <div class="header">
+            <div>${settings?.govtInstitution || 'PEMERINTAH KABUPATEN MANGGARAI'}</div>
+            <div>${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
+            <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
+            <div style="font-size: 10px;">${settings?.schoolAddress || 'Mando, Compang Carep'}</div>
+          </div>
+          <div class="report-title">LAPORAN AUDIT & STATISTIK PERPUSTAKAAN</div>
+          <div style="margin-bottom: 20px;">Periode Laporan: ${format(new Date(), 'MMMM yyyy')}</div>
+          
+          <div class="section-title">Ringkasan Aktivitas</div>
+          <div class="stat-grid">
+            <div class="stat-box">
+              <div class="stat-label">Total Anggota Terdaftar</div>
+              <div class="stat-value">${statsData.totalMembers} Orang</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Rata-rata Sirkulasi Harian</div>
+              <div class="stat-value">${statsData.avg} Buku</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Buku Belum Dikembalikan</div>
+              <div class="stat-value">${statsData.unreturned} Unit (${statsData.overdue} Terlambat)</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Total Denda Bulan Ini</div>
+              <div class="stat-value">Rp ${statsData.fines.toLocaleString('id-ID')}</div>
+            </div>
+          </div>
+
+          <div class="section-title">Kondisi Fisik Koleksi (Berdasarkan Pengembalian)</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Kategori Kondisi</th>
+                <th>Jumlah Unit</th>
+                <th>Persentase</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Normal / Baik</td>
+                <td>${conditionStats.normal}</td>
+                <td>${((conditionStats.normal / (conditionStats.normal + conditionStats.damaged + conditionStats.lost || 1)) * 100).toFixed(1)}%</td>
+              </tr>
+              <tr>
+                <td>Rusak</td>
+                <td>${conditionStats.damaged}</td>
+                <td>${((conditionStats.damaged / (conditionStats.normal + conditionStats.damaged + conditionStats.lost || 1)) * 100).toFixed(1)}%</td>
+              </tr>
+              <tr>
+                <td>Hilang / Tidak Ada</td>
+                <td>${conditionStats.lost}</td>
+                <td>${((conditionStats.lost / (conditionStats.normal + conditionStats.damaged + conditionStats.lost || 1)) * 100).toFixed(1)}%</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="footer">
+            ${settings?.reportCity || 'Mando'}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>
+            Kepala Sekolah,<br/><br/><br/><br/>
+            <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
+            NIP. ${settings?.principalNip || '198507272011011020'}
+          </div>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
+  }
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -114,8 +209,9 @@ export default function ReportsPage() {
         </div>
         
         <div className="flex gap-2">
-          <Button variant="outline" className="gap-2" onClick={() => window.print()}><Printer className="h-4 w-4" /> Cetak PDF</Button>
-          <Button className="gap-2"><Download className="h-4 w-4" /> Export Excel</Button>
+          <Button className="gap-2 shadow-lg" onClick={handlePrintFullReport} disabled={isLoading}>
+            <Printer className="h-4 w-4" /> Cetak Laporan Lengkap
+          </Button>
         </div>
       </div>
 

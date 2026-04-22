@@ -5,7 +5,8 @@ service cloud.firestore {
 
     /**
      * ATURAN KEAMANAN PERPUSTAKAAN SMPN 5
-     * Deployment Trigger: 2024-05-20 10:45 UTC
+     * Force Update Trigger: 2024-05-21 08:30 UTC
+     * Menggunakan izin eksplisit untuk menghindari error 'list' pada koleksi utama.
      */
 
     function isSignedIn() {
@@ -28,7 +29,6 @@ service cloud.firestore {
     }
 
     // Koleksi Transaksi & Sirkulasi (Peminjaman/Pengembalian)
-    // Menggunakan izin eksplisit 'list' untuk memastikan query koleksi diizinkan
     match /transactions/{transactionId} {
       allow get, list, create, update, delete: if isSignedIn();
     }

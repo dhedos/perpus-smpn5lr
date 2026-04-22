@@ -130,74 +130,78 @@ export default function MembersPage() {
     }
   }
 
-  // Handle Export to Excel (Separated by type)
-  const handleExportExcel = async (type: 'Student' | 'Teacher') => {
-    try {
-      const targetData = members?.filter(m => m.type === type) || []
-      
-      if (targetData.length === 0) {
-        toast({ 
-          title: "Data Kosong", 
-          description: `Tidak ada data ${type === 'Student' ? 'Siswa' : 'Guru'} untuk diekspor.`, 
-          variant: "destructive" 
-        })
-        return
-      }
-
-      const { utils, writeFile } = await import("xlsx")
-      const titleLabel = type === 'Student' ? 'SISWA' : 'GURU'
-      const classColumnHeader = type === 'Student' ? 'Kelas' : 'Mengajar / Kelas'
-      
-      const header = [
-        [settings?.govtInstitution || "PEMERINTAH KABUPATEN MANGGARAI"],
-        [settings?.eduDept || "DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA"],
-        [settings?.schoolName || "SMP NEGERI 5 LANGKE REMBONG"],
-        [`Alamat: ${settings?.schoolAddress || "Mando, Kelurahan Compang Carep, Kecamatan Langke Rembong"}`],
-        [""],
-        [`DAFTAR ANGGOTA PERPUSTAKAAN (${titleLabel})`],
-        [`Tanggal Cetak: ${new Date().toLocaleString('id-ID')}`],
-        [""],
-        ["No", "ID Anggota", "Nama Lengkap", "Kategori", classColumnHeader, "Tgl Terdaftar"]
-      ];
-
-      const dataRows = targetData.map((member, index) => [
-        index + 1,
-        member.memberId,
-        member.name,
-        member.type === 'Teacher' ? 'GURU' : 'SISWA',
-        member.classOrSubject || '-',
-        member.joinDate ? new Date(member.joinDate).toLocaleDateString('id-ID') : '-'
-      ]);
-
-      const footer = [
-        [""],
-        [""],
-        ["", "", "", "", settings?.reportCity || "Mando" + ", " + new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })],
-        ["", "", "", "", "Mengetahui,"],
-        ["", "", "", "", "Kepala Sekolah,"],
-        [""],
-        [""],
-        [""],
-        ["", "", "", "", settings?.principalName || "Lodovikus Jangkar, S.Pd.Gr"],
-        ["", "", "", "", `NIP. ${settings?.principalNip || "198507272011011020"}`]
-      ];
-
-      const finalAOA = [...header, ...dataRows, ...footer];
-      
-      const worksheet = utils.aoa_to_sheet(finalAOA)
-      const workbook = utils.book_new()
-      utils.book_append_sheet(workbook, worksheet, `Daftar ${titleLabel}`)
-      
-      const dateStr = new Date().toISOString().split('T')[0]
-      writeFile(workbook, `Daftar_${titleLabel}_Perpus_SMPN5_${dateStr}.xlsx`)
-      
-      toast({ title: "Berhasil Ekspor", description: `Daftar ${type === 'Student' ? 'Siswa' : 'Guru'} berhasil diunduh.` })
-    } catch (error) {
-      toast({ title: "Gagal", description: "Gagal mengekspor data anggota.", variant: "destructive" })
+  const handlePrintTable = (type: 'Student' | 'Teacher') => {
+    const targetData = filteredMembers.filter(m => m.type === type)
+    if (targetData.length === 0) {
+      toast({ title: "Data Kosong", description: `Tidak ada data ${type === 'Student' ? 'Siswa' : 'Guru'} untuk dicetak.` })
+      return
     }
+
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+
+    const labelType = type === 'Student' ? 'SISWA' : 'GURU'
+    const classLabel = type === 'Student' ? 'Kelas' : 'Mengajar / Kelas'
+
+    const rowsHtml = targetData.map((m, index) => `
+      <tr>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; font-family: monospace;">${m.memberId}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold;">${m.name}</td>
+        <td style="border: 1px solid #ccc; padding: 8px;">${m.classOrSubject || '-'}</td>
+        <td style="border: 1px solid #ccc; padding: 8px;">${m.phone || '-'}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${m.joinDate || '-'}</td>
+      </tr>
+    `).join('')
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Daftar Anggota ${labelType} - SMPN 5</title>
+          <style>
+            @page { size: A4; margin: 10mm; }
+            body { font-family: 'Inter', sans-serif; font-size: 12px; }
+            .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
+            .school-name { font-size: 18px; font-weight: 900; text-transform: uppercase; }
+            .title { text-align: center; font-size: 14px; font-weight: 800; margin: 20px 0; }
+            table { width: 100%; border-collapse: collapse; }
+            th { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 10px; }
+            .footer { margin-top: 40px; float: right; text-align: center; width: 250px; }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          <div class="header">
+            <div>${settings?.govtInstitution || 'PEMERINTAH KABUPATEN MANGGARAI'}</div>
+            <div>${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
+            <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
+            <div style="font-size: 10px;">${settings?.schoolAddress || 'Mando, Kelurahan Compang Carep'}</div>
+          </div>
+          <div class="title">DAFTAR ANGGOTA PERPUSTAKAAN (${labelType})</div>
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 30px; text-align: center;">No</th>
+                <th>ID Anggota</th>
+                <th>Nama Lengkap</th>
+                <th>${classLabel}</th>
+                <th>No. Telepon</th>
+                <th>Tgl Terdaftar</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+          <div class="footer">
+            ${settings?.reportCity || 'Mando'}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>
+            Kepala Sekolah,<br/><br/><br/><br/>
+            <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
+            NIP. ${settings?.principalNip || '198507272011011020'}
+          </div>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
   }
 
-  // Helper to generate Card HTML
   const generateCardHtml = (member: any) => `
     <div class="card-container">
       <div class="header">
@@ -590,14 +594,14 @@ export default function MembersPage() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="gap-2">
-                <FileDown className="h-4 w-4" /> Download Excel
+                <Printer className="h-4 w-4" /> Cetak Daftar
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => handleExportExcel('Student')}>
+              <DropdownMenuItem onClick={() => handlePrintTable('Student')}>
                 Daftar Siswa
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExportExcel('Teacher')}>
+              <DropdownMenuItem onClick={() => handlePrintTable('Teacher')}>
                 Daftar Guru
               </DropdownMenuItem>
             </DropdownMenuContent>

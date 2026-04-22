@@ -17,7 +17,8 @@ import {
   ChevronRight,
   FileDown,
   Clock,
-  CheckCircle2
+  CheckCircle2,
+  Printer
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -56,7 +57,6 @@ export default function TeacherLoansPage() {
   const [memberSearch, setMemberSearch] = useState("")
   const [bookSearch, setBookSearch] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
-  const [isExporting, setIsExporting] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [scannerMode, setScannerMode] = useState<"member" | "book">("member")
   
@@ -189,65 +189,70 @@ export default function TeacherLoansPage() {
     }).finally(() => setIsProcessing(false))
   }
 
-  const handleExportBukti = async () => {
-    if (!filteredTrans || filteredTrans.length === 0) {
-      toast({ title: "Data Kosong", description: "Tidak ada data untuk diekspor.", variant: "destructive" })
-      return
-    }
+  const handlePrintBukti = () => {
+    if (filteredTrans.length === 0) return
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
 
-    setIsExporting(true)
-    try {
-      const { utils, writeFile } = await import("xlsx")
-      
-      const titleLabel = activeTab === "active" ? "DAFTAR PENYERAHAN BUKU PEGANGAN GURU (AKTIF)" : "RIWAYAT PENGEMBALIAN BUKU PEGANGAN GURU"
-      
-      const header = [
-        [settings?.govtInstitution || "PEMERINTAH KABUPATEN MANGGARAI"],
-        [settings?.eduDept || "DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA"],
-        [settings?.schoolName || "SMP NEGERI 5 LANGKE REMBONG"],
-        [`Alamat: ${settings?.schoolAddress || "Mando, Kelurahan Compang Carep, Kecamatan Langke Rembong"}`],
-        [""],
-        [titleLabel],
-        [`Tahun Ajaran: ${settings?.academicYear || "2024/2025"}`],
-        [`Tanggal Cetak: ${new Date().toLocaleString('id-ID')}`],
-        [""],
-        ["No", "ID Guru", "Nama Guru", "Judul Buku", "Tanggal Penyerahan", activeTab === "active" ? "Status" : "Tanggal Kembali"]
-      ];
+    const titleLabel = activeTab === "active" ? "DAFTAR PENYERAHAN BUKU PEGANGAN GURU (AKTIF)" : "RIWAYAT PENGEMBALIAN BUKU PEGANGAN GURU"
+    
+    const rowsHtml = filteredTrans.map((t, index) => `
+      <tr>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; font-family: monospace;">${t.memberId}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold;">${t.memberName}</td>
+        <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.borrowDate ? format(new Date(t.borrowDate), 'dd/MM/yyyy') : '-'}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${activeTab === "active" ? "PEGANG" : (t.returnDate ? format(new Date(t.returnDate), 'dd/MM/yyyy') : '-')}</td>
+      </tr>
+    `).join('')
 
-      const dataRows = filteredTrans.map((t, index) => [
-        index + 1,
-        t.memberId,
-        t.memberName,
-        t.bookTitle,
-        t.borrowDate ? format(new Date(t.borrowDate), 'dd/MM/yyyy') : '-',
-        activeTab === "active" ? "PEGANG" : (t.returnDate ? format(new Date(t.returnDate), 'dd/MM/yyyy') : '-')
-      ]);
-
-      const footer = [
-        [""],
-        [""],
-        ["", "", "", "", settings?.reportCity || "Mando" + ", " + new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })],
-        ["", "", "", "", "Mengetahui,"],
-        ["", "", "", "", "Kepala Sekolah,"],
-        [""],
-        [""],
-        [""],
-        ["", "", "", "", settings?.principalName || "Lodovikus Jangkar, S.Pd.Gr"],
-        ["", "", "", "", `NIP. ${settings?.principalNip || "198507272011011020"}`]
-      ];
-
-      const finalAOA = [...header, ...dataRows, ...footer];
-      const worksheet = utils.aoa_to_sheet(finalAOA)
-      const workbook = utils.book_new()
-      utils.book_append_sheet(workbook, worksheet, "Buku Pegangan")
-      
-      writeFile(workbook, `Bukti_Buku_Pegangan_Guru_${activeTab}_${new Date().toISOString().split('T')[0]}.xlsx`)
-      toast({ title: "Berhasil!", description: "File bukti penyerahan berhasil diunduh." })
-    } catch (e) {
-      toast({ title: "Gagal Ekspor", variant: "destructive" })
-    } finally {
-      setIsExporting(false)
-    }
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Bukti Buku Pegangan Guru - SMPN 5</title>
+          <style>
+            @page { size: A4; margin: 10mm; }
+            body { font-family: 'Inter', sans-serif; font-size: 11px; }
+            .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
+            .school-name { font-size: 16px; font-weight: 900; }
+            .title { text-align: center; font-size: 12px; font-weight: 800; margin: 20px 0; text-transform: uppercase; }
+            table { width: 100%; border-collapse: collapse; }
+            th { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; font-size: 9px; }
+            .footer { margin-top: 40px; float: right; text-align: center; width: 250px; }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          <div class="header">
+            <div>${settings?.govtInstitution || 'PEMERINTAH KABUPATEN MANGGARAI'}</div>
+            <div>${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
+            <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
+            <div style="font-size: 9px;">Alamat: ${settings?.schoolAddress || 'Mando, Compang Carep'}</div>
+          </div>
+          <div class="title">${titleLabel}<br/>Tahun Ajaran: ${settings?.academicYear || '2024/2025'}</div>
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 30px;">No</th>
+                <th>ID Guru</th>
+                <th>Nama Guru</th>
+                <th>Judul Buku</th>
+                <th>Tgl Penyerahan</th>
+                <th>${activeTab === "active" ? "Status" : "Tgl Kembali"}</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+          <div class="footer">
+            ${settings?.reportCity || 'Mando'}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>
+            Kepala Sekolah,<br/><br/><br/><br/>
+            <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
+            NIP. ${settings?.principalNip || '198507272011011020'}
+          </div>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
   }
 
   return (
@@ -260,9 +265,8 @@ export default function TeacherLoansPage() {
           <p className="text-sm text-muted-foreground">Peminjaman jangka panjang untuk kebutuhan mengajar di kelas.</p>
         </div>
         <div className="flex items-center gap-2">
-           <Button variant="outline" size="sm" onClick={handleExportBukti} disabled={isExporting}>
-             {isExporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileDown className="h-4 w-4 mr-2" />}
-             Download Bukti
+           <Button variant="outline" size="sm" onClick={handlePrintBukti}>
+             <Printer className="h-4 w-4 mr-2" /> Cetak Bukti
            </Button>
            <Badge variant="secondary" className="h-9 px-3 bg-blue-100 text-blue-700 border-none font-bold">
             TA {settings?.academicYear || "2024/2025"}

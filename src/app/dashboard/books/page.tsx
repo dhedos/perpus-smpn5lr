@@ -242,7 +242,6 @@ export default function BooksPage() {
       const booksRef = collection(db, 'books')
       let successCount = 0
 
-      // We use a clone to avoid mutation issues during loop
       const queueToSync = [...localQueue]
 
       for (const book of queueToSync) {
@@ -256,7 +255,6 @@ export default function BooksPage() {
         successCount++
       }
 
-      // Clear only after full success
       setLocalQueue([])
       toast({ 
         title: "Sinkronisasi Berhasil", 
@@ -279,66 +277,86 @@ export default function BooksPage() {
     setLocalQueue(prev => prev.filter(b => b.tempId !== tempId))
   }
 
-  const handleExportExcel = async () => {
-    try {
-      if (filteredBooks.length === 0) {
-        toast({ title: "Data Kosong", description: "Tidak ada data untuk diekspor." })
-        return
-      }
+  const handlePrintTable = () => {
+    if (filteredBooks.length === 0) return
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
 
-      const { utils, writeFile } = await import("xlsx")
-      
-      const header = [
-        [settings?.govtInstitution || "PEMERINTAH KABUPATEN MANGGARAI"],
-        [settings?.eduDept || "DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA"],
-        [settings?.schoolName || "SMP NEGERI 5 LANGKE REMBONG"],
-        [`Alamat: ${settings?.schoolAddress || "Mando, Kelurahan Compang Carep, Kecamatan Langke Rembong"}`],
-        [""],
-        ["DAFTAR KOLEKSI BUKU PERPUSTAKAAN"],
-        [`Tanggal Cetak: ${new Date().toLocaleString('id-ID')}`],
-        [""],
-        ["No", "Kode", "Judul", "Kode Rekening", "Penerbit", "ISBN", "Thn Terbit", "Jenis", "Stok", "Lokasi"]
-      ];
+    const rowsHtml = filteredBooks.map((book, index) => `
+      <tr>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; font-family: monospace;">${book.code}</td>
+        <td style="border: 1px solid #ccc; padding: 8px;">
+          <div style="font-weight: bold;">${book.title}</div>
+          <div style="font-size: 10px; color: #666;">Rek: ${book.accountCode || '-'}</div>
+        </td>
+        <td style="border: 1px solid #ccc; padding: 8px;">${book.publisher || '-'}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${book.publicationYear || '-'}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${book.category || '-'}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${book.totalStock || 0}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${book.rackLocation || '-'}</td>
+      </tr>
+    `).join('')
 
-      const dataRows = filteredBooks.map((book, index) => [
-        index + 1,
-        book.code,
-        book.title,
-        book.accountCode,
-        book.publisher,
-        book.isbn,
-        book.publicationYear,
-        book.category,
-        book.totalStock,
-        book.rackLocation
-      ]);
-
-      const footer = [
-        [""],
-        [""],
-        ["", "", "", "", "", "", "", "", `${settings?.reportCity || "Mando"}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`],
-        ["", "", "", "", "", "", "", "", "Mengetahui,"],
-        ["", "", "", "", "", "", "", "", "Kepala Sekolah,"],
-        [""],
-        [""],
-        [""],
-        ["", "", "", "", "", "", "", "", settings?.principalName || "Lodovikus Jangkar, S.Pd.Gr"],
-        ["", "", "", "", "", "", "", "", `NIP. ${settings?.principalNip || "198507272011011020"}`]
-      ];
-
-      const finalAOA = [...header, ...dataRows, ...footer];
-      
-      const worksheet = utils.aoa_to_sheet(finalAOA)
-      const workbook = utils.book_new()
-      utils.book_append_sheet(workbook, worksheet, "Koleksi Buku")
-      
-      const dateStr = new Date().toISOString().split('T')[0]
-      writeFile(workbook, `Daftar_Koleksi_Buku_SMPN5_${dateStr}.xlsx`)
-      
-      toast({ title: "Berhasil Ekspor", description: "File Excel berhasil dibuat dengan Kop Surat." })
-    } catch (error) {
-      toast({ title: "Gagal", description: "Gagal mengekspor data.", variant: "destructive" })
-    }
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Cetak Koleksi Buku - SMPN 5</title>
+          <style>
+            @page { size: A4 landscape; margin: 10mm; }
+            body { font-family: 'Inter', sans-serif; font-size: 12px; margin: 0; padding: 0; }
+            .header { text-align: center; margin-bottom: 20px; border-bottom: 3px double #000; padding-bottom: 10px; }
+            .school-name { font-size: 18px; font-weight: 900; }
+            .dept-name { font-size: 14px; font-weight: 700; }
+            .address { font-size: 10px; font-style: italic; }
+            .title { text-align: center; font-size: 16px; font-weight: 800; margin: 20px 0; text-transform: uppercase; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            th { background: #f0f0f0; border: 1px solid #ccc; padding: 10px; font-weight: bold; text-transform: uppercase; font-size: 10px; }
+            .footer-table { width: 100%; border: none; margin-top: 40px; }
+            .footer-table td { border: none; text-align: center; width: 33%; }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          <div class="header">
+            <div class="dept-name">${settings?.govtInstitution || 'PEMERINTAH KABUPATEN MANGGARAI'}</div>
+            <div class="dept-name">${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
+            <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
+            <div class="address">Alamat: ${settings?.schoolAddress || 'Mando, Kelurahan Compang Carep, Kecamatan Langke Rembong'}</div>
+          </div>
+          <div class="title">DAFTAR KOLEKSI BUKU PERPUSTAKAAN</div>
+          <div style="margin-bottom: 10px; font-size: 10px;">Tanggal Cetak: ${new Date().toLocaleString('id-ID')}</div>
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Kode</th>
+                <th>Judul & Rekening</th>
+                <th>Penerbit</th>
+                <th>Thn</th>
+                <th>Kategori</th>
+                <th>Stok</th>
+                <th>Lokasi</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+          <table class="footer-table">
+            <tr>
+              <td></td>
+              <td></td>
+              <td>
+                ${settings?.reportCity || 'Mando'}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>
+                Mengetahui,<br/>
+                Kepala Sekolah,<br/><br/><br/><br/>
+                <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
+                NIP. ${settings?.principalNip || '198507272011011020'}
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
   }
 
   const handlePrintAllQrs = () => {
@@ -510,7 +528,7 @@ export default function BooksPage() {
             </Button>
           )}
           <Button variant="outline" size="sm" onClick={handlePrintAllQrs} className="hidden md:flex"><Printer className="h-4 w-4 mr-2" />Cetak Semua QR</Button>
-          <Button variant="outline" size="sm" onClick={handleExportExcel}><FileDown className="h-4 w-4 mr-2" />Excel</Button>
+          <Button variant="outline" size="sm" onClick={handlePrintTable}><Printer className="h-4 w-4 mr-2" />Cetak Daftar</Button>
           <Button 
             size="sm" 
             onClick={() => {
