@@ -28,7 +28,7 @@ import {
 } from "recharts"
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, query, where, orderBy, limit } from "firebase/firestore"
-import { isAfter, parseISO } from "date-fns"
+import { isAfter, parseISO, differenceInDays } from "date-fns"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
@@ -58,19 +58,23 @@ export default function DashboardPage() {
   const { data: activeTransactions, isLoading: loadingActive } = useCollection(activeTransQuery)
   const { data: latestTransactions } = useCollection(latestTransQuery)
 
-  // Hitung transaksi yang jatuh tempo (overdue) dengan pengamanan hidrasi
+  // Hitung transaksi yang jatuh tempo (overdue) dengan rincian hari terlambat
   const overdueTransactions = useMemo(() => {
     if (!mounted || !activeTransactions) return []
     const now = new Date()
-    return activeTransactions.filter(t => {
-      if (!t.dueDate) return false
-      try {
-        // Hanya dianggap jatuh tempo jika waktu sekarang sudah melewati batas dueDate
-        return isAfter(now, parseISO(t.dueDate))
-      } catch (e) {
-        return false
-      }
-    })
+    return activeTransactions
+      .filter(t => {
+        if (!t.dueDate) return false
+        try {
+          return isAfter(now, parseISO(t.dueDate))
+        } catch (e) {
+          return false
+        }
+      })
+      .map(t => {
+        const diff = differenceInDays(now, parseISO(t.dueDate))
+        return { ...t, lateDays: diff > 0 ? diff : 0 }
+      })
   }, [activeTransactions, mounted])
 
   const stats = [
@@ -154,7 +158,9 @@ export default function DashboardPage() {
                 <div key={t.id} className="bg-white/70 p-3 rounded-lg border border-destructive/10 flex flex-col gap-1 shadow-sm">
                   <div className="font-bold text-xs truncate text-destructive">{t.bookTitle}</div>
                   <div className="text-[10px] font-semibold text-muted-foreground truncate">{t.memberName} ({t.classOrSubject})</div>
-                  <Badge variant="destructive" className="h-4 text-[8px] w-fit mt-1 border-none">Terlambat</Badge>
+                  <Badge variant="destructive" className="h-4 text-[8px] w-fit mt-1 border-none font-bold">
+                    Terlambat {t.lateDays} Hari
+                  </Badge>
                 </div>
               ))}
             </div>
