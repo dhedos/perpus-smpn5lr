@@ -207,23 +207,27 @@ export default function TeacherLoansPage() {
 
     const titleLabel = activeTab === "active" ? "DAFTAR PENYERAHAN BUKU PEGANGAN GURU (AKTIF)" : "RIWAYAT PENGEMBALIAN BUKU PEGANGAN GURU"
     
-    const rowsHtml = filteredTrans.map((t, index) => `
+    const rowsHtml = filteredTrans.map((t, index) => {
+      const bookDetail = books?.find(b => b.id === t.bookId);
+      return `
       <tr>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
         <td style="border: 1px solid #ccc; padding: 8px; font-family: monospace;">${t.memberId}</td>
         <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold;">${t.memberName}</td>
         <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${bookDetail?.publisher || '-'}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${bookDetail?.publicationYear || '-'}</td>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.borrowDate ? format(new Date(t.borrowDate), 'dd/MM/yyyy') : '-'}</td>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${activeTab === "active" ? "PEGANG" : (t.returnDate ? format(new Date(t.returnDate), 'dd/MM/yyyy') : '-')}</td>
       </tr>
-    `).join('')
+    `}).join('')
 
     printWindow.document.write(`
       <html>
         <head>
           <title>Bukti Buku Pegangan Guru - SMPN 5</title>
           <style>
-            @page { size: A4; margin: 10mm; }
+            @page { size: A4 landscape; margin: 10mm; }
             body { font-family: 'Inter', sans-serif; font-size: 11px; }
             .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
             .school-name { font-size: 16px; font-weight: 900; }
@@ -248,6 +252,8 @@ export default function TeacherLoansPage() {
                 <th>ID Guru</th>
                 <th>Nama Guru</th>
                 <th>Judul Buku</th>
+                <th>Penerbit</th>
+                <th>Thn Terbit</th>
                 <th>Tgl Penyerahan</th>
                 <th>${activeTab === "active" ? "Status" : "Tgl Kembali"}</th>
               </tr>
@@ -396,7 +402,7 @@ export default function TeacherLoansPage() {
                     <TableRow>
                       <TableHead className="w-12 text-center">No.</TableHead>
                       <TableHead>Guru / Peminjam</TableHead>
-                      <TableHead>Judul Buku</TableHead>
+                      <TableHead>Judul & Info Buku</TableHead>
                       <TableHead>Tgl. {activeTab === "active" ? "Serah" : "Kembali"}</TableHead>
                       {activeTab === "active" && <TableHead className="text-right">Aksi</TableHead>}
                     </TableRow>
@@ -406,7 +412,9 @@ export default function TeacherLoansPage() {
                       <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
                     ) : filteredTrans.length === 0 ? (
                       <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground italic">Belum ada data {activeTab === "active" ? "aktif" : "riwayat"}.</TableCell></TableRow>
-                    ) : filteredTrans.map((t, index) => (
+                    ) : filteredTrans.map((t, index) => {
+                      const bookDetail = books?.find(b => b.id === t.bookId);
+                      return (
                       <TableRow key={t.id}>
                         <TableCell className="text-center text-xs text-muted-foreground">{index + 1}</TableCell>
                         <TableCell>
@@ -415,6 +423,9 @@ export default function TeacherLoansPage() {
                         </TableCell>
                         <TableCell>
                           <div className="font-medium text-xs leading-tight">{t.bookTitle}</div>
+                          <div className="text-[9px] text-muted-foreground mt-0.5">
+                            {bookDetail?.publisher || '-'} | {bookDetail?.publicationYear || '-'}
+                          </div>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {activeTab === "active" 
@@ -436,7 +447,7 @@ export default function TeacherLoansPage() {
                           </TableCell>
                         )}
                       </TableRow>
-                    ))}
+                    )})}
                   </TableBody>
                 </Table>
               </div>
