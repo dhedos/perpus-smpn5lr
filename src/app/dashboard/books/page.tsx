@@ -364,17 +364,20 @@ export default function BooksPage() {
     if (!printWindow) return
 
     const stickersHtml = filteredBooks.map(book => `
-      <div style="border: 1px solid #000; padding: 6px; text-align: center; width: 140px; display: inline-block; vertical-align: top; page-break-inside: avoid; margin: 4px; font-family: 'Inter', sans-serif; border-radius: 2px; background: #fff;">
-        <div style="font-size: 7px; font-weight: 900; color: #2E6ECE; margin-bottom: 3px; text-transform: uppercase; line-height: 1;">${book.stickerHeader || 'SMPN 5 LANGKE REMBONG'}</div>
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${book.code}" style="width: 100px; height: 100px; margin: 2px 0;" />
-        <div style="font-size: 9px; font-weight: 800; margin-bottom: 2px; color: #000; line-height: 1.1;">${book.title}</div>
-        <div style="font-size: 7px; color: #333; margin-bottom: 1px; line-height: 1.2;">Rek: ${book.accountCode || '-'} | ${book.publisher || '-'}</div>
-        <div style="font-size: 7px; color: #666; line-height: 1.2;">${book.category || '-'} | ${book.publicationYear}</div>
-        <div style="font-size: 7px; color: #666; margin-bottom: 4px; line-height: 1.2;">ISBN: ${book.isbn || '-'}</div>
-        <div style="border-top: 0.5px solid #eee; margin: 2px 0; padding-top: 4px;">
-           <div style="font-size: 14px; font-weight: 900; color: #2E6ECE; font-family: monospace; line-height: 1;">${book.code}</div>
-           <div style="font-size: 8px; font-weight: 900; color: #000; margin-top: 2px; text-transform: uppercase;">RAK: ${book.rackLocation || '-'}</div>
+      <div class="label-card">
+        <div class="header-text">${book.stickerHeader || 'SMPN 5 LANGKE REMBONG'}</div>
+        <div class="qr-container">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${book.code}" />
         </div>
+        <div class="book-title">${book.title}</div>
+        <div class="book-details">
+          <div>Rek: ${book.accountCode || '-'} | ${book.publisher || '-'}</div>
+          <div>${book.category || '-'} | ${book.publicationYear}</div>
+          <div>ISBN: ${book.isbn || '-'}</div>
+        </div>
+        <div class="divider"></div>
+        <div class="book-code-text">${book.code}</div>
+        <div class="rack-text">RAK: ${book.rackLocation || '-'}</div>
       </div>
     `).join('')
 
@@ -383,13 +386,93 @@ export default function BooksPage() {
         <head>
           <title>Cetak Label QR - SMPN 5</title>
           <style>
-            @page { size: A4; margin: 5mm; } 
-            body { margin: 0; padding: 0; background: #fff; }
-            .container { display: block; font-size: 0; }
+            @page { size: A4; margin: 10mm; } 
+            body { margin: 0; padding: 0; background: #fff; font-family: 'Inter', sans-serif; }
+            .page-container { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+            
+            .label-card { 
+              width: 54mm; 
+              height: 86mm; 
+              border: 1px solid #000; 
+              border-radius: 4px; 
+              padding: 4mm; 
+              box-sizing: border-box; 
+              text-align: center;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              page-break-inside: avoid;
+              background: #fff;
+            }
+
+            .header-text {
+              font-size: 7pt;
+              font-weight: 800;
+              color: #2E6ECE;
+              text-transform: uppercase;
+              margin-bottom: 2mm;
+              line-height: 1.1;
+            }
+
+            .qr-container {
+              width: 35mm;
+              height: 35mm;
+              margin-bottom: 2mm;
+            }
+            .qr-container img {
+              width: 100%;
+              height: 100%;
+            }
+
+            .book-title {
+              font-size: 9pt;
+              font-weight: 900;
+              line-height: 1.2;
+              margin-bottom: 1.5mm;
+              display: -webkit-box;
+              -webkit-line-clamp: 2;
+              -webkit-box-orient: vertical;
+              overflow: hidden;
+              color: #000;
+              height: 10.8pt; /* Approx 2 lines if needed, but height fixed helps spacing */
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+
+            .book-details {
+              font-size: 6.5pt;
+              color: #444;
+              line-height: 1.3;
+              margin-bottom: 2mm;
+            }
+
+            .divider {
+              width: 80%;
+              border-top: 0.5pt solid #ddd;
+              margin: 1mm auto;
+            }
+
+            .book-code-text {
+              font-size: 14pt;
+              font-weight: 900;
+              color: #2E6ECE;
+              font-family: monospace;
+              line-height: 1;
+              margin-top: 1mm;
+            }
+
+            .rack-text {
+              font-size: 8pt;
+              font-weight: 800;
+              color: #000;
+              text-transform: uppercase;
+              margin-top: 1mm;
+            }
           </style>
         </head>
         <body onload="window.print(); window.close();">
-          <div class="container">${stickersHtml}</div>
+          <div class="page-container">${stickersHtml}</div>
         </body>
       </html>
     `)
@@ -436,7 +519,9 @@ export default function BooksPage() {
 
   const handleDeleteBook = () => {
     if (!db || !bookToDelete) return
-    const docRef = doc(db, 'books', bookToDelete)
+    const docRef = db ? doc(db, 'books', bookToDelete) : null
+    if (!docRef) return;
+    
     setIsDeleteDialogOpen(false)
     forceUnlockUI()
 
@@ -857,34 +942,74 @@ export default function BooksPage() {
         </DialogContent>
       </Dialog>
 
-      {/* DIALOG QR */}
+      {/* DIALOG QR STANDAR ID CARD */}
       <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="max-w-sm text-center">
+        <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Stiker QR Koleksi</DialogTitle>
+            <DialogTitle>Preview Label QR Buku</DialogTitle>
           </DialogHeader>
-          {selectedBookQr && (
-            <div className="bg-white p-[8px] rounded-sm border-[1px] border-black inline-block text-center shadow-sm w-[150px] mx-auto font-sans leading-tight">
-                <div className="text-[7px] font-black text-primary uppercase tracking-tighter mb-[3px] leading-none">{selectedBookQr.stickerHeader || 'SMPN 5 LANGKE REMBONG'}</div>
-                <div className="flex justify-center my-[2px]">
-                  <QRCodeSVG value={selectedBookQr.code} size={110} level="M" includeMargin={false} />
-                </div>
-                <div className="text-center w-full mt-[2px]">
-                  <div className="font-extrabold text-[9px] leading-[1.1] mb-[2px]">{selectedBookQr.title}</div>
-                  <div className="text-[7px] text-slate-700 mb-[1px]">Rek: {selectedBookQr.accountCode || "-"} | {selectedBookQr.publisher || "-"}</div>
-                  <div className="text-[7px] text-slate-500">{selectedBookQr.category || '-'} | {selectedBookQr.publicationYear}</div>
-                  <div className="text-[7px] text-slate-500">ISBN: {selectedBookQr.isbn || "-"}</div>
-                  <div className="pt-[4px] border-t border-slate-100 mt-[4px]">
-                    <div className="text-[14px] font-black text-primary font-mono leading-none">{selectedBookQr.code}</div>
-                    <div className="text-[8px] font-black text-black uppercase mt-[2px] leading-none">
-                      RAK: {selectedBookQr.rackLocation || '-'}
-                    </div>
+          <div className="flex justify-center py-4 bg-muted/20 rounded-lg">
+            {selectedBookQr && (
+              <div id="single-qr-label" style={{ 
+                width: '54mm', 
+                height: '86mm', 
+                border: '1px solid #000', 
+                background: '#fff', 
+                padding: '4mm', 
+                boxSizing: 'border-box',
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                fontFamily: 'Inter, sans-serif'
+              }}>
+                  <div style={{ fontSize: '7pt', fontWeight: 800, color: '#2E6ECE', textTransform: 'uppercase', marginBottom: '2mm', lineHeight: 1.1 }}>
+                    {selectedBookQr.stickerHeader || 'SMPN 5 LANGKE REMBONG'}
                   </div>
-                </div>
-            </div>
-          )}
-          <DialogFooter className="grid grid-cols-2 gap-2 mt-4">
-            <Button variant="outline" size="sm" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" />Cetak</Button>
+                  <div style={{ marginBottom: '2mm' }}>
+                    <QRCodeSVG value={selectedBookQr.code} size={130} level="M" />
+                  </div>
+                  <div style={{ 
+                    fontSize: '9pt', 
+                    fontWeight: 900, 
+                    lineHeight: 1.2, 
+                    marginBottom: '1.5mm', 
+                    color: '#000',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    height: '22pt',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    {selectedBookQr.title}
+                  </div>
+                  <div style={{ fontSize: '6.5pt', color: '#444', lineHeight: 1.3, marginBottom: '2mm' }}>
+                    <div>Rek: {selectedBookQr.accountCode || '-'} | {selectedBookQr.publisher || '-'}</div>
+                    <div>{selectedBookQr.category || '-'} | {selectedBookQr.publicationYear}</div>
+                    <div>ISBN: {selectedBookQr.isbn || '-'}</div>
+                  </div>
+                  <div style={{ width: '80%', borderTop: '0.5pt solid #ddd', margin: '1mm auto' }}></div>
+                  <div style={{ fontSize: '14pt', fontWeight: 900, color: '#2E6ECE', fontFamily: 'monospace', marginTop: '1mm' }}>
+                    {selectedBookQr.code}
+                  </div>
+                  <div style={{ fontSize: '8pt', fontWeight: 800, color: '#000', textTransform: 'uppercase', marginTop: '1mm' }}>
+                    RAK: {selectedBookQr.rackLocation || '-'}
+                  </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="grid grid-cols-2 gap-2 mt-2">
+            <Button variant="outline" size="sm" onClick={() => {
+              const content = document.getElementById('single-qr-label')?.outerHTML;
+              const printWindow = window.open('', '_blank');
+              if (printWindow && content) {
+                printWindow.document.write(`<html><head><style>@page { size: 54mm 86mm; margin: 0; } body { margin: 0; padding: 0; }</style></head><body onload="window.print(); window.close();">${content}</body></html>`);
+                printWindow.document.close();
+              }
+            }}><Printer className="h-4 w-4 mr-2" />Cetak</Button>
             <Button size="sm" onClick={() => setIsQrOpen(false)}>Tutup</Button>
           </DialogFooter>
         </DialogContent>
