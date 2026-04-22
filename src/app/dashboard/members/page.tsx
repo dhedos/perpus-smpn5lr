@@ -22,8 +22,7 @@ import {
   QrCode,
   Printer,
   ChevronDown,
-  X,
-  FileDown
+  X
 } from "lucide-react"
 import { 
   Dialog, 
