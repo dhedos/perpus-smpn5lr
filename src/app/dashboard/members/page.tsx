@@ -184,7 +184,7 @@ export default function MembersPage() {
             }
             .divider {
               width: 100%;
-              height: 6px;
+              height: 3px;
               background: #1e4b8f !important;
               margin-bottom: 12px;
               -webkit-print-color-adjust: exact;
