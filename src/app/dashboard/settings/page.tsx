@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Library, Bell, Shield, Smartphone, Save, Loader2, Coins, CalendarDays, AlertTriangle, FileText, MapPin, UserCheck } from "lucide-react"
+import { Library, Bell, Shield, Save, Loader2, Coins, CalendarDays, AlertTriangle, FileText, MapPin, UserCheck, GraduationCap } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 
@@ -35,6 +35,7 @@ export default function SettingsPage() {
     fineAmount: 500,
     damagedBookFine: 10000,
     lostBookFine: 50000,
+    academicYear: "2024/2025",
     whatsappReminder: true,
     emailReport: true,
     digitalCatalog: true,
@@ -83,7 +84,7 @@ export default function SettingsPage() {
       .then(() => {
         toast({
           title: "Berhasil Disimpan",
-          description: "Pengaturan sistem dan laporan telah diperbarui.",
+          description: "Pengaturan sistem dan kebijakan tahun ajaran telah diperbarui.",
         })
       })
       .catch(async (error) => {
@@ -123,11 +124,11 @@ export default function SettingsPage() {
           <Card className="border-none shadow-sm overflow-hidden">
             <CardHeader className="bg-slate-50/50">
               <CardTitle>Kebijakan Sirkulasi Utama</CardTitle>
-              <CardDescription>Atur denda dan jatuh tempo yang akan berlaku di seluruh sistem.</CardDescription>
+              <CardDescription>Atur denda, tahun ajaran, dan jatuh tempo yang akan berlaku di seluruh sistem.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
               <div className="grid md:grid-cols-2 gap-8">
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div className="grid gap-2">
                     <Label htmlFor="lib-name" className="font-bold text-xs uppercase text-muted-foreground">Nama Perpustakaan</Label>
                     <Input 
@@ -136,6 +137,20 @@ export default function SettingsPage() {
                       onChange={(e) => setSettings({ ...settings, libraryName: e.target.value })}
                       className="bg-slate-50 border-slate-200 h-11"
                     />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="academic-year" className="font-bold text-xs uppercase text-muted-foreground flex items-center gap-2">
+                      <GraduationCap className="h-3 w-3" /> Tahun Ajaran Aktif
+                    </Label>
+                    <Input 
+                      id="academic-year" 
+                      value={settings.academicYear} 
+                      onChange={(e) => setSettings({ ...settings, academicYear: e.target.value })}
+                      className="bg-slate-50 border-slate-200 h-11"
+                      placeholder="Contoh: 2024/2025"
+                    />
+                    <p className="text-[10px] text-muted-foreground italic">Teks ini akan muncul pada halaman Buku Pegangan Guru.</p>
                   </div>
                 </div>
 

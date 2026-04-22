@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo, useRef } from "react"
@@ -6,13 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { 
-  BookOpen, 
   Search, 
   Loader2, 
-  CheckCircle,
   ScanBarcode,
   X,
-  User,
   GraduationCap,
   History,
   ArrowRightLeft,
@@ -27,7 +25,6 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle,
-  DialogFooter
 } from "@/components/ui/dialog"
 import {
   Table,
@@ -37,21 +34,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu"
 
 // Firebase
 import { 
   useFirestore, 
   useCollection, 
   useMemoFirebase,
-  useUser 
+  useDoc
 } from '@/firebase'
-import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc, orderBy, deleteDoc } from 'firebase/firestore'
+import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc, orderBy } from 'firebase/firestore'
 import { format } from "date-fns"
 
 export default function TeacherLoansPage() {
@@ -71,6 +62,10 @@ export default function TeacherLoansPage() {
   const [selectedBook, setSelectedBook] = useState<any>(null)
   const [showMemberSuggestions, setShowMemberSuggestions] = useState(false)
   const [showBookSuggestions, setShowBookSuggestions] = useState(false)
+
+  // Fetch Settings for Academic Year
+  const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
+  const { data: settings } = useDoc(settingsRef)
 
   const membersRef = useMemoFirebase(() => 
     db ? query(collection(db, 'members'), where('type', '==', 'Teacher')) : null, [db])
@@ -189,7 +184,7 @@ export default function TeacherLoansPage() {
           <p className="text-sm text-muted-foreground">Peminjaman jangka panjang untuk kebutuhan mengajar di kelas.</p>
         </div>
         <Badge variant="secondary" className="h-7 px-3 bg-blue-100 text-blue-700 border-none font-bold">
-          Status: Aktif Tahun Ajaran 2024/2025
+          Status: Aktif Tahun Ajaran {settings?.academicYear || "2024/2025"}
         </Badge>
       </div>
 

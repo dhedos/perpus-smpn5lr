@@ -73,7 +73,8 @@
         "schoolAddress": { "type": "string" },
         "reportCity": { "type": "string" },
         "principalName": { "type": "string" },
-        "principalNip": { "type": "string" }
+        "principalNip": { "type": "string" },
+        "academicYear": { "type": "string", "description": "Tahun ajaran aktif saat ini." }
       }
     }
   },
