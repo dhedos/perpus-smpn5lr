@@ -22,7 +22,8 @@ import {
   QrCode,
   Printer,
   ChevronDown,
-  X
+  X,
+  FileDown
 } from "lucide-react"
 import { 
   Dialog, 
@@ -97,7 +98,7 @@ export default function MembersPage() {
   const [formData, setFormData] = useState(INITIAL_MEMBER_DATA)
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
 
-  // Load Settings for Card Header
+  // Load Settings for Header & Title
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
 
@@ -126,6 +127,65 @@ export default function MembersPage() {
       setTimeout(() => {
         document.body.style.pointerEvents = 'auto'
       }, 100)
+    }
+  }
+
+  // Handle Export to Excel
+  const handleExportExcel = async () => {
+    try {
+      if (filteredMembers.length === 0) {
+        toast({ title: "Data Kosong", description: "Tidak ada data untuk diekspor." })
+        return
+      }
+
+      const { utils, writeFile } = await import("xlsx")
+      
+      const header = [
+        [settings?.govtInstitution || "PEMERINTAH KABUPATEN MANGGARAI"],
+        [settings?.eduDept || "DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA"],
+        [settings?.schoolName || "SMP NEGERI 5 LANGKE REMBONG"],
+        [`Alamat: ${settings?.schoolAddress || "Mando, Kelurahan Compang Carep, Kecamatan Langke Rembong"}`],
+        [""],
+        ["DAFTAR ANGGOTA PERPUSTAKAAN"],
+        [`Tanggal Cetak: ${new Date().toLocaleString('id-ID')}`],
+        [""],
+        ["No", "ID Anggota", "Nama Lengkap", "Kategori", "Mengajar / Kelas", "Tgl Terdaftar"]
+      ];
+
+      const dataRows = filteredMembers.map((member, index) => [
+        index + 1,
+        member.memberId,
+        member.name,
+        member.type === 'Teacher' ? 'GURU' : 'SISWA',
+        member.classOrSubject || '-',
+        member.joinDate ? new Date(member.joinDate).toLocaleDateString('id-ID') : '-'
+      ]);
+
+      const footer = [
+        [""],
+        [""],
+        ["", "", "", "", `${settings?.reportCity || "Mando"}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`],
+        ["", "", "", "", "Mengetahui,"],
+        ["", "", "", "", "Kepala Sekolah,"],
+        [""],
+        [""],
+        [""],
+        ["", "", "", "", settings?.principalName || "Lodovikus Jangkar, S.Pd.Gr"],
+        ["", "", "", "", `NIP. ${settings?.principalNip || "198507272011011020"}`]
+      ];
+
+      const finalAOA = [...header, ...dataRows, ...footer];
+      
+      const worksheet = utils.aoa_to_sheet(finalAOA)
+      const workbook = utils.book_new()
+      utils.book_append_sheet(workbook, worksheet, "Daftar Anggota")
+      
+      const dateStr = new Date().toISOString().split('T')[0]
+      writeFile(workbook, `Daftar_Anggota_Perpus_SMPN5_${dateStr}.xlsx`)
+      
+      toast({ title: "Berhasil Ekspor", description: "Daftar anggota berhasil diunduh dalam format Excel." })
+    } catch (error) {
+      toast({ title: "Gagal", description: "Gagal mengekspor data anggota.", variant: "destructive" })
     }
   }
 
@@ -466,7 +526,7 @@ export default function MembersPage() {
   const handleUpdateMember = () => {
     if (!db || !editingMemberId) return
     
-    const docRef = doc(db, 'members', editingMemberId)
+    const docRef = doc(db, 'members', BirdId)
     const dataToUpdate = { 
       memberId: formData.memberId,
       name: formData.name,
@@ -519,7 +579,10 @@ export default function MembersPage() {
           <p className="text-muted-foreground text-sm">Kelola data siswa dan guru yang terdaftar.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handlePrintAllCards} className="gap-2">
+          <Button variant="outline" onClick={handleExportExcel} className="gap-2">
+            <FileDown className="h-4 w-4" /> Excel
+          </Button>
+          <Button variant="outline" onClick={handlePrintAllCards} className="gap-2 hidden md:flex">
             <Printer className="h-4 w-4" /> Cetak Semua Kartu
           </Button>
           <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) { setFormData(INITIAL_MEMBER_DATA); forceUnlockUI(); } }}>
