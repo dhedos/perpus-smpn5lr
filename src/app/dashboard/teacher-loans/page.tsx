@@ -76,21 +76,32 @@ export default function TeacherLoansPage() {
   const booksRef = useMemoFirebase(() => 
     db ? query(collection(db, 'books'), orderBy('title', 'asc')) : null, [db])
   
-  // Query berdasarkan tab aktif
+  // Query sederhana untuk menghindari Permission Error akibat indexing
   const teacherTransQuery = useMemoFirebase(() => {
     if (!db) return null
-    const status = activeTab === "active" ? "active" : "returned"
+    // Menggunakan query dasar terlebih dahulu
     return query(
       collection(db, 'transactions'), 
-      where('type', '==', 'teacher_handbook'),
-      where('status', '==', status),
-      orderBy('createdAt', 'desc')
+      where('type', '==', 'teacher_handbook')
     )
-  }, [db, activeTab])
+  }, [db])
 
   const { data: teachers } = useCollection(membersRef)
   const { data: books } = useCollection(booksRef)
-  const { data: transactions, isLoading: loadingTrans } = useCollection(teacherTransQuery)
+  const { data: allTransactions, isLoading: loadingTrans } = useCollection(teacherTransQuery)
+
+  // Filter data di client side untuk kestabilan akses
+  const transactions = useMemo(() => {
+    if (!allTransactions) return []
+    const status = activeTab === "active" ? "active" : "returned"
+    return allTransactions
+      .filter(t => t.status === status)
+      .sort((a, b) => {
+        const dateA = a.createdAt?.seconds || 0
+        const dateB = b.createdAt?.seconds || 0
+        return dateB - dateA
+      })
+  }, [allTransactions, activeTab])
 
   const memberSuggestions = useMemo(() => {
     if (!memberSearch || memberSearch.length < 1 || !teachers) return []
