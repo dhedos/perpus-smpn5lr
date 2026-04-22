@@ -3,30 +3,36 @@
 
 Sistem Informasi Perpustakaan Modern dengan integrasi AI, Scan QR, dan Sinkronisasi Cloud.
 
-## 🚀 SOLUSI ERROR BUILD DI VERCEL
+## 🚀 SOLUSI ERROR 404 / DEPLOYMENT NOT FOUND
 
-Jika Anda melihat pesan **"Deployment Not Found"** atau **"No Output Directory named public"**, ikuti langkah-langkah ini:
+Jika Anda melihat pesan **"Deployment Not Found"** atau error build di Vercel, ikuti langkah-langkah ini secara berurutan:
 
-### 1. Update Framework Preset
-Vercel terkadang salah mendeteksi proyek. Anda harus mengaturnya secara manual:
+### 1. Update Kode di Terminal
+Pastikan Anda sudah mengeklik tombol **Apply** pada pesan terbaru saya, lalu jalankan:
+```bash
+npm run push
+```
+
+### 2. Paksa Vercel Buang Cache (PENTING)
+Vercel sering menyimpan paket lama yang rusak. Untuk membersihkannya:
 1. Buka **[Vercel Dashboard](https://vercel.com)**.
 2. Pilih proyek Anda.
-3. Klik tab **Settings** (di bagian atas).
-4. Pada menu **General**, cari bagian **Framework Preset**.
-5. Pastikan terpilih **Next.js**. Jika tertulis "Other", silakan ganti ke **Next.js**.
-6. Klik **Save**.
+3. Klik tab **Deployments**.
+4. Cari deployment yang statusnya **"Failed"** (biasanya yang paling atas).
+5. Klik tombol tiga titik **(...)** di sebelah kanan baris tersebut.
+6. Pilih **Redeploy**.
+7. **CENTANG KOTAK** bertuliskan **"Clear Build Cache"**.
+8. Klik tombol **Redeploy**.
 
-### 2. Jalankan Ulang Build (Redeploy)
-Setelah mengubah settings, Anda harus memicu build ulang:
-1. Klik tab **Deployments**.
-2. Cari deployment yang gagal (paling atas).
-3. Klik tombol tiga titik **(...)** di sebelah kanan.
-4. Pilih **Redeploy**.
-5. **PENTING:** Centang kotak **"Clear Build Cache"**.
-6. Klik tombol **Redeploy**.
+### 3. Cek Framework Preset
+Jika Anda melihat error **"No Output Directory named public found"**:
+1. Buka **Project Settings** di Vercel.
+2. Pastikan **Framework Preset** diatur ke **Next.js** (bukan "Other").
 
-### 3. Masalah Firebase (no-options)
-Error ini sudah diperbaiki di dalam kode (`src/firebase/index.ts`). Pastikan Anda mengeklik tombol **Apply** pada pesan asisten AI sebelum menjalankan `npm run push`.
+### 4. Cek Environment Variables
+Pastikan Anda sudah mengisi API Key Gemini:
+- Buka **Settings** > **Environment Variables** di Vercel.
+- Pastikan ada `GOOGLE_GENAI_API_KEY` dengan nilai API Key dari Google AI Studio.
 
 ---
 &copy; 2026 SMPN 5 LANGKE REMBONG.

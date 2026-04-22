@@ -934,11 +934,11 @@ export default function BooksPage() {
                       RAK: {selectedBookQr.rackLocation || '-'}
                     </div>
                   </div>
-                  <div style={{ width: '25mm', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginLeft: '2mm' }}>
+                  <div style={{ width: '25mm', display: 'flex', flexDirection: 'column', alignItems: 'center', justify-content: 'center', marginLeft: '2mm' }}>
                     <div style={{ width: '20mm', height: '20mm' }}>
                       <QRCodeSVG value={selectedBookQr.code} size={75} level="M" />
                     </div>
-                    <div style={{ fontSize: '9pt', fontWeight: 900, color: '#2E6ECE', fontFamily: 'monospace', marginTop: '1mm', lineHeight: 1 }}>
+                    <div style={{ fontSize: '9pt', fontWeight: 900, color: '#2E6ECE', font-family: 'monospace', marginTop: '1mm', lineHeight: 1 }}>
                       {selectedBookQr.code}
                     </div>
                   </div>
