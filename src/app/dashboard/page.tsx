@@ -139,7 +139,7 @@ export default function DashboardPage() {
               <AlertCircle className="h-5 w-5 text-destructive animate-pulse" />
               <CardTitle className="text-lg font-bold text-destructive">Peringatan Jatuh Tempo!</CardTitle>
             </div>
-            <Link href="/dashboard/transactions">
+            <Link href="/dashboard/transactions?tab=return">
               <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 text-xs font-bold gap-1">
                 Proses Sekarang <ChevronRight className="h-3 w-3" />
               </Button>

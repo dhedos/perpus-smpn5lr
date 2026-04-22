@@ -1,7 +1,8 @@
 
 "use client"
 
-import { useState, useMemo, useRef, useEffect } from "react"
+import { useState, useMemo, useRef, useEffect, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -71,10 +72,11 @@ import { differenceInDays, parseISO, format, isAfter, addDays, startOfDay } from
 import { id as localeID } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 
-export default function TransactionsPage() {
+function TransactionsContent() {
   const db = useFirestore()
   const { isStaff } = useUser()
   const { toast } = useToast()
+  const searchParams = useSearchParams()
   
   const [activeTab, setActiveTab] = useState("borrow")
   const [memberSearch, setMemberSearch] = useState("")
@@ -105,6 +107,14 @@ export default function TransactionsPage() {
   
   const [calculatedFine, setCalculatedFine] = useState(0)
   const [lateDays, setLateDays] = useState(0)
+
+  // Handle default tab from URL
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab === 'return') {
+      setActiveTab('return')
+    }
+  }, [searchParams])
 
   // Settings
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
@@ -400,7 +410,7 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="borrow" onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 h-14 p-1 bg-muted/50">
           <TabsTrigger value="borrow" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Peminjaman</TabsTrigger>
           <TabsTrigger value="return" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Pengembalian</TabsTrigger>
@@ -732,5 +742,13 @@ export default function TransactionsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+export default function TransactionsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>}>
+      <TransactionsContent />
+    </Suspense>
   )
 }
