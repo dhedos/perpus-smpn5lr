@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { 
@@ -35,6 +35,12 @@ import { Button } from "@/components/ui/button"
 export default function DashboardPage() {
   const { user } = useUser()
   const db = useFirestore()
+  const [mounted, setMounted] = useState(false)
+
+  // Pastikan komponen sudah terpasang di client untuk menghindari perbedaan waktu (hydration mismatch)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const booksRef = useMemoFirebase(() => db ? collection(db, 'books') : null, [db])
   const membersRef = useMemoFirebase(() => db ? collection(db, 'members') : null, [db])
@@ -52,19 +58,20 @@ export default function DashboardPage() {
   const { data: activeTransactions, isLoading: loadingActive } = useCollection(activeTransQuery)
   const { data: latestTransactions } = useCollection(latestTransQuery)
 
-  // Hitung transaksi yang jatuh tempo (overdue)
+  // Hitung transaksi yang jatuh tempo (overdue) dengan pengamanan hidrasi
   const overdueTransactions = useMemo(() => {
-    if (!activeTransactions) return []
+    if (!mounted || !activeTransactions) return []
     const now = new Date()
     return activeTransactions.filter(t => {
       if (!t.dueDate) return false
       try {
+        // Hanya dianggap jatuh tempo jika waktu sekarang sudah melewati batas dueDate
         return isAfter(now, parseISO(t.dueDate))
       } catch (e) {
         return false
       }
     })
-  }, [activeTransactions])
+  }, [activeTransactions, mounted])
 
   const stats = [
     { 
@@ -93,7 +100,7 @@ export default function DashboardPage() {
     },
     { 
       title: "Jatuh Tempo", 
-      value: overdueTransactions.length, 
+      value: mounted ? overdueTransactions.length : 0, 
       desc: "Perlu dikembalikan", 
       icon: AlertTriangle, 
       color: "text-destructive",
@@ -124,30 +131,30 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Overdue Alert Banner */}
-      {overdueTransactions.length > 0 && (
-        <Card className="border-none shadow-md bg-destructive/5 overflow-hidden ring-1 ring-destructive/20 animate-pulse">
+      {/* Overdue Alert Banner - HANYA muncul jika ada yang jatuh tempo */}
+      {mounted && overdueTransactions.length > 0 && (
+        <Card className="border-none shadow-md bg-destructive/5 overflow-hidden ring-1 ring-destructive/20 animate-in slide-in-from-top duration-500">
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-destructive" />
+              <AlertCircle className="h-5 w-5 text-destructive animate-pulse" />
               <CardTitle className="text-lg font-bold text-destructive">Peringatan Jatuh Tempo!</CardTitle>
             </div>
             <Link href="/dashboard/transactions">
               <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 text-xs font-bold gap-1">
-                Proses Kembali <ChevronRight className="h-3 w-3" />
+                Proses Sekarang <ChevronRight className="h-3 w-3" />
               </Button>
             </Link>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-destructive/80 mb-4">
-              Ditemukan <strong>{overdueTransactions.length} transaksi</strong> yang telah melewati batas waktu pengembalian. Silakan ingatkan siswa berikut:
+              Ditemukan <strong>{overdueTransactions.length} transaksi</strong> yang telah melewati batas waktu pengembalian. Segera hubungi anggota berikut:
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {overdueTransactions.slice(0, 6).map((t) => (
-                <div key={t.id} className="bg-white/50 p-3 rounded-lg border border-destructive/10 flex flex-col gap-1">
-                  <div className="font-bold text-xs truncate">{t.bookTitle}</div>
-                  <div className="text-[10px] font-semibold text-muted-foreground">{t.memberName} ({t.classOrSubject})</div>
-                  <Badge variant="destructive" className="h-4 text-[8px] w-fit mt-1">Terlambat</Badge>
+                <div key={t.id} className="bg-white/70 p-3 rounded-lg border border-destructive/10 flex flex-col gap-1 shadow-sm">
+                  <div className="font-bold text-xs truncate text-destructive">{t.bookTitle}</div>
+                  <div className="text-[10px] font-semibold text-muted-foreground truncate">{t.memberName} ({t.classOrSubject})</div>
+                  <Badge variant="destructive" className="h-4 text-[8px] w-fit mt-1 border-none">Terlambat</Badge>
                 </div>
               ))}
             </div>
