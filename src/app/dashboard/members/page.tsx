@@ -134,7 +134,7 @@ export default function MembersPage() {
     <div class="card-container">
       <div class="header">
         <div class="school-name">${settings?.schoolName || 'SMPN 5 LANGKE REMBONG'}</div>
-        <div class="school-address">Mando, Compang Carep Kab. Manggarai NTT</div>
+        <div class="school-address">${settings?.schoolAddress || 'Mando, Compang Carep Kab. Manggarai NTT'}</div>
       </div>
       <div class="divider"></div>
       <div class="card-title">KARTU ANGGOTA PERPUSTAKAAN</div>
@@ -199,6 +199,7 @@ export default function MembersPage() {
           font-weight: 600;
           color: #888;
           margin-top: 2px;
+          padding: 0 4px;
         }
         .divider {
           width: 100%;
@@ -232,7 +233,7 @@ export default function MembersPage() {
           padding: 0 5px;
         }
         .member-name {
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 900;
           color: #000;
           margin-bottom: 1px;
@@ -340,6 +341,7 @@ export default function MembersPage() {
           font-weight: 600;
           color: #888;
           margin-top: 2px;
+          padding: 0 4px;
         }
         .divider {
           width: 100%;
@@ -373,7 +375,7 @@ export default function MembersPage() {
           padding: 0 5px;
         }
         .member-name {
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 900;
           color: #000;
           margin-bottom: 1px;
@@ -481,7 +483,7 @@ export default function MembersPage() {
     updateDoc(docRef, dataToUpdate)
       .catch(async (error) => {
         const permissionError = new FirestorePermissionError({
-          path: parseInt(docRef.path) === 0 ? 'members' : docRef.path,
+          path: docRef.path,
           operation: 'update',
           requestResourceData: dataToUpdate,
         } satisfies SecurityRuleContext);
@@ -544,13 +546,13 @@ export default function MembersPage() {
                 </div>
                 <div className="space-y-2">
                   <Label className="font-semibold text-xs uppercase text-muted-foreground">
-                    {formData.type === 'Teacher' ? 'Kelas / Jabatan' : 'Kelas'}
+                    {formData.type === 'Teacher' ? 'Jabatan / Guru Bidang' : 'Kelas'}
                   </Label>
                   <Input 
                     value={formData.classPart ?? ""} 
                     onChange={e => setFormData({...formData, classPart: e.target.value})} 
                     className="bg-white border-slate-300 h-11" 
-                    placeholder={formData.type === 'Teacher' ? "Cth: Guru Mapel / Wali Kelas" : "Masukkan Kelas (Contoh: VII A)"} 
+                    placeholder={formData.type === 'Teacher' ? "Cth: Guru Matematika / Wali Kelas" : "Cth: VII A"} 
                   />
                 </div>
               </div>
@@ -672,13 +674,13 @@ export default function MembersPage() {
             </div>
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">
-                {formData.type === 'Teacher' ? 'Kelas / Jabatan' : 'Kelas'}
+                {formData.type === 'Teacher' ? 'Jabatan / Guru Bidang' : 'Kelas'}
               </Label>
               <Input 
                 value={formData.classPart ?? ""} 
                 onChange={e => setFormData({...formData, classPart: e.target.value})} 
                 className="bg-white border-slate-300 h-11" 
-                placeholder={formData.type === 'Teacher' ? "Cth: Guru Mapel / Wali Kelas" : "Masukkan Kelas (Contoh: VII A)"} 
+                placeholder={formData.type === 'Teacher' ? "Cth: Guru Matematika / Wali Kelas" : "Cth: VII A"} 
               />
             </div>
           </div>
