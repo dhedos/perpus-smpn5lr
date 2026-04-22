@@ -249,7 +249,7 @@ export default function MembersPage() {
           <div class="card-container">
             <div class="header">
               <div class="school-name">${settings?.schoolName || 'SMPN 5 LANGKE REMBONG'}</div>
-              <div class="school-dept">${settings?.eduDept || 'DINAS PENDIDIKAN PEMUDA DAN OLAHRAGA'}</div>
+              <div class="school-dept">${settings?.schoolAddress || 'Mando, Compang Carep Kab. Manggarai NTT'}</div>
             </div>
             <div class="card-title">KARTU ANGGOTA PERPUSTAKAAN</div>
             <div class="qr-wrapper">

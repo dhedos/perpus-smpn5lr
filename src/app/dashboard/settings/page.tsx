@@ -39,7 +39,7 @@ export default function SettingsPage() {
     digitalCatalog: true,
     govtInstitution: "PEMERINTAH KABUPATEN MANGGARAI",
     eduDept: "DINAS PENDIDIKAN PEMUDA DAN OLAHRAGA",
-    schoolAddress: "Mando, Kelurahan Compang Carep, Kecamatan Langke Rembong",
+    schoolAddress: "Mando, Compang Carep Kab. Manggarai NTT",
     reportCity: "Mando",
     principalName: "Lodovikus Jangkar, S.Pd.Gr",
     principalNip: "198507272011011020"
