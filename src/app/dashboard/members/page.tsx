@@ -146,6 +146,7 @@ export default function MembersPage() {
 
       const { utils, writeFile } = await import("xlsx")
       const titleLabel = type === 'Student' ? 'SISWA' : 'GURU'
+      const classColumnHeader = type === 'Student' ? 'Kelas' : 'Mengajar / Kelas'
       
       const header = [
         [settings?.govtInstitution || "PEMERINTAH KABUPATEN MANGGARAI"],
@@ -156,7 +157,7 @@ export default function MembersPage() {
         [`DAFTAR ANGGOTA PERPUSTAKAAN (${titleLabel})`],
         [`Tanggal Cetak: ${new Date().toLocaleString('id-ID')}`],
         [""],
-        ["No", "ID Anggota", "Nama Lengkap", "Kategori", "Mengajar / Kelas", "Tgl Terdaftar"]
+        ["No", "ID Anggota", "Nama Lengkap", "Kategori", classColumnHeader, "Tgl Terdaftar"]
       ];
 
       const dataRows = targetData.map((member, index) => [
@@ -171,7 +172,7 @@ export default function MembersPage() {
       const footer = [
         [""],
         [""],
-        ["", "", "", "", `${settings?.reportCity || "Mando"}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`],
+        ["", "", "", "", settings?.reportCity || "Mando" + ", " + new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })],
         ["", "", "", "", "Mengetahui,"],
         ["", "", "", "", "Kepala Sekolah,"],
         [""],
