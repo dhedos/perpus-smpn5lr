@@ -367,7 +367,7 @@ export default function BooksPage() {
         </div>
         <div class="qr-section">
           <div class="qr-container">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${book.code}" />
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${book.code}" />
           </div>
           <div class="book-code-text">${book.code}</div>
         </div>
@@ -384,7 +384,7 @@ export default function BooksPage() {
             .page-container { display: flex; flex-wrap: wrap; gap: 5mm; justify-content: flex-start; padding: 5mm; }
             
             .label-card { 
-              width: 60mm; 
+              width: 80mm; 
               height: 30mm; 
               border: 0.5pt solid #000; 
               padding: 2mm; 
@@ -407,7 +407,7 @@ export default function BooksPage() {
             }
 
             .header-text {
-              font-size: 7pt;
+              font-size: 8pt;
               font-weight: 800;
               color: #2E6ECE;
               text-transform: uppercase;
@@ -415,7 +415,7 @@ export default function BooksPage() {
             }
 
             .source-text {
-              font-size: 6pt;
+              font-size: 7pt;
               font-weight: 600;
               color: #444;
               margin-bottom: 0.5mm;
@@ -423,7 +423,7 @@ export default function BooksPage() {
             }
 
             .book-title {
-              font-size: 7.5pt;
+              font-size: 8.5pt;
               font-weight: 900;
               line-height: 1.1;
               margin-bottom: 0.8mm;
@@ -435,13 +435,13 @@ export default function BooksPage() {
             }
 
             .book-details {
-              font-size: 5pt;
+              font-size: 6pt;
               color: #444;
               line-height: 1.2;
             }
 
             .rack-text {
-              font-size: 6pt;
+              font-size: 7pt;
               font-weight: 800;
               color: #000;
               text-transform: uppercase;
@@ -451,17 +451,17 @@ export default function BooksPage() {
             }
 
             .qr-section {
-              width: 22mm;
+              width: 25mm;
               display: flex;
               flex-direction: column;
               align-items: center;
               justify-content: center;
-              margin-left: 1mm;
+              margin-left: 2mm;
             }
 
             .qr-container {
-              width: 17mm;
-              height: 17mm;
+              width: 20mm;
+              height: 20mm;
             }
             .qr-container img {
               width: 100%;
@@ -469,7 +469,7 @@ export default function BooksPage() {
             }
 
             .book-code-text {
-              font-size: 8pt;
+              font-size: 9pt;
               font-weight: 900;
               color: #2E6ECE;
               font-family: monospace;
@@ -884,16 +884,16 @@ export default function BooksPage() {
         </DialogContent>
       </Dialog>
 
-      {/* DIALOG QR STANDAR STIKER 3X6 CM */}
+      {/* DIALOG QR STANDAR STIKER 8X3 CM */}
       <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Preview Label Stiker Buku (3x6 cm)</DialogTitle>
+            <DialogTitle>Preview Label Stiker Buku (8x3 cm)</DialogTitle>
           </DialogHeader>
           <div className="flex justify-center py-8 bg-muted/20 rounded-lg">
             {selectedBookQr && (
               <div id="single-qr-label" style={{ 
-                width: '60mm', 
+                width: '80mm', 
                 height: '30mm', 
                 border: '0.5pt solid #000', 
                 background: '#fff', 
@@ -906,14 +906,14 @@ export default function BooksPage() {
                 overflow: 'hidden'
               }}>
                   <div style={{ flex: 1, textAlign: 'left', display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden' }}>
-                    <div style={{ fontSize: '7pt', fontWeight: 800, color: '#2E6ECE', textTransform: 'uppercase', lineHeight: 1 }}>
+                    <div style={{ fontSize: '8pt', fontWeight: 800, color: '#2E6ECE', textTransform: 'uppercase', lineHeight: 1 }}>
                       {selectedBookQr.mainHeader || 'PUSTAKA NUSANTARA'}
                     </div>
-                    <div style={{ fontSize: '6pt', fontWeight: 600, color: '#444', marginBottom: '0.5mm', lineHeight: 1 }}>
+                    <div style={{ fontSize: '7pt', fontWeight: 600, color: '#444', marginBottom: '0.5mm', lineHeight: 1 }}>
                       {selectedBookQr.budgetSource || 'BOSP'}
                     </div>
                     <div style={{ 
-                      fontSize: '7.5pt', 
+                      fontSize: '8.5pt', 
                       fontWeight: 900, 
                       lineHeight: 1.1, 
                       marginBottom: '0.8mm', 
@@ -925,20 +925,20 @@ export default function BooksPage() {
                     }}>
                       {selectedBookQr.title}
                     </div>
-                    <div style={{ fontSize: '5pt', color: '#444', lineHeight: 1.2 }}>
-                      <div>Rek: {selectedBookQr.accountCode || '-'} | {selectedBookQr.publisher || '-'}</div>
+                    <div style={{ fontSize: '6pt', color: '#444', lineHeight: 1.2 }}>
+                      <div>Rek: {selectedBookQr.accountCode || '-'} | ${selectedBookQr.publisher || '-'}</div>
                       <div>{selectedBookQr.category || '-'} | {selectedBookQr.publicationYear}</div>
                       <div>ISBN: {selectedBookQr.isbn || '-'}</div>
                     </div>
-                    <div style={{ fontSize: '6pt', fontWeight: 800, color: '#000', textTransform: 'uppercase', marginTop: '1mm', borderTop: '0.2pt solid #ddd', paddingTop: '0.5mm' }}>
+                    <div style={{ fontSize: '7pt', fontWeight: 800, color: '#000', textTransform: 'uppercase', marginTop: '1mm', borderTop: '0.2pt solid #ddd', paddingTop: '0.5mm' }}>
                       RAK: {selectedBookQr.rackLocation || '-'}
                     </div>
                   </div>
-                  <div style={{ width: '22mm', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginLeft: '1mm' }}>
-                    <div style={{ width: '17mm', height: '17mm' }}>
-                      <QRCodeSVG value={selectedBookQr.code} size={64} level="M" />
+                  <div style={{ width: '25mm', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginLeft: '2mm' }}>
+                    <div style={{ width: '20mm', height: '20mm' }}>
+                      <QRCodeSVG value={selectedBookQr.code} size={75} level="M" />
                     </div>
-                    <div style={{ fontSize: '8pt', fontWeight: 900, color: '#2E6ECE', fontFamily: 'monospace', marginTop: '1mm', lineHeight: 1 }}>
+                    <div style={{ fontSize: '9pt', fontWeight: 900, color: '#2E6ECE', fontFamily: 'monospace', marginTop: '1mm', lineHeight: 1 }}>
                       {selectedBookQr.code}
                     </div>
                   </div>
@@ -950,7 +950,7 @@ export default function BooksPage() {
               const content = document.getElementById('single-qr-label')?.outerHTML;
               const printWindow = window.open('', '_blank');
               if (printWindow && content) {
-                printWindow.document.write(`<html><head><style>@page { size: 60mm 30mm; margin: 0; } body { margin: 0; padding: 0; }</style></head><body onload="window.print(); window.close();">${content}</body></html>`);
+                printWindow.document.write(`<html><head><style>@page { size: 80mm 30mm; margin: 0; } body { margin: 0; padding: 0; }</style></head><body onload="window.print(); window.close();">${content}</body></html>`);
                 printWindow.document.close();
               }
             }}><Printer className="h-4 w-4 mr-2" />Cetak Stiker</Button>
