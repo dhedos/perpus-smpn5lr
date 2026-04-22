@@ -533,7 +533,7 @@ export default function MembersPage() {
                     <Input value={formData.memberId ?? ""} onChange={e => setFormData({...formData, memberId: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="NIS/NIP" />
                   </div>
                   <div className="space-y-2">
-                    <Label className="font-semibold text-xs uppercase text-muted-foreground">Tipe</Label>
+                    <Label className="font-semibold text-xs uppercase text-muted-foreground">Kategori</Label>
                     <Select value={formData.type} onValueChange={v => setFormData({...formData, type: v as any})}>
                       <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
                       <SelectContent><SelectItem value="Student">Siswa</SelectItem><SelectItem value="Teacher">Guru</SelectItem></SelectContent>
@@ -546,13 +546,13 @@ export default function MembersPage() {
                 </div>
                 <div className="space-y-2">
                   <Label className="font-semibold text-xs uppercase text-muted-foreground">
-                    {formData.type === 'Teacher' ? 'Guru / Kelas Mengajar' : 'Kelas'}
+                    {formData.type === 'Teacher' ? 'Mengajar / Kelas' : 'Kelas'}
                   </Label>
                   <Input 
                     value={formData.classPart ?? ""} 
                     onChange={e => setFormData({...formData, classPart: e.target.value})} 
                     className="bg-white border-slate-300 h-11" 
-                    placeholder={formData.type === 'Teacher' ? "Cth: VII / Bahasa Inggris" : "Cth: VII A"} 
+                    placeholder={formData.type === 'Teacher' ? "Cth: BAHASA INGGRIS/VII" : "Cth: VII A"} 
                   />
                 </div>
               </div>
@@ -576,8 +576,8 @@ export default function MembersPage() {
               <TableHead className="w-12 text-center">No.</TableHead>
               <TableHead>Nama Anggota</TableHead>
               <TableHead>ID Anggota</TableHead>
-              <TableHead>Tipe</TableHead>
-              <TableHead>Kelas / Mengajar</TableHead>
+              <TableHead>Kategori</TableHead>
+              <TableHead>Mengajar / Kelas</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
@@ -662,7 +662,7 @@ export default function MembersPage() {
           <DialogHeader><DialogTitle>Ubah Data Anggota</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label className="font-semibold text-xs uppercase text-muted-foreground">Tipe</Label>
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">Kategori</Label>
               <Select value={formData.type} onValueChange={v => setFormData({...formData, type: v as any})}>
                 <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
                 <SelectContent><SelectItem value="Student">Siswa</SelectItem><SelectItem value="Teacher">Guru</SelectItem></SelectContent>
@@ -674,13 +674,13 @@ export default function MembersPage() {
             </div>
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">
-                {formData.type === 'Teacher' ? 'Guru / Kelas Mengajar' : 'Kelas'}
+                {formData.type === 'Teacher' ? 'Mengajar / Kelas' : 'Kelas'}
               </Label>
               <Input 
                 value={formData.classPart ?? ""} 
                 onChange={e => setFormData({...formData, classPart: e.target.value})} 
                 className="bg-white border-slate-300 h-11" 
-                placeholder={formData.type === 'Teacher' ? "Cth: VII / Bahasa Inggris" : "Cth: VII A"} 
+                placeholder={formData.type === 'Teacher' ? "Cth: BAHASA INGGRIS/VII" : "Cth: VII A"} 
               />
             </div>
           </div>
