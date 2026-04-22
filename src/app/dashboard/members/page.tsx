@@ -148,7 +148,7 @@ export default function MembersPage() {
               justify-content: center;
               align-items: center;
               height: 100vh;
-              background: #fff;
+              background: #f0f0f0;
             }
             .card-container {
               width: 54mm;
@@ -158,94 +158,99 @@ export default function MembersPage() {
               display: flex;
               flex-direction: column;
               align-items: center;
-              padding: 12px 10px;
-              text-align: center;
               position: relative;
               overflow: hidden;
-              border: 0.1mm solid #eee; /* Garis batas luar tipis untuk panduan potong */
+              border: 0.1mm solid #ccc;
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
             }
             .header {
               width: 100%;
-              border-bottom: 2px solid #1e4b8f; /* Garis batas biru bawah kop */
-              padding-bottom: 8px;
-              margin-bottom: 14px;
+              padding: 12px 0 8px 0;
+              text-align: center;
             }
             .school-name {
-              font-size: 8px;
+              font-size: 10px;
               font-weight: 900;
               color: #1e4b8f;
               text-transform: uppercase;
-              line-height: 1.1;
+              line-height: 1.2;
             }
             .school-address {
-              font-size: 5px;
+              font-size: 6px;
               color: #777;
-              line-height: 1.1;
               margin-top: 2px;
             }
-            .card-title {
-              font-size: 8px;
-              font-weight: 900;
+            .divider {
+              width: 100%;
+              height: 4px;
+              background: #1e4b8f !important;
               margin-bottom: 12px;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .card-title {
+              font-size: 9px;
+              font-weight: 800;
+              margin-bottom: 10px;
               color: #333;
               text-transform: uppercase;
               letter-spacing: 0.5px;
             }
             .qr-wrapper {
               margin-bottom: 12px;
-              padding: 5px;
-              background: #fff;
+              display: flex;
+              justify-content: center;
             }
             .qr-code {
-              width: 38mm;
-              height: 38mm;
+              width: 40mm;
+              height: 40mm;
               display: block;
             }
             .member-info {
+              text-align: center;
               width: 100%;
-              margin-bottom: 20px;
+              padding: 0 5px;
             }
             .member-name {
-              font-size: 11px;
+              font-size: 13px;
               font-weight: 900;
               color: #000;
-              line-height: 1.2;
               margin-bottom: 2px;
               text-transform: uppercase;
+              line-height: 1.2;
             }
             .member-id {
-              font-size: 12px;
+              font-size: 14px;
               font-weight: 900;
               color: #1e4b8f;
               font-family: monospace;
               margin-bottom: 1px;
             }
             .member-class {
-              font-size: 7px;
+              font-size: 8px;
               color: #666;
               font-weight: 700;
               text-transform: uppercase;
             }
             .footer {
-              position: absolute;
-              bottom: 10px;
-              left: 5mm;
-              right: 5mm;
+              width: 100%;
               background: #1e4b8f !important;
               color: #ffffff !important;
-              font-size: 8px;
-              padding: 8px 0;
+              font-size: 10px;
+              padding: 10px 0;
               font-weight: 800;
               text-transform: uppercase;
-              letter-spacing: 1px;
+              letter-spacing: 1.5px;
+              position: absolute;
+              bottom: 0;
+              text-align: center;
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
             }
             @media print {
               body { background: none; }
-              .card-container { border: 0.1mm solid #eee; }
+              .card-container { border: 0.1mm solid #ccc; }
             }
           </style>
         </head>
@@ -255,6 +260,7 @@ export default function MembersPage() {
               <div class="school-name">${settings?.schoolName || 'SMPN 5 LANGKE REMBONG'}</div>
               <div class="school-address">Mando, Compang Carep Kab. Manggarai NTT</div>
             </div>
+            <div class="divider"></div>
             <div class="card-title">KARTU ANGGOTA PERPUSTAKAAN</div>
             <div class="qr-wrapper">
               <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${selectedMemberQr.memberId}" class="qr-code" />
@@ -264,7 +270,7 @@ export default function MembersPage() {
               <div class="member-id">${selectedMemberQr.memberId}</div>
               <div class="member-class">KELAS: ${selectedMemberQr.classOrSubject || '-'}</div>
             </div>
-            <div class="footer">Pustaka Nusantara</div>
+            <div class="footer">PUSTAKA NUSANTARA</div>
           </div>
         </body>
       </html>
