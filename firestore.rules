@@ -5,31 +5,42 @@ service cloud.firestore {
 
     /**
      * ATURAN KEAMANAN PERPUSTAKAAN SMPN 5
-     * Pemicu Pembaruan Paksa: 2024-05-21 13:00 UTC
-     * Mengizinkan akses penuh untuk pengguna yang terautentikasi.
+     * Pemicu Pembaruan Paksa: 2024-05-21 14:00 UTC
+     * Mengizinkan akses untuk pengguna yang terautentikasi (Admin/Petugas).
      */
 
-    // Profil Pengguna (Bisa diakses untuk pendaftaran admin pertama)
+    // Profil Pengguna: Izin tulis untuk registrasi awal, baca untuk semua staff
     match /users/{userId} {
       allow read, write: if true;
     }
 
-    // Seluruh koleksi lainnya (books, members, transactions, settings, logs)
-    // Menggunakan wildcard rekursif untuk memastikan izin 'list' dan 'read' terpenuhi
-    match /{document=**} {
-      allow read, write: if request.auth != null;
-    }
-    
-    // Aturan spesifik untuk koleksi utama guna memastikan konsistensi
+    // Koleksi Transaksi: Sangat penting untuk sirkulasi
     match /transactions/{transactionId} {
       allow read, write: if request.auth != null;
     }
 
+    // Koleksi Anggota: Siswa & Guru
     match /members/{memberId} {
       allow read, write: if request.auth != null;
     }
 
+    // Koleksi Buku: Katalog & Inventaris
     match /books/{bookId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Pengaturan Sistem: Kop Surat & Kebijakan
+    match /settings/{settingId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Log Aktivitas & Stock Opname
+    match /activity_logs/{logId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Catch-all untuk koleksi lainnya
+    match /{document=**} {
       allow read, write: if request.auth != null;
     }
   }

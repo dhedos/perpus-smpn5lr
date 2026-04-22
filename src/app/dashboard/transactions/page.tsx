@@ -31,7 +31,8 @@ import {
   Home,
   Users as UsersIcon,
   Briefcase,
-  GraduationCap
+  GraduationCap,
+  Printer
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -92,15 +93,12 @@ function TransactionsContent() {
   const [borrowQuantity, setBorrowQuantity] = useState(1)
   const [loanType, setLoanType] = useState<"personal" | "class">("personal")
 
-  // Autocomplete suggestions
   const [showMemberSuggestions, setShowMemberSuggestions] = useState(false)
   const [showBookSuggestions, setShowBookSuggestions] = useState(false)
 
-  // Return Process State
   const [isReturnConfirmOpen, setIsReturnConfirmOpen] = useState(false)
   const [pendingReturnTrans, setPendingReturnTrans] = useState<any>(null)
   
-  // Rincian jumlah per kondisi
   const [returnNormalQty, setReturnNormalQty] = useState(0)
   const [returnDamagedQty, setReturnDamagedQty] = useState(0)
   const [returnLostQty, setReturnLostQty] = useState(0)
@@ -108,7 +106,6 @@ function TransactionsContent() {
   const [calculatedFine, setCalculatedFine] = useState(0)
   const [lateDays, setLateDays] = useState(0)
 
-  // Handle default tab from URL
   useEffect(() => {
     const tab = searchParams.get('tab')
     if (tab === 'return') {
@@ -116,7 +113,6 @@ function TransactionsContent() {
     }
   }, [searchParams])
 
-  // Settings
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
 
@@ -127,15 +123,14 @@ function TransactionsContent() {
   const { data: books } = useCollection(booksRef)
 
   const activeTransQuery = useMemoFirebase(() => {
-    if (!db || !isStaff) return null;
+    if (!db) return null;
     return query(collection(db, 'transactions'), where('status', '==', 'active'));
-  }, [db, isStaff])
+  }, [db])
 
   const { data: activeTrans, isLoading: loadingActive } = useCollection(activeTransQuery)
 
   const loanDays = useMemo(() => settings?.loanPeriod ? Number(settings.loanPeriod) : 7, [settings]);
 
-  // Suggestions filtering
   const memberSuggestions = useMemo(() => {
     if (!memberSearch || memberSearch.length < 1 || !members) return [];
     return members.filter(m => 
@@ -247,7 +242,6 @@ function TransactionsContent() {
     setReturnNormalQty(total - returnDamagedQty - newLost)
   }
 
-  // Efek perhitungan denda real-time
   useEffect(() => {
     if (!pendingReturnTrans || !settings) return;
     
@@ -256,17 +250,11 @@ function TransactionsContent() {
     const lostFineBase = Number(settings.lostBookFine || 50000);
     const damagedFineBase = Number(settings.damagedBookFine || 10000);
 
-    // 1. Denda Keterlambatan (untuk buku yang kembali: Normal + Rusak)
     if (lateDays > 0) {
       fine += lateDays * finePerDay * (returnNormalQty + returnDamagedQty);
     }
-    
-    // 2. Denda Kerusakan (per unit buku rusak)
     fine += returnDamagedQty * damagedFineBase;
-    
-    // 3. Denda Buku Hilang (per unit buku hilang)
     fine += returnLostQty * lostFineBase;
-    
     setCalculatedFine(fine);
   }, [pendingReturnTrans, lateDays, settings, returnNormalQty, returnDamagedQty, returnLostQty]);
 
@@ -330,6 +318,76 @@ function TransactionsContent() {
       toast({ title: "Berhasil!", description: "Pengembalian buku telah dicatat." })
       setReturnSearch("");
     }).finally(() => setIsProcessing(false))
+  }
+
+  const handlePrintActive = () => {
+    if (filteredActiveTrans.length === 0) return
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+
+    const rowsHtml = filteredActiveTrans.map((t, index) => {
+        const borrowDate = t.borrowDate ? parseISO(t.borrowDate) : new Date();
+        const effectiveDueDate = addDays(borrowDate, loanDays);
+        return `
+          <tr>
+            <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle} (${t.quantity} unit)</td>
+            <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold;">${t.memberName}</td>
+            <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.memberId}</td>
+            <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.classOrSubject || '-'}</td>
+            <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${format(borrowDate, 'dd/MM/yyyy')}</td>
+            <td style="border: 1px solid #ccc; padding: 8px; text-align: center; color: ${isAfter(new Date(), effectiveDueDate) ? 'red' : 'black'}">${format(effectiveDueDate, 'dd/MM/yyyy')}</td>
+          </tr>
+        `
+    }).join('')
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Daftar Peminjaman Aktif - SMPN 5</title>
+          <style>
+            @page { size: A4 landscape; margin: 10mm; }
+            body { font-family: 'Inter', sans-serif; font-size: 11px; }
+            .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
+            .school-name { font-size: 16px; font-weight: 900; }
+            .title { text-align: center; font-size: 14px; font-weight: 800; margin: 20px 0; text-transform: uppercase; }
+            table { width: 100%; border-collapse: collapse; }
+            th { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; }
+            .footer { margin-top: 40px; float: right; text-align: center; width: 250px; }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          <div class="header">
+            <div>${settings?.govtInstitution || 'PEMERINTAH KABUPATEN MANGGARAI'}</div>
+            <div>${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
+            <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
+            <div style="font-size: 9px;">Alamat: ${settings?.schoolAddress || 'Mando, Compang Carep'}</div>
+          </div>
+          <div class="title">DAFTAR PEMINJAMAN SISWA AKTIF</div>
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Judul Buku</th>
+                <th>Nama Peminjam</th>
+                <th>ID (NIS)</th>
+                <th>Kelas</th>
+                <th>Tgl Pinjam</th>
+                <th>Jatuh Tempo</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+          <div class="footer">
+            ${settings?.reportCity || 'Mando'}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>
+            Kepala Sekolah,<br/><br/><br/><br/>
+            <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
+            NIP. ${settings?.principalNip || '198507272011011020'}
+          </div>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
   }
 
   const startScanner = async () => {
@@ -407,11 +465,16 @@ function TransactionsContent() {
           <h1 className="text-2xl font-bold text-primary flex items-center gap-2"><ArrowRightLeft className="h-6 w-6" /> Sirkulasi Siswa</h1>
           <p className="text-sm text-muted-foreground">Peminjaman dan pengembalian harian untuk siswa.</p>
         </div>
-        <div className="text-right flex flex-col items-end gap-1">
-          <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold gap-2 py-1.5 px-3">
-            <CalendarDays className="h-4 w-4" />
-            Batas Pinjam: {loanDays} Hari
-          </Badge>
+        <div className="text-right flex flex-col items-end gap-2">
+          <div className="flex gap-2">
+             <Button variant="outline" size="sm" onClick={handlePrintActive}>
+               <Printer className="h-4 w-4 mr-2" /> Cetak Peminjaman
+             </Button>
+             <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold gap-2 py-1.5 px-3">
+              <CalendarDays className="h-4 w-4" />
+              Batas Pinjam: {loanDays} Hari
+            </Badge>
+          </div>
         </div>
       </div>
 
