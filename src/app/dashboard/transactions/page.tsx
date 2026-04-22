@@ -1,7 +1,8 @@
+
 "use client"
 
 import { useState, useMemo, useRef, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/LogOut"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -159,8 +160,8 @@ export default function TransactionsPage() {
     )
   }, [activeTrans, returnSearch])
 
-  const handleLookup = (text: string) => {
-    if (!text) return
+  const handleLookup = (text: string): boolean => {
+    if (!text) return false
     const member = members?.find(m => m.memberId?.toLowerCase() === text.toLowerCase())
     const book = books?.find(b => b.code?.toLowerCase() === text.toLowerCase() || b.isbn === text)
 
@@ -170,6 +171,7 @@ export default function TransactionsPage() {
         setMemberSearch(""); 
         setShowMemberSuggestions(false); 
         toast({ title: "Anggota Terpilih" }) 
+        return true
       }
       else if (book) { 
         if (selectedBook && selectedBook.id === book.id) {
@@ -187,6 +189,7 @@ export default function TransactionsPage() {
           setBorrowQuantity(1); 
           toast({ title: "Buku Terpilih" }) 
         }
+        return true
       }
     } else {
       const trans = activeTrans?.find(t => { 
@@ -195,9 +198,10 @@ export default function TransactionsPage() {
       })
       if (trans) { 
         setTimeout(() => prepareReturn(trans), 10);
-        stopScanner(); 
+        return true
       }
     }
+    return false
   }
 
   const prepareReturn = (trans: any) => {
@@ -305,7 +309,9 @@ export default function TransactionsPage() {
           const scanner = new Html5Qrcode("smart-scanner")
           scannerInstanceRef.current = scanner
           await scanner.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (text) => {
-            handleLookup(text)
+            if (handleLookup(text)) {
+              stopScanner();
+            }
           }, () => {})
         } catch (err) {}
       }, 500)
