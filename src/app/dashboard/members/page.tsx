@@ -129,155 +129,306 @@ export default function MembersPage() {
     }
   }
 
+  // Helper to generate Card HTML
+  const generateCardHtml = (member: any) => `
+    <div class="card-container">
+      <div class="header">
+        <div class="school-name">${settings?.schoolName || 'SMPN 5 LANGKE REMBONG'}</div>
+        <div class="school-address">Mando, Compang Carep Kab. Manggarai NTT</div>
+      </div>
+      <div class="divider"></div>
+      <div class="card-title">KARTU ANGGOTA PERPUSTAKAAN</div>
+      <div class="qr-wrapper">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${member.memberId}" class="qr-code" />
+      </div>
+      <div class="member-info">
+        <div class="member-name">${member.name}</div>
+        <div class="member-id">${member.memberId}</div>
+        <div class="member-class">KELAS: ${member.classOrSubject || '-'}</div>
+      </div>
+      <div class="footer">PUSTAKA NUSANTARA</div>
+    </div>
+  `
+
   const handlePrintIdCard = () => {
     if (!selectedMemberQr) return
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
-    const cardHtml = `
+    const cardStyles = `
+      <style>
+        @page { size: 54mm 86mm; margin: 0; }
+        body { 
+          margin: 0; 
+          padding: 0; 
+          font-family: 'Inter', -apple-system, sans-serif; 
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          background: #f0f0f0;
+        }
+        .card-container {
+          width: 54mm;
+          height: 86mm;
+          background: #fff;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          position: relative;
+          overflow: hidden;
+          border: 0.1mm solid #ccc;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .header {
+          width: 100%;
+          padding: 12px 0 6px 0;
+          text-align: center;
+        }
+        .school-name {
+          font-size: 11px;
+          font-weight: 900;
+          color: #1e4b8f;
+          text-transform: uppercase;
+          line-height: 1.1;
+        }
+        .school-address {
+          font-size: 6px;
+          font-weight: 600;
+          color: #888;
+          margin-top: 2px;
+        }
+        .divider {
+          width: 100%;
+          height: 3px;
+          background: #1e4b8f !important;
+          margin-bottom: 12px;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .card-title {
+          font-size: 9px;
+          font-weight: 800;
+          margin-bottom: 8px;
+          color: #333;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .qr-wrapper {
+          margin-bottom: 8px;
+          display: flex;
+          justify-content: center;
+        }
+        .qr-code {
+          width: 42mm;
+          height: 42mm;
+          display: block;
+        }
+        .member-info {
+          text-align: center;
+          width: 100%;
+          padding: 0 5px;
+        }
+        .member-name {
+          font-size: 13px;
+          font-weight: 900;
+          color: #000;
+          margin-bottom: 1px;
+          text-transform: uppercase;
+          line-height: 1.1;
+        }
+        .member-id {
+          font-size: 14px;
+          font-weight: 900;
+          color: #1e4b8f;
+          font-family: monospace;
+          margin-bottom: 0px;
+        }
+        .member-class {
+          font-size: 8px;
+          color: #666;
+          font-weight: 800;
+          text-transform: uppercase;
+        }
+        .footer {
+          width: 100%;
+          background: #1e4b8f !important;
+          color: #ffffff !important;
+          font-size: 11px;
+          padding: 10px 0;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: 1.5px;
+          position: absolute;
+          bottom: 0;
+          text-align: center;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        @media print {
+          body { background: none; }
+          .card-container { border: 0.1mm solid #ccc; }
+        }
+      </style>
+    `
+
+    printWindow.document.write(`
       <html>
         <head>
           <title>Cetak Kartu Anggota - ${selectedMemberQr.name}</title>
-          <style>
-            @page { size: 54mm 86mm; margin: 0; }
-            body { 
-              margin: 0; 
-              padding: 0; 
-              font-family: 'Inter', -apple-system, sans-serif; 
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              height: 100vh;
-              background: #f0f0f0;
-            }
-            .card-container {
-              width: 54mm;
-              height: 86mm;
-              background: #fff;
-              box-sizing: border-box;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              position: relative;
-              overflow: hidden;
-              border: 0.1mm solid #ccc;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-            }
-            .header {
-              width: 100%;
-              padding: 12px 0 6px 0;
-              text-align: center;
-            }
-            .school-name {
-              font-size: 11px;
-              font-weight: 900;
-              color: #1e4b8f;
-              text-transform: uppercase;
-              line-height: 1.1;
-            }
-            .school-address {
-              font-size: 6px;
-              font-weight: 600;
-              color: #888;
-              margin-top: 2px;
-            }
-            .divider {
-              width: 100%;
-              height: 3px;
-              background: #1e4b8f !important;
-              margin-bottom: 12px;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-            }
-            .card-title {
-              font-size: 9px;
-              font-weight: 800;
-              margin-bottom: 8px;
-              color: #333;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
-            }
-            .qr-wrapper {
-              margin-bottom: 8px;
-              display: flex;
-              justify-content: center;
-            }
-            .qr-code {
-              width: 42mm;
-              height: 42mm;
-              display: block;
-            }
-            .member-info {
-              text-align: center;
-              width: 100%;
-              padding: 0 5px;
-            }
-            .member-name {
-              font-size: 13px;
-              font-weight: 900;
-              color: #000;
-              margin-bottom: 1px;
-              text-transform: uppercase;
-              line-height: 1.1;
-            }
-            .member-id {
-              font-size: 14px;
-              font-weight: 900;
-              color: #1e4b8f;
-              font-family: monospace;
-              margin-bottom: 0px;
-            }
-            .member-class {
-              font-size: 8px;
-              color: #666;
-              font-weight: 800;
-              text-transform: uppercase;
-            }
-            .footer {
-              width: 100%;
-              background: #1e4b8f !important;
-              color: #ffffff !important;
-              font-size: 11px;
-              padding: 10px 0;
-              font-weight: 900;
-              text-transform: uppercase;
-              letter-spacing: 1.5px;
-              position: absolute;
-              bottom: 0;
-              text-align: center;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-            }
-            @media print {
-              body { background: none; }
-              .card-container { border: 0.1mm solid #ccc; }
-            }
-          </style>
+          ${cardStyles}
         </head>
         <body onload="window.print(); window.close();">
-          <div class="card-container">
-            <div class="header">
-              <div class="school-name">${settings?.schoolName || 'SMPN 5 LANGKE REMBONG'}</div>
-              <div class="school-address">Mando, Compang Carep Kab. Manggarai NTT</div>
-            </div>
-            <div class="divider"></div>
-            <div class="card-title">KARTU ANGGOTA PERPUSTAKAAN</div>
-            <div class="qr-wrapper">
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${selectedMemberQr.memberId}" class="qr-code" />
-            </div>
-            <div class="member-info">
-              <div class="member-name">${selectedMemberQr.name}</div>
-              <div class="member-id">${selectedMemberQr.memberId}</div>
-              <div class="member-class">KELAS: ${selectedMemberQr.classOrSubject || '-'}</div>
-            </div>
-            <div class="footer">PUSTAKA NUSANTARA</div>
+          ${generateCardHtml(selectedMemberQr)}
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
+  }
+
+  const handlePrintAllCards = () => {
+    if (filteredMembers.length === 0) return
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+
+    const cardStyles = `
+      <style>
+        @page { size: A4; margin: 10mm; }
+        body { 
+          margin: 0; 
+          padding: 0; 
+          font-family: 'Inter', -apple-system, sans-serif; 
+          background: #fff;
+        }
+        .grid-container {
+          display: grid;
+          grid-template-columns: repeat(3, 54mm);
+          gap: 10mm 15mm;
+          justify-content: center;
+        }
+        .card-container {
+          width: 54mm;
+          height: 86mm;
+          background: #fff;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          position: relative;
+          overflow: hidden;
+          border: 0.2mm solid #ddd;
+          page-break-inside: avoid;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .header {
+          width: 100%;
+          padding: 12px 0 6px 0;
+          text-align: center;
+        }
+        .school-name {
+          font-size: 11px;
+          font-weight: 900;
+          color: #1e4b8f;
+          text-transform: uppercase;
+          line-height: 1.1;
+        }
+        .school-address {
+          font-size: 6px;
+          font-weight: 600;
+          color: #888;
+          margin-top: 2px;
+        }
+        .divider {
+          width: 100%;
+          height: 3px;
+          background: #1e4b8f !important;
+          margin-bottom: 12px;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .card-title {
+          font-size: 9px;
+          font-weight: 800;
+          margin-bottom: 8px;
+          color: #333;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .qr-wrapper {
+          margin-bottom: 8px;
+          display: flex;
+          justify-content: center;
+        }
+        .qr-code {
+          width: 42mm;
+          height: 42mm;
+          display: block;
+        }
+        .member-info {
+          text-align: center;
+          width: 100%;
+          padding: 0 5px;
+        }
+        .member-name {
+          font-size: 13px;
+          font-weight: 900;
+          color: #000;
+          margin-bottom: 1px;
+          text-transform: uppercase;
+          line-height: 1.1;
+        }
+        .member-id {
+          font-size: 14px;
+          font-weight: 900;
+          color: #1e4b8f;
+          font-family: monospace;
+          margin-bottom: 0px;
+        }
+        .member-class {
+          font-size: 8px;
+          color: #666;
+          font-weight: 800;
+          text-transform: uppercase;
+        }
+        .footer {
+          width: 100%;
+          background: #1e4b8f !important;
+          color: #ffffff !important;
+          font-size: 11px;
+          padding: 10px 0;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: 1.5px;
+          position: absolute;
+          bottom: 0;
+          text-align: center;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        @media print {
+          .card-container { border: 0.2mm solid #ddd; }
+        }
+      </style>
+    `
+
+    const cardsHtml = filteredMembers.map(member => generateCardHtml(member)).join('')
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Cetak Semua Kartu Anggota</title>
+          ${cardStyles}
+        </head>
+        <body onload="window.print(); window.close();">
+          <div class="grid-container">
+            ${cardsHtml}
           </div>
         </body>
       </html>
-    `
-
-    printWindow.document.write(cardHtml)
+    `)
     printWindow.document.close()
   }
 
@@ -365,36 +516,41 @@ export default function MembersPage() {
           <h1 className="text-2xl font-bold font-headline text-primary">Daftar Anggota</h1>
           <p className="text-muted-foreground text-sm">Kelola data siswa dan guru yang terdaftar.</p>
         </div>
-        <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) { setFormData(INITIAL_MEMBER_DATA); forceUnlockUI(); } }}>
-          <DialogTrigger asChild><Button className="gap-2"><UserPlus className="h-4 w-4" /> Tambah Anggota</Button></DialogTrigger>
-          <DialogContent className="bg-slate-50 max-w-md">
-            <DialogHeader><DialogTitle>Daftarkan Anggota Baru</DialogTitle></DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="font-semibold text-xs uppercase text-muted-foreground">ID Anggota (NIS/NIP)</Label>
-                  <Input value={formData.memberId ?? ""} onChange={e => setFormData({...formData, memberId: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="NIS/NIP" />
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handlePrintAllCards} className="gap-2">
+            <Printer className="h-4 w-4" /> Cetak Semua Kartu
+          </Button>
+          <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) { setFormData(INITIAL_MEMBER_DATA); forceUnlockUI(); } }}>
+            <DialogTrigger asChild><Button className="gap-2"><UserPlus className="h-4 w-4" /> Tambah Anggota</Button></DialogTrigger>
+            <DialogContent className="bg-slate-50 max-w-md">
+              <DialogHeader><DialogTitle>Daftarkan Anggota Baru</DialogTitle></DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="font-semibold text-xs uppercase text-muted-foreground">ID Anggota (NIS/NIP)</Label>
+                    <Input value={formData.memberId ?? ""} onChange={e => setFormData({...formData, memberId: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="NIS/NIP" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-semibold text-xs uppercase text-muted-foreground">Tipe</Label>
+                    <Select value={formData.type} onValueChange={v => setFormData({...formData, type: v as any})}>
+                      <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
+                      <SelectContent><SelectItem value="Student">Siswa</SelectItem><SelectItem value="Teacher">Guru</SelectItem></SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-semibold text-xs uppercase text-muted-foreground">Tipe</Label>
-                  <Select value={formData.type} onValueChange={v => setFormData({...formData, type: v as any})}>
-                    <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="Student">Siswa</SelectItem><SelectItem value="Teacher">Guru</SelectItem></SelectContent>
-                  </Select>
+                  <Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label>
+                  <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Nama lengkap" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas</Label>
+                  <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Masukkan Kelas (Contoh: VII A)" />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label>
-                <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Nama lengkap" />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-semibold text-xs uppercase text-muted-foreground">Kelas</Label>
-                <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Masukkan Kelas (Contoh: VII A)" />
-              </div>
-            </div>
-            <DialogFooter><Button onClick={handleSaveMember} className="w-full sm:w-auto h-11 px-8 shadow-lg shadow-primary/20">Simpan Anggota</Button></DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter><Button onClick={handleSaveMember} className="w-full sm:w-auto h-11 px-8 shadow-lg shadow-primary/20">Simpan Anggota</Button></DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Card className="p-4 rounded-xl shadow-sm border-none bg-white">
