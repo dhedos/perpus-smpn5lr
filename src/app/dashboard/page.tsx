@@ -13,7 +13,9 @@ import {
   AlertCircle,
   Loader2,
   Library,
-  TrendingUp
+  TrendingUp,
+  AlertTriangle,
+  ChevronRight
 } from "lucide-react"
 import { 
   BarChart, 
@@ -26,14 +28,14 @@ import {
 } from "recharts"
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, query, where, orderBy, limit } from "firebase/firestore"
+import { isAfter, parseISO } from "date-fns"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
 export default function DashboardPage() {
   const { user } = useUser()
   const db = useFirestore()
 
-  // Untuk statistik utama, kita ambil seluruh koleksi agar bisa menghitung panjangnya (data.length)
-  // Berkat sistem Caching yang kita aktifkan di initializeFirebase, 
-  // pembacaan ini hanya akan memakan kuota signifikan satu kali per perangkat.
   const booksRef = useMemoFirebase(() => db ? collection(db, 'books') : null, [db])
   const membersRef = useMemoFirebase(() => db ? collection(db, 'members') : null, [db])
   
@@ -47,8 +49,22 @@ export default function DashboardPage() {
 
   const { data: books, isLoading: loadingBooks } = useCollection(booksRef)
   const { data: members, isLoading: loadingMembers } = useCollection(membersRef)
-  const { data: activeTransactions } = useCollection(activeTransQuery)
+  const { data: activeTransactions, isLoading: loadingActive } = useCollection(activeTransQuery)
   const { data: latestTransactions } = useCollection(latestTransQuery)
+
+  // Hitung transaksi yang jatuh tempo (overdue)
+  const overdueTransactions = useMemo(() => {
+    if (!activeTransactions) return []
+    const now = new Date()
+    return activeTransactions.filter(t => {
+      if (!t.dueDate) return false
+      try {
+        return isAfter(now, parseISO(t.dueDate))
+      } catch (e) {
+        return false
+      }
+    })
+  }, [activeTransactions])
 
   const stats = [
     { 
@@ -72,16 +88,16 @@ export default function DashboardPage() {
       value: activeTransactions?.length || 0, 
       desc: "Buku di tangan siswa", 
       icon: Clock, 
-      color: "text-orange-500",
-      bgColor: "bg-orange-100"
+      color: "text-blue-500",
+      bgColor: "bg-blue-100"
     },
     { 
-      title: "Efisiensi Data", 
-      value: "99%", 
-      desc: "Caching Aktif", 
-      icon: TrendingUp, 
-      color: "text-green-600",
-      bgColor: "bg-green-100"
+      title: "Jatuh Tempo", 
+      value: overdueTransactions.length, 
+      desc: "Perlu dikembalikan", 
+      icon: AlertTriangle, 
+      color: "text-destructive",
+      bgColor: "bg-destructive/10"
     },
   ]
 
@@ -107,6 +123,37 @@ export default function DashboardPage() {
           Pantau aktivitas sirkulasi dan koleksi perpustakaan hari ini.
         </p>
       </div>
+
+      {/* Overdue Alert Banner */}
+      {overdueTransactions.length > 0 && (
+        <Card className="border-none shadow-md bg-destructive/5 overflow-hidden ring-1 ring-destructive/20 animate-pulse">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-destructive" />
+              <CardTitle className="text-lg font-bold text-destructive">Peringatan Jatuh Tempo!</CardTitle>
+            </div>
+            <Link href="/dashboard/transactions">
+              <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 text-xs font-bold gap-1">
+                Proses Kembali <ChevronRight className="h-3 w-3" />
+              </Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-destructive/80 mb-4">
+              Ditemukan <strong>{overdueTransactions.length} transaksi</strong> yang telah melewati batas waktu pengembalian. Silakan ingatkan siswa berikut:
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {overdueTransactions.slice(0, 6).map((t) => (
+                <div key={t.id} className="bg-white/50 p-3 rounded-lg border border-destructive/10 flex flex-col gap-1">
+                  <div className="font-bold text-xs truncate">{t.bookTitle}</div>
+                  <div className="text-[10px] font-semibold text-muted-foreground">{t.memberName} ({t.classOrSubject})</div>
+                  <Badge variant="destructive" className="h-4 text-[8px] w-fit mt-1">Terlambat</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, i) => (
