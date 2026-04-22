@@ -4,44 +4,39 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * ATURAN KEAMANAN PERPUSTAKAAN SMPN 5
-     * Pemicu Pembaruan Paksa: 2024-05-22 15:30 UTC
-     * Mengizinkan akses eksplisit untuk Admin dan Petugas.
+     * ATURAN KEAMANAN PERPUSTAKAAN SMPN 5 LANGKE REMBONG
+     * Pemicu Pembaruan Paksa: 2024-05-23 10:00 UTC
+     * Mengizinkan akses penuh (read/write) untuk Admin dan Petugas yang telah login.
      */
 
-    // Koleksi Transaksi: Diperlukan untuk sirkulasi buku
+    // Akses Global: Diperlukan agar query 'list' pada koleksi seperti transactions tidak terhambat
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Aturan khusus per koleksi untuk kejelasan (opsional namun disarankan)
     match /transactions/{transactionId} {
       allow get, list, create, update, delete: if request.auth != null;
     }
 
-    // Koleksi Anggota: Siswa & Guru
     match /members/{memberId} {
       allow get, list, create, update, delete: if request.auth != null;
     }
 
-    // Koleksi Buku: Katalog & Inventaris
     match /books/{bookId} {
       allow get, list, create, update, delete: if request.auth != null;
     }
 
-    // Profil Pengguna: Izin tulis untuk registrasi, baca untuk staff
     match /users/{userId} {
       allow get, list, create, update, delete: if true;
     }
 
-    // Pengaturan Sistem: Kebijakan Sekolah
     match /settings/{settingId} {
       allow get, list, create, update, delete: if request.auth != null;
     }
 
-    // Log Aktivitas & Stock Opname
     match /activity_logs/{logId} {
       allow get, list, create, update, delete: if request.auth != null;
-    }
-
-    // Catch-all untuk koleksi lainnya agar tetap aman
-    match /{document=**} {
-      allow read, write: if request.auth != null;
     }
   }
 }
