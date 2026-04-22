@@ -85,6 +85,8 @@ import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/e
 import { collection, addDoc, deleteDoc, doc, updateDoc, query, limit, orderBy, getDocs, where, serverTimestamp } from 'firebase/firestore'
 
 const INITIAL_FORM_DATA = {
+  mainHeader: "PUSTAKA NUSANTARA",
+  budgetSource: "BOSP",
   code: "",
   title: "",
   accountCode: "",
@@ -96,9 +98,7 @@ const INITIAL_FORM_DATA = {
   rackLocation: "",
   totalStock: 1,
   availableStock: 1,
-  description: "",
-  mainHeader: "PUSTAKA NUSANTARA",
-  budgetSource: "BOSP"
+  description: ""
 }
 
 const STORAGE_KEY = 'perpus_local_queue_v3'
@@ -726,7 +726,7 @@ export default function BooksPage() {
           <DialogHeader className="p-6 pb-2 border-b bg-slate-50/50">
             <DialogTitle>Tambah Buku Baru</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 w-full">
             <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2 col-span-1 sm:col-span-2">
                 <Label className="font-bold text-[10px] uppercase text-primary tracking-widest">Header Utama (Stiker)</Label>
@@ -798,7 +798,7 @@ export default function BooksPage() {
           <DialogHeader className="p-6 pb-2 border-b bg-slate-50/50">
             <DialogTitle>Ubah Data Buku</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 w-full">
             <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2 col-span-1 sm:col-span-2">
                 <Label className="font-bold text-[10px] uppercase text-primary tracking-widest">Header Utama</Label>
