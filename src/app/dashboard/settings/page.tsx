@@ -33,6 +33,7 @@ export default function SettingsPage() {
     schoolName: "SMP NEGERI 5 LANGKE REMBONG",
     loanPeriod: 7,
     fineAmount: 500,
+    damagedBookFine: 10000,
     lostBookFine: 50000,
     whatsappReminder: true,
     emailReport: true,
@@ -59,6 +60,7 @@ export default function SettingsPage() {
         ...remoteSettings,
         loanPeriod: Number(remoteSettings.loanPeriod ?? 7),
         fineAmount: Number(remoteSettings.fineAmount ?? 500),
+        damagedBookFine: Number(remoteSettings.damagedBookFine ?? 10000),
         lostBookFine: Number(remoteSettings.lostBookFine ?? 50000)
       }))
     }
@@ -73,6 +75,7 @@ export default function SettingsPage() {
       ...settings,
       loanPeriod: Math.max(1, Number(settings.loanPeriod)),
       fineAmount: Math.max(0, Number(settings.fineAmount)),
+      damagedBookFine: Math.max(0, Number(settings.damagedBookFine)),
       lostBookFine: Math.max(0, Number(settings.lostBookFine))
     }
     
@@ -157,7 +160,7 @@ export default function SettingsPage() {
                   <div className="grid gap-3 pt-2">
                     <Label htmlFor="fine-amount" className="flex items-center gap-2 font-bold text-sm text-orange-600">
                       <Coins className="h-4 w-4" />
-                      Denda Terlambat (Rp)
+                      Denda Terlambat (Rp/Hari)
                     </Label>
                     <div className="flex items-center gap-3">
                       <div className="bg-orange-100 px-3 h-12 flex items-center rounded-l-md font-bold text-orange-600 border border-orange-200 border-r-0">Rp</div>
@@ -167,6 +170,23 @@ export default function SettingsPage() {
                         value={settings.fineAmount}
                         onChange={(e) => setSettings({ ...settings, fineAmount: Number(e.target.value) })}
                         className="bg-white border-orange-200 h-12 text-xl font-black text-orange-600 rounded-l-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 pt-2">
+                    <Label htmlFor="damaged-fine" className="flex items-center gap-2 font-bold text-sm text-amber-600">
+                      <AlertTriangle className="h-4 w-4" />
+                      Denda Buku Rusak (Rp)
+                    </Label>
+                    <div className="flex items-center gap-3">
+                      <div className="bg-amber-100 px-3 h-12 flex items-center rounded-l-md font-bold text-amber-600 border border-amber-200 border-r-0">Rp</div>
+                      <Input 
+                        id="damaged-fine" 
+                        type="number" 
+                        value={settings.damagedBookFine}
+                        onChange={(e) => setSettings({ ...settings, damagedBookFine: Number(e.target.value) })}
+                        className="bg-white border-amber-200 h-12 text-xl font-black text-amber-600 rounded-l-none"
                       />
                     </div>
                   </div>

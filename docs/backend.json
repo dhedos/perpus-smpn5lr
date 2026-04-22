@@ -64,6 +64,7 @@
       "properties": {
         "loanPeriod": { "type": "number", "description": "Lama pinjam dalam hari." },
         "fineAmount": { "type": "number", "description": "Denda per hari terlambat." },
+        "damagedBookFine": { "type": "number", "description": "Denda jika buku rusak." },
         "lostBookFine": { "type": "number", "description": "Denda flat jika buku hilang." },
         "libraryName": { "type": "string" },
         "govtInstitution": { "type": "string" },

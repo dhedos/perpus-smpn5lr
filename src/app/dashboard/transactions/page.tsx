@@ -118,7 +118,7 @@ function TransactionsContent() {
 
   // Settings
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
-  const { data: settings, isLoading: loadingSettings } = useDoc(settingsRef)
+  const { data: settings } = useDoc(settingsRef)
 
   const membersRef = useMemoFirebase(() => db ? query(collection(db, 'members'), orderBy('name', 'asc')) : null, [db])
   const booksRef = useMemoFirebase(() => db ? query(collection(db, 'books'), orderBy('title', 'asc')) : null, [db])
@@ -231,7 +231,6 @@ function TransactionsContent() {
     setIsReturnConfirmOpen(true);
   }
 
-  // Update perincian kondisi saat input berubah
   const handleDamagedQtyChange = (val: number) => {
     if (!pendingReturnTrans) return
     const total = Number(pendingReturnTrans.quantity || 1)
@@ -248,23 +247,24 @@ function TransactionsContent() {
     setReturnNormalQty(total - returnDamagedQty - newLost)
   }
 
-  // Perhitungan denda menyesuaikan pengaturan sistem (loanPeriod, fineAmount, lostBookFine)
+  // Efek perhitungan denda real-time
   useEffect(() => {
     if (!pendingReturnTrans || !settings) return;
     
     let fine = 0;
     const finePerDay = Number(settings.fineAmount || 500);
     const lostFineBase = Number(settings.lostBookFine || 50000);
+    const damagedFineBase = Number(settings.damagedBookFine || 10000);
 
-    // Denda keterlambatan dihitung untuk buku yang kembali (Normal + Rusak)
+    // 1. Denda Keterlambatan (untuk buku yang kembali: Normal + Rusak)
     if (lateDays > 0) {
       fine += lateDays * finePerDay * (returnNormalQty + returnDamagedQty);
     }
     
-    // Denda khusus kerusakan (opsional: misal 10x lipat denda harian per unit)
-    // fine += returnDamagedQty * (finePerDay * 10);
+    // 2. Denda Kerusakan (per unit buku rusak)
+    fine += returnDamagedQty * damagedFineBase;
     
-    // Denda buku hilang (menggunakan harga tetap dari settings)
+    // 3. Denda Buku Hilang (per unit buku hilang)
     fine += returnLostQty * lostFineBase;
     
     setCalculatedFine(fine);
@@ -713,7 +713,6 @@ function TransactionsContent() {
                 </div>
               </div>
 
-              {/* Tampilan Denda menyesuaikan pengaturan sistem */}
               {calculatedFine > 0 && (
                 <div className="p-4 bg-orange-50 rounded-xl border border-orange-200 flex items-center justify-between animate-in fade-in zoom-in-95">
                   <div className="flex items-center gap-3">
@@ -721,9 +720,13 @@ function TransactionsContent() {
                       <Coins className="h-5 w-5 text-orange-700" />
                     </div>
                     <div>
-                      <div className="text-[10px] font-bold text-orange-800 uppercase tracking-tighter">Estimasi Denda (Denda: Rp{settings?.fineAmount || 500}/hari)</div>
+                      <div className="text-[10px] font-bold text-orange-800 uppercase tracking-tighter">Estimasi Denda Terakumulasi</div>
                       <div className="text-xl font-black text-orange-700">Rp {calculatedFine.toLocaleString('id-ID')}</div>
-                      {lateDays > 0 && <div className="text-[10px] text-orange-600 font-bold">Terlambat {lateDays} Hari</div>}
+                      <div className="flex flex-col gap-0.5 mt-1">
+                         {lateDays > 0 && <span className="text-[9px] text-orange-600 font-bold">Lateness: {lateDays} Hari x Rp{settings?.fineAmount || 500}</span>}
+                         {returnDamagedQty > 0 && <span className="text-[9px] text-orange-600 font-bold">Damage: {returnDamagedQty} unit x Rp{settings?.damagedBookFine || 10000}</span>}
+                         {returnLostQty > 0 && <span className="text-[9px] text-orange-600 font-bold">Lost: {returnLostQty} unit x Rp{settings?.lostBookFine || 50000}</span>}
+                      </div>
                     </div>
                   </div>
                   <Badge variant="outline" className="border-orange-300 text-orange-700 text-[8px] font-bold bg-white/50">WAJIB BAYAR</Badge>
