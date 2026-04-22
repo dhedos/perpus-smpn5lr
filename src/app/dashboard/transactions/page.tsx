@@ -679,6 +679,7 @@ function TransactionsContent() {
                         <TableRow>
                           <TableHead className="w-12 text-center">No.</TableHead>
                           <TableHead>Peminjam & Buku</TableHead>
+                          <TableHead>Mengajar / Kelas</TableHead>
                           <TableHead className="w-24 text-center">Tipe</TableHead>
                           <TableHead className="w-32">Jatuh Tempo</TableHead>
                           <TableHead className="w-24 text-right">Aksi</TableHead>
@@ -686,9 +687,9 @@ function TransactionsContent() {
                       </TableHeader>
                       <TableBody>
                         {loadingActive ? (
-                          <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+                          <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
                         ) : filteredActiveTrans.length === 0 ? (
-                          <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground italic">Tidak ada peminjaman siswa aktif.</TableCell></TableRow>
+                          <TableRow><TableCell colSpan={6} className="text-center py-12 text-muted-foreground italic">Tidak ada peminjaman siswa aktif.</TableCell></TableRow>
                         ) : filteredActiveTrans.map((t, index) => {
                           const borrowDate = t.borrowDate ? parseISO(t.borrowDate) : new Date();
                           const effectiveDueDate = addDays(borrowDate, loanDays);
@@ -700,9 +701,10 @@ function TransactionsContent() {
                               <TableCell>
                                 <div className="space-y-1">
                                   <div className="font-bold text-sm leading-tight">{t.bookTitle} {t.quantity > 1 && `(${t.quantity} unit)`}</div>
-                                  <div className="text-xs font-semibold">{t.memberName} <span className="text-muted-foreground font-normal">/ {t.memberId} / {t.classOrSubject}</span></div>
+                                  <div className="text-xs font-semibold">{t.memberName} <span className="text-muted-foreground font-normal">/ {t.memberId}</span></div>
                                 </div>
                               </TableCell>
+                              <TableCell className="text-xs font-medium">{t.classOrSubject || '-'}</TableCell>
                               <TableCell className="text-center">
                                 <Badge variant="outline" className="text-[8px] h-4 uppercase font-bold">{t.loanType === 'class' ? "Kolektif" : "Pribadi"}</Badge>
                               </TableCell>

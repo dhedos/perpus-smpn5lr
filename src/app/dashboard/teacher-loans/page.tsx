@@ -164,6 +164,7 @@ export default function TeacherLoansPage() {
       memberId: selectedMember.memberId,
       memberName: selectedMember.name,
       memberType: 'Teacher',
+      classOrSubject: selectedMember.classOrSubject || "-",
       bookId: selectedBook.id,
       bookTitle: selectedBook.title,
       quantity: 1,
@@ -214,6 +215,7 @@ export default function TeacherLoansPage() {
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
         <td style="border: 1px solid #ccc; padding: 8px; font-family: monospace;">${t.memberId}</td>
         <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold;">${t.memberName}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.classOrSubject || '-'}</td>
         <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle}</td>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${bookDetail?.publisher || '-'}</td>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${bookDetail?.publicationYear || '-'}</td>
@@ -251,6 +253,7 @@ export default function TeacherLoansPage() {
                 <th style="width: 30px;">No</th>
                 <th>ID Guru</th>
                 <th>Nama Guru</th>
+                <th>Mengajar / Kelas</th>
                 <th>Judul Buku</th>
                 <th>Penerbit</th>
                 <th>Thn Terbit</th>
@@ -402,6 +405,7 @@ export default function TeacherLoansPage() {
                     <TableRow>
                       <TableHead className="w-12 text-center">No.</TableHead>
                       <TableHead>Guru / Peminjam</TableHead>
+                      <TableHead>Mengajar / Kelas</TableHead>
                       <TableHead>Judul & Info Buku</TableHead>
                       <TableHead>Tgl. {activeTab === "active" ? "Serah" : "Kembali"}</TableHead>
                       {activeTab === "active" && <TableHead className="text-right">Aksi</TableHead>}
@@ -409,9 +413,9 @@ export default function TeacherLoansPage() {
                   </TableHeader>
                   <TableBody>
                     {loadingTrans ? (
-                      <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+                      <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
                     ) : filteredTrans.length === 0 ? (
-                      <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground italic">Belum ada data {activeTab === "active" ? "aktif" : "riwayat"}.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={6} className="text-center py-12 text-muted-foreground italic">Belum ada data {activeTab === "active" ? "aktif" : "riwayat"}.</TableCell></TableRow>
                     ) : filteredTrans.map((t, index) => {
                       const bookDetail = books?.find(b => b.id === t.bookId);
                       return (
@@ -421,6 +425,7 @@ export default function TeacherLoansPage() {
                           <div className="font-bold text-xs">{t.memberName}</div>
                           <div className="text-[10px] text-muted-foreground">{t.memberId}</div>
                         </TableCell>
+                        <TableCell className="text-xs font-medium">{t.classOrSubject || '-'}</TableCell>
                         <TableCell>
                           <div className="font-medium text-xs leading-tight">{t.bookTitle}</div>
                           <div className="text-[9px] text-muted-foreground mt-0.5">
