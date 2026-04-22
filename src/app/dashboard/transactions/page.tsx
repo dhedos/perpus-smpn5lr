@@ -221,6 +221,23 @@ export default function TransactionsPage() {
     setIsReturnConfirmOpen(true);
   }
 
+  // Update perincian kondisi saat input berubah
+  const handleDamagedQtyChange = (val: number) => {
+    if (!pendingReturnTrans) return
+    const total = Number(pendingReturnTrans.quantity || 1)
+    const newDamaged = Math.min(Math.max(0, val), total - returnLostQty)
+    setReturnDamagedQty(newDamaged)
+    setReturnNormalQty(total - newDamaged - returnLostQty)
+  }
+
+  const handleLostQtyChange = (val: number) => {
+    if (!pendingReturnTrans) return
+    const total = Number(pendingReturnTrans.quantity || 1)
+    const newLost = Math.min(Math.max(0, val), total - returnDamagedQty)
+    setReturnLostQty(newLost)
+    setReturnNormalQty(total - returnDamagedQty - newLost)
+  }
+
   useEffect(() => {
     if (!pendingReturnTrans || !settings) return;
     
@@ -656,15 +673,27 @@ export default function TransactionsPage() {
                 <div className="grid gap-3">
                   <div className="flex items-center justify-between p-3 rounded-xl border bg-green-50/50">
                     <Label className="font-bold text-sm">Kembali Normal</Label>
-                    <Input type="number" className="w-16 h-8 text-center font-bold" value={returnNormalQty} onChange={(e) => setReturnNormalQty(Number(e.target.value))} />
+                    <div className="w-16 h-8 flex items-center justify-center font-bold bg-white rounded border">
+                      {returnNormalQty}
+                    </div>
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-xl border bg-orange-50/50">
                     <Label className="font-bold text-sm">Rusak</Label>
-                    <Input type="number" className="w-16 h-8 text-center font-bold" value={returnDamagedQty} onChange={(e) => setReturnDamagedQty(Number(e.target.value))} />
+                    <Input 
+                      type="number" 
+                      className="w-16 h-8 text-center font-bold" 
+                      value={returnDamagedQty} 
+                      onChange={(e) => handleDamagedQtyChange(Number(e.target.value))} 
+                    />
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-xl border bg-red-50/50">
                     <Label className="font-bold text-sm">Hilang</Label>
-                    <Input type="number" className="w-16 h-8 text-center font-bold" value={returnLostQty} onChange={(e) => setReturnLostQty(Number(e.target.value))} />
+                    <Input 
+                      type="number" 
+                      className="w-16 h-8 text-center font-bold" 
+                      value={returnLostQty} 
+                      onChange={(e) => handleLostQtyChange(Number(e.target.value))} 
+                    />
                   </div>
                 </div>
               </div>
