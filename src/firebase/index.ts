@@ -11,22 +11,26 @@ import {
   persistentMultipleTabManager 
 } from 'firebase/firestore'
 
-// Inisialisasi Firebase yang dioptimalkan untuk Vercel (Non-Firebase Hosting)
+/**
+ * Inisialisasi Firebase yang dioptimalkan untuk lingkungan dengan proxy/workstation.
+ * Menggunakan experimentalForceLongPolling untuk stabilitas koneksi yang lebih baik.
+ */
 export function initializeFirebase() {
   if (!getApps().length) {
-    // WAJIB menyertakan firebaseConfig agar tidak terjadi error 'app/no-options' di Vercel
     const firebaseApp = initializeApp(firebaseConfig);
 
-    // Aktifkan Offline Persistence (Caching) untuk penghematan kuota
+    // Aktifkan Offline Persistence dan Long Polling untuk menghindari timeout koneksi
     if (typeof window !== 'undefined') {
       try {
         initializeFirestore(firebaseApp, {
           localCache: persistentLocalCache({
             tabManager: persistentMultipleTabManager()
-          })
+          }),
+          // Force long polling membantu koneksi di lingkungan yang membatasi WebSockets
+          experimentalForceLongPolling: true,
         });
       } catch (e) {
-        console.warn('Firestore persistence initialization failed. Falling back to default.', e);
+        console.warn('Firestore initialization adjustment failed:', e);
       }
     }
 

@@ -140,9 +140,9 @@ export function TopNav() {
     <header className="h-16 border-b bg-card/50 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between px-4 md:px-6">
       <div className="flex items-center gap-4 flex-1">
         <div className="md:hidden">
-          <Sheet>
+          <Sheet onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => forceUnlockUI()}>
+              <Button variant="ghost" size="icon" className="h-10 w-10">
                 <Menu className="h-6 w-6" />
                 <span className="sr-only">Buka Menu</span>
               </Button>
@@ -231,7 +231,7 @@ export function TopNav() {
         </DropdownMenu>
       </div>
 
-      <Dialog open={isProfileOpen} onOpenChange={(v) => { setIsProfileOpen(v); forceUnlockUI(); }}>
+      <Dialog open={isProfileOpen} onOpenChange={(v) => { setIsProfileOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-md bg-white">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-primary">
@@ -269,7 +269,7 @@ export function TopNav() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsProfileOpen(false)}>Batal</Button>
+            <Button variant="outline" onClick={() => { setIsProfileOpen(false); forceUnlockUI(); }}>Batal</Button>
             <Button onClick={handleUpdateProfile} disabled={isSaving} className="gap-2">
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
               Simpan Perubahan
@@ -278,7 +278,7 @@ export function TopNav() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={isLogoutConfirmOpen} onOpenChange={(v) => { setIsLogoutConfirmOpen(v); forceUnlockUI(); }}>
+      <AlertDialog open={isLogoutConfirmOpen} onOpenChange={(v) => { setIsLogoutConfirmOpen(v); if(!v) forceUnlockUI(); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Konfirmasi Keluar</AlertDialogTitle>
