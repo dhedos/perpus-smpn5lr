@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
@@ -138,6 +137,7 @@ export default function BooksPage() {
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
   
+  // Logic: Locked if setting active AND current user is NOT admin
   const isLockedForUser = Boolean(settings?.isDataLocked && !isAdmin);
 
   useEffect(() => {

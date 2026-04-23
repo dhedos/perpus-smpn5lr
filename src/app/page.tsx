@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -41,16 +40,13 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState("")
   const [isSendingReset, setIsSendingReset] = useState(false)
 
+  // Pre-redirect logic to avoid flicker
   useEffect(() => {
-    router.prefetch("/dashboard")
-  }, [router])
-
-  useEffect(() => {
-    if (!authLoading && user && user.role) {
+    if (!authLoading && user && user.role && !isRedirecting) {
       setIsRedirecting(true)
       router.replace("/dashboard")
     }
-  }, [user, authLoading, router])
+  }, [user, authLoading, router, isRedirecting])
 
   const usersQuery = useMemoFirebase(() => {
     if (!db) return null
@@ -150,9 +146,10 @@ export default function LoginPage() {
     }
   }
 
+  // Consistent Loading Screen for Zero Flicker
   if (authLoading || isRedirecting || (user && user.role)) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 gap-4">
+      <div className="h-screen w-full flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
           <div className="w-20 h-20 flex items-center justify-center rounded-3xl bg-primary/10 text-primary shadow-inner">
             <Library className="h-12 w-12 animate-pulse" />

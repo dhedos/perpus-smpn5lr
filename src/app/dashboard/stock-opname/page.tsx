@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useRef, useMemo } from "react"
@@ -173,6 +172,7 @@ export default function StockOpnamePage() {
     if (!audits || !books) return
     const stockAudits = audits.filter(a => a.actionType === 'STOCK_AUDIT')
     
+    // FILTER: Hanya cetak buku yang masih ada di database
     const validAuditsForPrint = stockAudits.filter(a => books.some(b => b.id === a.bookId))
     
     if (validAuditsForPrint.length === 0) {
