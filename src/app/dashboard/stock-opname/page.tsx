@@ -146,6 +146,7 @@ export default function StockOpnamePage() {
     setIsProcessing(true)
 
     const masterBook = books?.find(b => b.id === audit.bookId);
+    const bookTitle = audit.bookTitle || masterBook?.title || "Buku Terhapus";
     const bookCode = audit.bookCode && audit.bookCode !== "-" ? audit.bookCode : (masterBook?.code || "-");
 
     const logData = {
@@ -153,12 +154,12 @@ export default function StockOpnamePage() {
       userName: user.displayNameCustom || "Admin", 
       actionType: 'STOCK_AUDIT', 
       bookId: audit.bookId,
-      bookTitle: audit.bookTitle || "Buku",
+      bookTitle: bookTitle,
       bookCode: bookCode,
       expectedQty: Number(audit.expectedQty || 0),
       physicalQty: Number(audit.expectedQty || 0), 
       diffQty: 0,
-      description: `Audit: ${audit.bookTitle || 'Buku'} - LENGKAPI LAGI (Buku Ketemu)`, 
+      description: `Audit: ${bookTitle} - LENGKAPI LAGI (Buku Ketemu)`, 
       auditStatus: 'LENGKAP', 
       timestamp: new Date().toISOString()
     }
@@ -179,17 +180,18 @@ export default function StockOpnamePage() {
     const rowsHtml = stockAudits.map((a, index) => {
       const masterBook = books?.find(b => b.id === a.bookId);
       const displayCode = (a.bookCode && a.bookCode !== "-") ? a.bookCode : (masterBook?.code || "-");
+      const displayTitle = a.bookTitle || masterBook?.title || "[Buku Telah Dihapus]";
       
       return `
         <tr>
           <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
           <td style="border: 1px solid #ccc; padding: 8px;">${new Date(a.timestamp).toLocaleString('id-ID')}</td>
           <td style="border: 1px solid #ccc; padding: 8px; font-family: monospace;">${displayCode}</td>
-          <td style="border: 1px solid #ccc; padding: 8px;">${a.bookTitle}</td>
-          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${a.expectedQty}</td>
-          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${a.physicalQty}</td>
-          <td style="border: 1px solid #ccc; padding: 8px; text-align: center; font-weight: bold; color: ${a.diffQty !== 0 ? 'red' : 'black'}">${a.diffQty}</td>
-          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${a.auditStatus}</td>
+          <td style="border: 1px solid #ccc; padding: 8px;">${displayTitle}</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${a.expectedQty ?? 0}</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${a.physicalQty ?? 0}</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center; font-weight: bold; color: ${Number(a.diffQty) !== 0 ? 'red' : 'black'}">${a.diffQty ?? 0}</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${a.auditStatus || '-'}</td>
         </tr>
       `
     }).join('')
@@ -369,12 +371,13 @@ export default function StockOpnamePage() {
               ) : audits.filter(a => a.actionType === 'STOCK_AUDIT').map(a => {
                 const masterBook = books?.find(b => b.id === a.bookId);
                 const displayCode = (a.bookCode && a.bookCode !== "-") ? a.bookCode : (masterBook?.code || "-");
+                const displayTitle = a.bookTitle || masterBook?.title || "[Buku Telah Dihapus]";
                 
                 return (
                   <div key={a.id} className="p-4 flex justify-between items-center hover:bg-muted/30 transition-colors">
                     <div className="space-y-1 flex-1 pr-2">
-                      <p className="font-bold leading-tight truncate max-w-[150px]">{a.bookTitle || "-"}</p>
-                      <p className="text-[10px] text-muted-foreground font-mono">{displayCode || "-"}</p>
+                      <p className="font-bold leading-tight truncate max-w-[150px]">{displayTitle}</p>
+                      <p className="text-[10px] text-muted-foreground font-mono">{displayCode}</p>
                       <div className="flex items-center gap-1.5 mt-1">
                          <Badge 
                           variant={a.auditStatus === 'LENGKAP' ? 'secondary' : 'destructive'}
