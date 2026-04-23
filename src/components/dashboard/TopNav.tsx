@@ -83,6 +83,15 @@ export function TopNav() {
     }
   }, [])
 
+  // Fungsi darurat untuk membuka kunci UI jika tertahan oleh overlay
+  const forceUnlockUI = () => {
+    if (typeof document !== 'undefined') {
+      setTimeout(() => {
+        document.body.style.pointerEvents = 'auto'
+      }, 100)
+    }
+  }
+
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth)
@@ -113,6 +122,7 @@ export function TopNav() {
         description: "Nama dan pengaturan Anda telah berhasil disimpan."
       })
       setIsProfileOpen(false)
+      forceUnlockUI()
       setProfileData(prev => ({ ...prev, newPassword: "" }))
     } catch (error: any) {
       toast({
@@ -191,12 +201,29 @@ export function TopNav() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setIsProfileOpen(true)} className="py-2.5 cursor-pointer">
+            <DropdownMenuItem 
+              onSelect={(e) => {
+                e.preventDefault();
+                // Gunakan timeout agar dropdown menutup dulu sebelum dialog terbuka
+                setTimeout(() => {
+                  setIsProfileOpen(true);
+                }, 50);
+              }} 
+              className="py-2.5 cursor-pointer"
+            >
               <UserCircle className="h-4 w-4 mr-2 text-primary" />
               Profil Saya
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setIsLogoutConfirmOpen(true)} className="text-destructive focus:text-destructive py-2.5 cursor-pointer">
+            <DropdownMenuItem 
+              onSelect={(e) => {
+                e.preventDefault();
+                setTimeout(() => {
+                  setIsLogoutConfirmOpen(true);
+                }, 50);
+              }} 
+              className="text-destructive focus:text-destructive py-2.5 cursor-pointer"
+            >
               <LogOut className="h-4 w-4 mr-2" />
               Keluar
             </DropdownMenuItem>
@@ -204,7 +231,7 @@ export function TopNav() {
         </DropdownMenu>
       </div>
 
-      <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
+      <Dialog open={isProfileOpen} onOpenChange={(v) => { setIsProfileOpen(v); if (!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-md bg-white">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-primary">
@@ -242,7 +269,7 @@ export function TopNav() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsProfileOpen(false)}>Batal</Button>
+            <Button variant="outline" onClick={() => { setIsProfileOpen(false); forceUnlockUI(); }}>Batal</Button>
             <Button onClick={handleUpdateProfile} disabled={isSaving} className="gap-2">
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
               Simpan Perubahan
@@ -251,7 +278,7 @@ export function TopNav() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={isLogoutConfirmOpen} onOpenChange={setIsLogoutConfirmOpen}>
+      <AlertDialog open={isLogoutConfirmOpen} onOpenChange={(v) => { setIsLogoutConfirmOpen(v); if (!v) forceUnlockUI(); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Konfirmasi Keluar</AlertDialogTitle>
@@ -260,7 +287,7 @@ export function TopNav() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogCancel onClick={forceUnlockUI}>Batal</AlertDialogCancel>
             <AlertDialogAction onClick={handleLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Ya, Keluar
             </AlertDialogAction>
