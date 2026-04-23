@@ -2,20 +2,23 @@
 'use client';
 
 /**
- * Re-exporting useUser from provider to ensure single source of truth.
+ * Enhanced useUser hook that provides role-based access flags.
  */
-import { useUser as useUserProvider, type UserWithRole as UserWithRoleType } from '../provider';
+import { useFirebase, type UserWithRole as UserWithRoleType } from '../provider';
 
 export type UserWithRole = UserWithRoleType;
 
 export function useUser() {
-  const { user, isUserLoading, userError } = useUserProvider();
+  const { user, isUserLoading, userError } = useFirebase();
+  
+  // Case-insensitive role comparison for better reliability
+  const role = user?.role?.toLowerCase();
   
   return { 
     user, 
     loading: isUserLoading, 
     userError,
-    isAdmin: user?.role === 'Admin', 
-    isStaff: user?.role === 'Staff' || user?.role === 'Admin' 
+    isAdmin: role === 'admin', 
+    isStaff: role === 'staff' || role === 'admin' 
   };
 }

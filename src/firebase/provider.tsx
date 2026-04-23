@@ -168,8 +168,3 @@ export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | 
   (memoized as MemoFirebase<T>).__memo = true;
   return memoized;
 }
-
-export const useUser = (): UserHookResult => {
-  const { user, isUserLoading, userError } = useFirebase();
-  return { user, isUserLoading, userError };
-};
