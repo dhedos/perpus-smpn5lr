@@ -205,7 +205,8 @@ export default function BooksPage() {
     if (typeof document !== 'undefined') {
       setTimeout(() => {
         document.body.style.pointerEvents = 'auto'
-      }, 100)
+        document.body.style.overflow = 'auto'
+      }, 50)
     }
   }
 
@@ -262,6 +263,7 @@ export default function BooksPage() {
     } finally {
       setIsSyncing(false)
       setIsQueueOpen(false)
+      forceUnlockUI()
     }
   }
 
@@ -666,22 +668,25 @@ export default function BooksPage() {
                    </div>
                 </TableCell>
                 <TableCell className="text-right">
-                  <DropdownMenu>
+                  <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onSelect={() => { 
+                      <DropdownMenuItem onSelect={(e) => { 
+                        e.preventDefault();
                         setTimeout(() => {
                           setSelectedBookDetail(book); 
                           setIsDetailOpen(true);
-                        }, 10);
+                        }, 150);
                       }}><Eye className="h-4 w-4 mr-2" />Lihat Detail</DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => { 
+                      <DropdownMenuItem onSelect={(e) => { 
+                        e.preventDefault();
                         setTimeout(() => {
                           setSelectedBookQr(book); 
                           setIsQrOpen(true);
-                        }, 10);
+                        }, 150);
                       }}><QrCode className="h-4 w-4 mr-2" />Tampilkan QR</DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => { 
+                      <DropdownMenuItem onSelect={(e) => { 
+                        e.preventDefault();
                         setTimeout(() => {
                           setEditingBookId(book.id); 
                           setFormData({
@@ -701,13 +706,14 @@ export default function BooksPage() {
                             budgetSource: book.budgetSource || "BOSP"
                           }); 
                           setIsEditOpen(true);
-                        }, 10);
+                        }, 150);
                       }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onSelect={() => { 
+                      <DropdownMenuItem className="text-destructive" onSelect={(e) => { 
+                        e.preventDefault();
                         setTimeout(() => {
                           setBookToDelete(book.id); 
                           setIsDeleteDialogOpen(true);
-                        }, 10);
+                        }, 150);
                       }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -719,7 +725,7 @@ export default function BooksPage() {
       </Card>
 
       {/* DIALOG TAMBAH */}
-      <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) forceUnlockUI(); }}>
+      <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); forceUnlockUI(); }}>
         <DialogContent className="max-w-2xl bg-white max-h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl border-none">
           <DialogHeader className="p-6 pb-4 border-b bg-white shrink-0">
             <DialogTitle className="text-xl font-bold text-primary">Tambah Buku Baru</DialogTitle>
@@ -727,7 +733,6 @@ export default function BooksPage() {
           
           <div className="flex-1 overflow-y-auto">
             <div className="p-6 space-y-6">
-              {/* Header Group */}
               <div className="space-y-4 pb-4 border-b">
                 <div className="space-y-2">
                   <Label className="font-bold text-[10px] uppercase text-primary tracking-widest">Header Utama (Stiker)</Label>
@@ -739,7 +744,6 @@ export default function BooksPage() {
                 </div>
               </div>
 
-              {/* Main Info Group */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="space-y-2">
                   <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Kode Buku (Unik)</Label>
@@ -800,7 +804,7 @@ export default function BooksPage() {
       </Dialog>
 
       {/* DIALOG UBAH */}
-      <Dialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); if(!v) forceUnlockUI(); }}>
+      <Dialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); forceUnlockUI(); }}>
         <DialogContent className="max-w-2xl bg-white max-h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl border-none">
           <DialogHeader className="p-6 pb-4 border-b bg-white shrink-0">
             <DialogTitle className="text-xl font-bold text-primary">Ubah Data Buku</DialogTitle>
@@ -857,7 +861,7 @@ export default function BooksPage() {
       </Dialog>
 
       {/* DIALOG DETAIL */}
-      <Dialog open={isDetailOpen} onOpenChange={(v) => { setIsDetailOpen(v); if(!v) forceUnlockUI(); }}>
+      <Dialog open={isDetailOpen} onOpenChange={(v) => { setIsDetailOpen(v); forceUnlockUI(); }}>
         <DialogContent className="max-w-2xl bg-white max-h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl border-none">
           <DialogHeader className="p-6 pb-4 border-b shrink-0">
             <DialogTitle className="flex items-center gap-2 text-primary font-bold"><Info className="h-5 w-5" />Informasi Detail Buku</DialogTitle>
@@ -884,7 +888,7 @@ export default function BooksPage() {
       </Dialog>
 
       {/* DIALOG QR STANDAR STIKER 8X3 CM */}
-      <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) forceUnlockUI(); }}>
+      <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); forceUnlockUI(); }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Preview Label Stiker Buku (8x3 cm)</DialogTitle>
@@ -959,7 +963,7 @@ export default function BooksPage() {
       </Dialog>
 
       {/* DIALOG ANTREAN LOKAL */}
-      <Dialog open={isQueueOpen} onOpenChange={setIsQueueOpen}>
+      <Dialog open={isQueueOpen} onOpenChange={(v) => { setIsQueueOpen(v); forceUnlockUI(); }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -1015,7 +1019,7 @@ export default function BooksPage() {
       </Dialog>
 
       {/* ALERT DIALOG HAPUS */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={(v) => { setIsDeleteDialogOpen(v); if(!v) forceUnlockUI(); }}>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={(v) => { setIsDeleteDialogOpen(v); forceUnlockUI(); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Buku?</AlertDialogTitle>

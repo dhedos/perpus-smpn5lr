@@ -83,12 +83,13 @@ export function TopNav() {
     }
   }, [])
 
-  // Fungsi darurat untuk membuka kunci UI jika tertahan oleh overlay
+  // Fungsi pengaman untuk melepas kunci interaksi layar secara paksa
   const forceUnlockUI = () => {
     if (typeof document !== 'undefined') {
       setTimeout(() => {
         document.body.style.pointerEvents = 'auto'
-      }, 100)
+        document.body.style.overflow = 'auto'
+      }, 50)
     }
   }
 
@@ -141,7 +142,7 @@ export function TopNav() {
         <div className="md:hidden">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-10 w-10">
+              <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => forceUnlockUI()}>
                 <Menu className="h-6 w-6" />
                 <span className="sr-only">Buka Menu</span>
               </Button>
@@ -176,7 +177,7 @@ export function TopNav() {
           </Badge>
         </div>
 
-        <DropdownMenu>
+        <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-12 flex items-center gap-3 px-2 hover:bg-transparent">
               <div className="hidden md:block text-right">
@@ -204,10 +205,9 @@ export function TopNav() {
             <DropdownMenuItem 
               onSelect={(e) => {
                 e.preventDefault();
-                // Gunakan timeout agar dropdown menutup dulu sebelum dialog terbuka
                 setTimeout(() => {
                   setIsProfileOpen(true);
-                }, 50);
+                }, 150);
               }} 
               className="py-2.5 cursor-pointer"
             >
@@ -220,7 +220,7 @@ export function TopNav() {
                 e.preventDefault();
                 setTimeout(() => {
                   setIsLogoutConfirmOpen(true);
-                }, 50);
+                }, 150);
               }} 
               className="text-destructive focus:text-destructive py-2.5 cursor-pointer"
             >
@@ -231,7 +231,7 @@ export function TopNav() {
         </DropdownMenu>
       </div>
 
-      <Dialog open={isProfileOpen} onOpenChange={(v) => { setIsProfileOpen(v); if (!v) forceUnlockUI(); }}>
+      <Dialog open={isProfileOpen} onOpenChange={(v) => { setIsProfileOpen(v); forceUnlockUI(); }}>
         <DialogContent className="max-w-md bg-white">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-primary">
@@ -269,7 +269,7 @@ export function TopNav() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setIsProfileOpen(false); forceUnlockUI(); }}>Batal</Button>
+            <Button variant="outline" onClick={() => setIsProfileOpen(false)}>Batal</Button>
             <Button onClick={handleUpdateProfile} disabled={isSaving} className="gap-2">
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
               Simpan Perubahan
@@ -278,7 +278,7 @@ export function TopNav() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={isLogoutConfirmOpen} onOpenChange={(v) => { setIsLogoutConfirmOpen(v); if (!v) forceUnlockUI(); }}>
+      <AlertDialog open={isLogoutConfirmOpen} onOpenChange={(v) => { setIsLogoutConfirmOpen(v); forceUnlockUI(); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Konfirmasi Keluar</AlertDialogTitle>
@@ -287,7 +287,7 @@ export function TopNav() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={forceUnlockUI}>Batal</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => forceUnlockUI()}>Batal</AlertDialogCancel>
             <AlertDialogAction onClick={handleLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Ya, Keluar
             </AlertDialogAction>
