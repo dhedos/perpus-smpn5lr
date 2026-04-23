@@ -5,8 +5,8 @@ import { SidebarNav } from "@/components/dashboard/SidebarNav"
 import { TopNav } from "@/components/dashboard/TopNav"
 import { useUser } from "@/firebase"
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
-import { Loader2 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Loader2, Library } from "lucide-react"
 
 export default function DashboardLayout({
   children,
@@ -15,20 +15,30 @@ export default function DashboardLayout({
 }) {
   const { user, loading } = useUser()
   const router = useRouter()
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
   useEffect(() => {
     // Hanya redirect jika pemuatan selesai DAN benar-benar tidak ada user
-    if (!loading && !user) {
-      router.push("/")
+    if (!loading && !user && !isRedirecting) {
+      setIsRedirecting(true)
+      router.replace("/")
     }
-  }, [user, loading, router])
+  }, [user, loading, router, isRedirecting])
 
-  if (loading) {
+  if (loading || isRedirecting) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground font-medium">Menyiapkan Dashboard...</p>
+        <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
+          <div className="w-20 h-20 flex items-center justify-center rounded-3xl bg-primary/10 text-primary shadow-inner">
+            <Library className="h-12 w-12 animate-pulse" />
+          </div>
+          <div className="flex flex-col items-center space-y-2">
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">Sinkronisasi Data</p>
+            </div>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50">Menyiapkan Dashboard...</p>
+          </div>
         </div>
       </div>
     )

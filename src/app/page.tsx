@@ -31,6 +31,7 @@ export default function LoginPage() {
   
   const [loading, setLoading] = useState(false)
   const [isSetupMode, setIsSetupMode] = useState(false)
+  const [isRedirecting, setIsRedirecting] = useState(false)
   
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -48,6 +49,7 @@ export default function LoginPage() {
   // Redirect jika sudah login dan punya profile lengkap
   useEffect(() => {
     if (!authLoading && user && user.role) {
+      setIsRedirecting(true)
       router.replace("/dashboard")
     }
   }, [user, authLoading, router])
@@ -68,13 +70,14 @@ export default function LoginPage() {
     setLoading(true)
     try {
       await signInWithEmailAndPassword(auth, email, password)
-      toast({ title: "Berhasil Masuk", description: "Mengarahkan ke Dashboard..." })
-      // Menggunakan replace untuk pengalihan instan
+      setIsRedirecting(true)
+      // Redirect dilakukan oleh useEffect di atas, tapi kita trigger pre-emptive loading
+      toast({ title: "Berhasil Masuk", description: "Menyiapkan data dashboard..." })
       router.replace("/dashboard")
     } catch (error: any) {
       toast({ 
         title: "Gagal Masuk", 
-        description: "Email atau kata sandi salah atau akun belum terdaftar di database.", 
+        description: "Email atau kata sandi salah atau akun belum terdaftar.", 
         variant: "destructive" 
       })
       setLoading(false)
@@ -102,10 +105,8 @@ export default function LoginPage() {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         })
-        toast({ title: "Pendaftaran Berhasil", description: `Anda masuk sebagai ${role}.` })
-      } else {
-        toast({ title: "Berhasil Masuk", description: "Selamat datang kembali." })
       }
+      setIsRedirecting(true)
       router.replace("/dashboard")
     } catch (error: any) {
       toast({ title: "Gagal Login Google", description: error.message, variant: "destructive" })
@@ -131,7 +132,7 @@ export default function LoginPage() {
         updatedAt: new Date().toISOString()
       })
 
-      toast({ title: "Setup Berhasil", description: "Admin pertama telah didaftarkan." })
+      setIsRedirecting(true)
       router.replace("/dashboard")
     } catch (error: any) {
       toast({ title: "Setup Gagal", description: error.message, variant: "destructive" })
@@ -155,16 +156,19 @@ export default function LoginPage() {
   }
 
   // Jika sedang memuat status auth ATAU user sudah ada (sedang proses redirect), tampilkan loading penuh
-  if (authLoading || (user && user.role)) {
+  if (authLoading || isRedirecting || (user && user.role)) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 gap-4">
-        <div className="flex flex-col items-center gap-4 animate-in fade-in duration-500">
-          <div className="w-16 h-16 flex items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <Library className="h-10 w-10 animate-pulse" />
+        <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
+          <div className="w-20 h-20 flex items-center justify-center rounded-3xl bg-primary/10 text-primary shadow-inner">
+            <Library className="h-12 w-12 animate-pulse" />
           </div>
-          <div className="flex flex-col items-center">
-            <Loader2 className="h-6 w-6 animate-spin text-primary mb-2" />
-            <p className="text-sm font-bold text-primary uppercase tracking-widest">Memuat Pustaka...</p>
+          <div className="flex flex-col items-center space-y-2">
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">Memuat Pustaka</p>
+            </div>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50">Menyelaraskan Sesi Cloud...</p>
           </div>
         </div>
       </div>
@@ -172,27 +176,27 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 space-y-4">
-      <Card className="w-full max-w-md shadow-2xl border-none p-2 bg-white animate-in zoom-in duration-500">
-        <CardHeader className="space-y-4 text-center">
-          <div className="mx-auto w-24 h-24 flex items-center justify-center rounded-3xl bg-primary/10 text-primary mb-2">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 space-y-4 animate-in fade-in duration-500">
+      <Card className="w-full max-w-md shadow-2xl border-none p-2 bg-white rounded-3xl overflow-hidden">
+        <CardHeader className="space-y-4 text-center pt-8">
+          <div className="mx-auto w-24 h-24 flex items-center justify-center rounded-[2rem] bg-primary/10 text-primary mb-2 shadow-sm">
             <Library className="h-12 w-12" />
           </div>
           <div className="space-y-1">
-            <CardTitle className="text-3xl font-black font-headline uppercase tracking-tight text-primary">PUSTAKA NUSANTARA</CardTitle>
-            <CardDescription className="font-bold text-secondary uppercase tracking-widest text-xs">
+            <CardTitle className="text-3xl font-black font-headline uppercase tracking-tighter text-primary">PUSTAKA NUSANTARA</CardTitle>
+            <CardDescription className="font-bold text-secondary uppercase tracking-[0.15em] text-xs">
               {isSetupMode ? "Inisialisasi Sistem Baru" : "SMPN 5 LANGKE REMBONG"}
             </CardDescription>
           </div>
         </CardHeader>
         
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 px-6 pb-6">
           <form onSubmit={isSetupMode ? handleSetupAdmin : handleLogin} className="space-y-4">
             {noUsersExist && !isSetupMode && (
-              <Alert className="bg-primary/10 border-primary/20 text-primary">
+              <Alert className="bg-primary/5 border-primary/20 text-primary rounded-2xl">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle className="text-xs font-bold uppercase">Database Masih Kosong</AlertTitle>
-                <AlertDescription className="text-xs">
+                <AlertTitle className="text-xs font-bold uppercase">Database Kosong</AlertTitle>
+                <AlertDescription className="text-[10px] font-medium leading-relaxed">
                   Klik tombol "Inisialisasi Admin Pertama" di bawah untuk mendaftarkan akun pengelola sekolah Anda.
                 </AlertDescription>
               </Alert>
@@ -200,56 +204,70 @@ export default function LoginPage() {
 
             {isSetupMode && (
               <div className="space-y-2">
-                <Label htmlFor="name" className="font-semibold">Nama Lengkap Admin</Label>
-                <Input id="name" placeholder="Nama Penanggung Jawab" required value={adminName} onChange={(e) => setAdminName(e.target.value)} className="h-12" />
+                <Label htmlFor="name" className="font-bold text-[10px] uppercase text-muted-foreground ml-1">Nama Lengkap Admin</Label>
+                <Input id="name" placeholder="Nama Penanggung Jawab" required value={adminName} onChange={(e) => setAdminName(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-slate-200" />
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email" className="font-semibold">Email</Label>
-              <Input id="email" type="email" placeholder="email@smpn5langkerembong.sch.id" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-12" />
+              <Label htmlFor="email" className="font-bold text-[10px] uppercase text-muted-foreground ml-1">Alamat Email</Label>
+              <Input id="email" type="email" placeholder="email@smpn5.sch.id" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-slate-200" />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="font-semibold">Kata Sandi</Label>
-                {!isSetupMode && <button type="button" onClick={() => setIsResetOpen(true)} className="text-xs font-bold text-primary hover:underline">Lupa?</button>}
+                <Label htmlFor="password" className="font-bold text-[10px] uppercase text-muted-foreground ml-1">Kata Sandi</Label>
+                {!isSetupMode && <button type="button" onClick={() => setIsResetOpen(true)} className="text-[10px] font-black text-primary hover:underline uppercase">Lupa Sandi?</button>}
               </div>
-              <Input id="password" type="password" placeholder="Minimal 6 karakter" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-12" />
+              <Input id="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-slate-200" />
             </div>
-            <Button type="submit" className="w-full h-12 text-base font-bold shadow-lg" disabled={loading || checkingUsers}>
-              {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : isSetupMode ? "Aktifkan Admin Utama" : "Masuk ke Sistem"}
+            <Button type="submit" className="w-full h-12 text-sm font-black shadow-lg shadow-primary/20 rounded-xl" disabled={loading || checkingUsers}>
+              {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : isSetupMode ? "AKTIFKAN ADMIN UTAMA" : "MASUK KE SISTEM"}
             </Button>
           </form>
 
           {!isSetupMode && (
             <>
-              <div className="relative my-4"><div className="absolute inset-0 flex items-center"><span className="w-full border-t"></span></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-muted-foreground font-bold">Atau</span></div></div>
-              <Button variant="outline" className="w-full h-12 gap-2 font-semibold" onClick={handleGoogleLogin} disabled={loading}><Chrome className="h-5 w-5 text-red-500" /> Masuk dengan Google</Button>
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-100"></span></div>
+                <div className="relative flex justify-center text-[10px] uppercase font-black text-muted-foreground/40">
+                  <span className="bg-white px-3">Atau Akses Cepat</span>
+                </div>
+              </div>
+              <Button variant="outline" className="w-full h-12 gap-2 font-bold rounded-xl border-slate-200 hover:bg-slate-50" onClick={handleGoogleLogin} disabled={loading}>
+                <Chrome className="h-5 w-5 text-red-500" /> Masuk dengan Google
+              </Button>
             </>
           )}
         </CardContent>
 
-        <CardFooter className="flex flex-col gap-4">
+        <CardFooter className="flex flex-col gap-4 bg-slate-50/50 p-6 border-t border-slate-50">
           {!checkingUsers && noUsersExist && !isSetupMode && (
-            <Button variant="outline" className="w-full border-dashed border-primary text-primary h-12" onClick={() => setIsSetupMode(true)}>
+            <Button variant="outline" className="w-full border-dashed border-primary/40 text-primary h-12 rounded-xl font-bold bg-white" onClick={() => setIsSetupMode(true)}>
               <ShieldCheck className="mr-2 h-4 w-4" /> Inisialisasi Admin Pertama
             </Button>
           )}
-          {isSetupMode && <Button variant="ghost" className="text-xs" onClick={() => setIsSetupMode(false)}>Kembali ke Login</Button>}
-          <p className="text-[10px] text-muted-foreground text-center uppercase font-bold tracking-widest mt-4">&copy; 2026 Pustaka Nusantara SMPN 5</p>
+          {isSetupMode && <Button variant="ghost" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground" onClick={() => setIsSetupMode(false)}>Kembali ke Login</Button>}
+          <p className="text-[10px] text-muted-foreground/60 text-center uppercase font-bold tracking-[0.2em]">&copy; 2026 SMPN 5 LANGKE REMBONG</p>
         </CardFooter>
       </Card>
 
       <Dialog open={isResetOpen} onOpenChange={setIsResetOpen}>
-        <DialogContent className="bg-white">
+        <DialogContent className="bg-white rounded-3xl max-w-sm">
           <form onSubmit={handleSendResetEmail}>
-            <DialogHeader><DialogTitle>Reset Kata Sandi</DialogTitle></DialogHeader>
+            <DialogHeader>
+              <DialogTitle className="font-black uppercase tracking-tight text-primary">Reset Kata Sandi</DialogTitle>
+              <DialogDescription className="text-xs">Kami akan mengirimkan tautan pemulihan ke email Anda.</DialogDescription>
+            </DialogHeader>
             <div className="py-6 space-y-4">
               <div className="space-y-2">
-                <Label>Email Terdaftar</Label>
-                <Input type="email" required className="h-12" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} />
+                <Label className="text-[10px] font-bold uppercase text-muted-foreground">Email Terdaftar</Label>
+                <Input type="email" required className="h-12 rounded-xl" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} placeholder="nama@email.com" />
               </div>
             </div>
-            <DialogFooter><Button type="submit" disabled={isSendingReset}>Kirim Tautan Reset</Button></DialogFooter>
+            <DialogFooter>
+              <Button type="submit" disabled={isSendingReset} className="w-full h-11 font-bold rounded-xl">
+                {isSendingReset ? <Loader2 className="animate-spin h-4 w-4" /> : "Kirim Tautan"}
+              </Button>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>

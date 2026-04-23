@@ -27,8 +27,8 @@ import {
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
-  AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogFooter,
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
@@ -51,14 +51,13 @@ const administrationItems = [
 
 export function SidebarNav() {
   const pathname = usePathname()
-  const router = useRouter()
   const auth = useAuth()
   const { isAdmin } = useUser()
 
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth)
-      // Force a full reload to clear all states and prevent login issues
+      // Hard redirect untuk memastikan semua state bersih
       window.location.href = "/"
     }
   }
@@ -129,17 +128,17 @@ export function SidebarNav() {
               <span className="text-sm font-medium">Keluar</span>
             </Button>
           </AlertDialogTrigger>
-          <AlertDialogContent>
+          <AlertDialogContent className="rounded-3xl">
             <AlertDialogHeader>
-              <AlertDialogTitle>Konfirmasi Keluar</AlertDialogTitle>
+              <AlertDialogTitle className="font-black uppercase tracking-tight text-primary">Konfirmasi Keluar</AlertDialogTitle>
               <AlertDialogDescription>
-                Apakah Anda yakin ingin keluar dari sistem Pustaka Nusantara? Sesi Anda akan diakhiri.
+                Apakah Anda yakin ingin mengakhiri sesi pengerjaan di Pustaka Nusantara?
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Batal</AlertDialogCancel>
-              <AlertDialogAction onClick={handleLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                Ya, Keluar
+            <AlertDialogFooter className="gap-2">
+              <AlertDialogCancel className="rounded-xl font-bold">Batal</AlertDialogCancel>
+              <AlertDialogAction onClick={handleLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl font-bold">
+                Ya, Keluar Sekarang
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
