@@ -69,15 +69,14 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password)
       toast({ title: "Berhasil Masuk", description: "Mengarahkan ke Dashboard..." })
-      // Immediate push to reduce delay
-      router.push("/dashboard")
+      // Menggunakan replace untuk pengalihan instan
+      router.replace("/dashboard")
     } catch (error: any) {
       toast({ 
         title: "Gagal Masuk", 
         description: "Email atau kata sandi salah atau akun belum terdaftar di database.", 
         variant: "destructive" 
       })
-    } finally {
       setLoading(false)
     }
   }
@@ -107,10 +106,9 @@ export default function LoginPage() {
       } else {
         toast({ title: "Berhasil Masuk", description: "Selamat datang kembali." })
       }
-      router.push("/dashboard")
+      router.replace("/dashboard")
     } catch (error: any) {
       toast({ title: "Gagal Login Google", description: error.message, variant: "destructive" })
-    } finally {
       setLoading(false)
     }
   }
@@ -134,10 +132,9 @@ export default function LoginPage() {
       })
 
       toast({ title: "Setup Berhasil", description: "Admin pertama telah didaftarkan." })
-      router.push("/dashboard")
+      router.replace("/dashboard")
     } catch (error: any) {
       toast({ title: "Setup Gagal", description: error.message, variant: "destructive" })
-    } finally {
       setLoading(false)
     }
   }
@@ -157,7 +154,22 @@ export default function LoginPage() {
     }
   }
 
-  if (authLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+  // Jika sedang memuat status auth ATAU user sudah ada (sedang proses redirect), tampilkan loading penuh
+  if (authLoading || (user && user.role)) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 gap-4">
+        <div className="flex flex-col items-center gap-4 animate-in fade-in duration-500">
+          <div className="w-16 h-16 flex items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <Library className="h-10 w-10 animate-pulse" />
+          </div>
+          <div className="flex flex-col items-center">
+            <Loader2 className="h-6 w-6 animate-spin text-primary mb-2" />
+            <p className="text-sm font-bold text-primary uppercase tracking-widest">Memuat Pustaka...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 space-y-4">
