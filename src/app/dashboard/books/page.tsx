@@ -133,17 +133,13 @@ export default function BooksPage() {
   const [formData, setFormData] = useState(INITIAL_FORM_DATA)
   const [editingBookId, setEditingBookId] = useState<string | null>(null)
   
-  // Local Queue State
   const [localQueue, setLocalQueue] = useState<any[]>([])
 
-  // Load Settings for Kop Surat & Lock Status
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
   
-  // LOGIKA PENGUNCI: Hanya menonaktifkan input, tidak menampilkan badge
   const isLockedForUser = Boolean(settings?.isDataLocked && !isAdmin);
 
-  // 1. Initial Load from LocalStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(STORAGE_KEY)
@@ -161,7 +157,6 @@ export default function BooksPage() {
     }
   }, [])
 
-  // 2. Persistent Save to LocalStorage
   useEffect(() => {
     if (isHydrated) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(localQueue))
@@ -224,7 +219,7 @@ export default function BooksPage() {
 
   const handleSaveToLocalQueue = () => {
     if (isLockedForUser) {
-      toast({ title: "Akses Terbatas", description: "Anda hanya dapat melihat data saat mode kunci aktif.", variant: "destructive" })
+      toast({ title: "Gagal", description: "Modifikasi data sedang dibatasi Admin.", variant: "destructive" })
       return
     }
 
@@ -408,7 +403,6 @@ export default function BooksPage() {
             @page { size: A4; margin: 0; } 
             body { margin: 0; padding: 5mm; background: #fff; font-family: 'Inter', sans-serif; }
             .page-container { display: flex; flex-wrap: wrap; gap: 5mm; justify-content: flex-start; }
-            
             .label-card { 
               width: 80mm; 
               height: 30mm; 
@@ -422,86 +416,16 @@ export default function BooksPage() {
               background: #fff;
               overflow: hidden;
             }
-
-            .info-section {
-              flex: 1;
-              text-align: left;
-              display: flex;
-              flex-direction: column;
-              justify-content: center;
-              overflow: hidden;
-            }
-
-            .header-text {
-              font-size: 8pt;
-              font-weight: 800;
-              color: #2E6ECE;
-              text-transform: uppercase;
-              line-height: 1;
-            }
-
-            .source-text {
-              font-size: 7pt;
-              font-weight: 600;
-              color: #444;
-              margin-bottom: 0.5mm;
-              line-height: 1;
-            }
-
-            .book-title {
-              font-size: 8.5pt;
-              font-weight: 900;
-              line-height: 1.1;
-              margin-bottom: 0.8mm;
-              display: -webkit-box;
-              -webkit-line-clamp: 2;
-              -webkit-box-orient: vertical;
-              overflow: hidden;
-              color: #000;
-            }
-
-            .book-details {
-              font-size: 6pt;
-              color: #444;
-              line-height: 1.2;
-            }
-
-            .rack-text {
-              font-size: 7pt;
-              font-weight: 800;
-              color: #000;
-              text-transform: uppercase;
-              margin-top: 1mm;
-              border-top: 0.2pt solid #ddd;
-              padding-top: 0.5mm;
-            }
-
-            .qr-section {
-              width: 25mm;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              margin-left: 2mm;
-            }
-
-            .qr-container {
-              width: 20mm;
-              height: 20mm;
-            }
-            .qr-container img {
-              width: 100%;
-              height: 100%;
-            }
-
-            .book-code-text {
-              font-size: 9pt;
-              font-weight: 900;
-              color: #2E6ECE;
-              font-family: monospace;
-              line-height: 1;
-              margin-top: 1mm;
-            }
+            .info-section { flex: 1; text-align: left; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+            .header-text { font-size: 8pt; font-weight: 800; color: #2E6ECE; text-transform: uppercase; line-height: 1; }
+            .source-text { font-size: 7pt; font-weight: 600; color: #444; margin-bottom: 0.5mm; line-height: 1; }
+            .book-title { font-size: 8.5pt; font-weight: 900; line-height: 1.1; margin-bottom: 0.8mm; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: #000; }
+            .book-details { font-size: 6pt; color: #444; line-height: 1.2; }
+            .rack-text { font-size: 7pt; font-weight: 800; color: #000; text-transform: uppercase; margin-top: 1mm; border-top: 0.2pt solid #ddd; padding-top: 0.5mm; }
+            .qr-section { width: 25mm; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-left: 2mm; }
+            .qr-container { width: 20mm; height: 20mm; }
+            .qr-container img { width: 100%; height: 100%; }
+            .book-code-text { font-size: 9pt; font-weight: 900; color: #2E6ECE; font-family: monospace; line-height: 1; margin-top: 1mm; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
@@ -761,7 +685,6 @@ export default function BooksPage() {
         </Table>
       </Card>
 
-      {/* DIALOG TAMBAH */}
       <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); forceUnlockUI(); }}>
         <DialogContent className="max-w-2xl bg-white max-h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl border-none">
           <DialogHeader className="p-6 pb-4 border-b bg-white shrink-0">
@@ -908,7 +831,6 @@ export default function BooksPage() {
         </DialogContent>
       </Dialog>
 
-      {/* DIALOG UBAH */}
       <Dialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); forceUnlockUI(); }}>
         <DialogContent className="max-w-2xl bg-white max-h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl border-none">
           <DialogHeader className="p-6 pb-4 border-b bg-white shrink-0">
@@ -974,7 +896,6 @@ export default function BooksPage() {
         </DialogContent>
       </Dialog>
 
-      {/* DETAIL BUKU */}
       <Dialog open={isDetailOpen} onOpenChange={v => { setIsDetailOpen(v); forceUnlockUI(); }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader><DialogTitle>Rincian Informasi Buku</DialogTitle></DialogHeader>
@@ -1017,7 +938,6 @@ export default function BooksPage() {
         </DialogContent>
       </Dialog>
 
-      {/* QR MODAL */}
       <Dialog open={isQrOpen} onOpenChange={v => { setIsQrOpen(v); forceUnlockUI(); }}>
         <DialogContent className="max-w-md text-center p-8">
           <DialogHeader><DialogTitle>QR Label Buku</DialogTitle></DialogHeader>
@@ -1034,12 +954,13 @@ export default function BooksPage() {
               if(!win) return;
               win.document.write(`
                 <html>
-                  <body style="display:flex; justify-content:center; align-items:center; height:100vh; margin:0;" onload="window.print(); window.close();">
-                    <div style="text-align:center; border:1px solid #000; padding:20px; font-family:sans-serif;">
-                      <div style="font-weight:bold; font-size:10px;">${selectedBookQr?.mainHeader || 'PUSTAKA NUSANTARA'}</div>
+                  <head><title> </title><style>@page { margin: 0; } body { display:flex; justify-content:center; align-items:center; height:100vh; margin:0; font-family:sans-serif; }</style></head>
+                  <body onload="window.print(); window.close();">
+                    <div style="text-align:center; border:1px solid #000; padding:20px; width: 80mm;">
+                      <div style="font-weight:bold; font-size:10px; color:#2E6ECE;">${selectedBookQr?.mainHeader || 'PUSTAKA NUSANTARA'}</div>
                       <div style="font-size:16px; font-weight:900; margin:10px 0;">${selectedBookQr?.title}</div>
                       <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${selectedBookQr?.code}" />
-                      <div style="font-family:monospace; font-weight:bold; margin-top:10px;">${selectedBookQr?.code}</div>
+                      <div style="font-family:monospace; font-weight:bold; margin-top:10px; font-size:14px;">${selectedBookQr?.code}</div>
                     </div>
                   </body>
                 </html>
@@ -1050,7 +971,6 @@ export default function BooksPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ANTREAN LOKAL */}
       <Dialog open={isQueueOpen} onOpenChange={v => { setIsQueueOpen(v); forceUnlockUI(); }}>
         <DialogContent className="max-w-xl max-h-[80vh] flex flex-col p-0">
           <DialogHeader className="p-6 border-b">
@@ -1090,7 +1010,6 @@ export default function BooksPage() {
         </DialogContent>
       </Dialog>
 
-      {/* SCANNER MODAL */}
       <Dialog open={isScannerOpen} onOpenChange={v => !v && stopScanner()}>
         <DialogContent className="p-0 border-none bg-black max-w-xl h-[450px] overflow-hidden">
           <div id="scanner-view" className="w-full h-full bg-black"></div>
@@ -1098,7 +1017,6 @@ export default function BooksPage() {
         </DialogContent>
       </Dialog>
 
-      {/* HAPUS KONFIRMASI */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={v => { setIsDeleteDialogOpen(v); forceUnlockUI(); }}>
         <AlertDialogContent>
           <AlertDialogHeader>

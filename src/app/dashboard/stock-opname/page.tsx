@@ -173,7 +173,6 @@ export default function StockOpnamePage() {
     if (!audits || !books) return
     const stockAudits = audits.filter(a => a.actionType === 'STOCK_AUDIT')
     
-    // Filter hanya buku yang masih ada di database utama
     const validAuditsForPrint = stockAudits.filter(a => books.some(b => b.id === a.bookId))
     
     if (validAuditsForPrint.length === 0) {
@@ -215,7 +214,7 @@ export default function StockOpnamePage() {
             .title { text-align: center; font-size: 14px; font-weight: 800; margin: 20px 0; text-transform: uppercase; }
             table { width: 100%; border-collapse: collapse; }
             th { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; }
-            .footer { margin-top: 40px; float: right; text-align: center; width: 250px; }
+            .footer-sign { margin-top: 40px; float: right; text-align: center; width: 250px; }
             .print-footer { position: fixed; bottom: 5mm; left: 15mm; right: 15mm; font-size: 8px; text-align: center; color: #999; border-top: 1px solid #eee; padding-top: 2mm; }
           </style>
         </head>
@@ -242,13 +241,13 @@ export default function StockOpnamePage() {
             </thead>
             <tbody>${rowsHtml}</tbody>
           </table>
-          <div class="footer">
+          <div class="footer-sign">
             ${settings?.reportCity || 'Mando'}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>
             Kepala Sekolah,<br/><br/><br/><br/>
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
             NIP. ${settings?.principalNip || '198507272011011020'}
           </div>
-          <div class="print-footer">Sistem Informasi Pustaka Nusantara - SMPN 5 LANGKE REMBONG | Laporan Audit Stok</div>
+          <div class="print-footer">Pustaka Nusantara - SMPN 5 LANGKE REMBONG | Laporan Audit Stok</div>
         </body>
       </html>
     `)

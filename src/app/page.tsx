@@ -41,12 +41,10 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState("")
   const [isSendingReset, setIsSendingReset] = useState(false)
 
-  // Prefetch dashboard for faster navigation
   useEffect(() => {
     router.prefetch("/dashboard")
   }, [router])
 
-  // Redirect jika sudah login dan punya profile lengkap
   useEffect(() => {
     if (!authLoading && user && user.role) {
       setIsRedirecting(true)
@@ -54,7 +52,6 @@ export default function LoginPage() {
     }
   }, [user, authLoading, router])
 
-  // Cek apakah ada user di DB untuk menentukan mode setup
   const usersQuery = useMemoFirebase(() => {
     if (!db) return null
     return query(collection(db, "users"), limit(1))
@@ -71,13 +68,11 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password)
       setIsRedirecting(true)
-      // Redirect dilakukan oleh useEffect di atas, tapi kita trigger pre-emptive loading
-      toast({ title: "Berhasil Masuk", description: "Menyiapkan data dashboard..." })
       router.replace("/dashboard")
     } catch (error: any) {
       toast({ 
         title: "Gagal Masuk", 
-        description: "Email atau kata sandi salah atau akun belum terdaftar.", 
+        description: "Email atau kata sandi salah.", 
         variant: "destructive" 
       })
       setLoading(false)
@@ -155,7 +150,6 @@ export default function LoginPage() {
     }
   }
 
-  // Jika sedang memuat status auth ATAU user sudah ada (sedang proses redirect), tampilkan loading penuh
   if (authLoading || isRedirecting || (user && user.role)) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 gap-4">

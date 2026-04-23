@@ -45,7 +45,6 @@ export default function ReportsPage() {
   const { data: members, isLoading: loadingMembers } = useCollection(membersRef)
   const { data: settings } = useDoc(settingsRef)
 
-  // 1. Statistik Kondisi Buku (Berdasarkan Buku yang Kembali)
   const conditionStats = useMemo(() => {
     if (!allTrans) return { lost: 0, damaged: 0, normal: 0 }
     const returnedItems = allTrans.filter(t => t.status === 'returned')
@@ -69,7 +68,6 @@ export default function ReportsPage() {
     return { lost, damaged, normal }
   }, [allTrans])
 
-  // 2. Kalkulasi Data Kartu Statistik (Real-time)
   const statsData = useMemo(() => {
     if (!allTrans || !members || !mounted) return null;
 
@@ -126,7 +124,7 @@ export default function ReportsPage() {
             table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
             th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
             th { background: #f9f9f9; }
-            .footer { margin-top: 60px; float: right; text-align: center; width: 250px; }
+            .footer-sign { margin-top: 60px; float: right; text-align: center; width: 250px; }
             .print-footer { position: fixed; bottom: 5mm; left: 15mm; right: 15mm; font-size: 8px; text-align: center; color: #999; border-top: 1px solid #eee; padding-top: 2mm; }
           </style>
         </head>
@@ -188,13 +186,13 @@ export default function ReportsPage() {
             </tbody>
           </table>
 
-          <div class="footer">
+          <div class="footer-sign">
             ${settings?.reportCity || 'Mando'}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>
             Kepala Sekolah,<br/><br/><br/><br/>
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
             NIP. ${settings?.principalNip || '198507272011011020'}
           </div>
-          <div class="print-footer">Sistem Informasi Pustaka Nusantara - SMPN 5 LANGKE REMBONG | Laporan Statistik Bulanan</div>
+          <div class="print-footer">Pustaka Nusantara - SMPN 5 LANGKE REMBONG | Laporan Audit Statistik</div>
         </body>
       </html>
     `)

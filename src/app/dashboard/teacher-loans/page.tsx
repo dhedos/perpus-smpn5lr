@@ -68,11 +68,9 @@ export default function TeacherLoansPage() {
   const [showMemberSuggestions, setShowMemberSuggestions] = useState(false)
   const [showBookSuggestions, setShowBookSuggestions] = useState(false)
 
-  // Fetch Settings for Academic Year, Header, and Lock Status
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
   
-  // LOGIKA PENGUNCI: Hanya menonaktifkan aksi, tidak menampilkan badge
   const isLockedForUser = Boolean(settings?.isDataLocked && !isAdmin);
 
   const membersRef = useMemoFirebase(() => 
@@ -247,7 +245,7 @@ export default function TeacherLoansPage() {
             .title { text-align: center; font-size: 12px; font-weight: 800; margin: 20px 0; text-transform: uppercase; }
             table { width: 100%; border-collapse: collapse; }
             th { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; font-size: 9px; }
-            .footer { margin-top: 40px; float: right; text-align: center; width: 250px; }
+            .footer-sign { margin-top: 40px; float: right; text-align: center; width: 250px; }
             .print-footer { position: fixed; bottom: 5mm; left: 15mm; right: 15mm; font-size: 8px; text-align: center; color: #999; border-top: 1px solid #eee; padding-top: 2mm; }
           </style>
         </head>
@@ -275,7 +273,7 @@ export default function TeacherLoansPage() {
             </thead>
             <tbody>${rowsHtml}</tbody>
           </table>
-          <div class="footer">
+          <div class="footer-sign">
             ${settings?.reportCity || 'Mando'}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>
             Kepala Sekolah,<br/><br/><br/><br/>
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
@@ -315,7 +313,6 @@ export default function TeacherLoansPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Pilih Guru */}
             <div className="space-y-2">
               <Label className="text-[10px] font-bold text-muted-foreground uppercase">Cari Guru</Label>
               <div className="relative">
@@ -354,7 +351,6 @@ export default function TeacherLoansPage() {
               )}
             </div>
 
-            {/* Pilih Buku */}
             <div className="space-y-2">
               <Label className="text-[10px] font-bold text-muted-foreground uppercase">Cari Buku Pegangan</Label>
               <div className="relative">

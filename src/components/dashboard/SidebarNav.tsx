@@ -57,7 +57,6 @@ export function SidebarNav() {
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth)
-      // Hard redirect untuk memastikan semua state bersih
       window.location.href = "/"
     }
   }
@@ -97,9 +96,7 @@ export function SidebarNav() {
           Administrasi
         </div>
         {administrationItems.map((item) => {
-          // Hanya tampilkan jika bukan adminOnly atau jika user adalah Admin
           if (item.adminOnly && !isAdmin) return null;
-
           return (
             <Link key={item.href} href={item.href}>
               <Button
