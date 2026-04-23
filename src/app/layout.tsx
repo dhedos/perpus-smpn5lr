@@ -8,9 +8,10 @@ export const metadata: Metadata = {
   title: 'Pustaka Nusantara - SMPN 5 LANGKE REMBONG',
   description: 'Sistem Informasi Perpustakaan Modern SMPN 5 Langke Rembong.',
   icons: {
-    icon: 'https://picsum.photos/seed/smp5emblem/128/128',
-    shortcut: 'https://picsum.photos/seed/smp5emblem/128/128',
-    apple: 'https://picsum.photos/seed/smp5emblem/128/128',
+    // Anda bisa mengganti URL di bawah ini dengan URL logo sekolah Anda
+    icon: 'https://picsum.photos/seed/librarylogo/128/128',
+    shortcut: 'https://picsum.photos/seed/librarylogo/128/128',
+    apple: 'https://picsum.photos/seed/librarylogo/128/128',
   },
 };
 
