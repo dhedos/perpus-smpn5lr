@@ -1,7 +1,7 @@
 
 {
   "name": "nextn",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack -p 9002",
@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "push": "git add .; git commit -m 'Fix: Force update dependencies and style formatting v0.1.1' || echo 'No changes'; git push origin main"
+    "push": "git add .; git commit -m 'Fix: Force update dependencies and style formatting v0.1.2' || echo 'No changes'; git push origin main"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.28.0",
