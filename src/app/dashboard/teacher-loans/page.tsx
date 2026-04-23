@@ -72,8 +72,11 @@ export default function TeacherLoansPage() {
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
   
-  // logic: locked if settings locked AND user NOT admin
-  const isLocked = Boolean(settings?.isDataLocked && !isAdmin);
+  // MODIFICATION LOGIC:
+  // 1. isLockedForUser: True if system is locked AND user is NOT Admin. Used for disabling actions.
+  // 2. showLockBadge: True if system is locked AND user is NOT Admin. Used for showing notification.
+  const isLockedForUser = Boolean(settings?.isDataLocked && !isAdmin);
+  const showLockBadge = Boolean(settings?.isDataLocked && !isAdmin);
 
   const membersRef = useMemoFirebase(() => 
     db ? query(collection(db, 'members'), where('type', '==', 'Teacher')) : null, [db])
@@ -159,8 +162,8 @@ export default function TeacherLoansPage() {
 
   const handleProcessLoan = () => {
     if (!db || !selectedMember || !selectedBook) return
-    if (isLocked) {
-      toast({ title: "Akses Terkunci", description: "Admin mengunci fitur pengubahan data.", variant: "destructive" })
+    if (isLockedForUser) {
+      toast({ title: "Fitur Terkunci", description: "Admin mengunci fitur pengubahan data.", variant: "destructive" })
       return
     }
 
@@ -191,8 +194,8 @@ export default function TeacherLoansPage() {
 
   const handleReturn = (trans: any) => {
     if (!db) return
-    if (isLocked) {
-      toast({ title: "Akses Terkunci", description: "Admin mengunci fitur pengubahan data.", variant: "destructive" })
+    if (isLockedForUser) {
+      toast({ title: "Akses Terkunci", description: "Modifikasi sedang dibatasi oleh Administrator.", variant: "destructive" })
       return
     }
 
@@ -298,7 +301,7 @@ export default function TeacherLoansPage() {
           <p className="text-sm text-muted-foreground">Peminjaman jangka panjang untuk kebutuhan mengajar di kelas.</p>
         </div>
         <div className="flex items-center gap-2">
-           {isLocked && (
+           {showLockBadge && (
              <Badge variant="outline" className="h-9 px-3 bg-orange-50 text-orange-700 border-orange-200 font-bold gap-2">
                <Lock className="h-3 w-3" /> Dikunci Admin
              </Badge>
@@ -329,14 +332,14 @@ export default function TeacherLoansPage() {
                   className="bg-white"
                   value={memberSearch}
                   onChange={e => { setMemberSearch(e.target.value); setShowMemberSuggestions(true); }}
-                  disabled={isLocked}
+                  disabled={isLockedForUser}
                 />
                 <Button 
                   size="icon" 
                   variant="ghost" 
                   className="absolute right-1 top-1/2 -translate-y-1/2"
                   onClick={() => startScanner("member")}
-                  disabled={isLocked}
+                  disabled={isLockedForUser}
                 >
                   <ScanBarcode className="h-4 w-4" />
                 </Button>
@@ -354,7 +357,7 @@ export default function TeacherLoansPage() {
               {selectedMember && (
                 <div className="p-3 bg-white rounded-lg border flex justify-between items-center animate-in slide-in-from-left-2">
                   <div className="text-xs font-bold text-primary">{selectedMember.name}</div>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedMember(null)}><X className="h-3 w-3" /></Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedMember(null)} disabled={isLockedForUser}><X className="h-3 w-3" /></Button>
                 </div>
               )}
             </div>
@@ -368,14 +371,14 @@ export default function TeacherLoansPage() {
                   className="bg-white"
                   value={bookSearch}
                   onChange={e => { setBookSearch(e.target.value); setShowBookSuggestions(true); }}
-                  disabled={isLocked}
+                  disabled={isLockedForUser}
                 />
                 <Button 
                   size="icon" 
                   variant="ghost" 
                   className="absolute right-1 top-1/2 -translate-y-1/2"
                   onClick={() => startScanner("book")}
-                  disabled={isLocked}
+                  disabled={isLockedForUser}
                 >
                   <ScanBarcode className="h-4 w-4" />
                 </Button>
@@ -393,14 +396,14 @@ export default function TeacherLoansPage() {
               {selectedBook && (
                 <div className="p-3 bg-white rounded-lg border flex justify-between items-center animate-in slide-in-from-right-2">
                   <div className="text-xs font-bold text-secondary-foreground">{selectedBook.title}</div>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedBook(null)}><X className="h-3 w-3" /></Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedBook(null)} disabled={isLockedForUser}><X className="h-3 w-3" /></Button>
                 </div>
               )}
             </div>
 
             <Button 
               className="w-full h-12 font-black shadow-lg shadow-primary/20" 
-              disabled={!selectedMember || !selectedBook || isProcessing || isLocked}
+              disabled={!selectedMember || !selectedBook || isProcessing || isLockedForUser}
               onClick={handleProcessLoan}
             >
               {isProcessing ? <Loader2 className="animate-spin" /> : "SERAHKAN BUKU"}
@@ -467,7 +470,7 @@ export default function TeacherLoansPage() {
                               variant="outline" 
                               className="h-8 text-[10px] font-bold gap-1"
                               onClick={() => handleReturn(t)}
-                              disabled={isProcessing || isLocked}
+                              disabled={isProcessing || isLockedForUser}
                             >
                               <History className="h-3 w-3" /> Kembali
                             </Button>

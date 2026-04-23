@@ -105,7 +105,7 @@ const STORAGE_KEY = 'perpus_local_queue_v3'
 
 export default function BooksPage() {
   const db = useFirestore()
-  const { isAdmin } = useUser()
+  const { isAdmin, user } = useUser()
   const { toast } = useToast()
   
   const [search, setSearch] = useState("")
@@ -140,8 +140,11 @@ export default function BooksPage() {
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
   
-  // logic: locked if settings locked AND user NOT admin
-  const isLocked = Boolean(settings?.isDataLocked && !isAdmin);
+  // MODIFICATION LOGIC: 
+  // 1. isLockedForUser: True if system is locked AND user is NOT Admin. Used for disabling inputs.
+  // 2. showLockBadge: True if system is locked AND user is NOT Admin. Used for showing the badge.
+  const isLockedForUser = Boolean(settings?.isDataLocked && !isAdmin);
+  const showLockBadge = Boolean(settings?.isDataLocked && !isAdmin);
 
   // 1. Initial Load from LocalStorage
   useEffect(() => {
@@ -223,8 +226,8 @@ export default function BooksPage() {
   }, [isOpen, isEditOpen, isDetailOpen, isScannerOpen, isQrOpen, isDeleteDialogOpen, isQueueOpen, forceUnlockUI])
 
   const handleSaveToLocalQueue = () => {
-    if (isLocked) {
-      toast({ title: "Akses Terkunci", description: "Admin mengunci fitur pengubahan data.", variant: "destructive" })
+    if (isLockedForUser) {
+      toast({ title: "Akses Terbatas", description: "Anda hanya dapat melihat data saat mode kunci aktif.", variant: "destructive" })
       return
     }
 
@@ -253,8 +256,8 @@ export default function BooksPage() {
 
   const handleSyncToDatabase = async () => {
     if (!db || localQueue.length === 0) return
-    if (isLocked) {
-      toast({ title: "Akses Terkunci", description: "Admin mengunci fitur sinkronisasi bagi petugas.", variant: "destructive" })
+    if (isLockedForUser) {
+      toast({ title: "Sinkronisasi Terkunci", description: "Admin mengunci fitur modifikasi data.", variant: "destructive" })
       return
     }
 
@@ -290,6 +293,7 @@ export default function BooksPage() {
   }
 
   const removeFromQueue = (tempId: string) => {
+    if (isLockedForUser) return;
     setLocalQueue(prev => prev.filter(b => b.tempId !== tempId))
   }
 
@@ -512,7 +516,7 @@ export default function BooksPage() {
   }
 
   const handleGenerateDescription = async () => {
-    if (!formData.title) return
+    if (!formData.title || isLockedForUser) return
     setIsGenerating(true)
     try {
       const result = await generateBookDescription({ title: formData.title, isbn: formData.isbn })
@@ -523,8 +527,8 @@ export default function BooksPage() {
 
   const handleUpdateBook = () => {
     if (!db || !editingBookId) return
-    if (isLocked) {
-      toast({ title: "Akses Terkunci", description: "Admin mengunci fitur pengubahan data.", variant: "destructive" })
+    if (isLockedForUser) {
+      toast({ title: "Gagal", description: "Admin mengunci fitur pengubahan data.", variant: "destructive" })
       return
     }
 
@@ -549,8 +553,8 @@ export default function BooksPage() {
 
   const handleDeleteBook = () => {
     if (!db || !bookToDelete) return
-    if (isLocked) {
-      toast({ title: "Akses Terkunci", description: "Admin mengunci fitur hapus data.", variant: "destructive" })
+    if (isLockedForUser) {
+      toast({ title: "Dilarang", description: "Fitur hapus sedang dikunci Admin.", variant: "destructive" })
       return
     }
 
@@ -607,7 +611,7 @@ export default function BooksPage() {
           <p className="text-muted-foreground text-sm">Manajemen katalog dan inventaris perpustakaan.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {isLocked && (
+          {showLockBadge && (
             <Badge variant="outline" className="h-9 px-3 bg-orange-50 text-orange-700 border-orange-200 font-bold gap-2">
               <Lock className="h-3 w-3" /> Fitur Modifikasi Dikunci Admin
             </Badge>
@@ -782,7 +786,7 @@ export default function BooksPage() {
                     onChange={e => setFormData({ ...formData, mainHeader: e.target.value })} 
                     className="bg-slate-50 h-12 text-base" 
                     placeholder="Cth: NAMA SEKOLAH / PERPUSTAKAAN" 
-                    disabled={isLocked}
+                    disabled={isLockedForUser}
                   />
                 </div>
                 <div className="space-y-2">
@@ -792,7 +796,7 @@ export default function BooksPage() {
                     onChange={e => setFormData({ ...formData, budgetSource: e.target.value })} 
                     className="bg-slate-50 h-12 text-base" 
                     placeholder="Cth: BOSP, Hibah" 
-                    disabled={isLocked}
+                    disabled={isLockedForUser}
                   />
                 </div>
               </div>
@@ -805,7 +809,7 @@ export default function BooksPage() {
                     onChange={e => setFormData({ ...formData, code: e.target.value })} 
                     className="h-11" 
                     placeholder="Cth: 001" 
-                    disabled={isLocked}
+                    disabled={isLockedForUser}
                   />
                 </div>
                 <div className="space-y-2">
@@ -815,7 +819,7 @@ export default function BooksPage() {
                     onChange={e => setFormData({ ...formData, title: e.target.value })} 
                     className="h-11" 
                     placeholder="Cth: Matematika Kelas VII" 
-                    disabled={isLocked}
+                    disabled={isLockedForUser}
                   />
                 </div>
                 <div className="space-y-2">
@@ -824,7 +828,7 @@ export default function BooksPage() {
                     value={formData.accountCode ?? ""} 
                     onChange={e => setFormData({ ...formData, accountCode: e.target.value })} 
                     className="h-11" 
-                    disabled={isLocked}
+                    disabled={isLockedForUser}
                   />
                 </div>
                 <div className="space-y-2">
@@ -833,7 +837,7 @@ export default function BooksPage() {
                     value={formData.publisher ?? ""} 
                     onChange={e => setFormData({ ...formData, publisher: e.target.value })} 
                     className="h-11" 
-                    disabled={isLocked}
+                    disabled={isLockedForUser}
                   />
                 </div>
                 <div className="space-y-2">
@@ -843,7 +847,7 @@ export default function BooksPage() {
                     value={formData.publicationYear ?? ""} 
                     onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} 
                     className="h-11" 
-                    disabled={isLocked}
+                    disabled={isLockedForUser}
                   />
                 </div>
                 <div className="space-y-2">
@@ -852,7 +856,7 @@ export default function BooksPage() {
                     value={formData.isbn ?? ""} 
                     onChange={e => setFormData({ ...formData, isbn: e.target.value })} 
                     className="h-11" 
-                    disabled={isLocked}
+                    disabled={isLockedForUser}
                   />
                 </div>
                 <div className="space-y-2">
@@ -862,7 +866,7 @@ export default function BooksPage() {
                     onChange={e => setFormData({ ...formData, category: e.target.value })} 
                     placeholder="Cth: Matematika, Fiksi" 
                     className="h-11" 
-                    disabled={isLocked}
+                    disabled={isLockedForUser}
                   />
                 </div>
                 <div className="space-y-2">
@@ -872,7 +876,7 @@ export default function BooksPage() {
                     value={formData.totalStock ?? 0} 
                     onChange={e => setFormData({ ...formData, totalStock: Number(e.target.value), availableStock: Number(e.target.value) })} 
                     className="h-11" 
-                    disabled={isLocked}
+                    disabled={isLockedForUser}
                   />
                 </div>
                 <div className="col-span-1 sm:col-span-2 space-y-2">
@@ -882,13 +886,13 @@ export default function BooksPage() {
                     onChange={e => setFormData({ ...formData, rackLocation: e.target.value })} 
                     className="h-11" 
                     placeholder="Cth: A1" 
-                    disabled={isLocked}
+                    disabled={isLockedForUser}
                   />
                 </div>
                 <div className="col-span-1 sm:col-span-2 space-y-2 pb-4">
                   <div className="flex justify-between items-center">
                     <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Deskripsi / Ringkasan AI</Label>
-                    <button type="button" onClick={handleGenerateDescription} disabled={isGenerating || isLocked} className="flex items-center gap-1 text-[10px] font-bold text-primary hover:opacity-80 transition-opacity">
+                    <button type="button" onClick={handleGenerateDescription} disabled={isGenerating || isLockedForUser} className="flex items-center gap-1 text-[10px] font-bold text-primary hover:opacity-80 transition-opacity">
                       <Sparkles className="h-3 w-3" /> AI Deskripsi
                     </button>
                   </div>
@@ -896,7 +900,7 @@ export default function BooksPage() {
                     value={formData.description ?? ""} 
                     onChange={e => setFormData({ ...formData, description: e.target.value })} 
                     className="min-h-[100px] bg-white border-slate-300" 
-                    disabled={isLocked}
+                    disabled={isLockedForUser}
                   />
                 </div>
               </div>
@@ -905,7 +909,7 @@ export default function BooksPage() {
 
           <DialogFooter className="p-4 bg-slate-50 border-t shrink-0">
             <Button variant="outline" onClick={() => setIsOpen(false)}>Batal</Button>
-            <Button onClick={handleSaveToLocalQueue} disabled={isLocked} className="px-8 shadow-lg shadow-primary/20">
+            <Button onClick={handleSaveToLocalQueue} disabled={isLockedForUser} className="px-8 shadow-lg shadow-primary/20">
               Simpan di Localhost
             </Button>
           </DialogFooter>
@@ -928,7 +932,7 @@ export default function BooksPage() {
                     value={formData.mainHeader ?? ""} 
                     onChange={e => setFormData({ ...formData, mainHeader: e.target.value })} 
                     className="bg-slate-50 h-12" 
-                    disabled={isLocked}
+                    disabled={isLockedForUser}
                   />
                 </div>
                 <div className="space-y-2">
@@ -937,25 +941,25 @@ export default function BooksPage() {
                     value={formData.budgetSource ?? ""} 
                     onChange={e => setFormData({ ...formData, budgetSource: e.target.value })} 
                     className="bg-slate-50 h-12" 
-                    disabled={isLocked}
+                    disabled={isLockedForUser}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Kode Buku</Label><Input value={formData.code ?? ""} disabled className="bg-muted h-11" /></div>
-                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Judul Buku</Label><Input value={formData.title ?? ""} onChange={e => setFormData({ ...formData, title: e.target.value })} className="h-11" disabled={isLocked} /></div>
-                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Kode Rekening</Label><Input value={formData.accountCode ?? ""} onChange={e => setFormData({ ...formData, accountCode: e.target.value })} className="h-11" disabled={isLocked} /></div>
-                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Penerbit</Label><Input value={formData.publisher ?? ""} onChange={e => setFormData({ ...formData, publisher: e.target.value })} className="h-11" disabled={isLocked} /></div>
-                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Tahun Terbit</Label><Input type="number" value={formData.publicationYear ?? ""} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="h-11" disabled={isLocked} /></div>
-                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">ISBN</Label><Input value={formData.isbn ?? ""} onChange={e => setFormData({ ...formData, isbn: e.target.value })} className="h-11" disabled={isLocked} /></div>
-                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Jenis / Kategori</Label><Input value={formData.category ?? ""} onChange={e => setFormData({ ...formData, category: e.target.value })} className="h-11" disabled={isLocked} /></div>
-                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Lokasi Rak</Label><Input value={formData.rackLocation ?? ""} onChange={e => setFormData({ ...formData, rackLocation: e.target.value })} className="h-11" disabled={isLocked} /></div>
-                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Jumlah Stok Total</Label><Input type="number" value={formData.totalStock ?? 0} onChange={e => setFormData({ ...formData, totalStock: Number(e.target.value) })} className="h-11" disabled={isLocked} /></div>
-                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Stok Tersedia</Label><Input type="number" value={formData.availableStock ?? 0} onChange={e => setFormData({ ...formData, availableStock: Number(e.target.value) })} className="h-11" disabled={isLocked} /></div>
+                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Judul Buku</Label><Input value={formData.title ?? ""} onChange={e => setFormData({ ...formData, title: e.target.value })} className="h-11" disabled={isLockedForUser} /></div>
+                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Kode Rekening</Label><Input value={formData.accountCode ?? ""} onChange={e => setFormData({ ...formData, accountCode: e.target.value })} className="h-11" disabled={isLockedForUser} /></div>
+                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Penerbit</Label><Input value={formData.publisher ?? ""} onChange={e => setFormData({ ...formData, publisher: e.target.value })} className="h-11" disabled={isLockedForUser} /></div>
+                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Tahun Terbit</Label><Input type="number" value={formData.publicationYear ?? ""} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="h-11" disabled={isLockedForUser} /></div>
+                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">ISBN</Label><Input value={formData.isbn ?? ""} onChange={e => setFormData({ ...formData, isbn: e.target.value })} className="h-11" disabled={isLockedForUser} /></div>
+                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Jenis / Kategori</Label><Input value={formData.category ?? ""} onChange={e => setFormData({ ...formData, category: e.target.value })} className="h-11" disabled={isLockedForUser} /></div>
+                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Lokasi Rak</Label><Input value={formData.rackLocation ?? ""} onChange={e => setFormData({ ...formData, rackLocation: e.target.value })} className="h-11" disabled={isLockedForUser} /></div>
+                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Jumlah Stok Total</Label><Input type="number" value={formData.totalStock ?? 0} onChange={e => setFormData({ ...formData, totalStock: Number(e.target.value) })} className="h-11" disabled={isLockedForUser} /></div>
+                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Stok Tersedia</Label><Input type="number" value={formData.availableStock ?? 0} onChange={e => setFormData({ ...formData, availableStock: Number(e.target.value) })} className="h-11" disabled={isLockedForUser} /></div>
                 <div className="col-span-1 sm:col-span-2 space-y-2 pb-4">
                   <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Deskripsi</Label>
-                  <Textarea value={formData.description ?? ""} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" disabled={isLocked} />
+                  <Textarea value={formData.description ?? ""} onChange={e => setFormData({ ...formData, description: e.target.value })} className="min-h-[100px] bg-white border-slate-300" disabled={isLockedForUser} />
                 </div>
               </div>
             </div>
@@ -963,7 +967,7 @@ export default function BooksPage() {
 
           <DialogFooter className="p-4 bg-slate-50 border-t shrink-0">
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>Batal</Button>
-            <Button onClick={handleUpdateBook} disabled={isLocked} className="px-8 shadow-lg shadow-primary/20">
+            <Button onClick={handleUpdateBook} disabled={isLockedForUser} className="px-8 shadow-lg shadow-primary/20">
               Simpan Perubahan
             </Button>
           </DialogFooter>
@@ -1030,12 +1034,12 @@ export default function BooksPage() {
               if(!win) return;
               win.document.write(`
                 <html>
-                  <body style="display:flex; justifyContent:center; alignItems:center; height:100vh; margin:0;" onload="window.print(); window.close();">
-                    <div style="textAlign:center; border:1px solid #000; padding:20px; fontFamily:sans-serif;">
-                      <div style="fontWeight:bold; fontSize:10px;">${selectedBookQr?.mainHeader || 'PUSTAKA NUSANTARA'}</div>
-                      <div style="fontSize:16px; fontWeight:900; margin:10px 0;">${selectedBookQr?.title}</div>
+                  <body style="display:flex; justify-content:center; align-items:center; height:100vh; margin:0;" onload="window.print(); window.close();">
+                    <div style="text-align:center; border:1px solid #000; padding:20px; font-family:sans-serif;">
+                      <div style="font-weight:bold; font-size:10px;">${selectedBookQr?.mainHeader || 'PUSTAKA NUSANTARA'}</div>
+                      <div style="font-size:16px; font-weight:900; margin:10px 0;">${selectedBookQr?.title}</div>
                       <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${selectedBookQr?.code}" />
-                      <div style="fontFamily:monospace; fontWeight:bold; marginTop:10px;">${selectedBookQr?.code}</div>
+                      <div style="font-family:monospace; font-weight:bold; margin-top:10px;">${selectedBookQr?.code}</div>
                     </div>
                   </body>
                 </html>
@@ -1066,7 +1070,7 @@ export default function BooksPage() {
                       <div className="font-bold text-sm">{item.title}</div>
                       <div className="text-[10px] text-muted-foreground font-mono">{item.code} | {item.budgetSource}</div>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeFromQueue(item.tempId)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeFromQueue(item.tempId)} disabled={isLockedForUser}>
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
@@ -1077,7 +1081,7 @@ export default function BooksPage() {
           <DialogFooter className="p-4 bg-slate-50 border-t">
             <div className="flex w-full gap-2">
                <Button variant="outline" className="flex-1" onClick={() => setIsQueueOpen(false)}>Tutup</Button>
-               <Button className="flex-1 bg-orange-600 hover:bg-orange-700" disabled={localQueue.length === 0 || isSyncing || isLocked} onClick={handleSyncToDatabase}>
+               <Button className="flex-1 bg-orange-600 hover:bg-orange-700" disabled={localQueue.length === 0 || isSyncing || isLockedForUser} onClick={handleSyncToDatabase}>
                  {isSyncing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CloudUpload className="h-4 w-4 mr-2" />}
                  Kirim ke Cloud
                </Button>
@@ -1107,7 +1111,7 @@ export default function BooksPage() {
             <AlertDialogCancel onClick={() => { setBookToDelete(null); forceUnlockUI(); }}>Batal</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDeleteBook} 
-              disabled={isLocked}
+              disabled={isLockedForUser}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Ya, Hapus
