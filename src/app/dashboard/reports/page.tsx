@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { 
   FileText, 
-  Download, 
   TrendingUp, 
   BookOpen, 
   Users,
@@ -27,7 +26,7 @@ import {
   Cell
 } from "recharts"
 import { useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
-import { collection, query, where, orderBy, doc } from "firebase/firestore"
+import { collection, doc } from "firebase/firestore"
 import { isAfter, parseISO, startOfMonth, isWithinInterval, endOfMonth, format } from "date-fns"
 
 export default function ReportsPage() {
@@ -112,10 +111,10 @@ export default function ReportsPage() {
     printWindow.document.write(`
       <html>
         <head>
-          <title>Laporan Bulanan Perpustakaan - SMPN 5</title>
+          <title> </title>
           <style>
-            @page { size: A4; margin: 15mm; }
-            body { font-family: 'Inter', sans-serif; font-size: 12px; line-height: 1.6; }
+            @page { size: A4; margin: 0; }
+            body { font-family: 'Inter', sans-serif; font-size: 12px; line-height: 1.6; margin: 0; padding: 15mm; }
             .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 30px; }
             .school-name { font-size: 20px; font-weight: 900; }
             .report-title { text-align: center; font-size: 16px; font-weight: 800; margin-bottom: 30px; text-decoration: underline; }
@@ -128,6 +127,7 @@ export default function ReportsPage() {
             th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
             th { background: #f9f9f9; }
             .footer { margin-top: 60px; float: right; text-align: center; width: 250px; }
+            .print-footer { position: fixed; bottom: 5mm; left: 15mm; right: 15mm; font-size: 8px; text-align: center; color: #999; border-top: 1px solid #eee; padding-top: 2mm; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
@@ -194,6 +194,7 @@ export default function ReportsPage() {
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
             NIP. ${settings?.principalNip || '198507272011011020'}
           </div>
+          <div class="print-footer">Sistem Informasi Pustaka Nusantara - SMPN 5 LANGKE REMBONG | Laporan Statistik Bulanan</div>
         </body>
       </html>
     `)

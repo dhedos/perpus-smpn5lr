@@ -302,10 +302,10 @@ export default function BooksPage() {
     printWindow.document.write(`
       <html>
         <head>
-          <title>Cetak Koleksi Buku - SMPN 5</title>
+          <title> </title>
           <style>
-            @page { size: A4 landscape; margin: 10mm; }
-            body { font-family: 'Inter', sans-serif; font-size: 12px; margin: 0; padding: 0; }
+            @page { size: A4 landscape; margin: 0; }
+            body { font-family: 'Inter', sans-serif; font-size: 12px; margin: 0; padding: 15mm; }
             .header { text-align: center; margin-bottom: 20px; border-bottom: 3px double #000; padding-bottom: 10px; }
             .school-name { font-size: 18px; font-weight: 900; }
             .dept-name { font-size: 14px; font-weight: 700; }
@@ -315,6 +315,7 @@ export default function BooksPage() {
             th { background: #f0f0f0; border: 1px solid #ccc; padding: 10px; font-weight: bold; text-transform: uppercase; font-size: 10px; }
             .footer-table { width: 100%; border: none; margin-top: 40px; }
             .footer-table td { border: none; text-align: center; width: 33%; }
+            .print-footer { position: fixed; bottom: 5mm; left: 15mm; right: 15mm; font-size: 8px; text-align: center; color: #999; border-top: 1px solid #eee; padding-top: 2mm; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
@@ -349,6 +350,7 @@ export default function BooksPage() {
               NIP. ${settings?.principalNip || '198507272011011020'}
             </div>
           </div>
+          <div class="print-footer">Sistem Informasi Pustaka Nusantara - SMPN 5 LANGKE REMBONG</div>
         </body>
       </html>
     `)
@@ -385,11 +387,11 @@ export default function BooksPage() {
     printWindow.document.write(`
       <html>
         <head>
-          <title>Cetak Label Stiker - SMPN 5</title>
+          <title> </title>
           <style>
-            @page { size: A4; margin: 5mm; } 
-            body { margin: 0; padding: 0; background: #fff; font-family: 'Inter', sans-serif; }
-            .page-container { display: flex; flex-wrap: wrap; gap: 5mm; justify-content: flex-start; padding: 5mm; }
+            @page { size: A4; margin: 0; } 
+            body { margin: 0; padding: 5mm; background: #fff; font-family: 'Inter', sans-serif; }
+            .page-container { display: flex; flex-wrap: wrap; gap: 5mm; justify-content: flex-start; }
             
             .label-card { 
               width: 80mm; 
@@ -960,7 +962,7 @@ export default function BooksPage() {
               const content = document.getElementById('single-qr-label')?.outerHTML;
               const printWindow = window.open('', '_blank');
               if (printWindow && content) {
-                printWindow.document.write(`<html><head><style>@page { size: 80mm 30mm; margin: 0; } body { margin: 0; padding: 0; }</style></head><body onload="window.print(); window.close();">${content}</body></html>`);
+                printWindow.document.write(`<html><head><title> </title><style>@page { size: 80mm 30mm; margin: 0; } body { margin: 0; padding: 0; }</style></head><body onload="window.print(); window.close();">${content}</body></html>`);
                 printWindow.document.close();
               }
             }}><Printer className="h-4 w-4 mr-2" />Cetak Stiker</Button>

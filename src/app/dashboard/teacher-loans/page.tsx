@@ -15,9 +15,7 @@ import {
   History,
   ArrowRightLeft,
   ChevronRight,
-  FileDown,
   Clock,
-  CheckCircle2,
   Printer
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -226,16 +224,17 @@ export default function TeacherLoansPage() {
     printWindow.document.write(`
       <html>
         <head>
-          <title>Bukti Buku Pegangan Guru - SMPN 5</title>
+          <title> </title>
           <style>
-            @page { size: A4 landscape; margin: 10mm; }
-            body { font-family: 'Inter', sans-serif; font-size: 11px; }
+            @page { size: A4 landscape; margin: 0; }
+            body { font-family: 'Inter', sans-serif; font-size: 11px; margin: 0; padding: 15mm; }
             .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
             .school-name { font-size: 16px; font-weight: 900; }
             .title { text-align: center; font-size: 12px; font-weight: 800; margin: 20px 0; text-transform: uppercase; }
             table { width: 100%; border-collapse: collapse; }
             th { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; font-size: 9px; }
             .footer { margin-top: 40px; float: right; text-align: center; width: 250px; }
+            .print-footer { position: fixed; bottom: 5mm; left: 15mm; right: 15mm; font-size: 8px; text-align: center; color: #999; border-top: 1px solid #eee; padding-top: 2mm; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
@@ -268,6 +267,7 @@ export default function TeacherLoansPage() {
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
             NIP. ${settings?.principalNip || '198507272011011020'}
           </div>
+          <div class="print-footer">Sistem Informasi Pustaka Nusantara - SMPN 5 LANGKE REMBONG | Laporan Buku Pegangan Guru</div>
         </body>
       </html>
     `)
