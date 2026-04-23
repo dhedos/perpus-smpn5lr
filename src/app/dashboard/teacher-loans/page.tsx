@@ -72,11 +72,8 @@ export default function TeacherLoansPage() {
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
   
-  // MODIFICATION LOGIC:
-  // 1. isLockedForUser: True if system is locked AND user is NOT Admin. Used for disabling actions.
-  // 2. showLockBadge: True if system is locked AND user is NOT Admin. Used for showing notification.
+  // LOGIKA PENGUNCI: Hanya menonaktifkan aksi, tidak menampilkan badge
   const isLockedForUser = Boolean(settings?.isDataLocked && !isAdmin);
-  const showLockBadge = Boolean(settings?.isDataLocked && !isAdmin);
 
   const membersRef = useMemoFirebase(() => 
     db ? query(collection(db, 'members'), where('type', '==', 'Teacher')) : null, [db])
@@ -301,11 +298,6 @@ export default function TeacherLoansPage() {
           <p className="text-sm text-muted-foreground">Peminjaman jangka panjang untuk kebutuhan mengajar di kelas.</p>
         </div>
         <div className="flex items-center gap-2">
-           {showLockBadge && (
-             <Badge variant="outline" className="h-9 px-3 bg-orange-50 text-orange-700 border-orange-200 font-bold gap-2">
-               <Lock className="h-3 w-3" /> Dikunci Admin
-             </Badge>
-           )}
            <Button variant="outline" size="sm" onClick={handlePrintBukti}>
              <Printer className="h-4 w-4 mr-2" /> Cetak Bukti
            </Button>

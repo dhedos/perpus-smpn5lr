@@ -140,11 +140,8 @@ export default function BooksPage() {
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
   
-  // MODIFICATION LOGIC: 
-  // 1. isLockedForUser: True if system is locked AND user is NOT Admin. Used for disabling inputs.
-  // 2. showLockBadge: True if system is locked AND user is NOT Admin. Used for showing the badge.
+  // LOGIKA PENGUNCI: Hanya menonaktifkan input, tidak menampilkan badge
   const isLockedForUser = Boolean(settings?.isDataLocked && !isAdmin);
-  const showLockBadge = Boolean(settings?.isDataLocked && !isAdmin);
 
   // 1. Initial Load from LocalStorage
   useEffect(() => {
@@ -611,11 +608,6 @@ export default function BooksPage() {
           <p className="text-muted-foreground text-sm">Manajemen katalog dan inventaris perpustakaan.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {showLockBadge && (
-            <Badge variant="outline" className="h-9 px-3 bg-orange-50 text-orange-700 border-orange-200 font-bold gap-2">
-              <Lock className="h-3 w-3" /> Fitur Modifikasi Dikunci Admin
-            </Badge>
-          )}
           {isHydrated && localQueue.length > 0 && (
             <Button 
               variant="default" 
