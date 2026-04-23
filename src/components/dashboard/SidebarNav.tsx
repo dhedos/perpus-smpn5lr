@@ -1,3 +1,4 @@
+
 "use client"
 
 import Link from "next/link"
@@ -41,9 +42,9 @@ const menuItems = [
   { icon: BarChart3, label: "Laporan", href: "/dashboard/reports" },
 ]
 
-const adminOnlyItems = [
+const administrationItems = [
   { icon: ClipboardCheck, label: "Cek Stok (Opname)", href: "/dashboard/stock-opname" },
-  { icon: UserCog, label: "Data Petugas", href: "/dashboard/staff" },
+  { icon: UserCog, label: "Data Petugas", href: "/dashboard/staff", adminOnly: true },
   { icon: Database, label: "Sinkronisasi Data", href: "/dashboard/sync" },
   { icon: Settings, label: "Pengaturan Sistem", href: "/dashboard/settings" },
 ]
@@ -92,27 +93,28 @@ export function SidebarNav() {
           </Link>
         ))}
 
-        {isAdmin && (
-          <>
-            <div className="mt-8 mb-2 px-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider opacity-60">
-              Administrasi
-            </div>
-            {adminOnlyItems.map((item) => (
-              <Link key={item.href} href={item.href}>
-                <Button
-                  variant="ghost"
-                  className={cn(
-                    "w-full justify-start gap-3 rounded-lg px-3 py-2 transition-all duration-200 hover:bg-accent hover:text-accent-foreground",
-                    pathname === item.href ? "bg-accent text-accent-foreground font-medium shadow-sm" : "text-muted-foreground"
-                  )}
-                >
-                  <item.icon className={cn("h-5 w-5", pathname === item.href ? "text-primary" : "")} />
-                  <span className="text-sm">{item.label}</span>
-                </Button>
-              </Link>
-            ))}
-          </>
-        )}
+        <div className="mt-8 mb-2 px-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider opacity-60">
+          Administrasi
+        </div>
+        {administrationItems.map((item) => {
+          // Hanya tampilkan jika bukan adminOnly atau jika user adalah Admin
+          if (item.adminOnly && !isAdmin) return null;
+
+          return (
+            <Link key={item.href} href={item.href}>
+              <Button
+                variant="ghost"
+                className={cn(
+                  "w-full justify-start gap-3 rounded-lg px-3 py-2 transition-all duration-200 hover:bg-accent hover:text-accent-foreground",
+                  pathname === item.href ? "bg-accent text-accent-foreground font-medium shadow-sm" : "text-muted-foreground"
+                )}
+              >
+                <item.icon className={cn("h-5 w-5", pathname === item.href ? "text-primary" : "")} />
+                <span className="text-sm">{item.label}</span>
+              </Button>
+            </Link>
+          )
+        })}
       </div>
 
       <div className="p-4 shrink-0">
