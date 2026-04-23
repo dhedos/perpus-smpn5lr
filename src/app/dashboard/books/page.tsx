@@ -939,7 +939,15 @@ export default function BooksPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Kode Buku</Label><Input value={formData.code ?? ""} disabled className="bg-muted h-11" /></div>
+                <div className="space-y-2">
+                  <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Kode Buku</Label>
+                  <Input 
+                    value={formData.code ?? ""} 
+                    onChange={e => setFormData({ ...formData, code: e.target.value })}
+                    className={`h-11 ${isLockedForUser ? 'bg-muted' : ''}`}
+                    disabled={isLockedForUser}
+                  />
+                </div>
                 <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Judul Buku</Label><Input value={formData.title ?? ""} onChange={e => setFormData({ ...formData, title: e.target.value })} className="h-11" disabled={isLockedForUser} /></div>
                 <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Kode Rekening</Label><Input value={formData.accountCode ?? ""} onChange={e => setFormData({ ...formData, accountCode: e.target.value })} className="h-11" disabled={isLockedForUser} /></div>
                 <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Penerbit</Label><Input value={formData.publisher ?? ""} onChange={e => setFormData({ ...formData, publisher: e.target.value })} className="h-11" disabled={isLockedForUser} /></div>
