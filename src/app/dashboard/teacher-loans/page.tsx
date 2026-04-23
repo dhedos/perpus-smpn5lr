@@ -72,6 +72,7 @@ export default function TeacherLoansPage() {
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
   
+  // logic: locked if settings locked AND user NOT admin
   const isLocked = Boolean(settings?.isDataLocked && !isAdmin);
 
   const membersRef = useMemoFirebase(() => 
@@ -297,7 +298,7 @@ export default function TeacherLoansPage() {
           <p className="text-sm text-muted-foreground">Peminjaman jangka panjang untuk kebutuhan mengajar di kelas.</p>
         </div>
         <div className="flex items-center gap-2">
-           {!isAdmin && isLocked && (
+           {isLocked && (
              <Badge variant="outline" className="h-9 px-3 bg-orange-50 text-orange-700 border-orange-200 font-bold gap-2">
                <Lock className="h-3 w-3" /> Dikunci Admin
              </Badge>

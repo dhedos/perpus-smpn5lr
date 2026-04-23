@@ -140,7 +140,7 @@ export default function BooksPage() {
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
   
-  // isLocked is true ONLY if settings says locked AND the user is NOT an admin
+  // logic: locked if settings locked AND user NOT admin
   const isLocked = Boolean(settings?.isDataLocked && !isAdmin);
 
   // 1. Initial Load from LocalStorage
@@ -607,7 +607,7 @@ export default function BooksPage() {
           <p className="text-muted-foreground text-sm">Manajemen katalog dan inventaris perpustakaan.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {!isAdmin && isLocked && (
+          {isLocked && (
             <Badge variant="outline" className="h-9 px-3 bg-orange-50 text-orange-700 border-orange-200 font-bold gap-2">
               <Lock className="h-3 w-3" /> Fitur Modifikasi Dikunci Admin
             </Badge>
