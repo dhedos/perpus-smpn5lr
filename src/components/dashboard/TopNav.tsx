@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Badge } from "@/components/ui/badge"
 import { useUser, useAuth, useFirestore } from "@/firebase"
 import { signOut, updatePassword } from "firebase/auth"
@@ -83,15 +83,21 @@ export function TopNav() {
     }
   }, [])
 
-  // Fungsi pengaman untuk melepas kunci interaksi layar secara paksa
-  const forceUnlockUI = () => {
+  // Fungsi pengaman paling kuat untuk melepas kunci layar
+  const forceUnlockUI = useCallback(() => {
     if (typeof document !== 'undefined') {
-      setTimeout(() => {
-        document.body.style.pointerEvents = 'auto'
-        document.body.style.overflow = 'auto'
-      }, 50)
+      document.body.style.pointerEvents = 'auto'
+      document.body.style.overflow = 'auto'
     }
-  }
+  }, [])
+
+  // Efek otomatis: Jika tidak ada modal yang terbuka, pastikan body tidak terkunci
+  useEffect(() => {
+    if (!isProfileOpen && !isLogoutConfirmOpen) {
+      const timer = setTimeout(forceUnlockUI, 300)
+      return () => clearTimeout(timer)
+    }
+  }, [isProfileOpen, isLogoutConfirmOpen, forceUnlockUI])
 
   const handleLogout = async () => {
     if (auth) {
@@ -204,10 +210,8 @@ export function TopNav() {
             <DropdownMenuSeparator />
             <DropdownMenuItem 
               onSelect={(e) => {
-                e.preventDefault();
-                setTimeout(() => {
-                  setIsProfileOpen(true);
-                }, 150);
+                e.preventDefault(); // Mencegah dropdown menutup dan mengunci body secara permanen
+                setTimeout(() => setIsProfileOpen(true), 50);
               }} 
               className="py-2.5 cursor-pointer"
             >
@@ -218,9 +222,7 @@ export function TopNav() {
             <DropdownMenuItem 
               onSelect={(e) => {
                 e.preventDefault();
-                setTimeout(() => {
-                  setIsLogoutConfirmOpen(true);
-                }, 150);
+                setTimeout(() => setIsLogoutConfirmOpen(true), 50);
               }} 
               className="text-destructive focus:text-destructive py-2.5 cursor-pointer"
             >

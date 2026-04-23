@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo, useRef, useEffect } from "react"
+import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -201,14 +201,21 @@ export default function BooksPage() {
     })
   }, [books, search, filterCategory, filterYear])
 
-  const forceUnlockUI = () => {
+  const forceUnlockUI = useCallback(() => {
     if (typeof document !== 'undefined') {
-      setTimeout(() => {
-        document.body.style.pointerEvents = 'auto'
-        document.body.style.overflow = 'auto'
-      }, 50)
+      document.body.style.pointerEvents = 'auto'
+      document.body.style.overflow = 'auto'
     }
-  }
+  }, [])
+
+  // Efek pengaman tambahan
+  useEffect(() => {
+    const isAnyModalOpen = isOpen || isEditOpen || isDetailOpen || isScannerOpen || isQrOpen || isDeleteDialogOpen || isQueueOpen
+    if (!isAnyModalOpen) {
+      const t = setTimeout(forceUnlockUI, 200)
+      return () => clearTimeout(t)
+    }
+  }, [isOpen, isEditOpen, isDetailOpen, isScannerOpen, isQrOpen, isDeleteDialogOpen, isQueueOpen, forceUnlockUI])
 
   const handleSaveToLocalQueue = () => {
     if (!formData.title || !formData.code) {
@@ -676,14 +683,14 @@ export default function BooksPage() {
                         setTimeout(() => {
                           setSelectedBookDetail(book); 
                           setIsDetailOpen(true);
-                        }, 150);
+                        }, 100);
                       }}><Eye className="h-4 w-4 mr-2" />Lihat Detail</DropdownMenuItem>
                       <DropdownMenuItem onSelect={(e) => { 
                         e.preventDefault();
                         setTimeout(() => {
                           setSelectedBookQr(book); 
                           setIsQrOpen(true);
-                        }, 150);
+                        }, 100);
                       }}><QrCode className="h-4 w-4 mr-2" />Tampilkan QR</DropdownMenuItem>
                       <DropdownMenuItem onSelect={(e) => { 
                         e.preventDefault();
@@ -706,14 +713,14 @@ export default function BooksPage() {
                             budgetSource: book.budgetSource || "BOSP"
                           }); 
                           setIsEditOpen(true);
-                        }, 150);
+                        }, 100);
                       }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
                       <DropdownMenuItem className="text-destructive" onSelect={(e) => { 
                         e.preventDefault();
                         setTimeout(() => {
                           setBookToDelete(book.id); 
                           setIsDeleteDialogOpen(true);
-                        }, 150);
+                        }, 100);
                       }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -929,12 +936,12 @@ export default function BooksPage() {
                       {selectedBookQr.title}
                     </div>
                     <div style={{ fontSize: '6pt', color: '#444', lineHeight: 1.2 }}>
-                      <div>Rek: {selectedBookQr.accountCode || '-'} | {selectedBookQr.publisher || '-'}</div>
-                      <div>{selectedBookQr.category || '-'} | {selectedBookQr.publicationYear}</div>
-                      <div>ISBN: {selectedBookQr.isbn || '-'}</div>
+                      <div>Rek: ${selectedBookQr.accountCode || '-'} | ${selectedBookQr.publisher || '-'}</div>
+                      <div>${selectedBookQr.category || '-'} | ${selectedBookQr.publicationYear}</div>
+                      <div>ISBN: ${selectedBookQr.isbn || '-'}</div>
                     </div>
                     <div style={{ fontSize: '7pt', fontWeight: 800, color: '#000', textTransform: 'uppercase', marginTop: '1mm', borderTop: '0.2pt solid #ddd', paddingTop: '0.5mm' }}>
-                      RAK: {selectedBookQr.rackLocation || '-'}
+                      RAK: ${selectedBookQr.rackLocation || '-'}
                     </div>
                   </div>
                   <div style={{ width: '25mm', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginLeft: '2mm' }}>
