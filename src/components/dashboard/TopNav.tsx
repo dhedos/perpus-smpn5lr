@@ -102,7 +102,8 @@ export function TopNav() {
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth)
-      router.push("/")
+      // Force a full clean redirect to reset entire app state
+      window.location.href = "/"
     }
   }
 

@@ -58,7 +58,8 @@ export function SidebarNav() {
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth)
-      router.push("/")
+      // Force a full reload to clear all states and prevent login issues
+      window.location.href = "/"
     }
   }
 

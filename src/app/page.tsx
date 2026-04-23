@@ -40,10 +40,15 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState("")
   const [isSendingReset, setIsSendingReset] = useState(false)
 
+  // Prefetch dashboard for faster navigation
+  useEffect(() => {
+    router.prefetch("/dashboard")
+  }, [router])
+
   // Redirect jika sudah login dan punya profile lengkap
   useEffect(() => {
     if (!authLoading && user && user.role) {
-      router.push("/dashboard")
+      router.replace("/dashboard")
     }
   }, [user, authLoading, router])
 
@@ -63,8 +68,9 @@ export default function LoginPage() {
     setLoading(true)
     try {
       await signInWithEmailAndPassword(auth, email, password)
-      toast({ title: "Berhasil Masuk", description: "Selamat datang di Pustaka Nusantara." })
-      // Redirect akan ditangani oleh useEffect
+      toast({ title: "Berhasil Masuk", description: "Mengarahkan ke Dashboard..." })
+      // Immediate push to reduce delay
+      router.push("/dashboard")
     } catch (error: any) {
       toast({ 
         title: "Gagal Masuk", 
@@ -98,6 +104,8 @@ export default function LoginPage() {
           updatedAt: new Date().toISOString()
         })
         toast({ title: "Pendaftaran Berhasil", description: `Anda masuk sebagai ${role}.` })
+      } else {
+        toast({ title: "Berhasil Masuk", description: "Selamat datang kembali." })
       }
       router.push("/dashboard")
     } catch (error: any) {
