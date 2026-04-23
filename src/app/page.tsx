@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -47,13 +46,9 @@ export default function LoginPage() {
   }, [])
 
   useEffect(() => {
-    // Jika sudah ada user, segera kunci tampilan ke mode redirecting
     if (isMounted && !authLoading && user && user.role) {
       setIsRedirecting(true)
-      const timer = setTimeout(() => {
-        router.replace("/dashboard")
-      }, 10)
-      return () => clearTimeout(timer)
+      router.replace("/dashboard")
     }
   }, [user, authLoading, router, isMounted])
 
@@ -68,18 +63,12 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!auth) return
-
     setLoading(true)
     try {
       await signInWithEmailAndPassword(auth, email, password)
       setIsRedirecting(true)
-      // Jangan matikan loading, biarkan redirect yang menangani
     } catch (error: any) {
-      toast({ 
-        title: "Gagal Masuk", 
-        description: "Email atau kata sandi salah.", 
-        variant: "destructive" 
-      })
+      toast({ title: "Gagal Masuk", description: "Email atau kata sandi salah.", variant: "destructive" })
       setLoading(false)
     }
   }
@@ -91,10 +80,8 @@ export default function LoginPage() {
       const provider = new GoogleAuthProvider()
       const result = await signInWithPopup(auth, provider)
       const userResult = result.user
-
       const userDocRef = doc(db, "users", userResult.uid)
       const userDoc = await getDoc(userDocRef)
-      
       if (!userDoc.exists()) {
         const role = noUsersExist ? "Admin" : "Staff"
         await setDoc(userDocRef, {
@@ -116,21 +103,17 @@ export default function LoginPage() {
   const handleSetupAdmin = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!auth || !db) return
-
     setLoading(true)
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-      const uid = userCredential.user.uid
-
-      await setDoc(doc(db, "users", uid), {
-        id: uid,
+      await setDoc(doc(db, "users", userCredential.user.uid), {
+        id: userCredential.user.uid,
         name: adminName,
         email: email,
         role: "Admin",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       })
-
       setIsRedirecting(true)
     } catch (error: any) {
       toast({ title: "Setup Gagal", description: error.message, variant: "destructive" })
@@ -153,24 +136,25 @@ export default function LoginPage() {
     }
   }
 
-  // Layar Pemuatan yang Seragam dengan Dashboard
-  if (!isMounted || authLoading || isRedirecting || (user && user.role)) {
-    return (
-      <div className="h-screen w-full flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
-          <div className="w-20 h-20 flex items-center justify-center rounded-3xl bg-primary/10 text-primary shadow-inner">
-            <Library className="h-12 w-12 animate-pulse" />
+  const loadingUI = (
+    <div className="h-screen w-full flex items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
+        <div className="w-20 h-20 flex items-center justify-center rounded-3xl bg-primary/10 text-primary shadow-inner">
+          <Library className="h-12 w-12 animate-pulse" />
+        </div>
+        <div className="flex flex-col items-center space-y-2">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">Pustaka Nusantara</p>
           </div>
-          <div className="flex flex-col items-center space-y-2">
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">Pustaka Nusantara</p>
-            </div>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50">Menyelaraskan Sesi Cloud...</p>
-          </div>
+          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50">Menyelaraskan Sesi Cloud...</p>
         </div>
       </div>
-    )
+    </div>
+  )
+
+  if (!isMounted || authLoading || isRedirecting || (user && user.role)) {
+    return loadingUI
   }
 
   return (

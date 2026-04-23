@@ -1,4 +1,3 @@
-
 "use client"
 
 import { SidebarNav } from "@/components/dashboard/SidebarNav"
@@ -23,35 +22,32 @@ export default function DashboardLayout({
   }, [])
 
   useEffect(() => {
-    // Hanya redirect jika pemuatan selesai DAN benar-benar tidak ada user
     if (isMounted && !loading && !user && !isRedirecting) {
       setIsRedirecting(true)
       router.replace("/")
     }
   }, [user, loading, router, isRedirecting, isMounted])
 
-  // Cegah rendering konten dinamis di server untuk menghindari Hydration Error
-  // Gunakan UI yang IDENTIK dengan halaman login untuk transisi yang sangat mulus
-  if (!isMounted || loading || isRedirecting) {
-    return (
-      <div className="h-screen w-full flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
-          <div className="w-20 h-20 flex items-center justify-center rounded-3xl bg-primary/10 text-primary shadow-inner">
-            <Library className="h-12 w-12 animate-pulse" />
+  const loadingUI = (
+    <div className="h-screen w-full flex items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
+        <div className="w-20 h-20 flex items-center justify-center rounded-3xl bg-primary/10 text-primary shadow-inner">
+          <Library className="h-12 w-12 animate-pulse" />
+        </div>
+        <div className="flex flex-col items-center space-y-2">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">Pustaka Nusantara</p>
           </div>
-          <div className="flex flex-col items-center space-y-2">
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">Pustaka Nusantara</p>
-            </div>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50">Menyelaraskan Sesi Cloud...</p>
-          </div>
+          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50">Menyelaraskan Sesi Cloud...</p>
         </div>
       </div>
-    )
-  }
+    </div>
+  )
 
-  // Jika tidak ada user (tapi belum redirect), tampilkan null
+  // Pola anti-hydration error: kembalikan UI statis yang sama antara server & client awal
+  if (!isMounted) return loadingUI
+  if (loading || isRedirecting) return loadingUI
   if (!user) return null
 
   return (
