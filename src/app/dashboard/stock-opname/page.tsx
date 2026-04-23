@@ -170,17 +170,24 @@ export default function StockOpnamePage() {
   }
 
   const handlePrintAudit = () => {
-    if (!audits) return
+    if (!audits || !books) return
     const stockAudits = audits.filter(a => a.actionType === 'STOCK_AUDIT')
-    if (stockAudits.length === 0) return
+    
+    // Filter hanya buku yang masih ada di database utama
+    const validAuditsForPrint = stockAudits.filter(a => books.some(b => b.id === a.bookId))
+    
+    if (validAuditsForPrint.length === 0) {
+      toast({ title: "Data Kosong", description: "Tidak ada data audit buku aktif untuk dicetak." })
+      return
+    }
 
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
-    const rowsHtml = stockAudits.map((a, index) => {
-      const masterBook = books?.find(b => b.id === a.bookId);
+    const rowsHtml = validAuditsForPrint.map((a, index) => {
+      const masterBook = books.find(b => b.id === a.bookId);
       const displayCode = (a.bookCode && a.bookCode !== "-") ? a.bookCode : (masterBook?.code || "-");
-      const displayTitle = a.bookTitle || masterBook?.title || "[Buku Telah Dihapus]";
+      const displayTitle = masterBook?.title || a.bookTitle;
       
       return `
         <tr>
