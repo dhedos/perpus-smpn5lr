@@ -210,8 +210,8 @@ export function TopNav() {
             <DropdownMenuSeparator />
             <DropdownMenuItem 
               onSelect={(e) => {
-                e.preventDefault(); // Mencegah dropdown menutup dan mengunci body secara permanen
-                setTimeout(() => setIsProfileOpen(true), 50);
+                e.preventDefault(); 
+                setTimeout(() => setIsProfileOpen(true), 100);
               }} 
               className="py-2.5 cursor-pointer"
             >
@@ -222,7 +222,7 @@ export function TopNav() {
             <DropdownMenuItem 
               onSelect={(e) => {
                 e.preventDefault();
-                setTimeout(() => setIsLogoutConfirmOpen(true), 50);
+                setTimeout(() => setIsLogoutConfirmOpen(true), 100);
               }} 
               className="text-destructive focus:text-destructive py-2.5 cursor-pointer"
             >

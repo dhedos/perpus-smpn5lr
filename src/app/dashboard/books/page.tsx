@@ -936,12 +936,12 @@ export default function BooksPage() {
                       {selectedBookQr.title}
                     </div>
                     <div style={{ fontSize: '6pt', color: '#444', lineHeight: 1.2 }}>
-                      <div>Rek: ${selectedBookQr.accountCode || '-'} | ${selectedBookQr.publisher || '-'}</div>
-                      <div>${selectedBookQr.category || '-'} | ${selectedBookQr.publicationYear}</div>
-                      <div>ISBN: ${selectedBookQr.isbn || '-'}</div>
+                      <div>Rek: {selectedBookQr.accountCode || '-'} | {selectedBookQr.publisher || '-'}</div>
+                      <div>{selectedBookQr.category || '-'} | {selectedBookQr.publicationYear}</div>
+                      <div>ISBN: {selectedBookQr.isbn || '-'}</div>
                     </div>
                     <div style={{ fontSize: '7pt', fontWeight: 800, color: '#000', textTransform: 'uppercase', marginTop: '1mm', borderTop: '0.2pt solid #ddd', paddingTop: '0.5mm' }}>
-                      RAK: ${selectedBookQr.rackLocation || '-'}
+                      RAK: {selectedBookQr.rackLocation || '-'}
                     </div>
                   </div>
                   <div style={{ width: '25mm', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginLeft: '2mm' }}>

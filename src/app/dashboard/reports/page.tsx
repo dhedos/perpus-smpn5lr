@@ -28,7 +28,7 @@ import {
 } from "recharts"
 import { useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
 import { collection, query, where, orderBy, doc } from "firebase/firestore"
-import { isAfter, parseISO, startOfMonth, isWithinInterval, endOfMonth } from "date-fns"
+import { isAfter, parseISO, startOfMonth, isWithinInterval, endOfMonth, format } from "date-fns"
 
 export default function ReportsPage() {
   const db = useFirestore()
