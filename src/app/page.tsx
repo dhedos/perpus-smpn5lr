@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -31,6 +32,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [isSetupMode, setIsSetupMode] = useState(false)
   const [isRedirecting, setIsRedirecting] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
   
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -40,13 +42,16 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState("")
   const [isSendingReset, setIsSendingReset] = useState(false)
 
-  // Pre-redirect logic to avoid flicker
   useEffect(() => {
-    if (!authLoading && user && user.role && !isRedirecting) {
+    setIsMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (isMounted && !authLoading && user && user.role && !isRedirecting) {
       setIsRedirecting(true)
       router.replace("/dashboard")
     }
-  }, [user, authLoading, router, isRedirecting])
+  }, [user, authLoading, router, isRedirecting, isMounted])
 
   const usersQuery = useMemoFirebase(() => {
     if (!db) return null
@@ -146,8 +151,8 @@ export default function LoginPage() {
     }
   }
 
-  // Consistent Loading Screen for Zero Flicker
-  if (authLoading || isRedirecting || (user && user.role)) {
+  // Gunakan isMounted untuk memastikan transisi bersih tanpa Hydration Error
+  if (!isMounted || authLoading || isRedirecting || (user && user.role)) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">

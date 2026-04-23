@@ -16,16 +16,22 @@ export default function DashboardLayout({
   const { user, loading } = useUser()
   const router = useRouter()
   const [isRedirecting, setIsRedirecting] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   useEffect(() => {
     // Hanya redirect jika pemuatan selesai DAN benar-benar tidak ada user
-    if (!loading && !user && !isRedirecting) {
+    if (isMounted && !loading && !user && !isRedirecting) {
       setIsRedirecting(true)
       router.replace("/")
     }
-  }, [user, loading, router, isRedirecting])
+  }, [user, loading, router, isRedirecting, isMounted])
 
-  if (loading || isRedirecting) {
+  // Cegah rendering konten dinamis di server untuk menghindari Hydration Error
+  if (!isMounted || loading || isRedirecting) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
@@ -44,7 +50,7 @@ export default function DashboardLayout({
     )
   }
 
-  // Jika tidak ada user dan tidak sedang loading, tampilkan null selagi menunggu redirect useEffect
+  // Jika tidak ada user (tapi belum redirect), tampilkan null
   if (!user) return null
 
   return (
