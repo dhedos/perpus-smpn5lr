@@ -886,4 +886,146 @@ export default function BooksPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* ... rest of the file ... */}
+
+      {/* DETAIL BUKU */}
+      <Dialog open={isDetailOpen} onOpenChange={v => { setIsDetailOpen(v); forceUnlockUI(); }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader><DialogTitle>Rincian Informasi Buku</DialogTitle></DialogHeader>
+          {selectedBookDetail && (
+            <div className="grid gap-6 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground uppercase font-bold">Judul Buku</Label>
+                  <div className="font-bold text-lg text-primary">{selectedBookDetail.title}</div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground uppercase font-bold">Kode Buku</Label>
+                  <div className="font-mono font-black">{selectedBookDetail.code}</div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground uppercase font-bold">Penerbit</Label>
+                  <div>{selectedBookDetail.publisher || '-'} ({selectedBookDetail.publicationYear})</div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground uppercase font-bold">Kategori</Label>
+                  <div><Badge variant="secondary">{selectedBookDetail.category || 'Umum'}</Badge></div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground uppercase font-bold">Lokasi Rak</Label>
+                  <div className="font-bold">{selectedBookDetail.rackLocation || 'Belum diatur'}</div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground uppercase font-bold">Status Stok</Label>
+                  <div className="font-bold text-green-600">{selectedBookDetail.availableStock} / {selectedBookDetail.totalStock} Unit</div>
+                </div>
+              </div>
+              <div className="space-y-2 border-t pt-4">
+                <Label className="text-xs text-muted-foreground uppercase font-bold">Sinopsis / Deskripsi</Label>
+                <p className="text-sm leading-relaxed text-slate-600 italic">
+                  {selectedBookDetail.description || 'Tidak ada deskripsi tersedia.'}
+                </p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* QR MODAL */}
+      <Dialog open={isQrOpen} onOpenChange={v => { setIsQrOpen(v); forceUnlockUI(); }}>
+        <DialogContent className="max-w-md text-center p-8">
+          <DialogHeader><DialogTitle>QR Label Buku</DialogTitle></DialogHeader>
+          <div className="flex flex-col items-center gap-6 mt-4">
+            <div className="p-4 bg-white border-2 border-primary/10 rounded-2xl shadow-xl">
+              {selectedBookQr && <QRCodeSVG value={selectedBookQr.code} size={200} level="H" includeMargin />}
+            </div>
+            <div>
+              <div className="text-xl font-black text-primary uppercase">{selectedBookQr?.title}</div>
+              <div className="text-sm font-mono font-bold text-muted-foreground">{selectedBookQr?.code}</div>
+            </div>
+            <Button variant="outline" className="w-full h-12" onClick={() => {
+              const win = window.open('', '_blank');
+              if(!win) return;
+              win.document.write(`
+                <html>
+                  <body style="display:flex; justify-content:center; align-items:center; height:100vh; margin:0;" onload="window.print(); window.close();">
+                    <div style="text-align:center; border:1px solid #000; padding:20px; font-family:sans-serif;">
+                      <div style="font-weight:bold; font-size:10px;">${selectedBookQr?.mainHeader || 'PUSTAKA NUSANTARA'}</div>
+                      <div style="font-size:16px; font-weight:900; margin:10px 0;">${selectedBookQr?.title}</div>
+                      <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${selectedBookQr?.code}" />
+                      <div style="font-family:monospace; font-weight:bold; margin-top:10px;">${selectedBookQr?.code}</div>
+                    </div>
+                  </body>
+                </html>
+              `);
+              win.document.close();
+            }}><Printer className="mr-2 h-4 w-4" /> Cetak Label QR</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ANTREAN LOKAL */}
+      <Dialog open={isQueueOpen} onOpenChange={v => { setIsQueueOpen(v); forceUnlockUI(); }}>
+        <DialogContent className="max-w-xl max-h-[80vh] flex flex-col p-0">
+          <DialogHeader className="p-6 border-b">
+            <DialogTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5 text-orange-600" />
+              Antrean Data Lokal ({localQueue.length})
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto p-4">
+            {localQueue.length === 0 ? (
+              <div className="text-center py-10 text-muted-foreground italic">Antrean kosong.</div>
+            ) : (
+              <div className="space-y-3">
+                {localQueue.map(item => (
+                  <div key={item.tempId} className="p-3 border rounded-lg flex justify-between items-center bg-orange-50/50">
+                    <div>
+                      <div className="font-bold text-sm">{item.title}</div>
+                      <div className="text-[10px] text-muted-foreground font-mono">{item.code} | {item.budgetSource}</div>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeFromQueue(item.tempId)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter className="p-4 bg-slate-50 border-t">
+            <div className="flex w-full gap-2">
+               <Button variant="outline" className="flex-1" onClick={() => setIsQueueOpen(false)}>Tutup</Button>
+               <Button className="flex-1 bg-orange-600 hover:bg-orange-700" disabled={localQueue.length === 0 || isSyncing} onClick={handleSyncToDatabase}>
+                 {isSyncing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CloudUpload className="h-4 w-4 mr-2" />}
+                 Kirim ke Cloud
+               </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* SCANNER MODAL */}
+      <Dialog open={isScannerOpen} onOpenChange={v => !v && stopScanner()}>
+        <DialogContent className="p-0 border-none bg-black max-w-xl h-[450px] overflow-hidden">
+          <div id="scanner-view" className="w-full h-full bg-black"></div>
+          <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>
+        </DialogContent>
+      </Dialog>
+
+      {/* HAPUS KONFIRMASI */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={v => { setIsDeleteDialogOpen(v); forceUnlockUI(); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Buku dari Koleksi?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini permanen. Buku akan dihapus dari katalog digital dan riwayat sirkulasi mungkin terpengaruh.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setBookToDelete(null); forceUnlockUI(); }}>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteBook} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Ya, Hapus</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  )
+}
