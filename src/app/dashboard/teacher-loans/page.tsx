@@ -79,7 +79,6 @@ export default function TeacherLoansPage() {
   const booksRef = useMemoFirebase(() => 
     db ? query(collection(db, 'books'), orderBy('title', 'asc')) : null, [db])
   
-  // Query sederhana untuk menghindari Permission Error akibat indexing
   const teacherTransQuery = useMemoFirebase(() => {
     if (!db) return null
     return query(
@@ -92,7 +91,6 @@ export default function TeacherLoansPage() {
   const { data: books } = useCollection(booksRef)
   const { data: allTransactions, isLoading: loadingTrans } = useCollection(teacherTransQuery)
 
-  // Filter data di client side untuk kestabilan akses
   const transactions = useMemo(() => {
     if (!allTransactions) return []
     const status = activeTab === "active" ? "active" : "returned"
@@ -161,7 +159,7 @@ export default function TeacherLoansPage() {
   const handleProcessLoan = () => {
     if (!db || !selectedMember || !selectedBook) return
     if (isLocked) {
-      toast({ title: "Akses Terkunci", description: "Modifikasi sirkulasi guru dikunci Admin.", variant: "destructive" })
+      toast({ title: "Akses Terkunci", description: "Admin mengunci fitur pengubahan data.", variant: "destructive" })
       return
     }
 
@@ -193,7 +191,7 @@ export default function TeacherLoansPage() {
   const handleReturn = (trans: any) => {
     if (!db) return
     if (isLocked) {
-      toast({ title: "Akses Terkunci", description: "Pengembalian dikunci Admin.", variant: "destructive" })
+      toast({ title: "Akses Terkunci", description: "Admin mengunci fitur pengubahan data.", variant: "destructive" })
       return
     }
 
@@ -282,7 +280,7 @@ export default function TeacherLoansPage() {
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
             NIP. ${settings?.principalNip || '198507272011011020'}
           </div>
-          <div class="print-footer">Sistem Informasi Pustaka Nusantara - SMPN 5 LANGKE REMBONG | Laporan Buku Pegangan Guru</div>
+          <div class="print-footer">Pustaka Nusantara - SMPN 5 LANGKE REMBONG | Laporan Buku Pegangan Guru</div>
         </body>
       </html>
     `)
@@ -299,7 +297,7 @@ export default function TeacherLoansPage() {
           <p className="text-sm text-muted-foreground">Peminjaman jangka panjang untuk kebutuhan mengajar di kelas.</p>
         </div>
         <div className="flex items-center gap-2">
-           {isLocked && (
+           {!isAdmin && isLocked && (
              <Badge variant="outline" className="h-9 px-3 bg-orange-50 text-orange-700 border-orange-200 font-bold gap-2">
                <Lock className="h-3 w-3" /> Dikunci Admin
              </Badge>
