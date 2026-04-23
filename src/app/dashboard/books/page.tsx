@@ -29,7 +29,6 @@ import {
   Calendar as CalendarIcon,
   Filter,
   ChevronDown,
-  RefreshCw,
   Database,
   CloudUpload,
   Clock
