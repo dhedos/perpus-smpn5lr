@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Library, Bell, Shield, Save, Loader2, Coins, CalendarDays, AlertTriangle, FileText, MapPin, UserCheck, GraduationCap } from "lucide-react"
+import { Library, Bell, Shield, Save, Loader2, Coins, CalendarDays, AlertTriangle, FileText, MapPin, UserCheck, GraduationCap, LockKeyhole } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 
@@ -17,13 +17,15 @@ import {
   useFirestore, 
   useDoc, 
   errorEmitter,
-  useMemoFirebase
+  useMemoFirebase,
+  useUser
 } from '@/firebase'
 import { doc, setDoc } from 'firebase/firestore'
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors'
 
 export default function SettingsPage() {
   const db = useFirestore()
+  const { user, isAdmin } = useUser()
   const { toast } = useToast()
   const [isSaving, setIsSaving] = useState(false)
 
@@ -44,7 +46,8 @@ export default function SettingsPage() {
     schoolAddress: "Mando, Compang Carep Kab. Manggarai NTT",
     reportCity: "Mando",
     principalName: "Lodovikus Jangkar, S.Pd.Gr",
-    principalNip: "198507272011011020"
+    principalNip: "198507272011011020",
+    isDataLocked: false
   })
 
   // Fetch settings from Firestore
@@ -62,7 +65,8 @@ export default function SettingsPage() {
         loanPeriod: Number(remoteSettings.loanPeriod ?? 7),
         fineAmount: Number(remoteSettings.fineAmount ?? 500),
         damagedBookFine: Number(remoteSettings.damagedBookFine ?? 10000),
-        lostBookFine: Number(remoteSettings.lostBookFine ?? 50000)
+        lostBookFine: Number(remoteSettings.lostBookFine ?? 50000),
+        isDataLocked: Boolean(remoteSettings.isDataLocked ?? false)
       }))
     }
   }, [remoteSettings])
@@ -108,7 +112,7 @@ export default function SettingsPage() {
           <p className="text-muted-foreground text-sm">Konfigurasi profil sekolah dan kebijakan sirkulasi.</p>
         </div>
         <Badge variant="secondary" className="bg-primary/10 text-primary border-none mb-1">
-          Role: Administrator
+          Role: {user?.role || "Administrator"}
         </Badge>
       </div>
 
@@ -364,10 +368,29 @@ export default function SettingsPage() {
         <TabsContent value="security" className="mt-6">
           <Card className="border-none shadow-sm">
             <CardHeader>
-              <CardTitle>Keamanan Admin</CardTitle>
-              <CardDescription>Manajemen akses tingkat tinggi untuk sekolah.</CardDescription>
+              <CardTitle>Keamanan & Hak Akses</CardTitle>
+              <CardDescription>Manajemen akses tingkat tinggi untuk operasional sekolah.</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
+              {isAdmin && (
+                <div className="flex items-center justify-between p-5 bg-orange-50 border border-orange-200 rounded-2xl animate-in zoom-in-95">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-orange-700 font-bold">
+                      <LockKeyhole className="h-5 w-5" />
+                      Kunci Modifikasi Data
+                    </div>
+                    <p className="text-xs text-orange-800/70 leading-relaxed max-w-md">
+                      Aktifkan fitur ini untuk mencegah petugas (Staff) mengubah atau menghapus data Koleksi Buku dan Buku Pegangan Guru.
+                    </p>
+                  </div>
+                  <Switch 
+                    checked={settings.isDataLocked} 
+                    onCheckedChange={(v) => setSettings({ ...settings, isDataLocked: v })}
+                    className="data-[state=checked]:bg-orange-600"
+                  />
+                </div>
+              )}
+
               <div className="p-4 border-2 border-dashed rounded-xl flex items-center justify-between">
                 <div className="space-y-1">
                   <p className="font-bold">Ganti Password Utama</p>
@@ -375,6 +398,15 @@ export default function SettingsPage() {
                 </div>
                 <Button variant="outline">Ganti Sekarang</Button>
               </div>
+
+              {isAdmin && (
+                <div className="pt-4 border-t flex justify-end">
+                   <Button className="gap-2 h-11 px-8 shadow-lg shadow-orange-600/20 bg-orange-600 hover:bg-orange-700" onClick={handleSaveSettings} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
+                    Simpan Perubahan Keamanan
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

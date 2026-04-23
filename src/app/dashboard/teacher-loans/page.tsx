@@ -16,7 +16,8 @@ import {
   ArrowRightLeft,
   ChevronRight,
   Clock,
-  Printer
+  Printer,
+  Lock
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -41,13 +42,15 @@ import {
   useFirestore, 
   useCollection, 
   useMemoFirebase,
-  useDoc
+  useDoc,
+  useUser
 } from '@/firebase'
 import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc, orderBy } from 'firebase/firestore'
 import { format } from "date-fns"
 
 export default function TeacherLoansPage() {
   const db = useFirestore()
+  const { isAdmin } = useUser()
   const { toast } = useToast()
   
   const [activeTab, setActiveTab] = useState("active")
@@ -65,9 +68,11 @@ export default function TeacherLoansPage() {
   const [showMemberSuggestions, setShowMemberSuggestions] = useState(false)
   const [showBookSuggestions, setShowBookSuggestions] = useState(false)
 
-  // Fetch Settings for Academic Year and Header
+  // Fetch Settings for Academic Year, Header, and Lock Status
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
+  
+  const isLocked = Boolean(settings?.isDataLocked && !isAdmin);
 
   const membersRef = useMemoFirebase(() => 
     db ? query(collection(db, 'members'), where('type', '==', 'Teacher')) : null, [db])
@@ -155,6 +160,11 @@ export default function TeacherLoansPage() {
 
   const handleProcessLoan = () => {
     if (!db || !selectedMember || !selectedBook) return
+    if (isLocked) {
+      toast({ title: "Akses Terkunci", description: "Modifikasi sirkulasi guru dikunci Admin.", variant: "destructive" })
+      return
+    }
+
     setIsProcessing(true)
 
     const newLoan = {
@@ -182,6 +192,11 @@ export default function TeacherLoansPage() {
 
   const handleReturn = (trans: any) => {
     if (!db) return
+    if (isLocked) {
+      toast({ title: "Akses Terkunci", description: "Pengembalian dikunci Admin.", variant: "destructive" })
+      return
+    }
+
     setIsProcessing(true)
     const transRef = doc(db, 'transactions', trans.id)
     updateDoc(transRef, { 
@@ -284,6 +299,11 @@ export default function TeacherLoansPage() {
           <p className="text-sm text-muted-foreground">Peminjaman jangka panjang untuk kebutuhan mengajar di kelas.</p>
         </div>
         <div className="flex items-center gap-2">
+           {isLocked && (
+             <Badge variant="outline" className="h-9 px-3 bg-orange-50 text-orange-700 border-orange-200 font-bold gap-2">
+               <Lock className="h-3 w-3" /> Dikunci Admin
+             </Badge>
+           )}
            <Button variant="outline" size="sm" onClick={handlePrintBukti}>
              <Printer className="h-4 w-4 mr-2" /> Cetak Bukti
            </Button>
@@ -310,12 +330,14 @@ export default function TeacherLoansPage() {
                   className="bg-white"
                   value={memberSearch}
                   onChange={e => { setMemberSearch(e.target.value); setShowMemberSuggestions(true); }}
+                  disabled={isLocked}
                 />
                 <Button 
                   size="icon" 
                   variant="ghost" 
                   className="absolute right-1 top-1/2 -translate-y-1/2"
                   onClick={() => startScanner("member")}
+                  disabled={isLocked}
                 >
                   <ScanBarcode className="h-4 w-4" />
                 </Button>
@@ -347,12 +369,14 @@ export default function TeacherLoansPage() {
                   className="bg-white"
                   value={bookSearch}
                   onChange={e => { setBookSearch(e.target.value); setShowBookSuggestions(true); }}
+                  disabled={isLocked}
                 />
                 <Button 
                   size="icon" 
                   variant="ghost" 
                   className="absolute right-1 top-1/2 -translate-y-1/2"
                   onClick={() => startScanner("book")}
+                  disabled={isLocked}
                 >
                   <ScanBarcode className="h-4 w-4" />
                 </Button>
@@ -377,7 +401,7 @@ export default function TeacherLoansPage() {
 
             <Button 
               className="w-full h-12 font-black shadow-lg shadow-primary/20" 
-              disabled={!selectedMember || !selectedBook || isProcessing}
+              disabled={!selectedMember || !selectedBook || isProcessing || isLocked}
               onClick={handleProcessLoan}
             >
               {isProcessing ? <Loader2 className="animate-spin" /> : "SERAHKAN BUKU"}
@@ -444,7 +468,7 @@ export default function TeacherLoansPage() {
                               variant="outline" 
                               className="h-8 text-[10px] font-bold gap-1"
                               onClick={() => handleReturn(t)}
-                              disabled={isProcessing}
+                              disabled={isProcessing || isLocked}
                             >
                               <History className="h-3 w-3" /> Kembali
                             </Button>

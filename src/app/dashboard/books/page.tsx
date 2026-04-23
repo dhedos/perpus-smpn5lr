@@ -31,7 +31,8 @@ import {
   ChevronDown,
   Database,
   CloudUpload,
-  Clock
+  Clock,
+  Lock
 } from "lucide-react"
 import { 
   Dialog, 
@@ -77,6 +78,7 @@ import {
   useCollection, 
   useMemoFirebase,
   useDoc,
+  useUser,
   errorEmitter 
 } from '@/firebase'
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors'
@@ -103,6 +105,7 @@ const STORAGE_KEY = 'perpus_local_queue_v3'
 
 export default function BooksPage() {
   const db = useFirestore()
+  const { isAdmin } = useUser()
   const { toast } = useToast()
   
   const [search, setSearch] = useState("")
@@ -133,9 +136,11 @@ export default function BooksPage() {
   // Local Queue State
   const [localQueue, setLocalQueue] = useState<any[]>([])
 
-  // Load Settings for Kop Surat
+  // Load Settings for Kop Surat & Lock Status
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
+  
+  const isLocked = Boolean(settings?.isDataLocked && !isAdmin);
 
   // 1. Initial Load from LocalStorage
   useEffect(() => {
@@ -218,6 +223,11 @@ export default function BooksPage() {
   }, [isOpen, isEditOpen, isDetailOpen, isScannerOpen, isQrOpen, isDeleteDialogOpen, isQueueOpen, forceUnlockUI])
 
   const handleSaveToLocalQueue = () => {
+    if (isLocked) {
+      toast({ title: "Akses Terkunci", description: "Admin mengunci fitur pengubahan data.", variant: "destructive" })
+      return
+    }
+
     if (!formData.title || !formData.code) {
       toast({ title: "Gagal", description: "Judul dan Kode Buku wajib diisi.", variant: "destructive" })
       return
@@ -243,6 +253,11 @@ export default function BooksPage() {
 
   const handleSyncToDatabase = async () => {
     if (!db || localQueue.length === 0) return
+    if (isLocked) {
+      toast({ title: "Akses Terkunci", description: "Admin mengunci fitur sinkronisasi bagi petugas.", variant: "destructive" })
+      return
+    }
+
     setIsSyncing(true)
 
     try {
@@ -582,12 +597,18 @@ export default function BooksPage() {
           <p className="text-muted-foreground text-sm">Manajemen katalog dan inventaris perpustakaan.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {isLocked && (
+            <Badge variant="outline" className="h-9 px-3 bg-orange-50 text-orange-700 border-orange-200 font-bold gap-2">
+              <Lock className="h-3 w-3" /> Fitur Modifikasi Dikunci Admin
+            </Badge>
+          )}
           {isHydrated && localQueue.length > 0 && (
             <Button 
               variant="default" 
               size="sm" 
               className="bg-orange-600 hover:bg-orange-700 animate-pulse"
               onClick={() => setIsQueueOpen(true)}
+              disabled={isLocked}
             >
               <CloudUpload className="h-4 w-4 mr-2" /> Antrean ({localQueue.length})
             </Button>
@@ -600,6 +621,7 @@ export default function BooksPage() {
               setFormData(INITIAL_FORM_DATA);
               setIsOpen(true);
             }}
+            disabled={isLocked}
           >
             <Plus className="h-4 w-4 mr-2" />Tambah Buku
           </Button>
@@ -694,36 +716,41 @@ export default function BooksPage() {
                           setIsQrOpen(true);
                         }, 100);
                       }}><QrCode className="h-4 w-4 mr-2" />Tampilkan QR</DropdownMenuItem>
-                      <DropdownMenuItem onSelect={(e) => { 
-                        e.preventDefault();
-                        setTimeout(() => {
-                          setEditingBookId(book.id); 
-                          setFormData({
-                            code: book.code || "",
-                            title: book.title || "",
-                            accountCode: book.accountCode || "",
-                            publisher: book.publisher || "",
-                            publicationYear: Number(book.publicationYear || new Date().getFullYear()),
-                            acquisitionDate: book.acquisitionDate || new Date().toISOString().split('T')[0],
-                            isbn: book.isbn || "",
-                            category: book.category || "",
-                            rackLocation: book.rackLocation || "",
-                            totalStock: Number(book.totalStock || 0),
-                            availableStock: Number(book.availableStock || 0),
-                            description: book.description || "",
-                            mainHeader: book.mainHeader || "PUSTAKA NUSANTARA",
-                            budgetSource: book.budgetSource || "BOSP"
-                          }); 
-                          setIsEditOpen(true);
-                        }, 100);
-                      }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onSelect={(e) => { 
-                        e.preventDefault();
-                        setTimeout(() => {
-                          setBookToDelete(book.id); 
-                          setIsDeleteDialogOpen(true);
-                        }, 100);
-                      }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
+                      
+                      {!isLocked && (
+                        <>
+                          <DropdownMenuItem onSelect={(e) => { 
+                            e.preventDefault();
+                            setTimeout(() => {
+                              setEditingBookId(book.id); 
+                              setFormData({
+                                code: book.code || "",
+                                title: book.title || "",
+                                accountCode: book.accountCode || "",
+                                publisher: book.publisher || "",
+                                publicationYear: Number(book.publicationYear || new Date().getFullYear()),
+                                acquisitionDate: book.acquisitionDate || new Date().toISOString().split('T')[0],
+                                isbn: book.isbn || "",
+                                category: book.category || "",
+                                rackLocation: book.rackLocation || "",
+                                totalStock: Number(book.totalStock || 0),
+                                availableStock: Number(book.availableStock || 0),
+                                description: book.description || "",
+                                mainHeader: book.mainHeader || "PUSTAKA NUSANTARA",
+                                budgetSource: book.budgetSource || "BOSP"
+                              }); 
+                              setIsEditOpen(true);
+                            }, 100);
+                          }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onSelect={(e) => { 
+                            e.preventDefault();
+                            setTimeout(() => {
+                              setBookToDelete(book.id); 
+                              setIsDeleteDialogOpen(true);
+                            }, 100);
+                          }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -1018,7 +1045,7 @@ export default function BooksPage() {
             <Button 
               className="bg-primary shadow-lg shadow-primary/20 gap-2" 
               onClick={handleSyncToDatabase}
-              disabled={isSyncing}
+              disabled={isSyncing || isLocked}
             >
               {isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
               Kirim ke Database

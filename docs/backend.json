@@ -75,7 +75,8 @@
         "reportCity": { "type": "string" },
         "principalName": { "type": "string" },
         "principalNip": { "type": "string" },
-        "academicYear": { "type": "string", "description": "Tahun ajaran aktif saat ini." }
+        "academicYear": { "type": "string", "description": "Tahun ajaran aktif saat ini." },
+        "isDataLocked": { "type": "boolean", "description": "Mengunci fitur ubah/hapus bagi petugas non-admin." }
       }
     }
   },
