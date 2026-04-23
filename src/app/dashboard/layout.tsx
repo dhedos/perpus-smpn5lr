@@ -31,6 +31,7 @@ export default function DashboardLayout({
   }, [user, loading, router, isRedirecting, isMounted])
 
   // Cegah rendering konten dinamis di server untuk menghindari Hydration Error
+  // Gunakan UI yang IDENTIK dengan halaman login untuk transisi yang sangat mulus
   if (!isMounted || loading || isRedirecting) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-background">
@@ -41,9 +42,9 @@ export default function DashboardLayout({
           <div className="flex flex-col items-center space-y-2">
             <div className="flex items-center gap-2">
               <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">Sinkronisasi Data</p>
+              <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">Pustaka Nusantara</p>
             </div>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50">Menyiapkan Dashboard...</p>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50">Menyelaraskan Sesi Cloud...</p>
           </div>
         </div>
       </div>
@@ -54,7 +55,7 @@ export default function DashboardLayout({
   if (!user) return null
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden bg-background animate-in fade-in duration-500">
       <aside className="hidden md:block w-72 shrink-0">
         <SidebarNav />
       </aside>

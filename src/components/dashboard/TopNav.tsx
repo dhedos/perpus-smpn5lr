@@ -54,6 +54,7 @@ export function TopNav() {
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const { user } = useUser()
   const auth = useAuth()
   const db = useFirestore()
@@ -83,7 +84,6 @@ export function TopNav() {
     }
   }, [])
 
-  // Fungsi pengaman paling kuat untuk melepas kunci layar
   const forceUnlockUI = useCallback(() => {
     if (typeof document !== 'undefined') {
       document.body.style.pointerEvents = 'auto'
@@ -91,7 +91,6 @@ export function TopNav() {
     }
   }, [])
 
-  // Efek otomatis: Jika tidak ada modal yang terbuka, pastikan body tidak terkunci
   useEffect(() => {
     if (!isProfileOpen && !isLogoutConfirmOpen) {
       const timer = setTimeout(forceUnlockUI, 300)
@@ -101,9 +100,10 @@ export function TopNav() {
 
   const handleLogout = async () => {
     if (auth) {
+      setIsLoggingOut(true)
       await signOut(auth)
-      // Force a full clean redirect to reset entire app state
-      window.location.href = "/"
+      // Gunakan replace untuk navigasi yang bersih
+      router.replace("/")
     }
   }
 
@@ -291,8 +291,8 @@ export function TopNav() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => forceUnlockUI()}>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Ya, Keluar
+            <AlertDialogAction onClick={handleLogout} disabled={isLoggingOut} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 min-w-[100px]">
+              {isLoggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : "Ya, Keluar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -47,11 +47,15 @@ export default function LoginPage() {
   }, [])
 
   useEffect(() => {
-    if (isMounted && !authLoading && user && user.role && !isRedirecting) {
+    // Jika sudah ada user, segera kunci tampilan ke mode redirecting
+    if (isMounted && !authLoading && user && user.role) {
       setIsRedirecting(true)
-      router.replace("/dashboard")
+      const timer = setTimeout(() => {
+        router.replace("/dashboard")
+      }, 10)
+      return () => clearTimeout(timer)
     }
-  }, [user, authLoading, router, isRedirecting, isMounted])
+  }, [user, authLoading, router, isMounted])
 
   const usersQuery = useMemoFirebase(() => {
     if (!db) return null
@@ -69,7 +73,7 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password)
       setIsRedirecting(true)
-      router.replace("/dashboard")
+      // Jangan matikan loading, biarkan redirect yang menangani
     } catch (error: any) {
       toast({ 
         title: "Gagal Masuk", 
@@ -103,7 +107,6 @@ export default function LoginPage() {
         })
       }
       setIsRedirecting(true)
-      router.replace("/dashboard")
     } catch (error: any) {
       toast({ title: "Gagal Login Google", description: error.message, variant: "destructive" })
       setLoading(false)
@@ -129,7 +132,6 @@ export default function LoginPage() {
       })
 
       setIsRedirecting(true)
-      router.replace("/dashboard")
     } catch (error: any) {
       toast({ title: "Setup Gagal", description: error.message, variant: "destructive" })
       setLoading(false)
@@ -151,7 +153,7 @@ export default function LoginPage() {
     }
   }
 
-  // Gunakan isMounted untuk memastikan transisi bersih tanpa Hydration Error
+  // Layar Pemuatan yang Seragam dengan Dashboard
   if (!isMounted || authLoading || isRedirecting || (user && user.role)) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-background">
@@ -162,7 +164,7 @@ export default function LoginPage() {
           <div className="flex flex-col items-center space-y-2">
             <div className="flex items-center gap-2">
               <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">Memuat Pustaka</p>
+              <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">Pustaka Nusantara</p>
             </div>
             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50">Menyelaraskan Sesi Cloud...</p>
           </div>
