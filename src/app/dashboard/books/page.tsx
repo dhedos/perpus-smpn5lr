@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
@@ -24,14 +25,11 @@ import {
   Printer,
   X,
   Eye,
-  Info,
   Calendar as CalendarIcon,
   Filter,
   ChevronDown,
   Database,
-  CloudUpload,
-  Clock,
-  Lock
+  CloudUpload
 } from "lucide-react"
 import { 
   Dialog, 
@@ -104,7 +102,7 @@ const STORAGE_KEY = 'perpus_local_queue_v3'
 
 export default function BooksPage() {
   const db = useFirestore()
-  const { isAdmin, user } = useUser()
+  const { isAdmin } = useUser()
   const { toast } = useToast()
   
   const [search, setSearch] = useState("")
@@ -138,7 +136,8 @@ export default function BooksPage() {
   const { data: settings } = useDoc(settingsRef)
   
   // Logic: Locked if setting active AND current user is NOT admin
-  const isLockedForUser = Boolean(settings?.isDataLocked && !isAdmin);
+  // Robust check: Ensure isDataLocked is explicitly true
+  const isLockedForUser = Boolean(settings?.isDataLocked === true && !isAdmin);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -209,17 +208,9 @@ export default function BooksPage() {
     }
   }, [])
 
-  useEffect(() => {
-    const isAnyModalOpen = isOpen || isEditOpen || isDetailOpen || isScannerOpen || isQrOpen || isDeleteDialogOpen || isQueueOpen
-    if (!isAnyModalOpen) {
-      const t = setTimeout(forceUnlockUI, 200)
-      return () => clearTimeout(t)
-    }
-  }, [isOpen, isEditOpen, isDetailOpen, isScannerOpen, isQrOpen, isDeleteDialogOpen, isQueueOpen, forceUnlockUI])
-
   const handleSaveToLocalQueue = () => {
     if (isLockedForUser) {
-      toast({ title: "Gagal", description: "Modifikasi data sedang dibatasi Admin.", variant: "destructive" })
+      toast({ title: "Gagal", description: "Fitur modifikasi sedang dibatasi Administrator.", variant: "destructive" })
       return
     }
 
@@ -249,7 +240,7 @@ export default function BooksPage() {
   const handleSyncToDatabase = async () => {
     if (!db || localQueue.length === 0) return
     if (isLockedForUser) {
-      toast({ title: "Sinkronisasi Terkunci", description: "Admin mengunci fitur modifikasi data.", variant: "destructive" })
+      toast({ title: "Sinkronisasi Terkunci", description: "Modifikasi sedang dibatasi Administrator.", variant: "destructive" })
       return
     }
 
@@ -449,7 +440,7 @@ export default function BooksPage() {
   const handleUpdateBook = () => {
     if (!db || !editingBookId) return
     if (isLockedForUser) {
-      toast({ title: "Gagal", description: "Admin mengunci fitur pengubahan data.", variant: "destructive" })
+      toast({ title: "Gagal", description: "Modifikasi sedang dibatasi Administrator.", variant: "destructive" })
       return
     }
 
@@ -475,7 +466,7 @@ export default function BooksPage() {
   const handleDeleteBook = () => {
     if (!db || !bookToDelete) return
     if (isLockedForUser) {
-      toast({ title: "Dilarang", description: "Fitur hapus sedang dikunci Admin.", variant: "destructive" })
+      toast({ title: "Gagal", description: "Fitur hapus sedang dibatasi Administrator.", variant: "destructive" })
       return
     }
 

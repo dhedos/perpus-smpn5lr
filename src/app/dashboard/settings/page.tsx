@@ -66,7 +66,7 @@ export default function SettingsPage() {
         fineAmount: Number(remoteSettings.fineAmount ?? 500),
         damagedBookFine: Number(remoteSettings.damagedBookFine ?? 10000),
         lostBookFine: Number(remoteSettings.lostBookFine ?? 50000),
-        isDataLocked: Boolean(remoteSettings.isDataLocked ?? false)
+        isDataLocked: remoteSettings.isDataLocked === true // Pastikan konversi boolean eksplisit
       }))
     }
   }, [remoteSettings])
@@ -76,19 +76,21 @@ export default function SettingsPage() {
 
     setIsSaving(true)
     
+    // Pastikan data yang dikirim memiliki tipe data yang benar
     const dataToSave = {
       ...settings,
       loanPeriod: Math.max(1, Number(settings.loanPeriod)),
       fineAmount: Math.max(0, Number(settings.fineAmount)),
       damagedBookFine: Math.max(0, Number(settings.damagedBookFine)),
-      lostBookFine: Math.max(0, Number(settings.lostBookFine))
+      lostBookFine: Math.max(0, Number(settings.lostBookFine)),
+      isDataLocked: Boolean(settings.isDataLocked)
     }
     
     setDoc(settingsDocRef, dataToSave, { merge: true })
       .then(() => {
         toast({
           title: "Berhasil Disimpan",
-          description: "Pengaturan sistem dan kebijakan tahun ajaran telah diperbarui.",
+          description: "Pengaturan sistem dan kebijakan keamanan telah diperbarui.",
         })
       })
       .catch(async (error) => {
@@ -112,7 +114,7 @@ export default function SettingsPage() {
           <p className="text-muted-foreground text-sm">Konfigurasi profil sekolah dan kebijakan sirkulasi.</p>
         </div>
         <Badge variant="secondary" className="bg-primary/10 text-primary border-none mb-1">
-          Role: {user?.role || "Administrator"}
+          Role: {user?.role || "Petugas"}
         </Badge>
       </div>
 
@@ -154,7 +156,6 @@ export default function SettingsPage() {
                       className="bg-slate-50 border-slate-200 h-11"
                       placeholder="Contoh: 2024/2025"
                     />
-                    <p className="text-[10px] text-muted-foreground italic">Teks ini akan muncul pada halaman Buku Pegangan Guru.</p>
                   </div>
                 </div>
 
@@ -192,40 +193,6 @@ export default function SettingsPage() {
                       />
                     </div>
                   </div>
-
-                  <div className="grid gap-3 pt-2">
-                    <Label htmlFor="damaged-fine" className="flex items-center gap-2 font-bold text-sm text-amber-600">
-                      <AlertTriangle className="h-4 w-4" />
-                      Denda Buku Rusak (Rp)
-                    </Label>
-                    <div className="flex items-center gap-3">
-                      <div className="bg-amber-100 px-3 h-12 flex items-center rounded-l-md font-bold text-amber-600 border border-amber-200 border-r-0">Rp</div>
-                      <Input 
-                        id="damaged-fine" 
-                        type="number" 
-                        value={settings.damagedBookFine}
-                        onChange={(e) => setSettings({ ...settings, damagedBookFine: Number(e.target.value) })}
-                        className="bg-white border-amber-200 h-12 text-xl font-black text-amber-600 rounded-l-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid gap-3 pt-2">
-                    <Label htmlFor="lost-fine" className="flex items-center gap-2 font-bold text-sm text-destructive">
-                      <AlertTriangle className="h-4 w-4" />
-                      Denda Buku Hilang (Rp)
-                    </Label>
-                    <div className="flex items-center gap-3">
-                      <div className="bg-red-100 px-3 h-12 flex items-center rounded-l-md font-bold text-destructive border border-red-200 border-r-0">Rp</div>
-                      <Input 
-                        id="lost-fine" 
-                        type="number" 
-                        value={settings.lostBookFine}
-                        onChange={(e) => setSettings({ ...settings, lostBookFine: Number(e.target.value) })}
-                        className="bg-white border-red-200 h-12 text-xl font-black text-destructive rounded-l-none"
-                      />
-                    </div>
-                  </div>
                 </div>
               </div>
               
@@ -254,7 +221,6 @@ export default function SettingsPage() {
                       value={settings.govtInstitution} 
                       onChange={(e) => setSettings({ ...settings, govtInstitution: e.target.value })}
                       className="bg-slate-50 border-slate-200 h-11"
-                      placeholder="Contoh: PEMERINTAH KABUPATEN MANGGARAI"
                     />
                   </div>
                   <div className="grid gap-2">
@@ -263,7 +229,6 @@ export default function SettingsPage() {
                       value={settings.eduDept} 
                       onChange={(e) => setSettings({ ...settings, eduDept: e.target.value })}
                       className="bg-slate-50 border-slate-200 h-11"
-                      placeholder="Contoh: DINAS PENDIDIKAN PEMUDA DAN OLAHRAGA"
                     />
                   </div>
                   <div className="grid gap-2">
@@ -272,16 +237,6 @@ export default function SettingsPage() {
                       value={settings.schoolName} 
                       onChange={(e) => setSettings({ ...settings, schoolName: e.target.value })}
                       className="bg-slate-50 border-slate-200 h-11"
-                      placeholder="Contoh: SMP NEGERI 5 LANGKE REMBONG"
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label className="font-bold text-xs uppercase text-muted-foreground">Alamat Sekolah</Label>
-                    <Input 
-                      value={settings.schoolAddress} 
-                      onChange={(e) => setSettings({ ...settings, schoolAddress: e.target.value })}
-                      className="bg-slate-50 border-slate-200 h-11"
-                      placeholder="Alamat lengkap sekolah"
                     />
                   </div>
                 </div>
@@ -295,7 +250,6 @@ export default function SettingsPage() {
                       value={settings.reportCity} 
                       onChange={(e) => setSettings({ ...settings, reportCity: e.target.value })}
                       className="bg-white border-slate-200 h-11"
-                      placeholder="Contoh: Mando"
                     />
                   </div>
                   <div className="grid gap-2">
@@ -306,20 +260,7 @@ export default function SettingsPage() {
                       value={settings.principalName} 
                       onChange={(e) => setSettings({ ...settings, principalName: e.target.value })}
                       className="bg-white border-slate-200 h-11"
-                      placeholder="Nama lengkap dengan gelar"
                     />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label className="font-bold text-xs uppercase text-muted-foreground">NIP Kepala Sekolah</Label>
-                    <Input 
-                      value={settings.principalNip} 
-                      onChange={(e) => setSettings({ ...settings, principalNip: e.target.value })}
-                      className="bg-white border-slate-200 h-11"
-                      placeholder="NIP tanpa spasi"
-                    />
-                  </div>
-                  <div className="pt-4 opacity-50 text-[10px] italic">
-                    * Data ini digunakan otomatis pada bagian Kop Surat dan Tanda Tangan saat mengunduh laporan Excel.
                   </div>
                 </div>
               </div>
@@ -348,16 +289,6 @@ export default function SettingsPage() {
                 <Switch 
                   checked={settings.whatsappReminder} 
                   onCheckedChange={(v) => setSettings({ ...settings, whatsappReminder: v })}
-                />
-              </div>
-              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                <div className="space-y-0.5">
-                  <Label className="text-base">Laporan Email Mingguan</Label>
-                  <p className="text-xs text-muted-foreground">Kirim rekap buku yang belum kembali ke email Admin.</p>
-                </div>
-                <Switch 
-                  checked={settings.emailReport} 
-                  onCheckedChange={(v) => setSettings({ ...settings, emailReport: v })}
                 />
               </div>
               <Button onClick={handleSaveSettings} disabled={isSaving}>Simpan Notifikasi</Button>
