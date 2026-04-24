@@ -142,6 +142,7 @@ export default function MembersPage() {
   }, [members, search])
 
   const handleOpenAdd = () => {
+    forceUnlockUI()
     setFormData({
       ...INITIAL_MEMBER_DATA,
       joinDate: isMounted ? new Date().toISOString().split('T')[0] : ""
@@ -248,14 +249,14 @@ export default function MembersPage() {
               position: relative;
               overflow: hidden;
             }
-            .header-box { padding: 5mm 2mm 2mm 2mm; }
-            .school-name { font-size: 11pt; font-weight: 900; color: #1e4b8f; text-transform: uppercase; margin: 0; line-height: 1.2; white-space: nowrap; }
-            .address { font-size: 5.5pt; color: #333; margin-top: 1mm; font-weight: 500; line-height: 1.2; padding: 0 1mm; }
+            .header-box { padding: 4mm 2mm 2mm 2mm; }
+            .school-name { font-size: 11pt; font-weight: 900; color: #1e4b8f; text-transform: uppercase; margin: 0; line-height: 1.1; white-space: nowrap; }
+            .address { font-size: 5pt; color: #333; margin-top: 1mm; font-weight: 500; line-height: 1.2; padding: 0 2mm; }
             
             .card-title-box { margin-top: 6mm; margin-bottom: 2mm; }
             .card-title { font-size: 8.5pt; font-weight: 800; color: #333; text-transform: uppercase; line-height: 1.2; }
             
-            .qr-section { flex: 1; display: flex; justify-content: center; align-items: center; padding: 2mm 6mm; }
+            .qr-section { flex: 1; display: flex; justify-content: center; align-items: center; padding: 2mm 5mm; }
             .qr-section img { width: 100%; height: auto; border: none; }
             
             .info-section { padding-bottom: 12mm; }
@@ -271,13 +272,13 @@ export default function MembersPage() {
               position: absolute; 
               bottom: 0; 
             }
-            .footer-text { font-size: 9.5pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: #fff; }
+            .footer-text { font-size: 10pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
           </style>
         </head>
         <body onload="window.print(); window.close();">
           <div class="card-container">
             <div class="header-box">
-              <div class="school-name">${settings?.schoolName || 'SMPN 5 LANGKE REMBONG'}</div>
+              <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
               <div class="address">${settings?.schoolAddress || 'Mando, Compang Carep Kec. Langke Rembong'}</div>
             </div>
             
@@ -393,15 +394,15 @@ export default function MembersPage() {
         <div className="flex gap-2">
           <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
+              <Button variant="outline" className="gap-2" onClick={() => forceUnlockUI()}>
                 <Printer className="h-4 w-4" /> Cetak Daftar Anggota
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => handlePrintTable('Student')}>
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handlePrintTable('Student'); }}>
                 Daftar Siswa
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handlePrintTable('Teacher')}>
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handlePrintTable('Teacher'); }}>
                 Daftar Guru
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -446,7 +447,11 @@ export default function MembersPage() {
                 <TableCell className="text-sm font-medium">{member.classOrSubject || '-'}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
-                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" onClick={() => forceUnlockUI()}>
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onSelect={(e) => { 
                         e.preventDefault();
