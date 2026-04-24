@@ -4,8 +4,8 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * PERPUSTAKAAN SEKOLAH - EXPLICIT SECURITY RULES
-     * Memberikan izin eksplisit per koleksi untuk menjamin kelancaran operasional petugas.
+     * PERPUSTAKAAN SEKOLAH - GLOBAL SECURITY RULES
+     * Memberikan izin akses bagi petugas yang sudah login untuk menjamin kelancaran operasional.
      */
 
     // 1. Pengaturan Umum: Bisa dibaca publik untuk identitas di halaman Login
@@ -14,28 +14,8 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
-    // 2. Koleksi Utama: Akses penuh bagi petugas yang login
-    match /members/{memberId} {
-      allow read, write, list: if request.auth != null;
-    }
-
-    match /books/{bookId} {
-      allow read, write, list: if request.auth != null;
-    }
-
-    match /transactions/{transId} {
-      allow read, write, list: if request.auth != null;
-    }
-    
-    match /users/{userId} {
-      allow read, write, list: if request.auth != null;
-    }
-    
-    match /activity_logs/{logId} {
-      allow read, write, list: if request.auth != null;
-    }
-
-    // 3. Fallback: Tetap mengizinkan akses internal jika sudah login
+    // 2. Akses Global untuk Petugas Terautentikasi
+    // Ini mencakup koleksi: members, books, transactions, users, dan activity_logs
     match /{path=**} {
       allow read, write: if request.auth != null;
     }

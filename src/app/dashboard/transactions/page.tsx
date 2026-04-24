@@ -90,11 +90,13 @@ function TransactionsContent() {
 
   const forceUnlockUI = useCallback(() => {
     if (typeof document !== 'undefined') {
+      document.body.style.pointerEvents = 'auto';
+      document.body.style.overflow = 'auto';
       setTimeout(() => {
         document.body.style.pointerEvents = 'auto';
         document.body.style.overflow = 'auto';
         const overlays = document.querySelectorAll('[data-radix-focus-guard]');
-        overlays.forEach(el => el.remove());
+        overlays.forEach(el => (el as HTMLElement).remove());
       }, 300);
     }
   }, []);
@@ -104,20 +106,19 @@ function TransactionsContent() {
     if (tab === 'return') {
       setActiveTab('return')
     }
-  }, [searchParams])
+    forceUnlockUI()
+  }, [searchParams, forceUnlockUI])
 
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
 
-  // STUDENT FOCUS: Filter members to 'Student' type only
   const studentMembersRef = useMemoFirebase(() => 
-    db ? query(collection(db, 'members'), where('type', '==', 'Student'), orderBy('name', 'asc')) : null, [db])
+    db ? query(collection(db, 'members'), where('type', '==', 'Student')) : null, [db])
   const booksRef = useMemoFirebase(() => db ? query(collection(db, 'books'), orderBy('title', 'asc')) : null, [db])
 
   const { data: members } = useCollection(studentMembersRef)
   const { data: books } = useCollection(booksRef)
 
-  // STUDENT FOCUS: Filter transactions to 'borrow' type only
   const activeTransQuery = useMemoFirebase(() => {
     if (!db) return null;
     return query(
@@ -296,7 +297,7 @@ function TransactionsContent() {
       const bRef = doc(db, 'books', pendingReturnTrans.bookId)
       const bDoc = await getDoc(bRef)
       if (bDoc.exists()) {
-        const currentTotal = Number(bDoc.data().totalTotal || 0)
+        const currentTotal = Number(bDoc.data().totalStock || 0)
         const currentAvail = Number(bDoc.data().availableStock || 0)
         
         const backToShelf = returnNormalQty + returnDamagedQty;
@@ -382,6 +383,7 @@ function TransactionsContent() {
       </html>
     `)
     printWindow.document.close()
+    forceUnlockUI()
   }
 
   const startScanner = async () => {
@@ -799,7 +801,7 @@ function TransactionsContent() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
+      <Dialog open={isScannerOpen} onOpenChange={o => { if(!o) stopScanner(); }}>
         <DialogContent className="p-0 border-none bg-black max-w-xl h-[400px] overflow-hidden">
           <DialogHeader className="sr-only">
             <DialogTitle>Pemindai QR Code Siswa</DialogTitle>
