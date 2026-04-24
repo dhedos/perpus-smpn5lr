@@ -104,7 +104,6 @@ export default function MembersPage() {
     if (typeof document !== 'undefined') {
       document.body.style.pointerEvents = 'auto';
       document.body.style.overflow = 'auto';
-      // Membersihkan paksa atribut pengunci dari Radix UI
       setTimeout(() => {
         document.body.style.pointerEvents = 'auto';
         document.body.style.overflow = 'auto';
@@ -234,6 +233,12 @@ export default function MembersPage() {
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
+    // SINKRONISASI ALAMAT: Singkat Kecamatan -> Kec. dan Kabupaten -> Kab.
+    const rawAddress = settings?.schoolAddress || 'Mando, Compang Carep Kec. Langke Rembong';
+    const shortAddress = rawAddress
+      .replace(/Kecamatan/gi, 'Kec.')
+      .replace(/Kabupaten/gi, 'Kab.');
+
     printWindow.document.write(`
       <html>
         <head>
@@ -255,7 +260,7 @@ export default function MembersPage() {
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
             }
-            .header-box { padding: 4mm 1mm 1mm 1mm; }
+            .header-box { padding: 4mm 2mm 1mm 2mm; }
             .school-name { 
               font-size: 8.5pt; 
               font-weight: 900; 
@@ -264,30 +269,34 @@ export default function MembersPage() {
               margin: 0; 
               line-height: 1.1; 
               white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
             }
             .address { 
               font-size: 4.8pt; 
               color: #444; 
               margin-top: 1mm; 
               font-weight: 500; 
-              line-height: 1; 
+              line-height: 1.2; 
               white-space: nowrap;
               padding-bottom: 0.8mm;
-              border-bottom: 0.5pt solid #000;
-              margin-left: 3mm;
-              margin-right: 3mm;
+              border-bottom: 0.8pt solid #000;
+              margin-left: 1mm;
+              margin-right: 1mm;
+              text-transform: uppercase;
+              overflow: hidden;
             }
             
             .card-title-box { margin-top: 2.5mm; }
             .card-title { font-size: 7.5pt; font-weight: 800; color: #000; text-transform: uppercase; line-height: 1.1; letter-spacing: 0.2px; }
             
             .qr-section { flex: 1; display: flex; justify-content: center; align-items: center; padding: 1mm 4mm; }
-            .qr-section img { width: 32mm; height: 32mm; border: none; }
+            .qr-section img { width: 34mm; height: 34mm; border: none; }
             
             .info-section { padding-bottom: 12mm; }
-            .member-name { font-size: 9.5pt; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 0.5mm; padding: 0 1mm; line-height: 1.1; }
+            .member-name { font-size: 9.5pt; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 0.5mm; padding: 0 1mm; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
             .member-id { font-size: 10.5pt; font-weight: 800; color: #1e4b8f; font-family: monospace; line-height: 1; }
-            .member-detail { font-size: 6.5pt; font-weight: 700; color: #666; text-transform: uppercase; margin-top: 0.5mm; }
+            .member-detail { font-size: 7pt; font-weight: 800; color: #666; text-transform: uppercase; margin-top: 0.8mm; }
             
             .footer { 
               background: #1e4b8f !important; 
@@ -308,7 +317,7 @@ export default function MembersPage() {
           <div class="card-container">
             <div class="header-box">
               <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
-              <div class="address">${settings?.schoolAddress || 'Mando, Compang Carep Kec. Langke Rembong'}</div>
+              <div class="address">${shortAddress}</div>
             </div>
             
             <div class="card-title-box">
@@ -477,7 +486,7 @@ export default function MembersPage() {
                 <TableCell className="text-right">
                   <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" onClick={() => forceUnlockUI()}>
+                      <Button variant="ghost" size="icon">
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -582,7 +591,9 @@ export default function MembersPage() {
               <div className="space-y-1">
                 <div className="font-black text-2xl leading-tight uppercase tracking-tight">{selectedMemberQr?.name ?? ""}</div>
                 <div className="font-mono text-primary font-black text-xl">{selectedMemberQr?.memberId ?? ""}</div>
-                <div className="text-sm font-bold text-muted-foreground uppercase tracking-widest">KELAS: {selectedMemberQr?.classOrSubject}</div>
+                <div className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
+                   {selectedMemberQr?.type === 'Teacher' ? 'GURU' : 'KELAS'}: {selectedMemberQr?.classOrSubject || '-'}
+                </div>
               </div>
             </div>
           </div>
