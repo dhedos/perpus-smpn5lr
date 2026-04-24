@@ -57,7 +57,7 @@ export default function LoginPage() {
   }, [user, authLoading, router, isMounted, isRedirecting])
 
   const usersQuery = useMemoFirebase(() => {
-    if (!db || (isMounted && user)) return null
+    if (!db || !isMounted || user) return null
     return query(collection(db, "users"), limit(1))
   }, [db, isMounted, user])
   
@@ -175,7 +175,7 @@ export default function LoginPage() {
             <Library className="h-12 w-12" />
           </div>
           <div className="space-y-1">
-            <CardTitle className="text-3xl font-black font-headline uppercase tracking-tighter text-primary">
+            <CardTitle className="text-3xl font-black font-headline uppercase tracking-tighter text-primary leading-tight">
               {displayTitle}
             </CardTitle>
             <CardDescription className="font-bold text-secondary uppercase tracking-[0.15em] text-xs text-center px-4">
@@ -213,7 +213,7 @@ export default function LoginPage() {
               </div>
               <Input id="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-slate-200" />
             </div>
-            <Button type="submit" className="w-full h-12 text-sm font-black shadow-lg shadow-primary/20 rounded-xl" disabled={loading || checkingUsers}>
+            <Button type="submit" className="w-full h-12 text-sm font-black shadow-lg shadow-primary/20 rounded-xl" disabled={loading || (isMounted && checkingUsers)}>
               {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : isSetupMode ? "AKTIFKAN ADMIN UTAMA" : "MASUK KE SISTEM"}
             </Button>
           </form>

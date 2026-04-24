@@ -34,10 +34,11 @@ export default function DashboardLayout({
     }
   }, [user, loading, router, isRedirecting, isMounted])
 
+  // IDENTICAL STRINGS FOR SSR MATCHING
   const displayTitle = (isMounted && settings?.libraryName) ? settings.libraryName : "LANTERA BACA";
   const displaySubtitle = (isMounted && settings?.librarySubtitle) ? settings.librarySubtitle : "SMPN 5 LANGKE REMBONG";
 
-  // Identical loading UI to page.tsx to prevent hydration errors
+  // Loading UI must be 100% identical to page.tsx to prevent hydration errors
   const loadingUI = (
     <div className="h-screen w-full flex items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-6 animate-in fade-in duration-500">

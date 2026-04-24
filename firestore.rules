@@ -4,28 +4,23 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * LANTERA BACA - SECURITY RULES v8.0
-     * Keamanan akses data perpustakaan sekolah.
+     * PERPUSTAKAAN SEKOLAH - SECURITY RULES
+     * Memberikan izin akses berdasarkan status login petugas.
      */
 
-    // 1. Pengaturan Umum: Izin Baca Publik agar identitas sekolah muncul di Login
+    // 1. Pengaturan Umum: Baca publik agar identitas sekolah muncul di Login
     match /settings/general {
       allow read: if true;
       allow write: if request.auth != null;
     }
 
-    // 2. Profil Pengguna: Diperlukan untuk sistem autentikasi dan role
+    // 2. Profil Pengguna: Diperlukan untuk inisialisasi dan role
     match /users/{userId} {
       allow read, write: if true;
     }
 
-    // 3. Koleksi Utama (Semua dokumen di bawah koleksi ini wajib login)
-    // Berlaku untuk members, books, transactions, activity_logs
-    match /{collectionName}/{docId} {
-      allow read, write: if request.auth != null;
-    }
-    
-    // 4. Wildcard Rekursif untuk sub-koleksi jika ada di masa depan
+    // 3. Koleksi Operasional: Wajib login untuk semua aksi (List, Get, Create, Update, Delete)
+    // Mencakup: members, books, transactions, activity_logs
     match /{path=**} {
       allow read, write: if request.auth != null;
     }

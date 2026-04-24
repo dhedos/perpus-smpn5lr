@@ -58,7 +58,6 @@ import { cn } from "@/lib/utils"
 
 function TransactionsContent() {
   const db = useFirestore()
-  const { isStaff } = useUser()
   const { toast } = useToast()
   const searchParams = useSearchParams()
   
