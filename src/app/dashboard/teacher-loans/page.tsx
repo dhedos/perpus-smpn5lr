@@ -20,7 +20,9 @@ import {
   CheckCircle,
   AlertTriangle,
   Minus,
-  Plus
+  Plus,
+  User,
+  BookOpen
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -47,24 +49,26 @@ import {
   useCollection, 
   useMemoFirebase,
   useDoc,
-  useUser
+  useUser,
+  errorEmitter
 } from '@/firebase'
 import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc, orderBy } from 'firebase/firestore'
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+import { FirestorePermissionError } from "@/firebase/errors"
 
 export default function TeacherLoansPage() {
   const db = useFirestore()
   const { isAdmin } = useUser()
   const { toast } = useToast()
   
-  const [activeTab, setActiveTab] = useState("active")
+  const [activeTab, setActiveTab] = useState("borrow")
   const [search, setSearch] = useState("")
   const [memberSearch, setMemberSearch] = useState("")
   const [bookSearch, setBookSearch] = useState("")
+  const [returnSearch, setReturnSearch] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
-  const [scannerMode, setScannerMode] = useState<"member" | "book" | "return">("member")
   
   const scannerInstanceRef = useRef<any>(null)
   
@@ -102,17 +106,27 @@ export default function TeacherLoansPage() {
   const { data: books } = useCollection(booksRef)
   const { data: allTransactions, isLoading: loadingTrans } = useCollection(teacherTransQuery)
 
-  const transactions = useMemo(() => {
+  const activeTransactions = useMemo(() => {
     if (!allTransactions) return []
-    const status = activeTab === "active" ? "active" : "returned"
     return allTransactions
-      .filter(t => t.status === status)
+      .filter(t => t.status === 'active')
       .sort((a, b) => {
         const dateA = a.createdAt?.seconds || 0
         const dateB = b.createdAt?.seconds || 0
         return dateB - dateA
       })
-  }, [allTransactions, activeTab])
+  }, [allTransactions])
+
+  const historyTransactions = useMemo(() => {
+    if (!allTransactions) return []
+    return allTransactions
+      .filter(t => t.status === 'returned')
+      .sort((a, b) => {
+        const dateA = a.createdAt?.seconds || 0
+        const dateB = b.createdAt?.seconds || 0
+        return dateB - dateA
+      })
+  }, [allTransactions])
 
   const memberSuggestions = useMemo(() => {
     if (!memberSearch || memberSearch.length < 1 || !teachers) return []
@@ -130,19 +144,21 @@ export default function TeacherLoansPage() {
     ).slice(0, 5)
   }, [bookSearch, books])
 
-  const filteredTrans = useMemo(() => {
-    if (!transactions) return []
-    if (!search) return transactions
-    const s = search.toLowerCase()
-    return transactions.filter(t => 
+  const filteredActive = useMemo(() => {
+    if (!activeTransactions) return []
+    if (!returnSearch) return activeTransactions
+    const s = returnSearch.toLowerCase()
+    return activeTransactions.filter(t => 
       t.memberName?.toLowerCase().includes(s) || 
       t.bookTitle?.toLowerCase().includes(s) ||
       t.memberId?.toLowerCase().includes(s)
     )
-  }, [transactions, search])
+  }, [activeTransactions, returnSearch])
 
   const forceUnlockUI = useCallback(() => {
     if (typeof document !== 'undefined') {
+      document.body.style.pointerEvents = 'auto';
+      document.body.style.overflow = 'auto';
       setTimeout(() => {
         document.body.style.pointerEvents = 'auto';
         document.body.style.overflow = 'auto';
@@ -153,7 +169,6 @@ export default function TeacherLoansPage() {
   }, []);
 
   const startScanner = async (mode: "member" | "book" | "return") => {
-    setScannerMode(mode)
     setIsScannerOpen(true)
     try {
       const { Html5Qrcode } = await import("html5-qrcode")
@@ -168,7 +183,7 @@ export default function TeacherLoansPage() {
             const b = books?.find(bk => bk.code?.toLowerCase() === text.toLowerCase() || bk.isbn === text)
             if (b) { setSelectedBook(b); stopScanner(); }
           } else if (mode === "return") {
-            const trans = transactions?.find(t => t.memberId?.toLowerCase() === text.toLowerCase() || t.bookTitle?.toLowerCase().includes(text.toLowerCase()))
+            const trans = activeTransactions?.find(t => t.memberId?.toLowerCase() === text.toLowerCase() || t.bookTitle?.toLowerCase().includes(text.toLowerCase()))
             if (trans) { stopScanner(); setTimeout(() => prepareReturn(trans), 100); }
           }
         }, () => {})
@@ -289,27 +304,24 @@ export default function TeacherLoansPage() {
   }
 
   const handlePrintBukti = () => {
-    if (filteredTrans.length === 0) return
+    const targetData = activeTab === "borrow" ? historyTransactions : filteredActive;
+    if (targetData.length === 0) return
+
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
-    const titleLabel = activeTab === "active" ? "DAFTAR PENYERAHAN BUKU PEGANGAN GURU (AKTIF)" : "RIWAYAT PENGEMBALIAN BUKU PEGANGAN GURU"
+    const titleLabel = activeTab === "borrow" ? "RIWAYAT PENYERAHAN BUKU PEGANGAN GURU" : "DAFTAR PENYERAHAN BUKU PEGANGAN GURU (AKTIF)"
     
-    const rowsHtml = filteredTrans.map((t, index) => {
-      const bookDetail = books?.find(b => b.id === t.bookId);
-      return `
+    const rowsHtml = targetData.map((t, index) => `
       <tr>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
         <td style="border: 1px solid #ccc; padding: 8px; font-family: monospace;">${t.memberId}</td>
         <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold;">${t.memberName}</td>
-        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.classOrSubject || '-'}</td>
         <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle}</td>
-        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${bookDetail?.publisher || '-'}</td>
-        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${bookDetail?.publicationYear || '-'}</td>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.borrowDate ? format(new Date(t.borrowDate), 'dd/MM/yyyy') : '-'}</td>
-        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${activeTab === "active" ? "PEGANG" : (t.returnDate ? format(new Date(t.returnDate), 'dd/MM/yyyy') : '-')}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.returnDate ? format(new Date(t.returnDate), 'dd/MM/yyyy') : (t.status === 'active' ? 'PEGANG' : '-')}</td>
       </tr>
-    `}).join('')
+    `).join('')
 
     printWindow.document.write(`
       <html>
@@ -322,9 +334,8 @@ export default function TeacherLoansPage() {
             .school-name { font-size: 16px; font-weight: 900; }
             .title { text-align: center; font-size: 12px; font-weight: 800; margin: 20px 0; text-transform: uppercase; }
             table { width: 100%; border-collapse: collapse; }
-            th { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; font-size: 9px; }
+            th { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; }
             .footer-sign { margin-top: 40px; float: right; text-align: center; width: 250px; }
-            .print-footer { position: fixed; bottom: 5mm; left: 15mm; right: 15mm; font-size: 8px; text-align: center; color: #999; border-top: 1px solid #eee; padding-top: 2mm; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
@@ -332,32 +343,27 @@ export default function TeacherLoansPage() {
             <div>${settings?.govtInstitution || 'PEMERINTAH KABUPATEN MANGGARAI'}</div>
             <div>${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
             <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
-            <div style="font-size: 9px;">Alamat: ${settings?.schoolAddress || 'Mando, Compang Carep'}</div>
           </div>
-          <div class="title">${titleLabel}<br/>Tahun Ajaran: ${settings?.academicYear || '2024/2025'}</div>
+          <div class="title">${titleLabel}</div>
           <table>
             <thead>
               <tr>
                 <th style="width: 30px;">No</th>
                 <th>ID Guru</th>
                 <th>Nama Guru</th>
-                <th>Mengajar / Kelas</th>
                 <th>Judul Buku</th>
-                <th>Penerbit</th>
-                <th>Thn Terbit</th>
                 <th>Tgl Penyerahan</th>
-                <th>${activeTab === "active" ? "Status" : "Tgl Kembali"}</th>
+                <th>Tgl Kembali</th>
               </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>
           </table>
           <div class="footer-sign">
             ${settings?.reportCity || 'Mando'}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>
-            Kepala Sekolah,<br/>
+            Kepala Sekolah,<br/><br/><br/><br/>
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
             NIP. ${settings?.principalNip || '198507272011011020'}
           </div>
-          <div class="print-footer">${settings?.libraryName || 'LANTERA BACA'} - ${settings?.librarySubtitle || 'SMPN 5 LANGKE REMBONG'} | Laporan Buku Pegangan Guru</div>
         </body>
       </html>
     `)
@@ -371,14 +377,11 @@ export default function TeacherLoansPage() {
           <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
             <GraduationCap className="h-7 w-7" /> Buku Pegangan Guru
           </h1>
-          <p className="text-sm text-muted-foreground">Peminjaman dan Pengembalian buku untuk kebutuhan mengajar di kelas.</p>
+          <p className="text-sm text-muted-foreground">Peminjaman khusus untuk kebutuhan mengajar bapak/ibu guru.</p>
         </div>
         <div className="flex items-center gap-2">
-           <Button variant="secondary" size="sm" className="gap-2 font-bold" onClick={() => startScanner("return")}>
-             <ScanBarcode className="h-4 w-4" /> Scan Pengembalian
-           </Button>
            <Button variant="outline" size="sm" onClick={handlePrintBukti}>
-             <Printer className="h-4 w-4 mr-2" /> Cetak Bukti
+             <Printer className="h-4 w-4 mr-2" /> Cetak Laporan
            </Button>
            <Badge variant="secondary" className="h-9 px-3 bg-blue-100 text-blue-700 border-none font-bold">
             TA {settings?.academicYear || "2024/2025"}
@@ -386,174 +389,187 @@ export default function TeacherLoansPage() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-1 border-none shadow-sm bg-blue-50/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-              <ArrowRightLeft className="h-4 w-4" /> Form Penyerahan
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold text-muted-foreground uppercase">Cari Guru</Label>
-              <div className="relative">
-                <Input 
-                  placeholder="Nama atau NIP Guru..." 
-                  className="bg-white"
-                  value={memberSearch}
-                  onChange={e => { setMemberSearch(e.target.value); setShowMemberSuggestions(true); }}
-                  disabled={isLockedForUser}
-                />
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  className="absolute right-1 top-1/2 -translate-y-1/2"
-                  onClick={() => startScanner("member")}
-                  disabled={isLockedForUser}
-                >
-                  <ScanBarcode className="h-4 w-4" />
-                </Button>
-                {showMemberSuggestions && memberSuggestions.length > 0 && (
-                  <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border rounded-lg shadow-xl overflow-hidden">
-                    {memberSuggestions.map(m => (
-                      <div key={m.id} className="p-3 hover:bg-slate-50 cursor-pointer text-sm border-b last:border-0" onClick={() => { setSelectedMember(m); setMemberSearch(""); setShowMemberSuggestions(false); }}>
-                        <div className="font-bold">{m.name}</div>
-                        <div className="text-[10px] text-muted-foreground">{m.memberId}</div>
+      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); forceUnlockUI(); }} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 h-14 p-1 bg-muted/50">
+          <TabsTrigger value="borrow" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Penyerahan Buku</TabsTrigger>
+          <TabsTrigger value="return" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Pengembalian Buku</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="borrow" className="mt-8 space-y-6">
+          <div className="grid lg:grid-cols-3 gap-6">
+            <Card className="lg:col-span-1 border-none shadow-sm bg-blue-50/50">
+              <CardHeader>
+                <CardTitle className="text-sm font-bold uppercase tracking-wider">Identitas Penyerahan</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase">Cari Guru</Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="Nama atau NIP Guru..." 
+                      className="pl-10 bg-white"
+                      value={memberSearch}
+                      onChange={e => { setMemberSearch(e.target.value); setShowMemberSuggestions(true); }}
+                      onFocus={() => setShowMemberSuggestions(true)}
+                    />
+                    {showMemberSuggestions && memberSuggestions.length > 0 && (
+                      <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border rounded-lg shadow-xl overflow-hidden">
+                        {memberSuggestions.map(m => (
+                          <div key={m.id} className="p-3 hover:bg-slate-50 cursor-pointer text-sm border-b last:border-0" onClick={() => { setSelectedMember(m); setMemberSearch(""); setShowMemberSuggestions(false); }}>
+                            <div className="font-bold">{m.name}</div>
+                            <div className="text-[10px] text-muted-foreground">{m.memberId}</div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
-              </div>
-              {selectedMember && (
-                <div className="p-3 bg-white rounded-lg border flex justify-between items-center animate-in slide-in-from-left-2">
-                  <div className="text-xs font-bold text-primary">{selectedMember.name}</div>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedMember(null)} disabled={isLockedForUser}><X className="h-3 w-3" /></Button>
+                  {selectedMember && (
+                    <div className="p-3 bg-white rounded-lg border flex justify-between items-center animate-in slide-in-from-left-2">
+                      <div className="text-xs font-bold text-primary">{selectedMember.name}</div>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedMember(null)}><X className="h-3 w-3" /></Button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold text-muted-foreground uppercase">Cari Buku Pegangan</Label>
-              <div className="relative">
-                <Input 
-                  placeholder="Judul atau Kode Buku..." 
-                  className="bg-white"
-                  value={bookSearch}
-                  onChange={e => { setBookSearch(e.target.value); setShowBookSuggestions(true); }}
-                  disabled={isLockedForUser}
-                />
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  className="absolute right-1 top-1/2 -translate-y-1/2"
-                  onClick={() => startScanner("book")}
-                  disabled={isLockedForUser}
-                >
-                  <ScanBarcode className="h-4 w-4" />
-                </Button>
-                {showBookSuggestions && bookSuggestions.length > 0 && (
-                  <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border rounded-lg shadow-xl overflow-hidden">
-                    {bookSuggestions.map(b => (
-                      <div key={b.id} className="p-3 hover:bg-slate-50 cursor-pointer text-sm border-b last:border-0" onClick={() => { setSelectedBook(b); setBookSearch(""); setShowBookSuggestions(false); }}>
-                        <div className="font-bold">{b.title}</div>
-                        <div className="text-[10px] text-muted-foreground">{b.code} ({b.availableStock} Tersedia)</div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase">Pilih Buku Pegangan</Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="Judul atau Kode Buku..." 
+                      className="pl-10 bg-white"
+                      value={bookSearch}
+                      onChange={e => { setBookSearch(e.target.value); setShowBookSuggestions(true); }}
+                      onFocus={() => setShowBookSuggestions(true)}
+                    />
+                    {showBookSuggestions && bookSuggestions.length > 0 && (
+                      <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border rounded-lg shadow-xl overflow-hidden">
+                        {bookSuggestions.map(b => (
+                          <div key={b.id} className="p-3 hover:bg-slate-50 cursor-pointer text-sm border-b last:border-0" onClick={() => { setSelectedBook(b); setBookSearch(""); setShowBookSuggestions(false); }}>
+                            <div className="font-bold">{b.title}</div>
+                            <div className="text-[10px] text-muted-foreground">{b.code} ({b.availableStock} Tersedia)</div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
-              </div>
-              {selectedBook && (
-                <div className="p-3 bg-white rounded-lg border flex justify-between items-center animate-in slide-in-from-right-2">
-                  <div className="text-xs font-bold text-secondary-foreground">{selectedBook.title}</div>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedBook(null)} disabled={isLockedForUser}><X className="h-3 w-3" /></Button>
+                  {selectedBook && (
+                    <div className="p-3 bg-white rounded-lg border flex justify-between items-center animate-in slide-in-from-right-2">
+                      <div className="text-xs font-bold text-secondary-foreground">{selectedBook.title}</div>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedBook(null)}><X className="h-3 w-3" /></Button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            <Button 
-              className="w-full h-12 font-black shadow-lg shadow-primary/20" 
-              disabled={!selectedMember || !selectedBook || isProcessing || isLockedForUser}
-              onClick={handleProcessLoan}
-            >
-              {isProcessing ? <Loader2 className="animate-spin" /> : "SERAHKAN BUKU"}
-            </Button>
-          </CardContent>
-        </Card>
+                <Button 
+                  className="w-full h-12 font-black shadow-lg" 
+                  disabled={!selectedMember || !selectedBook || isProcessing || isLockedForUser}
+                  onClick={handleProcessLoan}
+                >
+                  {isProcessing ? <Loader2 className="animate-spin" /> : "SERAHKAN BUKU"}
+                </Button>
+              </CardContent>
+            </Card>
 
-        <Card className="lg:col-span-2 border-none shadow-sm overflow-hidden">
-          <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); forceUnlockUI(); }} className="w-full">
-            <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
-              <TabsList className="grid grid-cols-2 w-48 h-9">
-                <TabsTrigger value="active" className="text-xs gap-1.5"><Clock className="h-3 w-3" /> Aktif</TabsTrigger>
-                <TabsTrigger value="history" className="text-xs gap-1.5"><History className="h-3 w-3" /> Riwayat</TabsTrigger>
-              </TabsList>
-              <div className="relative w-48">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                <Input placeholder="Cari data..." className="pl-7 h-8 text-xs bg-muted/50 border-none" value={search} onChange={e => setSearch(e.target.value)} />
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="max-h-[600px] overflow-y-auto">
+            <Card className="lg:col-span-2 border-none shadow-sm overflow-hidden">
+              <CardHeader className="bg-slate-50/50 border-b">
+                <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                  <History className="h-4 w-4 text-primary" /> Riwayat Penyerahan (Tahun Ini)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
                 <Table>
-                  <TableHeader className="bg-slate-50/50 sticky top-0 z-10">
+                  <TableHeader>
                     <TableRow>
                       <TableHead className="w-12 text-center">No.</TableHead>
-                      <TableHead>Guru / Peminjam</TableHead>
-                      <TableHead>Mengajar / Kelas</TableHead>
-                      <TableHead>Judul & Info Buku</TableHead>
-                      <TableHead>Tgl. {activeTab === "active" ? "Serah" : "Kembali"}</TableHead>
-                      {activeTab === "active" && <TableHead className="text-right">Aksi</TableHead>}
+                      <TableHead>Nama Guru</TableHead>
+                      <TableHead>Judul Buku</TableHead>
+                      <TableHead>Tgl Serah</TableHead>
+                      <TableHead className="text-right">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {loadingTrans ? (
-                      <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
-                    ) : filteredTrans.length === 0 ? (
-                      <TableRow><TableCell colSpan={6} className="text-center py-12 text-muted-foreground italic">Belum ada data {activeTab === "active" ? "aktif" : "riwayat"}.</TableCell></TableRow>
-                    ) : filteredTrans.map((t, index) => {
-                      const bookDetail = books?.find(b => b.id === t.bookId);
-                      return (
+                      <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                    ) : historyTransactions.length === 0 ? (
+                      <TableRow><TableCell colSpan={5} className="text-center py-10 text-muted-foreground italic">Belum ada riwayat penyerahan.</TableCell></TableRow>
+                    ) : historyTransactions.slice(0, 10).map((t, index) => (
                       <TableRow key={t.id}>
-                        <TableCell className="text-center text-xs text-muted-foreground">{index + 1}</TableCell>
-                        <TableCell>
-                          <div className="font-bold text-xs">{t.memberName}</div>
-                          <div className="text-[10px] text-muted-foreground">{t.memberId}</div>
+                        <TableCell className="text-center text-xs">{index + 1}</TableCell>
+                        <TableCell className="font-bold text-xs">{t.memberName}</TableCell>
+                        <TableCell className="text-xs">{t.bookTitle}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{t.borrowDate ? format(new Date(t.borrowDate), 'dd/MM/yyyy') : '-'}</TableCell>
+                        <TableCell className="text-right">
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-none text-[8px] font-bold">SUDAH KEMBALI</Badge>
                         </TableCell>
-                        <TableCell className="text-xs font-medium">{t.classOrSubject || '-'}</TableCell>
-                        <TableCell>
-                          <div className="font-medium text-xs leading-tight">{t.bookTitle}</div>
-                          <div className="text-[9px] text-muted-foreground mt-0.5">
-                            {bookDetail?.publisher || '-'} | {bookDetail?.publicationYear || '-'}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {activeTab === "active" 
-                            ? (t.borrowDate ? format(new Date(t.borrowDate), 'dd/MM/yyyy') : '-')
-                            : (t.returnDate ? format(new Date(t.returnDate), 'dd/MM/yyyy') : '-')
-                          }
-                        </TableCell>
-                        {activeTab === "active" && (
-                          <TableCell className="text-right">
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="h-8 text-[10px] font-bold gap-1"
-                              onClick={() => prepareReturn(t)}
-                              disabled={isProcessing || isLockedForUser}
-                            >
-                              <History className="h-3 w-3" /> Kembali
-                            </Button>
-                          </TableCell>
-                        )}
                       </TableRow>
-                    )})}
+                    ))}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="return" className="mt-8 space-y-6">
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card className="md:col-span-1 border-none shadow-sm bg-accent/30 flex flex-col items-center justify-center p-8 gap-4">
+              <Button variant="secondary" className="h-20 w-full gap-3 shadow-md font-bold" onClick={() => startScanner("return")}><ScanBarcode className="h-8 w-8" /> Scan Buku Guru</Button>
+              <div className="w-full space-y-2">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Pencarian Manual Guru</Label>
+                <Input placeholder="Cari Nama/NIP Guru..." className="h-12 bg-white" value={returnSearch} onChange={e => setReturnSearch(e.target.value)} />
               </div>
-            </CardContent>
-          </Tabs>
-        </Card>
-      </div>
+            </Card>
+
+            <Card className="md:col-span-2 border-none shadow-sm overflow-hidden">
+              <CardHeader className="pb-3 border-b">
+                <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Buku Pegangan Guru Aktif</CardTitle>
+                <CardDescription className="text-xs">Daftar buku yang saat ini masih dipegang oleh bapak/ibu guru.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="max-h-[500px] overflow-y-auto">
+                  <Table>
+                    <TableHeader className="bg-slate-50/50 sticky top-0 z-10">
+                      <TableRow>
+                        <TableHead className="w-12 text-center">No.</TableHead>
+                        <TableHead>Nama Guru & Buku</TableHead>
+                        <TableHead>Tgl Penyerahan</TableHead>
+                        <TableHead className="text-right">Aksi</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {loadingTrans ? (
+                        <TableRow><TableCell colSpan={4} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                      ) : filteredActive.length === 0 ? (
+                        <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground italic">Tidak ada buku pegangan aktif.</TableCell></TableRow>
+                      ) : filteredActive.map((t, index) => (
+                        <TableRow key={t.id}>
+                          <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="font-bold text-sm leading-tight">{t.bookTitle}</div>
+                              <div className="text-xs font-semibold">{t.memberName} <span className="text-muted-foreground font-normal">/ {t.memberId}</span></div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {t.borrowDate ? format(new Date(t.borrowDate), 'dd/MM/yyyy') : '-'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button size="sm" variant="outline" className="h-8 text-xs font-bold" onClick={() => prepareReturn(t)} disabled={isLockedForUser}>
+                              Terima Kembali
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={isReturnConfirmOpen} onOpenChange={(v) => { setIsReturnConfirmOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-md bg-white border-none shadow-2xl">
@@ -567,7 +583,7 @@ export default function TeacherLoansPage() {
             <div className="space-y-6 py-4">
               <div className="p-4 bg-slate-50 rounded-xl border space-y-3">
                 <div className="flex-1">
-                  <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Buku & Peminjam</div>
+                  <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Buku & Guru</div>
                   <div className="text-sm font-black">{pendingReturnTrans.bookTitle}</div>
                   <div className="text-xs font-bold text-primary mt-1">{pendingReturnTrans.memberName} / {pendingReturnTrans.memberId}</div>
                 </div>
@@ -616,8 +632,8 @@ export default function TeacherLoansPage() {
 
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
         <DialogContent className="p-0 border-none bg-black max-w-xl h-[400px] overflow-hidden">
-          <DialogHeader>
-             <DialogTitle className="sr-only">Pemindai Buku Guru</DialogTitle>
+          <DialogHeader className="sr-only">
+             <DialogTitle>Pemindai Buku Guru</DialogTitle>
           </DialogHeader>
           <div id="teacher-scanner" className="w-full h-full bg-black"></div>
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>

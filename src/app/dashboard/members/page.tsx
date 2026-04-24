@@ -106,7 +106,7 @@ export default function MembersPage() {
         document.body.style.overflow = 'auto';
         const overlays = document.querySelectorAll('[data-radix-focus-guard]');
         overlays.forEach(el => (el as HTMLElement).remove());
-      }, 100);
+      }, 300);
     }
   }, []);
 
@@ -184,7 +184,6 @@ export default function MembersPage() {
             table { width: 100%; border-collapse: collapse; }
             th { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 10px; }
             .footer { margin-top: 40px; float: right; text-align: center; width: 250px; }
-            .print-footer { position: fixed; bottom: 5mm; left: 15mm; right: 15mm; font-size: 8px; text-align: center; color: #999; border-top: 1px solid #eee; padding-top: 2mm; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
@@ -192,7 +191,6 @@ export default function MembersPage() {
             <div>${settings?.govtInstitution || 'PEMERINTAH KABUPATEN MANGGARAI'}</div>
             <div>${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
             <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
-            <div style="font-size: 10px;">${settings?.schoolAddress || 'Mando, Kelurahan Compang Carep'}</div>
           </div>
           <div class="title">DAFTAR ANGGOTA PERPUSTAKAAN (${labelType})</div>
           <table>
@@ -214,7 +212,6 @@ export default function MembersPage() {
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
             NIP. ${settings?.principalNip || '198507272011011020'}
           </div>
-          <div class="print-footer">${settings?.libraryName || 'LANTERA BACA'} - ${settings?.librarySubtitle || 'SMPN 5 LANGKE REMBONG'} | Daftar Anggota ${labelType}</div>
         </body>
       </html>
     `)
