@@ -346,7 +346,7 @@ function TransactionsContent() {
             <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
             <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold;">${t.memberName}</td>
             <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle} ${t.quantity > 1 ? `(${t.quantity} unit)` : ''}</td>
-            <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.memberId}</td>
+            <td style="border: 1px solid #ccc; padding: 8px; text-align: center; font-family: monospace;">${t.memberId}</td>
             <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${format(borrowDate, 'dd/MM/yyyy')}</td>
             <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${returnDateStr}</td>
             <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${fineStr}</td>
@@ -363,9 +363,9 @@ function TransactionsContent() {
             body { font-family: 'Inter', sans-serif; font-size: 11px; margin: 0; padding: 15mm; }
             .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
             .school-name { font-size: 16px; font-weight: 900; text-transform: uppercase; }
-            .title { text-align: center; font-size: 12px; font-weight: 800; margin: 20px 0; text-transform: uppercase; }
+            .title { text-align: center; font-size: 14px; font-weight: 800; margin: 20px 0; text-transform: uppercase; }
             table { width: 100%; border-collapse: collapse; }
-            th { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; }
+            th { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; font-size: 10px; }
             .footer-sign { margin-top: 40px; float: right; text-align: center; width: 250px; }
             .print-footer { position: fixed; bottom: 5mm; left: 15mm; right: 15mm; font-size: 8px; text-align: center; color: #999; border-top: 1px solid #eee; padding-top: 2mm; }
           </style>
