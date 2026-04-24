@@ -109,7 +109,10 @@ export default function MembersPage() {
         document.body.style.pointerEvents = 'auto';
         document.body.style.overflow = 'auto';
         const overlays = document.querySelectorAll('[data-radix-focus-guard], [data-radix-portal]');
-        overlays.forEach(el => (el as HTMLElement).style.pointerEvents = 'auto');
+        overlays.forEach(el => {
+          (el as HTMLElement).style.pointerEvents = 'auto';
+          if (el.hasAttribute('data-radix-focus-guard')) el.remove();
+        });
       }, 100);
     }
   }, []);
@@ -241,7 +244,7 @@ export default function MembersPage() {
             .card-container {
               width: 54mm;
               height: 86mm;
-              border: 0.2pt solid #eee;
+              border: 0.1pt solid #eee;
               box-sizing: border-box;
               display: flex;
               flex-direction: column;
@@ -252,35 +255,39 @@ export default function MembersPage() {
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
             }
-            .header-box { padding: 4mm 2mm 1mm 2mm; }
+            .header-box { padding: 4mm 1mm 1mm 1mm; }
             .school-name { 
-              font-size: 9.5pt; 
+              font-size: 8.5pt; 
               font-weight: 900; 
               color: #1e4b8f; 
               text-transform: uppercase; 
               margin: 0; 
-              line-height: 1; 
-              white-space: nowrap; 
-              overflow: hidden;
+              line-height: 1.1; 
+              white-space: nowrap;
             }
             .address { 
-              font-size: 5pt; 
-              color: #333; 
+              font-size: 4.8pt; 
+              color: #444; 
               margin-top: 1mm; 
               font-weight: 500; 
-              line-height: 1.1; 
-              padding: 0 2mm; 
+              line-height: 1; 
+              white-space: nowrap;
+              padding-bottom: 0.8mm;
+              border-bottom: 0.5pt solid #000;
+              margin-left: 3mm;
+              margin-right: 3mm;
             }
             
-            .card-title-box { margin-top: 4mm; margin-bottom: 1mm; }
-            .card-title { font-size: 8pt; font-weight: 800; color: #000; text-transform: uppercase; line-height: 1.1; letter-spacing: 0.2px; }
+            .card-title-box { margin-top: 2.5mm; }
+            .card-title { font-size: 7.5pt; font-weight: 800; color: #000; text-transform: uppercase; line-height: 1.1; letter-spacing: 0.2px; }
             
-            .qr-section { flex: 1; display: flex; justify-content: center; align-items: center; padding: 1mm 6mm; }
-            .qr-section img { width: 100%; height: auto; border: none; }
+            .qr-section { flex: 1; display: flex; justify-content: center; align-items: center; padding: 1mm 4mm; }
+            .qr-section img { width: 32mm; height: 32mm; border: none; }
             
             .info-section { padding-bottom: 12mm; }
             .member-name { font-size: 9.5pt; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 0.5mm; padding: 0 1mm; line-height: 1.1; }
-            .member-id { font-size: 10.5pt; font-weight: 800; color: #1e4b8f; font-family: monospace; }
+            .member-id { font-size: 10.5pt; font-weight: 800; color: #1e4b8f; font-family: monospace; line-height: 1; }
+            .member-detail { font-size: 6.5pt; font-weight: 700; color: #666; text-transform: uppercase; margin-top: 0.5mm; }
             
             .footer { 
               background: #1e4b8f !important; 
@@ -315,6 +322,7 @@ export default function MembersPage() {
             <div class="info-section">
               <div class="member-name">${member.name}</div>
               <div class="member-id">${member.memberId}</div>
+              <div class="member-detail">${member.type === 'Teacher' ? 'GURU' : 'KELAS'}: ${member.classOrSubject || '-'}</div>
             </div>
             
             <div class="footer">
@@ -415,7 +423,7 @@ export default function MembersPage() {
         <div className="flex gap-2">
           <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2" onClick={() => forceUnlockUI()}>
+              <Button variant="outline" className="gap-2">
                 <Printer className="h-4 w-4" /> Cetak Daftar Anggota
               </Button>
             </DropdownMenuTrigger>

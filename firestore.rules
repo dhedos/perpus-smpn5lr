@@ -14,32 +14,32 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
-    // 2. Koleksi Anggota (Members)
+    // 2. Koleksi Anggota (Members) - Izin eksplisit untuk list dan get
     match /members/{docId} {
-      allow list, get, create, update, delete: if request.auth != null;
+      allow read, write: if request.auth != null;
     }
 
     // 3. Koleksi Buku (Books)
     match /books/{docId} {
-      allow list, get, create, update, delete: if request.auth != null;
+      allow read, write: if request.auth != null;
     }
 
     // 4. Koleksi Transaksi (Transactions)
     match /transactions/{docId} {
-      allow list, get, create, update, delete: if request.auth != null;
+      allow read, write: if request.auth != null;
     }
 
     // 5. Koleksi Log Aktivitas (Activity Logs)
     match /activity_logs/{docId} {
-      allow list, get, create, update, delete: if request.auth != null;
+      allow read, write: if request.auth != null;
     }
 
     // 6. Koleksi Pengguna (Users)
     match /users/{docId} {
-      allow list, get, create, update, delete: if request.auth != null;
+      allow read, write: if request.auth != null;
     }
 
-    // 7. Fallback Global untuk mengantisipasi path lain
+    // 7. Fallback Global
     match /{path=**} {
       allow read, write: if request.auth != null;
     }
