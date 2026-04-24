@@ -68,6 +68,7 @@
         "damagedBookFine": { "type": "number", "description": "Denda jika buku rusak." },
         "lostBookFine": { "type": "number", "description": "Denda flat jika buku hilang." },
         "libraryName": { "type": "string" },
+        "librarySubtitle": { "type": "string", "description": "Teks sub-judul di bawah nama perpustakaan." },
         "govtInstitution": { "type": "string" },
         "eduDept": { "type": "string" },
         "schoolName": { "type": "string" },

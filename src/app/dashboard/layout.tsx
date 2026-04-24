@@ -1,11 +1,13 @@
+
 "use client"
 
 import { SidebarNav } from "@/components/dashboard/SidebarNav"
 import { TopNav } from "@/components/dashboard/TopNav"
-import { useUser } from "@/firebase"
+import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Loader2, Library } from "lucide-react"
+import { doc } from "firebase/firestore"
 
 export default function DashboardLayout({
   children,
@@ -13,9 +15,13 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const { user, loading } = useUser()
+  const db = useFirestore()
   const router = useRouter()
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+
+  const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
+  const { data: settings } = useDoc(settingsRef)
 
   useEffect(() => {
     setIsMounted(true)
@@ -37,9 +43,13 @@ export default function DashboardLayout({
         <div className="flex flex-col items-center space-y-2">
           <div className="flex items-center gap-2">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">Pustaka Nusantara</p>
+            <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">
+              {settings?.libraryName || "Pustaka Nusantara"}
+            </p>
           </div>
-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50">Menyelaraskan Sesi Cloud...</p>
+          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50 text-center">
+            {settings?.librarySubtitle || "Menyelaraskan Sesi Cloud..."}
+          </p>
         </div>
       </div>
     </div>

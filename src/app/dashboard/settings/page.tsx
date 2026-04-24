@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Library, Bell, Shield, Save, Loader2, Coins, CalendarDays, AlertTriangle, FileText, MapPin, UserCheck, GraduationCap, LockKeyhole } from "lucide-react"
+import { Library, Bell, Shield, Save, Loader2, Coins, CalendarDays, AlertTriangle, FileText, MapPin, UserCheck, GraduationCap, LockKeyhole, Type } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 
@@ -32,6 +32,7 @@ export default function SettingsPage() {
   // Settings State
   const [settings, setSettings] = useState({
     libraryName: "Perpustakaan SMPN 5",
+    librarySubtitle: "SMPN 5 LANGKE REMBONG",
     schoolName: "SMP NEGERI 5 LANGKE REMBONG",
     loanPeriod: 7,
     fineAmount: 500,
@@ -66,7 +67,7 @@ export default function SettingsPage() {
         fineAmount: Number(remoteSettings.fineAmount ?? 500),
         damagedBookFine: Number(remoteSettings.damagedBookFine ?? 10000),
         lostBookFine: Number(remoteSettings.lostBookFine ?? 50000),
-        isDataLocked: remoteSettings.isDataLocked === true // Pastikan konversi boolean eksplisit
+        isDataLocked: remoteSettings.isDataLocked === true 
       }))
     }
   }, [remoteSettings])
@@ -76,7 +77,6 @@ export default function SettingsPage() {
 
     setIsSaving(true)
     
-    // Pastikan data yang dikirim memiliki tipe data yang benar
     const dataToSave = {
       ...settings,
       loanPeriod: Math.max(1, Number(settings.loanPeriod)),
@@ -130,7 +130,7 @@ export default function SettingsPage() {
           <Card className="border-none shadow-sm overflow-hidden">
             <CardHeader className="bg-slate-50/50">
               <CardTitle>Kebijakan Sirkulasi Utama</CardTitle>
-              <CardDescription>Atur denda, tahun ajaran, dan jatuh tempo yang akan berlaku di seluruh sistem.</CardDescription>
+              <CardDescription>Atur identitas perpustakaan, denda, dan tahun ajaran.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
               <div className="grid md:grid-cols-2 gap-8">
@@ -142,6 +142,19 @@ export default function SettingsPage() {
                       value={settings.libraryName} 
                       onChange={(e) => setSettings({ ...settings, libraryName: e.target.value })}
                       className="bg-slate-50 border-slate-200 h-11"
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="lib-subtitle" className="font-bold text-xs uppercase text-muted-foreground flex items-center gap-2">
+                      <Type className="h-3 w-3" /> Sub-judul (Nama Sekolah)
+                    </Label>
+                    <Input 
+                      id="lib-subtitle" 
+                      value={settings.librarySubtitle} 
+                      onChange={(e) => setSettings({ ...settings, librarySubtitle: e.target.value })}
+                      className="bg-slate-50 border-slate-200 h-11"
+                      placeholder="Cth: SMPN 5 LANGKE REMBONG"
                     />
                   </div>
 

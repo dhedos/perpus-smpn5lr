@@ -2,7 +2,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -19,8 +19,9 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { useAuth, useUser } from "@/firebase"
+import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { signOut } from "firebase/auth"
+import { doc } from "firebase/firestore"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,7 +53,11 @@ const administrationItems = [
 export function SidebarNav() {
   const pathname = usePathname()
   const auth = useAuth()
+  const db = useFirestore()
   const { isAdmin } = useUser()
+
+  const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
+  const { data: settings } = useDoc(settingsRef)
 
   const handleLogout = async () => {
     if (auth) {
@@ -68,8 +73,12 @@ export function SidebarNav() {
           <Library className="h-8 w-8" />
         </div>
         <div className="flex flex-col">
-          <span className="text-sm font-black leading-tight text-primary tracking-tight uppercase">PUSTAKA NUSANTARA</span>
-          <span className="text-[10px] font-bold leading-tight text-secondary uppercase tracking-widest">SMPN 5 LANGKE REMBONG</span>
+          <span className="text-sm font-black leading-tight text-primary tracking-tight uppercase">
+            {settings?.libraryName || "PUSTAKA NUSANTARA"}
+          </span>
+          <span className="text-[10px] font-bold leading-tight text-secondary uppercase tracking-widest">
+            {settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG"}
+          </span>
         </div>
       </div>
       

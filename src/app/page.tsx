@@ -1,12 +1,13 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, UserPlus, ShieldCheck, AlertCircle, Library, KeyRound, Mail, Chrome } from "lucide-react"
+import { Loader2, ShieldCheck, AlertCircle, Library, Chrome } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { useAuth, useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase"
+import { useAuth, useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from "@/firebase"
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from "firebase/auth"
 import { collection, doc, setDoc, query, limit, getDoc } from "firebase/firestore"
 import { useRouter } from "next/navigation"
@@ -40,6 +41,9 @@ export default function LoginPage() {
   const [isResetOpen, setIsResetOpen] = useState(false)
   const [resetEmail, setResetEmail] = useState("")
   const [isSendingReset, setIsSendingReset] = useState(false)
+
+  const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
+  const { data: settings } = useDoc(settingsRef)
 
   useEffect(() => {
     setIsMounted(true)
@@ -145,9 +149,13 @@ export default function LoginPage() {
         <div className="flex flex-col items-center space-y-2">
           <div className="flex items-center gap-2">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">Pustaka Nusantara</p>
+            <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">
+              {settings?.libraryName || "Pustaka Nusantara"}
+            </p>
           </div>
-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50">Menyelaraskan Sesi Cloud...</p>
+          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50 text-center">
+            {settings?.librarySubtitle || "Menyelaraskan Sesi Cloud..."}
+          </p>
         </div>
       </div>
     </div>
@@ -165,9 +173,11 @@ export default function LoginPage() {
             <Library className="h-12 w-12" />
           </div>
           <div className="space-y-1">
-            <CardTitle className="text-3xl font-black font-headline uppercase tracking-tighter text-primary">PUSTAKA NUSANTARA</CardTitle>
+            <CardTitle className="text-3xl font-black font-headline uppercase tracking-tighter text-primary">
+              {settings?.libraryName || "PUSTAKA NUSANTARA"}
+            </CardTitle>
             <CardDescription className="font-bold text-secondary uppercase tracking-[0.15em] text-xs">
-              {isSetupMode ? "Inisialisasi Sistem Baru" : "SMPN 5 LANGKE REMBONG"}
+              {isSetupMode ? "Inisialisasi Sistem Baru" : (settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG")}
             </CardDescription>
           </div>
         </CardHeader>
@@ -192,7 +202,7 @@ export default function LoginPage() {
             )}
             <div className="space-y-2">
               <Label htmlFor="email" className="font-bold text-[10px] uppercase text-muted-foreground ml-1">Alamat Email</Label>
-              <Input id="email" type="email" placeholder="email@smpn5.sch.id" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-slate-200" />
+              <Input id="email" type="email" placeholder="email@sekolah.sch.id" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-slate-200" />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -228,7 +238,7 @@ export default function LoginPage() {
             </Button>
           )}
           {isSetupMode && <Button variant="ghost" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground" onClick={() => setIsSetupMode(false)}>Kembali ke Login</Button>}
-          <p className="text-[10px] text-muted-foreground/60 text-center uppercase font-bold tracking-[0.2em]">&copy; 2026 SMPN 5 LANGKE REMBONG</p>
+          <p className="text-[10px] text-muted-foreground/60 text-center uppercase font-bold tracking-[0.2em]">&copy; 2026 {settings?.librarySubtitle || "PUSTAKA NUSANTARA"}</p>
         </CardFooter>
       </Card>
 
