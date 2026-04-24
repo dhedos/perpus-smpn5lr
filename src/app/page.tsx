@@ -30,7 +30,6 @@ export default function LoginPage() {
   const { user, loading: authLoading } = useUser()
   
   const [loading, setLoading] = useState(false)
-  const [isSetupMode, setIsSetupMode] = useState(false)
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   
@@ -50,11 +49,11 @@ export default function LoginPage() {
   }, [])
 
   useEffect(() => {
-    if (isMounted && !authLoading && user && user.role) {
+    if (isMounted && !authLoading && user && user.role && !isRedirecting) {
       setIsRedirecting(true)
       router.replace("/dashboard")
     }
-  }, [user, authLoading, router, isMounted])
+  }, [user, authLoading, router, isMounted, isRedirecting])
 
   const usersQuery = useMemoFirebase(() => {
     if (!db) return null
@@ -140,32 +139,32 @@ export default function LoginPage() {
     }
   }
 
-  // Same display logic as dashboard layout to avoid mismatch
   const displaySubtitle = isMounted ? (settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG") : "SMPN 5 LANGKE REMBONG";
 
-  const loadingUI = (
-    <div className="h-screen w-full flex items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
-        <div className="w-20 h-20 flex items-center justify-center rounded-3xl bg-primary/10 text-primary shadow-inner">
-          <Library className="h-12 w-12 animate-pulse" />
-        </div>
-        <div className="flex flex-col items-center space-y-2">
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">
-              LANTERA BACA
+  // Kondisi untuk menampilkan Loading Screen yang konsisten
+  const shouldShowLoading = !isMounted || authLoading || (user && user.role) || isRedirecting;
+
+  if (shouldShowLoading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
+          <div className="w-20 h-20 flex items-center justify-center rounded-3xl bg-primary/10 text-primary shadow-inner">
+            <Library className="h-12 w-12 animate-pulse" />
+          </div>
+          <div className="flex flex-col items-center space-y-2">
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">
+                LANTERA BACA
+              </p>
+            </div>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50 text-center">
+              {displaySubtitle}
             </p>
           </div>
-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50 text-center">
-            {displaySubtitle}
-          </p>
         </div>
       </div>
-    </div>
-  )
-
-  if (!isMounted || authLoading || isRedirecting || (user && user.role)) {
-    return loadingUI
+    )
   }
 
   return (

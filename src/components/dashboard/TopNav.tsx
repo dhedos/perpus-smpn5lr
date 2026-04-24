@@ -102,7 +102,8 @@ export function TopNav() {
     if (auth) {
       setIsLoggingOut(true)
       await signOut(auth)
-      router.replace("/")
+      // CLEAN FIX: Gunakan window.location.href untuk pembersihan total state aplikasi
+      window.location.href = "/"
     }
   }
 
