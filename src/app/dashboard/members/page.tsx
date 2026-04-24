@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo } from "react"
@@ -195,7 +196,7 @@ export default function MembersPage() {
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
             NIP. ${settings?.principalNip || '198507272011011020'}
           </div>
-          <div class="print-footer">Pustaka Nusantara - SMPN 5 LANGKE REMBONG | Daftar Anggota ${labelType}</div>
+          <div class="print-footer">LANTERA BACA - ${settings?.librarySubtitle || 'SMPN 5 LANGKE REMBONG'} | Daftar Anggota ${labelType}</div>
         </body>
       </html>
     `)

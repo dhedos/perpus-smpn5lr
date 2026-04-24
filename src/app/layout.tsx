@@ -5,10 +5,9 @@ import { Toaster } from "@/components/ui/toaster"
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 
 export const metadata: Metadata = {
-  title: 'Pustaka Nusantara - SMPN 5 LANGKE REMBONG',
-  description: 'Sistem Informasi Perpustakaan Modern SMPN 5 Langke Rembong.',
+  title: 'LANTERA BACA - SMPN 5 LANGKE REMBONG',
+  description: 'Sistem Informasi Perpustakaan Modern LANTERA BACA SMPN 5 Langke Rembong.',
   icons: {
-    // Anda bisa mengganti URL di bawah ini dengan URL logo sekolah Anda
     icon: 'https://picsum.photos/seed/librarylogo/128/128',
     shortcut: 'https://picsum.photos/seed/librarylogo/128/128',
     apple: 'https://picsum.photos/seed/librarylogo/128/128',

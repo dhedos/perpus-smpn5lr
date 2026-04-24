@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo, useRef } from "react"
@@ -274,11 +275,11 @@ export default function TeacherLoansPage() {
           </table>
           <div class="footer-sign">
             ${settings?.reportCity || 'Mando'}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>
-            Kepala Sekolah,<br/><br/><br/><br/>
+            Kepala Sekolah,<br/>
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
             NIP. ${settings?.principalNip || '198507272011011020'}
           </div>
-          <div class="print-footer">Pustaka Nusantara - SMPN 5 LANGKE REMBONG | Laporan Buku Pegangan Guru</div>
+          <div class="print-footer">LANTERA BACA - ${settings?.librarySubtitle || 'SMPN 5 LANGKE REMBONG'} | Laporan Buku Pegangan Guru</div>
         </body>
       </html>
     `)

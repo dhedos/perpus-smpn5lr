@@ -82,7 +82,7 @@ import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/e
 import { collection, addDoc, deleteDoc, doc, updateDoc, query, limit, orderBy, serverTimestamp } from 'firebase/firestore'
 
 const INITIAL_FORM_DATA = {
-  mainHeader: "PUSTAKA NUSANTARA",
+  mainHeader: "LANTERA BACA",
   budgetSource: "BOSP",
   code: "",
   title: "",
@@ -135,8 +135,6 @@ export default function BooksPage() {
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
   
-  // Logic: Locked if setting active AND current user is NOT admin
-  // Robust check: Ensure isDataLocked is explicitly true
   const isLockedForUser = Boolean(settings?.isDataLocked === true && !isAdmin);
 
   useEffect(() => {
@@ -352,7 +350,7 @@ export default function BooksPage() {
               NIP. ${settings?.principalNip || '198507272011011020'}
             </div>
           </div>
-          <div class="print-footer">Pustaka Nusantara - SMPN 5 LANGKE REMBONG | Laporan Daftar Koleksi</div>
+          <div class="print-footer">LANTERA BACA - ${settings?.librarySubtitle || 'SMPN 5 LANGKE REMBONG'} | Laporan Daftar Koleksi</div>
         </body>
       </html>
     `)
@@ -367,7 +365,7 @@ export default function BooksPage() {
     const stickersHtml = filteredBooks.map(book => `
       <div class="label-card">
         <div class="info-section">
-          <div class="header-text">${book.mainHeader || 'PUSTAKA NUSANTARA'}</div>
+          <div class="header-text">${book.mainHeader || 'LANTERA BACA'}</div>
           <div class="source-text">${book.budgetSource || 'BOSP'}</div>
           <div class="book-title">${book.title}</div>
           <div class="book-details">
@@ -653,7 +651,7 @@ export default function BooksPage() {
                             totalStock: Number(book.totalStock || 0),
                             availableStock: Number(book.availableStock || 0),
                             description: book.description || "",
-                            mainHeader: book.mainHeader || "PUSTAKA NUSANTARA",
+                            mainHeader: book.mainHeader || "LANTERA BACA",
                             budgetSource: book.budgetSource || "BOSP"
                           }); 
                           setIsEditOpen(true);
@@ -948,7 +946,7 @@ export default function BooksPage() {
                   <head><title> </title><style>@page { margin: 0; } body { display:flex; justify-content:center; align-items:center; height:100vh; margin:0; font-family:sans-serif; }</style></head>
                   <body onload="window.print(); window.close();">
                     <div style="text-align:center; border:1px solid #000; padding:20px; width: 80mm;">
-                      <div style="font-weight:bold; font-size:10px; color:#2E6ECE;">${selectedBookQr?.mainHeader || 'PUSTAKA NUSANTARA'}</div>
+                      <div style="font-weight:bold; font-size:10px; color:#2E6ECE;">${selectedBookQr?.mainHeader || 'LANTERA BACA'}</div>
                       <div style="font-size:16px; font-weight:900; margin:10px 0;">${selectedBookQr?.title}</div>
                       <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${selectedBookQr?.code}" />
                       <div style="font-family:monospace; font-weight:bold; margin-top:10px; font-size:14px;">${selectedBookQr?.code}</div>
@@ -1008,7 +1006,7 @@ export default function BooksPage() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={v => { setIsDeleteDialogOpen(v); forceUnlockUI(); }}>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={(v) => { setIsDeleteDialogOpen(v); forceUnlockUI(); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Buku dari Koleksi?</AlertDialogTitle>

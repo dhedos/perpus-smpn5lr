@@ -102,7 +102,6 @@ export function TopNav() {
     if (auth) {
       setIsLoggingOut(true)
       await signOut(auth)
-      // Gunakan replace untuk navigasi yang bersih
       router.replace("/")
     }
   }
@@ -286,7 +285,7 @@ export function TopNav() {
           <AlertDialogHeader>
             <AlertDialogTitle>Konfirmasi Keluar</AlertDialogTitle>
             <AlertDialogDescription>
-              Apakah Anda yakin ingin keluar dari sistem Pustaka Nusantara? Sesi Anda akan diakhiri.
+              Apakah Anda yakin ingin keluar dari sistem LANTERA BACA? Sesi Anda akan diakhiri.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
