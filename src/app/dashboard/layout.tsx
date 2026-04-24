@@ -34,6 +34,9 @@ export default function DashboardLayout({
     }
   }, [user, loading, router, isRedirecting, isMounted])
 
+  // Subtitle dynamic, render fixed fallback during SSR to prevent mismatch
+  const displaySubtitle = isMounted ? (settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG") : "SMPN 5 LANGKE REMBONG";
+
   const loadingUI = (
     <div className="h-screen w-full flex items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
@@ -48,7 +51,7 @@ export default function DashboardLayout({
             </p>
           </div>
           <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50 text-center">
-            {settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG"}
+            {displaySubtitle}
           </p>
         </div>
       </div>

@@ -140,6 +140,9 @@ export default function LoginPage() {
     }
   }
 
+  // Same display logic as dashboard layout to avoid mismatch
+  const displaySubtitle = isMounted ? (settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG") : "SMPN 5 LANGKE REMBONG";
+
   const loadingUI = (
     <div className="h-screen w-full flex items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
@@ -154,7 +157,7 @@ export default function LoginPage() {
             </p>
           </div>
           <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50 text-center">
-            {settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG"}
+            {displaySubtitle}
           </p>
         </div>
       </div>
@@ -177,7 +180,7 @@ export default function LoginPage() {
               LANTERA BACA
             </CardTitle>
             <CardDescription className="font-bold text-secondary uppercase tracking-[0.15em] text-xs">
-              {isSetupMode ? "Inisialisasi Sistem Baru" : (settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG")}
+              {isSetupMode ? "Inisialisasi Sistem Baru" : displaySubtitle}
             </CardDescription>
           </div>
         </CardHeader>
@@ -238,7 +241,7 @@ export default function LoginPage() {
             </Button>
           )}
           {isSetupMode && <Button variant="ghost" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground" onClick={() => setIsSetupMode(false)}>Kembali ke Login</Button>}
-          <p className="text-[10px] text-muted-foreground/60 text-center uppercase font-bold tracking-[0.2em]">&copy; 2026 {settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG"}</p>
+          <p className="text-[10px] text-muted-foreground/60 text-center uppercase font-bold tracking-[0.2em]">&copy; 2026 {displaySubtitle}</p>
         </CardFooter>
       </Card>
 
