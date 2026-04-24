@@ -1,7 +1,7 @@
 
 "use client"
 
-import Link from "link"
+import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { 
   LayoutDashboard, 
@@ -151,8 +151,8 @@ export function SidebarNav() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-        <div className="text-center">
-           <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest opacity-40">
+        <div className="text-center pt-2">
+           <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">
              © 2026 Lantera Baca
            </p>
         </div>

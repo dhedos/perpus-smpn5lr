@@ -3,62 +3,37 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * LANTERA BACA - GLOBAL SECURITY RULES (Explicit & Robust)
-     */
-
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // 1. Pengaturan Umum: Bisa dibaca publik untuk identitas sistem
+    // 1. Izin Publik terbatas untuk login & inisialisasi
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+    match /users {
+      allow list: if true;
+    }
     match /settings/general {
       allow read: if true;
       allow write: if isSignedIn();
     }
 
-    // 2. Koleksi Pengguna (Users):
-    // Diperlukan akses publik terbatas untuk inisialisasi admin & logout
-    match /users/{userId} {
-      allow read: if true;
-      allow write: if isSignedIn();
-    }
+    // 2. Izin Penuh untuk Petugas Terdaftar pada seluruh koleksi utama
+    match /members/{docId} { allow read, write: if isSignedIn(); }
+    match /members { allow list: if isSignedIn(); }
     
-    match /users {
-      allow list, read: if true;
-    }
+    match /books/{docId} { allow read, write: if isSignedIn(); }
+    match /books { allow list: if isSignedIn(); }
     
-    // 3. Koleksi Utama (Authenticated Access Only)
-    // Memberikan izin eksplisit untuk list dan get pada koleksi utama untuk menghindari error permission
-    match /members/{docId} {
-      allow read, write: if isSignedIn();
-    }
-    match /members {
-      allow list: if isSignedIn();
-    }
+    match /transactions/{docId} { allow read, write: if isSignedIn(); }
+    match /transactions { allow list: if isSignedIn(); }
     
-    match /books/{docId} {
-      allow read, write: if isSignedIn();
-    }
-    match /books {
-      allow list: if isSignedIn();
-    }
-    
-    match /transactions/{docId} {
-      allow read, write: if isSignedIn();
-    }
-    match /transactions {
-      allow list: if isSignedIn();
-    }
-    
-    match /activity_logs/{docId} {
-      allow read, write: if isSignedIn();
-    }
-    match /activity_logs {
-      allow list: if isSignedIn();
-    }
+    match /activity_logs/{docId} { allow read, write: if isSignedIn(); }
+    match /activity_logs { allow list: if isSignedIn(); }
 
-    // 4. Akses Global Fallback
+    // 3. Fallback Global
     match /{path=**} {
       allow read, write: if isSignedIn();
     }
