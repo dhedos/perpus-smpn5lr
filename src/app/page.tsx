@@ -32,6 +32,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+  const [isSetupMode, setIsSetupMode] = useState(false)
   
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
