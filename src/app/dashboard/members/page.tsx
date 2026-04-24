@@ -233,9 +233,10 @@ export default function MembersPage() {
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
-    // SINKRONISASI ALAMAT: Singkat Kecamatan -> Kec. dan Kabupaten -> Kab.
-    const rawAddress = settings?.schoolAddress || 'Mando, Compang Carep Kec. Langke Rembong';
+    // SINKRONISASI ALAMAT: Singkat Kelurahan -> Kel., Kecamatan -> Kec. dan Kabupaten -> Kab.
+    const rawAddress = settings?.schoolAddress || 'Mando, Kelurahan Compang Carep, Kec. Langke Rembong';
     const shortAddress = rawAddress
+      .replace(/Kelurahan/gi, 'Kel.')
       .replace(/Kecamatan/gi, 'Kec.')
       .replace(/Kabupaten/gi, 'Kab.');
 
@@ -283,7 +284,7 @@ export default function MembersPage() {
               border-bottom: 0.8pt solid #000;
               margin-left: 1mm;
               margin-right: 1mm;
-              text-transform: uppercase;
+              text-transform: none; /* Huruf kecil / normal */
               overflow: hidden;
             }
             
