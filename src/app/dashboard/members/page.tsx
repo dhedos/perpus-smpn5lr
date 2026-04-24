@@ -98,6 +98,10 @@ export default function MembersPage() {
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
   const [isMounted, setIsMounted] = useState(false)
 
+  /**
+   * AGGRESSIVE UI UNLOCKER
+   * Membersihkan paksa pengunci interaksi browser yang ditinggalkan Radix UI.
+   */
   const forceUnlockUI = useCallback(() => {
     if (typeof document !== 'undefined') {
       document.body.style.pointerEvents = 'auto';
@@ -113,7 +117,8 @@ export default function MembersPage() {
 
   useEffect(() => {
     setIsMounted(true)
-  }, [])
+    forceUnlockUI()
+  }, [forceUnlockUI])
 
   // Load Settings for Header & Title
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
@@ -222,6 +227,81 @@ export default function MembersPage() {
     forceUnlockUI()
   }
 
+  const handlePrintSingleCard = (member: any) => {
+    if (!member) return
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title> </title>
+          <style>
+            @page { size: 85mm 54mm; margin: 0; }
+            body { margin: 0; padding: 0; background: #fff; font-family: 'Inter', sans-serif; }
+            .id-card { 
+              width: 85mm; 
+              height: 54mm; 
+              border: 0.5pt solid #000; 
+              padding: 4mm; 
+              box-sizing: border-box; 
+              display: flex;
+              flex-direction: column;
+              background: #fff;
+              position: relative;
+              overflow: hidden;
+            }
+            .card-header { text-align: center; border-bottom: 1pt solid #2E6ECE; padding-bottom: 2mm; margin-bottom: 3mm; }
+            .school-name { font-size: 8pt; font-weight: 800; color: #2E6ECE; text-transform: uppercase; line-height: 1.1; }
+            .lib-name { font-size: 7pt; font-weight: 600; color: #444; }
+            .card-body { display: flex; gap: 4mm; align-items: center; flex: 1; }
+            .qr-side { width: 25mm; display: flex; flex-direction: column; align-items: center; gap: 1mm; }
+            .qr-side img { width: 22mm; height: 22mm; border: 0.5pt solid #eee; }
+            .member-id-text { font-size: 8pt; font-weight: 900; font-family: monospace; color: #2E6ECE; }
+            .info-side { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 1.5mm; }
+            .info-label { font-size: 5pt; font-weight: 700; color: #999; text-transform: uppercase; margin-bottom: -0.5mm; }
+            .info-value { font-size: 9pt; font-weight: 800; color: #000; line-height: 1; }
+            .info-sub { font-size: 7pt; font-weight: 600; color: #666; }
+            .card-footer { position: absolute; bottom: 2mm; right: 4mm; text-align: right; font-size: 5pt; color: #ccc; font-weight: bold; }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          <div class="id-card">
+            <div class="card-header">
+              <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
+              <div class="lib-name">KARTU ANGGOTA PERPUSTAKAAN ${settings?.libraryName || 'LANTERA BACA'}</div>
+            </div>
+            <div class="card-body">
+              <div class="qr-side">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${member.memberId}" />
+                <div class="member-id-text">${member.memberId}</div>
+              </div>
+              <div class="info-side">
+                <div>
+                  <div class="info-label">Nama Lengkap</div>
+                  <div class="info-value">${member.name}</div>
+                </div>
+                <div>
+                  <div class="info-label">${member.type === 'Teacher' ? 'NIP / Jabatan' : 'Kelas / NIS'}</div>
+                  <div class="info-value">${member.classOrSubject || '-'}</div>
+                </div>
+                <div>
+                  <div class="info-label">Kategori</div>
+                  <div class="badge-type" style="font-size: 7pt; font-weight: bold; color: #2E6ECE; text-transform: uppercase;">
+                    ${member.type === 'Teacher' ? 'GURU / STAFF' : 'SISWA'}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card-footer">E-CARD V.1.0</div>
+          </div>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
+    forceUnlockUI()
+  }
+
   const handleSaveMember = () => {
     if (!db) return
     
@@ -310,7 +390,7 @@ export default function MembersPage() {
           <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="gap-2">
-                <Printer className="h-4 w-4" /> Cetak Daftar
+                <Printer className="h-4 w-4" /> Cetak Daftar Anggota
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
@@ -452,20 +532,27 @@ export default function MembersPage() {
       </Dialog>
 
       <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="max-w-sm text-center border-none">
-          <DialogHeader>
-            <DialogTitle className="text-center">Kartu Digital Anggota</DialogTitle>
+        <DialogContent className="max-w-md text-center border-none p-0 overflow-hidden rounded-3xl">
+          <DialogHeader className="p-6 bg-white shrink-0 border-b">
+            <DialogTitle className="text-center font-bold text-primary">Kartu Digital Anggota</DialogTitle>
           </DialogHeader>
-          <div className="bg-white p-6 rounded-xl border-2 border-primary/20 space-y-4 shadow-xl">
-            <div className="flex justify-center">{selectedMemberQr && <QRCodeSVG value={selectedMemberQr.memberId} size={250} level="H" includeMargin />}</div>
-            <div>
-              <div className="font-bold text-lg leading-tight">{selectedMemberQr?.name ?? ""}</div>
-              <div className="font-mono text-primary font-bold">{selectedMemberQr?.memberId ?? ""}</div>
-              <div className="text-xs text-muted-foreground mt-1">{selectedMemberQr?.classOrSubject}</div>
+          <div className="p-6 space-y-6">
+            <div className="bg-white p-8 rounded-3xl border-2 border-primary/20 space-y-4 shadow-xl flex flex-col items-center">
+              <div className="p-4 bg-white rounded-2xl border shadow-inner">
+                {selectedMemberQr && <QRCodeSVG value={selectedMemberQr.memberId} size={200} level="H" includeMargin />}
+              </div>
+              <div className="space-y-1">
+                <div className="font-black text-2xl leading-tight uppercase tracking-tight">{selectedMemberQr?.name ?? ""}</div>
+                <div className="font-mono text-primary font-black text-xl">{selectedMemberQr?.memberId ?? ""}</div>
+                <div className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{selectedMemberQr?.classOrSubject}</div>
+              </div>
             </div>
           </div>
-          <DialogFooter className="grid grid-cols-1 mt-4">
-            <Button onClick={() => { setIsQrOpen(false); forceUnlockUI(); }}>Tutup</Button>
+          <DialogFooter className="p-6 pt-0 grid grid-cols-2 gap-3">
+            <Button variant="outline" onClick={() => { setIsQrOpen(false); forceUnlockUI(); }} className="h-12 rounded-xl font-bold">Tutup</Button>
+            <Button onClick={() => handlePrintSingleCard(selectedMemberQr)} className="h-12 gap-2 shadow-lg shadow-primary/20 rounded-xl font-bold">
+              <Printer className="h-4 w-4" /> Cetak Kartu
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -504,14 +591,14 @@ export default function MembersPage() {
       </Dialog>
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={(v) => { setIsDeleteDialogOpen(v); if(!v) forceUnlockUI(); }}>
-        <AlertDialogContent className="border-none">
+        <AlertDialogContent className="rounded-3xl border-none">
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Anggota?</AlertDialogTitle>
-            <AlertDialogDescription>Data identitas akan dihapus secara permanen.</AlertDialogDescription>
+            <AlertDialogTitle className="font-black text-primary uppercase tracking-tight">Hapus Anggota?</AlertDialogTitle>
+            <AlertDialogDescription>Data identitas akan dihapus secara permanen dari database.</AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => { setMemberToDelete(null); forceUnlockUI(); }}>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteMember} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Ya, Hapus</AlertDialogAction>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel onClick={() => { setMemberToDelete(null); forceUnlockUI(); }} className="rounded-xl font-bold">Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteMember} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl font-bold">Ya, Hapus</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
