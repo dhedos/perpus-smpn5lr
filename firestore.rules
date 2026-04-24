@@ -4,7 +4,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * PERPUSTAKAAN LANTERA BACA - GLOBAL SECURITY RULES
+     * LANTERA BACA - GLOBAL SECURITY RULES (Optimized)
      */
 
     // 1. Pengaturan Umum: Bisa dibaca publik untuk identitas sistem
@@ -14,32 +14,32 @@ service cloud.firestore {
     }
 
     // 2. Koleksi Pengguna (Users):
-    // Izinkan baca publik untuk deteksi inisialisasi admin dan pengecekan profil saat logout
+    // Diperlukan untuk deteksi admin pertama dan profil
     match /users/{userId} {
-      allow get, list: if true;
+      allow get, list, read: if true;
       allow write: if request.auth != null;
     }
     
     match /users {
-      allow list: if true;
+      allow list, read: if true;
     }
     
     // 3. Koleksi Utama (Authenticated Access)
-    // Diberikan izin eksplisit untuk list, get, create, update, delete bagi petugas terdaftar
+    // Berikan izin eksplisit penuh bagi petugas yang sudah login
     match /members/{docId} {
-      allow get, list, create, update, delete: if request.auth != null;
+      allow read, write, get, list, create, update, delete: if request.auth != null;
     }
     
     match /books/{docId} {
-      allow get, list, create, update, delete: if request.auth != null;
+      allow read, write, get, list, create, update, delete: if request.auth != null;
     }
     
     match /transactions/{docId} {
-      allow get, list, create, update, delete: if request.auth != null;
+      allow read, write, get, list, create, update, delete: if request.auth != null;
     }
     
     match /activity_logs/{docId} {
-      allow get, list, create, update, delete: if request.auth != null;
+      allow read, write, get, list, create, update, delete: if request.auth != null;
     }
 
     // 4. Akses Global Fallback

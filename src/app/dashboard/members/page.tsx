@@ -108,7 +108,7 @@ function MembersContent() {
         document.body.style.overflow = 'auto';
         const focusGuards = document.querySelectorAll('[data-radix-focus-guard]');
         focusGuards.forEach(el => (el as HTMLElement).remove());
-      }, 300);
+      }, 100);
     }
   }, []);
 

@@ -97,7 +97,7 @@ function TransactionsContent() {
         document.body.style.overflow = 'auto';
         const overlays = document.querySelectorAll('[data-radix-focus-guard]');
         overlays.forEach(el => (el as HTMLElement).remove());
-      }, 300);
+      }, 100);
     }
   }, []);
 
@@ -133,7 +133,6 @@ function TransactionsContent() {
     return query(
       collection(db, 'transactions'),
       where('status', '==', 'returned'),
-      where('type', '==', 'return'),
       orderBy('returnDate', 'desc'),
       limit(50)
     );
@@ -327,12 +326,15 @@ function TransactionsContent() {
 
   const handlePrintReport = () => {
     const targetData = activeTab === "borrow" ? (historyTrans || []) : filteredActiveTrans;
-    if (targetData.length === 0) return
+    if (targetData.length === 0) {
+      toast({ title: "Data Kosong", description: "Tidak ada data untuk dicetak." });
+      return;
+    }
 
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
-    const titleLabel = activeTab === "borrow" ? "RIWAYAT SIRKULASI SISWA (KEMBALI)" : "DAFTAR PEMINJAMAN SISWA AKTIF"
+    const titleLabel = activeTab === "borrow" ? "RIWAYAT SIRKULASI SISWA (SUDAH KEMBALI)" : "DAFTAR PEMINJAMAN SISWA AKTIF"
     
     const rowsHtml = targetData.map((t, index) => {
         const borrowDate = t.borrowDate ? parseISO(t.borrowDate) : new Date();
@@ -360,7 +362,7 @@ function TransactionsContent() {
             @page { size: A4 landscape; margin: 0; }
             body { font-family: 'Inter', sans-serif; font-size: 11px; margin: 0; padding: 15mm; }
             .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
-            .school-name { font-size: 16px; font-weight: 900; }
+            .school-name { font-size: 16px; font-weight: 900; text-transform: uppercase; }
             .title { text-align: center; font-size: 12px; font-weight: 800; margin: 20px 0; text-transform: uppercase; }
             table { width: 100%; border-collapse: collapse; }
             th { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; }
