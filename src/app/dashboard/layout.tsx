@@ -35,10 +35,11 @@ export default function DashboardLayout({
     }
   }, [user, loading, router, isRedirecting, isMounted])
 
-  const displayTitle = isMounted ? (settings?.libraryName || "LANTERA BACA") : "LANTERA BACA";
-  const displaySubtitle = isMounted ? (settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG") : "SMPN 5 LANGKE REMBONG";
+  // Hydration-safe display logic
+  const displayTitle = (isMounted && settings?.libraryName) ? settings.libraryName : "LANTERA BACA";
+  const displaySubtitle = (isMounted && settings?.librarySubtitle) ? settings.librarySubtitle : "SMPN 5 LANGKE REMBONG";
 
-  // Unified loading screen for seamless transition
+  // Identical loading UI to page.tsx to prevent hydration errors and flashes
   const loadingUI = (
     <div className="h-screen w-full flex items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-6 animate-in fade-in duration-500">

@@ -42,7 +42,6 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState("")
   const [isSendingReset, setIsSendingReset] = useState(false)
 
-  // Cache settings to avoid repeated reads
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
 
@@ -50,7 +49,6 @@ export default function LoginPage() {
     setIsMounted(true)
   }, [])
 
-  // Optimized redirect: only fire if mounted and user has a role
   useEffect(() => {
     if (isMounted && !authLoading && user && user.role && !isRedirecting) {
       setIsRedirecting(true)
@@ -58,7 +56,6 @@ export default function LoginPage() {
     }
   }, [user, authLoading, router, isMounted, isRedirecting])
 
-  // Lazy check for empty database: only run if not authenticated
   const usersQuery = useMemoFirebase(() => {
     if (!db || (isMounted && user)) return null
     return query(collection(db, "users"), limit(1))
@@ -141,10 +138,10 @@ export default function LoginPage() {
     }
   }
 
-  const displayTitle = isMounted ? (settings?.libraryName || "LANTERA BACA") : "LANTERA BACA";
-  const displaySubtitle = isMounted ? (settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG") : "SMPN 5 LANGKE REMBONG";
+  const displayTitle = (isMounted && settings?.libraryName) ? settings.libraryName : "LANTERA BACA";
+  const displaySubtitle = (isMounted && settings?.librarySubtitle) ? settings.librarySubtitle : "SMPN 5 LANGKE REMBONG";
 
-  // Unified loading screen for seamless transition
+  // Identical loading logic and UI to DashboardLayout
   const shouldShowLoading = !isMounted || (authLoading && !user) || (user && user.role && isRedirecting) || isRedirecting;
 
   if (shouldShowLoading) {

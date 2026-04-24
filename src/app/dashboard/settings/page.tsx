@@ -64,6 +64,7 @@ export default function SettingsPage() {
         ...prev, 
         ...remoteSettings,
         libraryName: remoteSettings.libraryName || "LANTERA BACA",
+        librarySubtitle: remoteSettings.librarySubtitle || "SMPN 5 LANGKE REMBONG",
         loanPeriod: Number(remoteSettings.loanPeriod ?? 7),
         fineAmount: Number(remoteSettings.fineAmount ?? 500),
         damagedBookFine: Number(remoteSettings.damagedBookFine ?? 10000),
