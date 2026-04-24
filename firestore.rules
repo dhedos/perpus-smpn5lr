@@ -4,7 +4,8 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * PERPUSTAKAAN SEKOLAH - SECURITY RULES (ROBUST & EXPLICIT)
+     * PERPUSTAKAAN SEKOLAH - SECURITY RULES
+     * Memastikan izin eksplisit untuk menghindari error "Missing or insufficient permissions"
      */
 
     // 1. Pengaturan Umum: Bisa dibaca publik untuk identitas di halaman Login
@@ -13,7 +14,7 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
-    // 2. Koleksi Anggota (Members) - Sangat eksplisit untuk mencegah error list
+    // 2. Koleksi Anggota (Members)
     match /members/{docId} {
       allow list, get, create, update, delete: if request.auth != null;
     }

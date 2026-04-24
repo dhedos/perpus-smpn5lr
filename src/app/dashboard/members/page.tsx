@@ -104,12 +104,13 @@ export default function MembersPage() {
     if (typeof document !== 'undefined') {
       document.body.style.pointerEvents = 'auto';
       document.body.style.overflow = 'auto';
+      // Membersihkan paksa atribut pengunci dari Radix UI
       setTimeout(() => {
         document.body.style.pointerEvents = 'auto';
         document.body.style.overflow = 'auto';
         const overlays = document.querySelectorAll('[data-radix-focus-guard], [data-radix-portal]');
-        overlays.forEach(el => (el as HTMLElement).remove());
-      }, 50);
+        overlays.forEach(el => (el as HTMLElement).style.pointerEvents = 'auto');
+      }, 100);
     }
   }, []);
 
@@ -236,11 +237,11 @@ export default function MembersPage() {
           <title> </title>
           <style>
             @page { size: 54mm 86mm; margin: 0; }
-            body { margin: 0; padding: 0; background: #fff; font-family: 'Inter', sans-serif; }
+            body { margin: 0; padding: 0; background: #fff; font-family: 'Inter', sans-serif; display: flex; justify-content: center; }
             .card-container {
               width: 54mm;
               height: 86mm;
-              border: 0.5pt solid #ddd;
+              border: 0.2pt solid #eee;
               box-sizing: border-box;
               display: flex;
               flex-direction: column;
@@ -249,30 +250,32 @@ export default function MembersPage() {
               position: relative;
               overflow: hidden;
             }
-            .header-box { padding: 4mm 2mm 2mm 2mm; }
-            .school-name { font-size: 11pt; font-weight: 900; color: #1e4b8f; text-transform: uppercase; margin: 0; line-height: 1.1; white-space: nowrap; }
-            .address { font-size: 5pt; color: #333; margin-top: 1mm; font-weight: 500; line-height: 1.2; padding: 0 2mm; }
+            .header-box { padding: 5mm 2mm 2mm 2mm; }
+            .school-name { font-size: 11pt; font-weight: 900; color: #1e4b8f; text-transform: uppercase; margin: 0; line-height: 1.1; white-space: nowrap; overflow: hidden; }
+            .address { font-size: 5pt; color: #333; margin-top: 1.5mm; font-weight: 500; line-height: 1.3; padding: 0 3mm; }
             
-            .card-title-box { margin-top: 6mm; margin-bottom: 2mm; }
-            .card-title { font-size: 8.5pt; font-weight: 800; color: #333; text-transform: uppercase; line-height: 1.2; }
+            .card-title-box { margin-top: 5mm; margin-bottom: 2mm; }
+            .card-title { font-size: 9pt; font-weight: 800; color: #000; text-transform: uppercase; line-height: 1.2; letter-spacing: 0.5px; }
             
-            .qr-section { flex: 1; display: flex; justify-content: center; align-items: center; padding: 2mm 5mm; }
+            .qr-section { flex: 1; display: flex; justify-content: center; align-items: center; padding: 2mm 8mm; }
             .qr-section img { width: 100%; height: auto; border: none; }
             
             .info-section { padding-bottom: 12mm; }
             .member-name { font-size: 10pt; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 1mm; }
             .member-id { font-size: 11pt; font-weight: 800; color: #1e4b8f; font-family: monospace; margin-bottom: 0.5mm; }
-            .member-class { font-size: 7pt; font-weight: 700; color: #555; text-transform: uppercase; }
             
             .footer { 
               background: #1e4b8f; 
               color: #fff; 
-              padding: 2.5mm 0; 
+              height: 10mm;
+              display: flex;
+              align-items: center;
+              justify-content: center;
               width: 100%; 
               position: absolute; 
               bottom: 0; 
             }
-            .footer-text { font-size: 10pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
+            .footer-text { font-size: 11pt; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; color: #fff; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
@@ -293,7 +296,6 @@ export default function MembersPage() {
             <div class="info-section">
               <div class="member-name">${member.name}</div>
               <div class="member-id">${member.memberId}</div>
-              <div class="member-class">KELAS: ${member.classOrSubject || '-'}</div>
             </div>
             
             <div class="footer">
