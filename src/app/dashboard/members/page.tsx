@@ -284,7 +284,7 @@ export default function MembersPage() {
               border-bottom: 0.8pt solid #000;
               margin-left: 1mm;
               margin-right: 1mm;
-              text-transform: none; /* Huruf kecil / normal */
+              text-transform: none;
               overflow: hidden;
             }
             
@@ -294,7 +294,7 @@ export default function MembersPage() {
             .qr-section { flex: 1; display: flex; justify-content: center; align-items: center; padding: 1mm 4mm; }
             .qr-section img { width: 34mm; height: 34mm; border: none; }
             
-            .info-section { padding-bottom: 12mm; }
+            .info-section { padding-bottom: 15mm; }
             .member-name { font-size: 9.5pt; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 0.5mm; padding: 0 1mm; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
             .member-id { font-size: 10.5pt; font-weight: 800; color: #1e4b8f; font-family: monospace; line-height: 1; }
             .member-detail { font-size: 7pt; font-weight: 800; color: #666; text-transform: uppercase; margin-top: 0.8mm; }
@@ -302,16 +302,36 @@ export default function MembersPage() {
             .footer { 
               background: #1e4b8f !important; 
               color: #fff !important; 
-              height: 10mm;
+              height: 14mm; /* Tinggi ditambah untuk teks kecil */
               display: flex;
+              flex-direction: column;
               align-items: center;
               justify-content: center;
               width: 100%; 
               position: absolute; 
               bottom: 0; 
               left: 0;
+              padding: 0 1mm;
+              box-sizing: border-box;
             }
-            .footer-text { font-size: 10.5pt; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; color: #fff !important; }
+            .footer-text { 
+              font-size: 10.5pt; 
+              font-weight: 900; 
+              text-transform: uppercase; 
+              letter-spacing: 1.5px; 
+              color: #fff !important; 
+              line-height: 1.1;
+            }
+            .footer-subtext {
+              font-size: 4.2pt;
+              font-weight: 600;
+              color: rgba(255, 255, 255, 0.9) !important;
+              text-transform: uppercase;
+              letter-spacing: 0.2px;
+              margin-top: 0.8mm;
+              line-height: 1.1;
+              max-width: 90%;
+            }
           </style>
         </head>
         <body onload="window.print(); window.close();">
@@ -337,6 +357,7 @@ export default function MembersPage() {
             
             <div class="footer">
               <div class="footer-text">${settings?.libraryName || 'PUSTAKA NUSANTARA'}</div>
+              <div class="footer-subtext">Kartu ini digunakan untuk proses peminjaman & pengembalian koleksi buku sekolah</div>
             </div>
           </div>
         </body>
