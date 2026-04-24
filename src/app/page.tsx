@@ -141,7 +141,7 @@ export default function LoginPage() {
   const displayTitle = (isMounted && settings?.libraryName) ? settings.libraryName : "LANTERA BACA";
   const displaySubtitle = (isMounted && settings?.librarySubtitle) ? settings.librarySubtitle : "SMPN 5 LANGKE REMBONG";
 
-  // SYNCED LOADING UI WITH layout.tsx
+  // SYNCED LOADING UI
   const shouldShowLoading = !isMounted || (authLoading && !user) || (user && user.role && isRedirecting) || isRedirecting;
 
   if (shouldShowLoading) {

@@ -29,7 +29,8 @@ import {
   Filter,
   ChevronDown,
   Database,
-  CloudUpload
+  CloudUpload,
+  CheckCircle2
 } from "lucide-react"
 import { 
   Dialog, 
@@ -361,6 +362,68 @@ export default function BooksPage() {
             </div>
           </div>
           <div class="print-footer">${settings?.libraryName || 'LANTERA BACA'} - ${settings?.librarySubtitle || 'SMPN 5 LANGKE REMBONG'} | Laporan Daftar Koleksi</div>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
+  }
+
+  const handlePrintSingleQr = (book: any) => {
+    if (!book) return
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title> </title>
+          <style>
+            @page { size: 80mm 30mm; margin: 0; }
+            body { margin: 0; padding: 0; background: #fff; font-family: 'Inter', sans-serif; }
+            .label-card { 
+              width: 80mm; 
+              height: 30mm; 
+              border: none; 
+              padding: 2mm; 
+              box-sizing: border-box; 
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              background: #fff;
+              overflow: hidden;
+            }
+            .info-section { flex: 1; text-align: left; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+            .header-text { font-size: 8pt; font-weight: 800; color: #2E6ECE; text-transform: uppercase; line-height: 1; }
+            .source-text { font-size: 7pt; font-weight: 600; color: #444; margin-bottom: 0.5mm; line-height: 1; }
+            .book-title { font-size: 8.5pt; font-weight: 900; line-height: 1.1; margin-bottom: 0.8mm; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: #000; }
+            .book-details { font-size: 6pt; color: #444; line-height: 1.2; }
+            .rack-text { font-size: 7pt; font-weight: 800; color: #000; text-transform: uppercase; margin-top: 1mm; border-top: 0.2pt solid #ddd; padding-top: 0.5mm; }
+            .qr-section { width: 25mm; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-left: 2mm; }
+            .qr-container { width: 20mm; height: 20mm; }
+            .qr-container img { width: 100%; height: 100%; }
+            .book-code-text { font-size: 9pt; font-weight: 900; color: #2E6ECE; font-family: monospace; line-height: 1; margin-top: 1mm; }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          <div class="label-card">
+            <div class="info-section">
+              <div class="header-text">${book.mainHeader || settings?.libraryName || 'LANTERA BACA'}</div>
+              <div class="source-text">${book.budgetSource || 'BOSP'}</div>
+              <div class="book-title">${book.title}</div>
+              <div class="book-details">
+                <div>Rek: ${book.accountCode || '-'} | ${book.publisher || '-'}</div>
+                <div>${book.category || '-'} | ${book.publicationYear}</div>
+                <div>ISBN: ${book.isbn || '-'}</div>
+              </div>
+              <div class="rack-text">RAK: ${book.rackLocation || '-'}</div>
+            </div>
+            <div class="qr-section">
+              <div class="qr-container">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${book.code}" />
+              </div>
+              <div class="book-code-text">${book.code}</div>
+            </div>
+          </div>
         </body>
       </html>
     `)
@@ -823,7 +886,132 @@ export default function BooksPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* Edit and Detail dialogs omitted for brevity */}
+
+      <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) forceUnlockUI(); }}>
+        <DialogContent className="max-w-sm text-center bg-white p-6 rounded-3xl">
+          <DialogHeader><DialogTitle className="font-bold text-primary">Kode QR Buku</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-6">
+            <div className="flex justify-center bg-white p-6 rounded-3xl border-2 border-primary/10 shadow-inner">
+              {selectedBookQr && <QRCodeSVG value={selectedBookQr.code} size={200} level="H" includeMargin />}
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-black text-lg leading-tight uppercase tracking-tight">{selectedBookQr?.title}</h3>
+              <p className="font-mono text-primary font-black text-xl">{selectedBookQr?.code}</p>
+            </div>
+          </div>
+          <DialogFooter className="grid grid-cols-2 gap-3">
+            <Button variant="outline" onClick={() => setIsQrOpen(false)} className="rounded-xl">Tutup</Button>
+            <Button onClick={() => handlePrintSingleQr(selectedBookQr)} className="gap-2 shadow-lg shadow-primary/20 rounded-xl">
+              <Printer className="h-4 w-4" /> Cetak Sticker
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); if(!v) forceUnlockUI(); }}>
+        <DialogContent className="max-w-2xl bg-white max-h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl border-none">
+          <DialogHeader className="p-6 pb-4 border-b bg-white shrink-0">
+            <DialogTitle className="text-xl font-bold text-primary">Ubah Data Buku</DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="space-y-2">
+                  <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Kode Buku</Label>
+                  <Input value={formData.code ?? ""} onChange={e => setFormData({ ...formData, code: e.target.value })} className="h-11" disabled={isLockedForUser} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Judul Buku</Label>
+                  <Input value={formData.title ?? ""} onChange={e => setFormData({ ...formData, title: e.target.value })} className="h-11" disabled={isLockedForUser} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Kode Rekening</Label>
+                  <Input value={formData.accountCode ?? ""} onChange={e => setFormData({ ...formData, accountCode: e.target.value })} className="h-11" disabled={isLockedForUser} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Penerbit</Label>
+                  <Input value={formData.publisher ?? ""} onChange={e => setFormData({ ...formData, publisher: e.target.value })} className="h-11" disabled={isLockedForUser} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Jenis / Kategori</Label>
+                  <Input value={formData.category ?? ""} onChange={e => setFormData({ ...formData, category: e.target.value })} className="h-11" disabled={isLockedForUser} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Tahun Terbit</Label>
+                  <Input type="number" value={formData.publicationYear ?? ""} onChange={e => setFormData({ ...formData, publicationYear: e.target.value })} className="h-11" disabled={isLockedForUser} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Stok Total</Label>
+                  <Input type="number" value={formData.totalStock ?? 0} onChange={e => setFormData({ ...formData, totalStock: Number(e.target.value) })} className="h-11" disabled={isLockedForUser} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Tersedia</Label>
+                  <Input type="number" value={formData.availableStock ?? 0} onChange={e => setFormData({ ...formData, availableStock: Number(e.target.value) })} className="h-11" disabled={isLockedForUser} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="p-4 bg-slate-50 border-t shrink-0">
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Batal</Button>
+            <Button onClick={handleUpdateBook} disabled={isLockedForUser} className="px-8">
+              Simpan Perubahan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDetailOpen} onOpenChange={(v) => { setIsDetailOpen(v); if(!v) forceUnlockUI(); }}>
+        <DialogContent className="max-w-2xl bg-white p-0 overflow-hidden shadow-2xl rounded-3xl">
+          <div className="bg-primary/5 p-8 border-b">
+             <Badge className="mb-4 bg-primary text-primary-foreground border-none font-mono">{selectedBookDetail?.code}</Badge>
+             <h2 className="text-3xl font-black text-primary leading-tight uppercase tracking-tight">{selectedBookDetail?.title}</h2>
+          </div>
+          <div className="p-8 space-y-6">
+            <div className="grid grid-cols-2 gap-8">
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Kategori & Penerbit</p>
+                <p className="font-bold text-slate-800">{selectedBookDetail?.category || '-'} | {selectedBookDetail?.publisher || '-'}</p>
+              </div>
+              <div className="space-y-1 text-right">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Lokasi Rak</p>
+                <p className="font-black text-primary text-xl uppercase">{selectedBookDetail?.rackLocation || 'BELUM DIATUR'}</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Deskripsi Ringkasan</p>
+              <p className="text-sm leading-relaxed text-slate-600 bg-slate-50 p-4 rounded-2xl border italic">
+                "{selectedBookDetail?.description || 'Tidak ada deskripsi tersedia.'}"
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="p-6 bg-slate-50">
+             <Button className="w-full h-12 rounded-xl" onClick={() => setIsDetailOpen(false)}>Tutup Detail</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={(v) => { setIsDeleteDialogOpen(v); if(!v) forceUnlockUI(); }}>
+        <AlertDialogContent className="rounded-3xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-black text-primary uppercase tracking-tight">Hapus Buku?</AlertDialogTitle>
+            <AlertDialogDescription>Data koleksi akan dihapus permanen dari Cloud.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => forceUnlockUI()}>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteBook} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">Ya, Hapus</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
+        <DialogContent className="sm:max-w-xl p-0 h-[100dvh] sm:h-[400px] border-none bg-black overflow-hidden">
+          <DialogHeader><DialogTitle className="sr-only">Scanner</DialogTitle></DialogHeader>
+          <div id="scanner-view" className="w-full h-full"></div>
+          <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white" onClick={stopScanner}><X /></Button>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
