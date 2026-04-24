@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -98,6 +98,17 @@ export default function MembersPage() {
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
   const [isMounted, setIsMounted] = useState(false)
 
+  const forceUnlockUI = useCallback(() => {
+    if (typeof document !== 'undefined') {
+      setTimeout(() => {
+        document.body.style.pointerEvents = 'auto';
+        document.body.style.overflow = 'auto';
+        const overlays = document.querySelectorAll('[data-radix-focus-guard]');
+        overlays.forEach(el => el.remove());
+      }, 300);
+    }
+  }, []);
+
   useEffect(() => {
     setIsMounted(true)
   }, [])
@@ -125,14 +136,6 @@ export default function MembersPage() {
       (m.classOrSubject?.toLowerCase() || "").includes(search.toLowerCase())
     )
   }, [members, search])
-
-  const forceUnlockUI = () => {
-    if (typeof document !== 'undefined') {
-      setTimeout(() => {
-        document.body.style.pointerEvents = 'auto'
-      }, 100)
-    }
-  }
 
   const handleOpenAdd = () => {
     setFormData({
@@ -301,7 +304,7 @@ export default function MembersPage() {
           <p className="text-muted-foreground text-sm">Kelola data siswa dan guru yang terdaftar.</p>
         </div>
         <div className="flex gap-2">
-          <DropdownMenu>
+          <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="gap-2">
                 <Printer className="h-4 w-4" /> Cetak Daftar
@@ -355,7 +358,7 @@ export default function MembersPage() {
                 <TableCell><Badge variant="outline" className="h-5 px-1.5 text-[10px] font-bold border-none">{member.type === 'Teacher' ? 'GURU' : 'SISWA'}</Badge></TableCell>
                 <TableCell className="text-sm font-medium">{member.classOrSubject || '-'}</TableCell>
                 <TableCell className="text-right">
-                  <DropdownMenu>
+                  <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onSelect={() => { 
@@ -401,8 +404,10 @@ export default function MembersPage() {
       </Card>
 
       <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="bg-slate-50 max-w-md">
-          <DialogHeader><DialogTitle>Daftarkan Anggota Baru</DialogTitle></DialogHeader>
+        <DialogContent className="bg-slate-50 max-w-md border-none">
+          <DialogHeader>
+            <DialogTitle>Daftarkan Anggota Baru</DialogTitle>
+          </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -438,8 +443,10 @@ export default function MembersPage() {
       </Dialog>
 
       <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="max-w-sm text-center">
-          <DialogHeader><DialogTitle>Kartu Digital Anggota</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-sm text-center border-none">
+          <DialogHeader>
+            <DialogTitle className="text-center">Kartu Digital Anggota</DialogTitle>
+          </DialogHeader>
           <div className="bg-white p-6 rounded-xl border-2 border-primary/20 space-y-4 shadow-xl">
             <div className="flex justify-center">{selectedMemberQr && <QRCodeSVG value={selectedMemberQr.memberId} size={250} level="H" includeMargin />}</div>
             <div>
@@ -449,14 +456,16 @@ export default function MembersPage() {
             </div>
           </div>
           <DialogFooter className="grid grid-cols-1 mt-4">
-            <Button onClick={() => setIsQrOpen(false)}>Tutup</Button>
+            <Button onClick={() => { setIsQrOpen(false); forceUnlockUI(); }}>Tutup</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="bg-slate-50 max-md">
-          <DialogHeader><DialogTitle>Ubah Data Anggota</DialogTitle></DialogHeader>
+        <DialogContent className="bg-slate-50 max-md border-none">
+          <DialogHeader>
+            <DialogTitle>Ubah Data Anggota</DialogTitle>
+          </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">Kategori</Label>
@@ -486,7 +495,7 @@ export default function MembersPage() {
       </Dialog>
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={(v) => { setIsDeleteDialogOpen(v); if(!v) forceUnlockUI(); }}>
-        <AlertDialogContent>
+        <AlertDialogContent className="border-none">
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Anggota?</AlertDialogTitle>
             <AlertDialogDescription>Data identitas akan dihapus secara permanen.</AlertDialogDescription>

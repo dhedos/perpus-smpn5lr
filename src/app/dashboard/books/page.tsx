@@ -143,7 +143,6 @@ export default function BooksPage() {
       setTimeout(() => {
         document.body.style.pointerEvents = 'auto';
         document.body.style.overflow = 'auto';
-        // Cleanup leftover Shadcn/Radix overlays if any
         const overlays = document.querySelectorAll('[data-radix-focus-guard]');
         overlays.forEach(el => el.remove());
       }, 300);
@@ -287,11 +286,6 @@ export default function BooksPage() {
       setIsQueueOpen(false)
       forceUnlockUI()
     }
-  }
-
-  const removeFromQueue = (tempId: string) => {
-    if (isLockedForUser) return;
-    setLocalQueue(prev => prev.filter(b => b.tempId !== tempId))
   }
 
   const handlePrintTable = () => {
@@ -889,7 +883,9 @@ export default function BooksPage() {
 
       <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-sm text-center bg-white p-6 rounded-3xl">
-          <DialogHeader><DialogTitle className="font-bold text-primary">Kode QR Buku</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="font-bold text-primary text-center">Kode QR Buku</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 py-6">
             <div className="flex justify-center bg-white p-6 rounded-3xl border-2 border-primary/10 shadow-inner">
               {selectedBookQr && <QRCodeSVG value={selectedBookQr.code} size={200} level="H" includeMargin />}
@@ -963,7 +959,10 @@ export default function BooksPage() {
       </Dialog>
 
       <Dialog open={isDetailOpen} onOpenChange={(v) => { setIsDetailOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="max-w-2xl bg-white p-0 overflow-hidden shadow-2xl rounded-3xl">
+        <DialogContent className="max-w-2xl bg-white p-0 overflow-hidden shadow-2xl rounded-3xl border-none">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Detail Buku</DialogTitle>
+          </DialogHeader>
           <div className="bg-primary/5 p-8 border-b">
              <Badge className="mb-4 bg-primary text-primary-foreground border-none font-mono">{selectedBookDetail?.code}</Badge>
              <h2 className="text-3xl font-black text-primary leading-tight uppercase tracking-tight">{selectedBookDetail?.title}</h2>
@@ -993,7 +992,7 @@ export default function BooksPage() {
       </Dialog>
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={(v) => { setIsDeleteDialogOpen(v); if(!v) forceUnlockUI(); }}>
-        <AlertDialogContent className="rounded-3xl">
+        <AlertDialogContent className="rounded-3xl border-none">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-black text-primary uppercase tracking-tight">Hapus Buku?</AlertDialogTitle>
             <AlertDialogDescription>Data koleksi akan dihapus permanen dari Cloud.</AlertDialogDescription>
@@ -1007,7 +1006,9 @@ export default function BooksPage() {
 
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
         <DialogContent className="sm:max-w-xl p-0 h-[100dvh] sm:h-[400px] border-none bg-black overflow-hidden">
-          <DialogHeader><DialogTitle className="sr-only">Scanner</DialogTitle></DialogHeader>
+          <DialogHeader className="sr-only">
+            <DialogTitle>Pemindai Barcode Buku</DialogTitle>
+          </DialogHeader>
           <div id="scanner-view" className="w-full h-full"></div>
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white" onClick={stopScanner}><X /></Button>
         </DialogContent>

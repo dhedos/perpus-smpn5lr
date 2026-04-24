@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo, useRef, useEffect } from "react"
+import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -141,14 +141,16 @@ export default function TeacherLoansPage() {
     )
   }, [transactions, search])
 
-  const forceUnlockUI = () => {
+  const forceUnlockUI = useCallback(() => {
     if (typeof document !== 'undefined') {
       setTimeout(() => {
-        document.body.style.pointerEvents = 'auto'
-        document.body.style.overflow = 'auto'
-      }, 100)
+        document.body.style.pointerEvents = 'auto';
+        document.body.style.overflow = 'auto';
+        const overlays = document.querySelectorAll('[data-radix-focus-guard]');
+        overlays.forEach(el => el.remove());
+      }, 300);
     }
-  }
+  }, []);
 
   const startScanner = async (mode: "member" | "book") => {
     setScannerMode(mode)
@@ -473,7 +475,7 @@ export default function TeacherLoansPage() {
         </Card>
 
         <Card className="lg:col-span-2 border-none shadow-sm overflow-hidden">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); forceUnlockUI(); }} className="w-full">
             <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
               <TabsList className="grid grid-cols-2 w-48 h-9">
                 <TabsTrigger value="active" className="text-xs gap-1.5"><Clock className="h-3 w-3" /> Aktif</TabsTrigger>
@@ -548,7 +550,7 @@ export default function TeacherLoansPage() {
       </div>
 
       <Dialog open={isReturnConfirmOpen} onOpenChange={(v) => { setIsReturnConfirmOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="max-w-md bg-white">
+        <DialogContent className="max-w-md bg-white border-none shadow-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-primary font-bold">
               <CheckCircle className="h-5 w-5" /> Konfirmasi Pengembalian Guru
@@ -598,7 +600,7 @@ export default function TeacherLoansPage() {
           )}
 
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setIsReturnConfirmOpen(false)} disabled={isProcessing} className="flex-1">Batal</Button>
+            <Button variant="outline" onClick={() => { setIsReturnConfirmOpen(false); forceUnlockUI(); }} disabled={isProcessing} className="flex-1">Batal</Button>
             <Button onClick={handleConfirmReturn} disabled={isProcessing} className="flex-1 shadow-lg shadow-primary/20">
               {isProcessing ? <Loader2 className="animate-spin" /> : "Simpan Pengembalian"}
             </Button>
@@ -608,6 +610,9 @@ export default function TeacherLoansPage() {
 
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
         <DialogContent className="p-0 border-none bg-black max-w-xl h-[400px] overflow-hidden">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Pemindai Buku Guru</DialogTitle>
+          </DialogHeader>
           <div id="teacher-scanner" className="w-full h-full bg-black"></div>
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>
         </DialogContent>

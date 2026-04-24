@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo, useRef, useEffect, Suspense } from "react"
+import { useState, useMemo, useRef, useEffect, Suspense, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -87,6 +87,17 @@ function TransactionsContent() {
   
   const [calculatedFine, setCalculatedFine] = useState(0)
   const [lateDays, setLateDays] = useState(0)
+
+  const forceUnlockUI = useCallback(() => {
+    if (typeof document !== 'undefined') {
+      setTimeout(() => {
+        document.body.style.pointerEvents = 'auto';
+        document.body.style.overflow = 'auto';
+        const overlays = document.querySelectorAll('[data-radix-focus-guard]');
+        overlays.forEach(el => el.remove());
+      }, 300);
+    }
+  }, []);
 
   useEffect(() => {
     const tab = searchParams.get('tab')
@@ -247,15 +258,6 @@ function TransactionsContent() {
     setCalculatedFine(fine);
   }, [pendingReturnTrans, lateDays, settings, returnNormalQty, returnDamagedQty, returnLostQty]);
 
-  const forceUnlockUI = () => {
-    if (typeof document !== 'undefined') {
-      setTimeout(() => {
-        document.body.style.pointerEvents = 'auto'
-        document.body.style.overflow = 'auto'
-      }, 100)
-    }
-  }
-
   const handleConfirmReturn = () => {
     if (!db || !pendingReturnTrans) return
     
@@ -294,7 +296,7 @@ function TransactionsContent() {
       const bRef = doc(db, 'books', pendingReturnTrans.bookId)
       const bDoc = await getDoc(bRef)
       if (bDoc.exists()) {
-        const currentTotal = Number(bDoc.data().totalStock || 0)
+        const currentTotal = Number(bDoc.data().totalTotal || 0)
         const currentAvail = Number(bDoc.data().availableStock || 0)
         
         const backToShelf = returnNormalQty + returnDamagedQty;
@@ -471,7 +473,7 @@ function TransactionsContent() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); forceUnlockUI(); }} className="w-full">
         <TabsList className="grid w-full grid-cols-2 h-14 p-1 bg-muted/50">
           <TabsTrigger value="borrow" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Peminjaman Siswa</TabsTrigger>
           <TabsTrigger value="return" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Pengembalian Siswa</TabsTrigger>
@@ -660,7 +662,7 @@ function TransactionsContent() {
                   <div className="flex justify-between items-center">
                     <div>
                       <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Peminjaman Siswa Aktif</CardTitle>
-                      <CardDescription className="text-xs">Daftar buku yang sedang dipinjam oleh siswa (Bukan Guru).</CardDescription>
+                      <CardDescription className="text-xs">Daftar buku yang sedang dipinjam oleh siswa.</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
@@ -724,7 +726,7 @@ function TransactionsContent() {
       </Tabs>
 
       <Dialog open={isReturnConfirmOpen} onOpenChange={(v) => { setIsReturnConfirmOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="max-w-md bg-white">
+        <DialogContent className="max-w-md bg-white border-none shadow-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-primary font-bold">
               <CheckCircle className="h-5 w-5" /> Konfirmasi Pengembalian Siswa
@@ -789,7 +791,7 @@ function TransactionsContent() {
           )}
 
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setIsReturnConfirmOpen(false)} disabled={isProcessing} className="flex-1">Batal</Button>
+            <Button variant="outline" onClick={() => { setIsReturnConfirmOpen(false); forceUnlockUI(); }} disabled={isProcessing} className="flex-1">Batal</Button>
             <Button onClick={handleConfirmReturn} disabled={isProcessing} className="flex-1 shadow-lg shadow-primary/20">
               {isProcessing ? <Loader2 className="animate-spin" /> : "Simpan Data"}
             </Button>
@@ -800,7 +802,7 @@ function TransactionsContent() {
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
         <DialogContent className="p-0 border-none bg-black max-w-xl h-[400px] overflow-hidden">
           <DialogHeader className="sr-only">
-            <DialogTitle>Pemindai QR Code</DialogTitle>
+            <DialogTitle>Pemindai QR Code Siswa</DialogTitle>
           </DialogHeader>
           <div id="smart-scanner" className="w-full h-full bg-black"></div>
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>
