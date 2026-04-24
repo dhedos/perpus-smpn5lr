@@ -104,8 +104,8 @@ export default function MembersPage() {
       setTimeout(() => {
         document.body.style.pointerEvents = 'auto';
         document.body.style.overflow = 'auto';
-        const overlays = document.querySelectorAll('[data-radix-focus-guard]');
-        overlays.forEach(el => (el as HTMLElement).remove());
+        const focusGuards = document.querySelectorAll('[data-radix-focus-guard]');
+        focusGuards.forEach(el => (el as HTMLElement).remove());
       }, 300);
     }
   }, []);

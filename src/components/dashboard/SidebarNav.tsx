@@ -153,7 +153,7 @@ export function SidebarNav() {
         </AlertDialog>
         <div className="text-center">
            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest opacity-40">
-             LANTERA BACA 2026
+             © 2026 Lantera Baca
            </p>
         </div>
       </div>
