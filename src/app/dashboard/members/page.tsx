@@ -97,9 +97,6 @@ export default function MembersPage() {
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
   const [isMounted, setIsMounted] = useState(false)
 
-  /**
-   * AGGRESSIVE UI UNLOCKER
-   */
   const forceUnlockUI = useCallback(() => {
     if (typeof document !== 'undefined') {
       document.body.style.pointerEvents = 'auto';
@@ -107,11 +104,8 @@ export default function MembersPage() {
       setTimeout(() => {
         document.body.style.pointerEvents = 'auto';
         document.body.style.overflow = 'auto';
-        const overlays = document.querySelectorAll('[data-radix-focus-guard], [data-radix-portal]');
-        overlays.forEach(el => {
-          (el as HTMLElement).style.pointerEvents = 'auto';
-          if (el.hasAttribute('data-radix-focus-guard')) el.remove();
-        });
+        const overlays = document.querySelectorAll('[data-radix-focus-guard]');
+        overlays.forEach(el => (el as HTMLElement).remove());
       }, 100);
     }
   }, []);
@@ -451,10 +445,10 @@ export default function MembersPage() {
                 <TableCell className="text-right">
                   <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onSelect={(e) => { e.preventDefault(); forceUnlockUI(); setTimeout(() => { setSelectedMemberQr(member); setIsQrOpen(true); }, 100); }}><QrCode className="h-4 w-4 mr-2" /> Kartu Anggota</DropdownMenuItem>
-                      <DropdownMenuItem onSelect={(e) => { e.preventDefault(); forceUnlockUI(); setTimeout(() => { setEditingMemberId(member.id); setFormData({ memberId: member.memberId || "", name: member.name || "", type: (member.type as any) || "Student", classPart: member.classOrSubject || "", phone: member.phone || "", joinDate: member.joinDate || new Date().toISOString().split('T')[0] }); setIsEditOpen(true); }, 100); }}><Edit className="h-4 w-4 mr-2" /> Ubah</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onSelect={(e) => { e.preventDefault(); forceUnlockUI(); setTimeout(() => { setMemberToDelete(member.id); setIsDeleteDialogOpen(true); }, 100); }}><Trash2 className="h-4 w-4 mr-2" /> Hapus</DropdownMenuItem>
+                    <DropdownMenuContent align="end" className="z-50">
+                      <DropdownMenuItem onSelect={(e) => { e.preventDefault(); forceUnlockUI(); setTimeout(() => { setSelectedMemberQr(member); setIsQrOpen(true); }, 150); }}><QrCode className="h-4 w-4 mr-2" /> Kartu Anggota</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={(e) => { e.preventDefault(); forceUnlockUI(); setTimeout(() => { setEditingMemberId(member.id); setFormData({ memberId: member.memberId || "", name: member.name || "", type: (member.type as any) || "Student", classPart: member.classOrSubject || "", phone: member.phone || "", joinDate: member.joinDate || new Date().toISOString().split('T')[0] }); setIsEditOpen(true); }, 150); }}><Edit className="h-4 w-4 mr-2" /> Ubah</DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive" onSelect={(e) => { e.preventDefault(); forceUnlockUI(); setTimeout(() => { setMemberToDelete(member.id); setIsDeleteDialogOpen(true); }, 150); }}><Trash2 className="h-4 w-4 mr-2" /> Hapus</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

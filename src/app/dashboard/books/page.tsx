@@ -138,23 +138,18 @@ export default function BooksPage() {
   
   const isLockedForUser = Boolean(settings?.isDataLocked === true && !isAdmin);
 
-  /**
-   * AGGRESSIVE UI UNLOCKER
-   * Membersihkan paksa pengunci interaksi browser yang ditinggalkan Radix UI.
-   */
   const forceUnlockUI = useCallback(() => {
     if (typeof document !== 'undefined') {
-      // Hilangkan paksa pointer-events: none pada body
+      // Membersihkan paksa sisa interaksi browser
       document.body.style.pointerEvents = 'auto';
       document.body.style.overflow = 'auto';
       
-      // Berikan jeda kecil untuk memastikan elemen radix portal/guard dihapus
       setTimeout(() => {
         document.body.style.pointerEvents = 'auto';
         document.body.style.overflow = 'auto';
-        const focusGuards = document.querySelectorAll('[data-radix-focus-guard], [data-radix-portal]');
+        const focusGuards = document.querySelectorAll('[data-radix-focus-guard]');
         focusGuards.forEach(el => (el as HTMLElement).remove());
-      }, 50);
+      }, 100);
     }
   }, []);
 
@@ -173,7 +168,8 @@ export default function BooksPage() {
       }
       setIsHydrated(true)
     }
-  }, [])
+    forceUnlockUI();
+  }, [forceUnlockUI])
 
   useEffect(() => {
     if (isHydrated) {
@@ -221,6 +217,7 @@ export default function BooksPage() {
   }, [books, search, filterCategory, filterYear])
 
   const handleOpenAdd = () => {
+    forceUnlockUI();
     setFormData({
       ...INITIAL_FORM_DATA,
       mainHeader: settings?.libraryName || "LANTERA BACA",
@@ -569,6 +566,7 @@ export default function BooksPage() {
   }
 
   const startScanner = async () => {
+    forceUnlockUI();
     setIsScannerOpen(true)
     try {
       const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
@@ -610,7 +608,7 @@ export default function BooksPage() {
               variant="default" 
               size="sm" 
               className="bg-orange-600 hover:bg-orange-700 animate-pulse"
-              onClick={() => setIsQueueOpen(true)}
+              onClick={() => { forceUnlockUI(); setIsQueueOpen(true); }}
             >
               <CloudUpload className="h-4 w-4 mr-2" /> Antrean ({localQueue.length})
             </Button>
@@ -696,14 +694,14 @@ export default function BooksPage() {
                 <TableCell className="text-right">
                   <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="z-50">
                       <DropdownMenuItem onSelect={(e) => { 
                         e.preventDefault();
                         forceUnlockUI();
                         setTimeout(() => {
                           setSelectedBookDetail(book); 
                           setIsDetailOpen(true);
-                        }, 100);
+                        }, 150);
                       }}><Eye className="h-4 w-4 mr-2" />Lihat Detail</DropdownMenuItem>
                       <DropdownMenuItem onSelect={(e) => { 
                         e.preventDefault();
@@ -711,7 +709,7 @@ export default function BooksPage() {
                         setTimeout(() => {
                           setSelectedBookQr(book); 
                           setIsQrOpen(true);
-                        }, 100);
+                        }, 150);
                       }}><QrCode className="h-4 w-4 mr-2" />Tampilkan QR</DropdownMenuItem>
                       
                       <DropdownMenuItem onSelect={(e) => { 
@@ -736,7 +734,7 @@ export default function BooksPage() {
                             budgetSource: book.budgetSource || "BOSP"
                           }); 
                           setIsEditOpen(true);
-                        }, 100);
+                        }, 150);
                       }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
 
                       <DropdownMenuItem className="text-destructive" onSelect={(e) => { 
@@ -745,7 +743,7 @@ export default function BooksPage() {
                         setTimeout(() => {
                           setBookToDelete(book.id); 
                           setIsDeleteDialogOpen(true);
-                        }, 100);
+                        }, 150);
                       }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -894,7 +892,7 @@ export default function BooksPage() {
           </div>
 
           <DialogFooter className="p-4 bg-slate-50 border-t shrink-0">
-            <Button variant="outline" onClick={() => setIsOpen(false)}>Batal</Button>
+            <Button variant="outline" onClick={() => { setIsOpen(false); forceUnlockUI(); }}>Batal</Button>
             <Button onClick={handleSaveToLocalQueue} disabled={isLockedForUser} className="px-8 shadow-lg shadow-primary/20">
               Simpan di Localhost
             </Button>
@@ -917,7 +915,7 @@ export default function BooksPage() {
             </div>
           </div>
           <DialogFooter className="grid grid-cols-2 gap-3">
-            <Button variant="outline" onClick={() => setIsQrOpen(false)} className="rounded-xl">Tutup</Button>
+            <Button variant="outline" onClick={() => { setIsQrOpen(false); forceUnlockUI(); }} className="rounded-xl">Tutup</Button>
             <Button onClick={() => handlePrintSingleQr(selectedBookQr)} className="gap-2 shadow-lg shadow-primary/20 rounded-xl">
               <Printer className="h-4 w-4" /> Cetak Sticker
             </Button>
@@ -971,7 +969,7 @@ export default function BooksPage() {
           </div>
 
           <DialogFooter className="p-4 bg-slate-50 border-t shrink-0">
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Batal</Button>
+            <Button variant="outline" onClick={() => { setIsEditOpen(false); forceUnlockUI(); }}>Batal</Button>
             <Button onClick={handleUpdateBook} disabled={isLockedForUser} className="px-8">
               Simpan Perubahan
             </Button>
@@ -1004,7 +1002,7 @@ export default function BooksPage() {
             </div>
           </div>
           <DialogFooter className="p-6 bg-slate-50 shrink-0">
-             <Button className="w-full h-12 rounded-xl" onClick={() => setIsDetailOpen(false)}>Tutup Detail</Button>
+             <Button className="w-full h-12 rounded-xl" onClick={() => { setIsDetailOpen(false); forceUnlockUI(); }}>Tutup Detail</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
