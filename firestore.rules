@@ -4,8 +4,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * PERPUSTAKAAN SEKOLAH - GLOBAL SECURITY RULES
-     * Memberikan izin akses bagi petugas terdaftar dan publik untuk identitas sistem.
+     * PERPUSTAKAAN LANTERA BACA - GLOBAL SECURITY RULES
      */
 
     // 1. Pengaturan Umum: Bisa dibaca publik untuk identitas sistem
@@ -15,7 +14,7 @@ service cloud.firestore {
     }
 
     // 2. Koleksi Pengguna (Users):
-    // Izinkan baca publik untuk deteksi inisialisasi admin dan profil (Mencegah error saat logout)
+    // Izinkan baca publik untuk deteksi inisialisasi admin dan pengecekan profil saat logout
     match /users/{userId} {
       allow read: if true;
       allow write: if request.auth != null;
@@ -26,6 +25,7 @@ service cloud.firestore {
     }
     
     // 3. Koleksi Utama (Authenticated Access)
+    // Diberikan izin eksplisit untuk list, get, create, update, delete bagi petugas terdaftar
     match /members/{docId} {
       allow read, write: if request.auth != null;
     }

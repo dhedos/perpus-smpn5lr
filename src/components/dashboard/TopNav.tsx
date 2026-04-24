@@ -1,7 +1,7 @@
 
 "use client"
 
-import { Bell, Search, User, Globe, Globe as GlobeIcon, Wifi, WifiOff, LogOut, Menu, UserCircle, Lock, Loader2, CheckCircle2 } from "lucide-react"
+import { Bell, Search, User, Globe, Wifi, WifiOff, LogOut, Menu, UserCircle, Lock, Loader2, CheckCircle2, BookOpen, Users as UsersIcon, ArrowRight, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { 
@@ -13,11 +13,11 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Badge } from "@/components/ui/badge"
-import { useUser, useAuth, useFirestore } from "@/firebase"
+import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { signOut, updatePassword } from "firebase/auth"
-import { doc, updateDoc } from "firebase/firestore"
+import { doc, updateDoc, collection } from "firebase/firestore"
 import { useRouter } from "next/navigation"
 import { 
   Sheet, 
@@ -55,6 +55,11 @@ export function TopNav() {
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  
+  // Search State
+  const [searchQuery, setSearchQuery] = useState("")
+  const [showResults, setShowResults] = useState(false)
+  
   const { user } = useUser()
   const auth = useAuth()
   const db = useFirestore()
@@ -65,6 +70,32 @@ export function TopNav() {
     name: "",
     newPassword: ""
   })
+
+  // Global Data for Search
+  const booksRef = useMemoFirebase(() => db ? collection(db, 'books') : null, [db])
+  const membersRef = useMemoFirebase(() => db ? collection(db, 'members') : null, [db])
+  
+  const { data: allBooks } = useCollection(booksRef)
+  const { data: allMembers } = useCollection(membersRef)
+
+  const searchResults = useMemo(() => {
+    if (!searchQuery || searchQuery.length < 2) return { books: [], members: [] }
+    
+    const query = searchQuery.toLowerCase()
+    
+    const books = (allBooks || []).filter(b => 
+      b.title?.toLowerCase().includes(query) || 
+      b.code?.toLowerCase().includes(query) ||
+      b.isbn?.toLowerCase().includes(query)
+    ).slice(0, 3)
+
+    const members = (allMembers || []).filter(m => 
+      m.name?.toLowerCase().includes(query) || 
+      m.memberId?.toLowerCase().includes(query)
+    ).slice(0, 3)
+
+    return { books, members }
+  }, [searchQuery, allBooks, allMembers])
 
   useEffect(() => {
     if (user) {
@@ -102,7 +133,6 @@ export function TopNav() {
     if (auth) {
       setIsLoggingOut(true)
       await signOut(auth)
-      // CLEAN FIX: Gunakan window.location.href untuk pembersihan total state aplikasi
       window.location.href = "/"
     }
   }
@@ -135,12 +165,18 @@ export function TopNav() {
     } catch (error: any) {
       toast({
         title: "Gagal Memperbarui",
-        description: error.message || "Terjadi kesalahan. Jika ingin ganti password, Anda mungkin perlu login ulang.",
+        description: error.message || "Terjadi kesalahan.",
         variant: "destructive"
       })
     } finally {
       setIsSaving(false)
     }
+  }
+
+  const handleResultClick = (path: string) => {
+    setSearchQuery("")
+    setShowResults(false)
+    router.push(path)
   }
 
   return (
@@ -168,8 +204,63 @@ export function TopNav() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
             placeholder="Cari buku, anggota..." 
-            className="pl-10 bg-background/50 border-none ring-1 ring-border focus-visible:ring-primary/50"
+            className="pl-10 bg-background/50 border-none ring-1 ring-border focus-visible:ring-primary/50 h-10"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              setShowResults(true)
+            }}
+            onFocus={() => setShowResults(true)}
           />
+          
+          {showResults && searchQuery.length >= 2 && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-white border rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 z-50">
+              <div className="p-2 border-b bg-slate-50 flex justify-between items-center">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-2">Hasil Pencarian</span>
+                <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setShowResults(false)}><X className="h-3 w-3" /></Button>
+              </div>
+              
+              <div className="max-h-[350px] overflow-y-auto">
+                {searchResults.books.length > 0 && (
+                  <div className="p-2">
+                    <p className="text-[10px] font-black text-primary uppercase px-2 mb-1">Buku</p>
+                    {searchResults.books.map(b => (
+                      <div key={b.id} onClick={() => handleResultClick(`/dashboard/books?q=${b.code}`)} className="p-3 hover:bg-slate-50 cursor-pointer rounded-lg flex items-center gap-3 group">
+                        <BookOpen className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold truncate">{b.title}</p>
+                          <p className="text-[10px] text-muted-foreground font-mono">{b.code}</p>
+                        </div>
+                        <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {searchResults.members.length > 0 && (
+                  <div className="p-2 border-t">
+                    <p className="text-[10px] font-black text-secondary-foreground uppercase px-2 mb-1">Anggota</p>
+                    {searchResults.members.map(m => (
+                      <div key={m.id} onClick={() => handleResultClick(`/dashboard/members?q=${m.memberId}`)} className="p-3 hover:bg-slate-50 cursor-pointer rounded-lg flex items-center gap-3 group">
+                        <UsersIcon className="h-4 w-4 text-muted-foreground group-hover:text-secondary" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold truncate">{m.name}</p>
+                          <p className="text-[10px] text-muted-foreground font-mono">{m.memberId}</p>
+                        </div>
+                        <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {searchResults.books.length === 0 && searchResults.members.length === 0 && (
+                  <div className="p-8 text-center text-muted-foreground text-sm italic">
+                    Data tidak ditemukan.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -286,7 +377,7 @@ export function TopNav() {
           <AlertDialogHeader>
             <AlertDialogTitle>Konfirmasi Keluar</AlertDialogTitle>
             <AlertDialogDescription>
-              Apakah Anda yakin ingin keluar dari sistem LANTERA BACA? Sesi Anda akan diakhiri.
+              Apakah Anda yakin ingin keluar dari sistem? Sesi Anda akan diakhiri.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

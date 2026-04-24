@@ -140,7 +140,7 @@ export function SidebarNav() {
             <AlertDialogHeader>
               <AlertDialogTitle className="font-black uppercase tracking-tight text-primary">Konfirmasi Keluar</AlertDialogTitle>
               <AlertDialogDescription>
-                Apakah Anda yakin ingin mengakhiri sesi pengerjaan di {displayTitle}?
+                Apakah Anda yakin ingin mengakhiri sesi pengerjaan?
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="gap-2">
