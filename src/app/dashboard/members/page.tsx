@@ -99,6 +99,7 @@ export default function MembersPage() {
 
   /**
    * AGGRESSIVE UI UNLOCKER
+   * Membersihkan paksa pengunci interaksi browser yang ditinggalkan Radix UI.
    */
   const forceUnlockUI = useCallback(() => {
     if (typeof document !== 'undefined') {
@@ -302,7 +303,7 @@ export default function MembersPage() {
             .footer { 
               background: #1e4b8f !important; 
               color: #fff !important; 
-              height: 14mm; /* Tinggi ditambah untuk teks kecil */
+              height: 14mm;
               display: flex;
               flex-direction: column;
               align-items: center;
@@ -325,9 +326,9 @@ export default function MembersPage() {
             .footer-subtext {
               font-size: 4.2pt;
               font-weight: 600;
-              color: rgba(255, 255, 255, 0.9) !important;
-              text-transform: uppercase;
-              letter-spacing: 0.2px;
+              color: rgba(255, 255, 255, 0.85) !important;
+              text-transform: none;
+              letter-spacing: 0.1px;
               margin-top: 0.8mm;
               line-height: 1.1;
               max-width: 90%;
