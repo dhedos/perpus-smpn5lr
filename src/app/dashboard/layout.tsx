@@ -45,7 +45,6 @@ export default function DashboardLayout({
     </div>
   )
 
-  // Pola anti-hydration error: kembalikan UI statis yang sama antara server & client awal
   if (!isMounted) return loadingUI
   if (loading || isRedirecting) return loadingUI
   if (!user) return null
