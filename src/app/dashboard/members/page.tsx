@@ -249,24 +249,42 @@ export default function MembersPage() {
               text-align: center;
               position: relative;
               overflow: hidden;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
             }
-            .header-box { padding: 5mm 2mm 2mm 2mm; }
-            .school-name { font-size: 11pt; font-weight: 900; color: #1e4b8f; text-transform: uppercase; margin: 0; line-height: 1.1; white-space: nowrap; overflow: hidden; }
-            .address { font-size: 5pt; color: #333; margin-top: 1.5mm; font-weight: 500; line-height: 1.3; padding: 0 3mm; }
+            .header-box { padding: 4mm 2mm 1mm 2mm; }
+            .school-name { 
+              font-size: 9.5pt; 
+              font-weight: 900; 
+              color: #1e4b8f; 
+              text-transform: uppercase; 
+              margin: 0; 
+              line-height: 1; 
+              white-space: nowrap; 
+              overflow: hidden;
+            }
+            .address { 
+              font-size: 5pt; 
+              color: #333; 
+              margin-top: 1mm; 
+              font-weight: 500; 
+              line-height: 1.1; 
+              padding: 0 2mm; 
+            }
             
-            .card-title-box { margin-top: 5mm; margin-bottom: 2mm; }
-            .card-title { font-size: 9pt; font-weight: 800; color: #000; text-transform: uppercase; line-height: 1.2; letter-spacing: 0.5px; }
+            .card-title-box { margin-top: 4mm; margin-bottom: 1mm; }
+            .card-title { font-size: 8pt; font-weight: 800; color: #000; text-transform: uppercase; line-height: 1.1; letter-spacing: 0.2px; }
             
-            .qr-section { flex: 1; display: flex; justify-content: center; align-items: center; padding: 2mm 8mm; }
+            .qr-section { flex: 1; display: flex; justify-content: center; align-items: center; padding: 1mm 6mm; }
             .qr-section img { width: 100%; height: auto; border: none; }
             
             .info-section { padding-bottom: 12mm; }
-            .member-name { font-size: 10pt; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 1mm; }
-            .member-id { font-size: 11pt; font-weight: 800; color: #1e4b8f; font-family: monospace; margin-bottom: 0.5mm; }
+            .member-name { font-size: 9.5pt; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 0.5mm; padding: 0 1mm; line-height: 1.1; }
+            .member-id { font-size: 10.5pt; font-weight: 800; color: #1e4b8f; font-family: monospace; }
             
             .footer { 
-              background: #1e4b8f; 
-              color: #fff; 
+              background: #1e4b8f !important; 
+              color: #fff !important; 
               height: 10mm;
               display: flex;
               align-items: center;
@@ -274,8 +292,9 @@ export default function MembersPage() {
               width: 100%; 
               position: absolute; 
               bottom: 0; 
+              left: 0;
             }
-            .footer-text { font-size: 11pt; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; color: #fff; }
+            .footer-text { font-size: 10.5pt; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; color: #fff !important; }
           </style>
         </head>
         <body onload="window.print(); window.close();">

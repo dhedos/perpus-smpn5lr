@@ -4,7 +4,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * PERPUSTAKAAN SEKOLAH - SECURITY RULES
+     * PERPUSTAKAAN SEKOLAH - EXPLICIT SECURITY RULES
      * Memastikan izin eksplisit untuk menghindari error "Missing or insufficient permissions"
      */
 
@@ -39,7 +39,7 @@ service cloud.firestore {
       allow list, get, create, update, delete: if request.auth != null;
     }
 
-    // 7. Fallback Global
+    // 7. Fallback Global untuk mengantisipasi path lain
     match /{path=**} {
       allow read, write: if request.auth != null;
     }
