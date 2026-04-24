@@ -42,6 +42,7 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState("")
   const [isSendingReset, setIsSendingReset] = useState(false)
 
+  // Cache settings to avoid repeated reads
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
 
@@ -49,6 +50,7 @@ export default function LoginPage() {
     setIsMounted(true)
   }, [])
 
+  // Optimized redirect: only fire if mounted and user has a role
   useEffect(() => {
     if (isMounted && !authLoading && user && user.role && !isRedirecting) {
       setIsRedirecting(true)
@@ -56,10 +58,11 @@ export default function LoginPage() {
     }
   }, [user, authLoading, router, isMounted, isRedirecting])
 
+  // Lazy check for empty database: only run if not authenticated
   const usersQuery = useMemoFirebase(() => {
-    if (!db) return null
+    if (!db || (isMounted && user)) return null
     return query(collection(db, "users"), limit(1))
-  }, [db])
+  }, [db, isMounted, user])
   
   const { data: usersList, isLoading: checkingUsers } = useCollection(usersQuery)
   const noUsersExist = !checkingUsers && usersList !== null && usersList.length === 0
@@ -70,7 +73,7 @@ export default function LoginPage() {
     setLoading(true)
     try {
       await signInWithEmailAndPassword(auth, email, password)
-      setIsRedirecting(true)
+      // Redirect handled by useEffect
     } catch (error: any) {
       toast({ title: "Gagal Masuk", description: "Email atau kata sandi salah.", variant: "destructive" })
       setLoading(false)
@@ -86,6 +89,7 @@ export default function LoginPage() {
       const userResult = result.user
       const userDocRef = doc(db, "users", userResult.uid)
       const userDoc = await getDoc(userDocRef)
+      
       if (!userDoc.exists()) {
         const role = noUsersExist ? "Admin" : "Staff"
         await setDoc(userDocRef, {
@@ -97,7 +101,6 @@ export default function LoginPage() {
           updatedAt: new Date().toISOString()
         })
       }
-      setIsRedirecting(true)
     } catch (error: any) {
       toast({ title: "Gagal Login Google", description: error.message, variant: "destructive" })
       setLoading(false)
@@ -118,7 +121,6 @@ export default function LoginPage() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       })
-      setIsRedirecting(true)
     } catch (error: any) {
       toast({ title: "Setup Gagal", description: error.message, variant: "destructive" })
       setLoading(false)
@@ -142,13 +144,13 @@ export default function LoginPage() {
 
   const displaySubtitle = isMounted ? (settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG") : "SMPN 5 LANGKE REMBONG";
 
-  // Kondisi untuk menampilkan Loading Screen yang konsisten
-  const shouldShowLoading = !isMounted || authLoading || (user && user.role) || isRedirecting;
+  // Light loading condition: only block when strictly necessary
+  const shouldShowLoading = !isMounted || (authLoading && !user) || (user && user.role && isRedirecting) || isRedirecting;
 
   if (shouldShowLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
+        <div className="flex flex-col items-center gap-6 animate-in fade-in duration-500">
           <div className="w-20 h-20 flex items-center justify-center rounded-3xl bg-primary/10 text-primary shadow-inner">
             <Library className="h-12 w-12 animate-pulse" />
           </div>

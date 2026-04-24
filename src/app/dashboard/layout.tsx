@@ -27,6 +27,7 @@ export default function DashboardLayout({
     setIsMounted(true)
   }, [])
 
+  // Fast protected route redirect
   useEffect(() => {
     if (isMounted && !loading && !user && !isRedirecting) {
       setIsRedirecting(true)
@@ -34,12 +35,12 @@ export default function DashboardLayout({
     }
   }, [user, loading, router, isRedirecting, isMounted])
 
-  // Subtitle dynamic, render fixed fallback during SSR to prevent mismatch
   const displaySubtitle = isMounted ? (settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG") : "SMPN 5 LANGKE REMBONG";
 
+  // Identical loading screen for seamless transition
   const loadingUI = (
     <div className="h-screen w-full flex items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
+      <div className="flex flex-col items-center gap-6 animate-in fade-in duration-500">
         <div className="w-20 h-20 flex items-center justify-center rounded-3xl bg-primary/10 text-primary shadow-inner">
           <Library className="h-12 w-12 animate-pulse" />
         </div>
@@ -58,9 +59,7 @@ export default function DashboardLayout({
     </div>
   )
 
-  if (!isMounted) return loadingUI
-  if (loading || isRedirecting) return loadingUI
-  if (!user) return null
+  if (!isMounted || loading || isRedirecting || !user) return loadingUI
 
   return (
     <div className="flex h-screen overflow-hidden bg-background animate-in fade-in duration-500">
