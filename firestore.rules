@@ -11,32 +11,32 @@ service cloud.firestore {
     // 1. Pengaturan Umum: Bisa dibaca publik untuk identitas di halaman Login
     match /settings/general {
       allow get, list: if true;
-      allow write: if request.auth != null;
+      allow create, update, delete: if request.auth != null;
     }
 
-    // 2. Koleksi Anggota (Members) - Izin penuh untuk petugas yang login
+    // 2. Koleksi Anggota (Members)
     match /members/{docId} {
-      allow read, write: if request.auth != null;
+      allow list, get, create, update, delete: if request.auth != null;
     }
 
     // 3. Koleksi Buku (Books)
     match /books/{docId} {
-      allow read, write: if request.auth != null;
+      allow list, get, create, update, delete: if request.auth != null;
     }
 
     // 4. Koleksi Transaksi (Transactions)
     match /transactions/{docId} {
-      allow read, write: if request.auth != null;
+      allow list, get, create, update, delete: if request.auth != null;
     }
 
     // 5. Koleksi Log Aktivitas (Activity Logs)
     match /activity_logs/{docId} {
-      allow read, write: if request.auth != null;
+      allow list, get, create, update, delete: if request.auth != null;
     }
 
     // 6. Koleksi Pengguna (Users)
     match /users/{docId} {
-      allow read, write: if request.auth != null;
+      allow list, get, create, update, delete: if request.auth != null;
     }
 
     // 7. Fallback Global

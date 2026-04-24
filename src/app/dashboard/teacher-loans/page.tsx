@@ -64,7 +64,7 @@ export default function TeacherLoansPage() {
   const [bookSearch, setBookSearch] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
-  const [scannerMode, setScannerMode] = useState<"member" | "book">("member")
+  const [scannerMode, setScannerMode] = useState<"member" | "book" | "return">("member")
   
   const scannerInstanceRef = useRef<any>(null)
   
@@ -152,7 +152,7 @@ export default function TeacherLoansPage() {
     }
   }, []);
 
-  const startScanner = async (mode: "member" | "book") => {
+  const startScanner = async (mode: "member" | "book" | "return") => {
     setScannerMode(mode)
     setIsScannerOpen(true)
     try {
@@ -164,9 +164,12 @@ export default function TeacherLoansPage() {
           if (mode === "member") {
             const m = teachers?.find(t => t.memberId?.toLowerCase() === text.toLowerCase())
             if (m) { setSelectedMember(m); stopScanner(); }
-          } else {
+          } else if (mode === "book") {
             const b = books?.find(bk => bk.code?.toLowerCase() === text.toLowerCase() || bk.isbn === text)
             if (b) { setSelectedBook(b); stopScanner(); }
+          } else if (mode === "return") {
+            const trans = transactions?.find(t => t.memberId?.toLowerCase() === text.toLowerCase() || t.bookTitle?.toLowerCase().includes(text.toLowerCase()))
+            if (trans) { stopScanner(); setTimeout(() => prepareReturn(trans), 100); }
           }
         }, () => {})
       }, 500)
@@ -371,6 +374,9 @@ export default function TeacherLoansPage() {
           <p className="text-sm text-muted-foreground">Peminjaman dan Pengembalian buku untuk kebutuhan mengajar di kelas.</p>
         </div>
         <div className="flex items-center gap-2">
+           <Button variant="secondary" size="sm" className="gap-2 font-bold" onClick={() => startScanner("return")}>
+             <ScanBarcode className="h-4 w-4" /> Scan Pengembalian
+           </Button>
            <Button variant="outline" size="sm" onClick={handlePrintBukti}>
              <Printer className="h-4 w-4 mr-2" /> Cetak Bukti
            </Button>

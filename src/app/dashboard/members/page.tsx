@@ -99,7 +99,6 @@ export default function MembersPage() {
 
   /**
    * AGGRESSIVE UI UNLOCKER
-   * Membersihkan paksa pengunci interaksi browser yang ditinggalkan Radix UI.
    */
   const forceUnlockUI = useCallback(() => {
     if (typeof document !== 'undefined') {
@@ -234,7 +233,6 @@ export default function MembersPage() {
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
-    // SINKRONISASI ALAMAT: Singkat Kelurahan -> Kel., Kecamatan -> Kec. dan Kabupaten -> Kab.
     const rawAddress = settings?.schoolAddress || 'Mando, Kelurahan Compang Carep, Kec. Langke Rembong';
     const shortAddress = rawAddress
       .replace(/Kelurahan/gi, 'Kel.')
@@ -370,78 +368,29 @@ export default function MembersPage() {
 
   const handleSaveMember = () => {
     if (!db) return
-    
-    const dataToSave = { 
-      memberId: formData.memberId,
-      name: formData.name,
-      type: formData.type,
-      classOrSubject: formData.classPart || "",
-      phone: formData.phone,
-      joinDate: formData.joinDate,
-      createdAt: serverTimestamp() 
-    }
-
-    setIsOpen(false)
-    forceUnlockUI()
-
-    addDoc(collection(db, 'members'), dataToSave)
-      .catch(async (error) => {
-        const permissionError = new FirestorePermissionError({
-          path: 'members',
-          operation: 'create',
-          requestResourceData: dataToSave,
-        } satisfies SecurityRuleContext);
-        errorEmitter.emit('permission-error', permissionError);
-      });
-    toast({ title: "Berhasil!", description: "Anggota baru telah didaftarkan." })
+    const dataToSave = { memberId: formData.memberId, name: formData.name, type: formData.type, classOrSubject: formData.classPart || "", phone: formData.phone, joinDate: formData.joinDate, createdAt: serverTimestamp() }
+    setIsOpen(false); forceUnlockUI();
+    addDoc(collection(db, 'members'), dataToSave).catch(async (e) => errorEmitter.emit('permission-error', new FirestorePermissionError({path: 'members', operation: 'create', requestResourceData: dataToSave})));
+    toast({ title: "Berhasil!", description: "Anggota baru telah didaftarkan." });
     setTimeout(() => { setFormData(INITIAL_MEMBER_DATA) }, 200)
   }
 
   const handleUpdateMember = () => {
     if (!db || !editingMemberId) return
-    
     const docRef = doc(db, 'members', editingMemberId)
-    const dataToUpdate = { 
-      memberId: formData.memberId,
-      name: formData.name,
-      type: formData.type,
-      classOrSubject: formData.classPart || "",
-      phone: formData.phone,
-      joinDate: formData.joinDate,
-      updatedAt: serverTimestamp() 
-    }
-
-    setIsEditOpen(false)
-    forceUnlockUI()
-
-    updateDoc(docRef, dataToUpdate)
-      .catch(async (error) => {
-        const permissionError = new FirestorePermissionError({
-          path: docRef.path,
-          operation: 'update',
-          requestResourceData: dataToUpdate,
-        } satisfies SecurityRuleContext);
-        errorEmitter.emit('permission-error', permissionError);
-      });
-    toast({ title: "Berhasil!", description: "Data anggota telah diperbarui." })
+    const dataToUpdate = { memberId: formData.memberId, name: formData.name, type: formData.type, classOrSubject: formData.classPart || "", phone: formData.phone, joinDate: formData.joinDate, updatedAt: serverTimestamp() }
+    setIsEditOpen(false); forceUnlockUI();
+    updateDoc(docRef, dataToUpdate).catch(async (e) => errorEmitter.emit('permission-error', new FirestorePermissionError({path: docRef.path, operation: 'update', requestResourceData: dataToUpdate})));
+    toast({ title: "Berhasil!", description: "Data anggota telah diperbarui." });
     setTimeout(() => { setEditingMemberId(null); setFormData(INITIAL_MEMBER_DATA); }, 200)
   }
 
   const handleDeleteMember = () => {
     if (!db || !memberToDelete) return
     const docRef = doc(db, 'members', memberToDelete)
-    setIsDeleteDialogOpen(false)
-    forceUnlockUI()
-
-    deleteDoc(docRef)
-      .catch(async (error) => {
-        const permissionError = new FirestorePermissionError({
-          path: docRef.path,
-          operation: 'delete',
-        } satisfies SecurityRuleContext);
-        errorEmitter.emit('permission-error', permissionError);
-      });
-    toast({ title: "Terhapus", description: "Anggota telah dihapus." })
+    setIsDeleteDialogOpen(false); forceUnlockUI();
+    deleteDoc(docRef).catch(async (e) => errorEmitter.emit('permission-error', new FirestorePermissionError({path: docRef.path, operation: 'delete'})));
+    toast({ title: "Terhapus", description: "Anggota telah dihapus." });
     setTimeout(() => { setMemberToDelete(null) }, 200)
   }
 
@@ -460,18 +409,11 @@ export default function MembersPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handlePrintTable('Student'); }}>
-                Daftar Siswa
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handlePrintTable('Teacher'); }}>
-                Daftar Guru
-              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handlePrintTable('Student'); }}>Daftar Siswa</DropdownMenuItem>
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handlePrintTable('Teacher'); }}>Daftar Guru</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          <Button onClick={handleOpenAdd} className="gap-2">
-            <UserPlus className="h-4 w-4" /> Tambah Anggota
-          </Button>
+          <Button onClick={handleOpenAdd} className="gap-2"><UserPlus className="h-4 w-4" /> Tambah Anggota</Button>
         </div>
       </div>
 
@@ -508,44 +450,11 @@ export default function MembersPage() {
                 <TableCell className="text-sm font-medium">{member.classOrSubject || '-'}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
+                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onSelect={(e) => { 
-                        e.preventDefault();
-                        forceUnlockUI();
-                        setTimeout(() => {
-                          setSelectedMemberQr(member); 
-                          setIsQrOpen(true);
-                        }, 100);
-                      }}><QrCode className="h-4 w-4 mr-2" /> Kartu Anggota</DropdownMenuItem>
-                      <DropdownMenuItem onSelect={(e) => { 
-                        e.preventDefault();
-                        forceUnlockUI();
-                        setTimeout(() => {
-                          setEditingMemberId(member.id); 
-                          setFormData({
-                            memberId: member.memberId || "",
-                            name: member.name || "",
-                            type: (member.type as any) || "Student",
-                            classPart: member.classOrSubject || "",
-                            phone: member.phone || "",
-                            joinDate: member.joinDate || new Date().toISOString().split('T')[0]
-                          }); 
-                          setIsEditOpen(true);
-                        }, 100);
-                      }}><Edit className="h-4 w-4 mr-2" /> Ubah</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onSelect={(e) => { 
-                        e.preventDefault();
-                        forceUnlockUI();
-                        setTimeout(() => {
-                          setMemberToDelete(member.id); 
-                          setIsDeleteDialogOpen(true);
-                        }, 100);
-                      }}><Trash2 className="h-4 w-4 mr-2" /> Hapus</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={(e) => { e.preventDefault(); forceUnlockUI(); setTimeout(() => { setSelectedMemberQr(member); setIsQrOpen(true); }, 100); }}><QrCode className="h-4 w-4 mr-2" /> Kartu Anggota</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={(e) => { e.preventDefault(); forceUnlockUI(); setTimeout(() => { setEditingMemberId(member.id); setFormData({ memberId: member.memberId || "", name: member.name || "", type: (member.type as any) || "Student", classPart: member.classOrSubject || "", phone: member.phone || "", joinDate: member.joinDate || new Date().toISOString().split('T')[0] }); setIsEditOpen(true); }, 100); }}><Edit className="h-4 w-4 mr-2" /> Ubah</DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive" onSelect={(e) => { e.preventDefault(); forceUnlockUI(); setTimeout(() => { setMemberToDelete(member.id); setIsDeleteDialogOpen(true); }, 100); }}><Trash2 className="h-4 w-4 mr-2" /> Hapus</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -555,18 +464,14 @@ export default function MembersPage() {
         </Table>
         {members && members.length >= displayLimit && (
           <div className="p-4 text-center border-t bg-slate-50">
-            <Button variant="ghost" size="sm" onClick={() => setDisplayLimit(prev => prev + 50)} className="text-primary font-bold">
-              <ChevronDown className="h-4 w-4 mr-2" /> Muat Lebih Banyak
-            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setDisplayLimit(prev => prev + 50)} className="text-primary font-bold"><ChevronDown className="h-4 w-4 mr-2" /> Muat Lebih Banyak</Button>
           </div>
         )}
       </Card>
 
       <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="bg-slate-50 max-w-md border-none">
-          <DialogHeader>
-            <DialogTitle>Daftarkan Anggota Baru</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Daftarkan Anggota Baru</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -575,10 +480,7 @@ export default function MembersPage() {
               </div>
               <div className="space-y-2">
                 <Label className="font-semibold text-xs uppercase text-muted-foreground">Kategori</Label>
-                <Select value={formData.type} onValueChange={v => setFormData({...formData, type: v as any})}>
-                  <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="Student">Siswa</SelectItem><SelectItem value="Teacher">Guru</SelectItem></SelectContent>
-                </Select>
+                <Select value={formData.type} onValueChange={v => setFormData({...formData, type: v as any})}><SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Student">Siswa</SelectItem><SelectItem value="Teacher">Guru</SelectItem></SelectContent></Select>
               </div>
             </div>
             <div className="space-y-2">
@@ -586,15 +488,8 @@ export default function MembersPage() {
               <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Nama lengkap" />
             </div>
             <div className="space-y-2">
-              <Label className="font-semibold text-xs uppercase text-muted-foreground">
-                {formData.type === 'Teacher' ? 'Mengajar / Kelas' : 'Kelas'}
-              </Label>
-              <Input 
-                value={formData.classPart ?? ""} 
-                onChange={e => setFormData({...formData, classPart: e.target.value})} 
-                className="bg-white border-slate-300 h-11" 
-                placeholder={formData.type === 'Teacher' ? "Cth: BAHASA INGGRIS/VII" : "Cth: VII A"} 
-              />
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">{formData.type === 'Teacher' ? 'Mengajar / Kelas' : 'Kelas'}</Label>
+              <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder={formData.type === 'Teacher' ? "Cth: BAHASA INGGRIS/VII" : "Cth: VII A"} />
             </div>
           </div>
           <DialogFooter><Button onClick={handleSaveMember} className="w-full sm:w-auto h-11 px-8 shadow-lg shadow-primary/20">Simpan Anggota</Button></DialogFooter>
@@ -603,60 +498,31 @@ export default function MembersPage() {
 
       <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-md text-center border-none p-0 overflow-hidden rounded-3xl">
-          <DialogHeader className="p-6 bg-white shrink-0 border-b">
-            <DialogTitle className="text-center font-bold text-primary">Kartu Digital Anggota</DialogTitle>
-          </DialogHeader>
+          <DialogHeader className="p-6 bg-white shrink-0 border-b"><DialogTitle className="text-center font-bold text-primary">Kartu Digital Anggota</DialogTitle></DialogHeader>
           <div className="p-6 space-y-6">
             <div className="bg-white p-8 rounded-3xl border-2 border-primary/20 space-y-4 shadow-xl flex flex-col items-center">
-              <div className="p-4 bg-white rounded-2xl border shadow-inner">
-                {selectedMemberQr && <QRCodeSVG value={selectedMemberQr.memberId} size={200} level="H" includeMargin />}
-              </div>
+              <div className="p-4 bg-white rounded-2xl border shadow-inner">{selectedMemberQr && <QRCodeSVG value={selectedMemberQr.memberId} size={200} level="H" includeMargin />}</div>
               <div className="space-y-1">
                 <div className="font-black text-2xl leading-tight uppercase tracking-tight">{selectedMemberQr?.name ?? ""}</div>
                 <div className="font-mono text-primary font-black text-xl">{selectedMemberQr?.memberId ?? ""}</div>
-                <div className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
-                   {selectedMemberQr?.type === 'Teacher' ? 'GURU' : 'KELAS'}: {selectedMemberQr?.classOrSubject || '-'}
-                </div>
+                <div className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{selectedMemberQr?.type === 'Teacher' ? 'GURU' : 'KELAS'}: {selectedMemberQr?.classOrSubject || '-'}</div>
               </div>
             </div>
           </div>
-          <DialogFooter className="p-6 pt-0 grid grid-cols-2 gap-3">
-            <Button variant="outline" onClick={() => { setIsQrOpen(false); forceUnlockUI(); }} className="h-12 rounded-xl font-bold">Tutup</Button>
-            <Button onClick={() => handlePrintSingleCard(selectedMemberQr)} className="h-12 gap-2 shadow-lg shadow-primary/20 rounded-xl font-bold">
-              <Printer className="h-4 w-4" /> Cetak Kartu
-            </Button>
-          </DialogFooter>
+          <DialogFooter className="p-6 pt-0 grid grid-cols-2 gap-3"><Button variant="outline" onClick={() => { setIsQrOpen(false); forceUnlockUI(); }} className="h-12 rounded-xl font-bold">Tutup</Button><Button onClick={() => handlePrintSingleCard(selectedMemberQr)} className="h-12 gap-2 shadow-lg shadow-primary/20 rounded-xl font-bold"><Printer className="h-4 w-4" /> Cetak Kartu</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="bg-slate-50 max-md border-none">
-          <DialogHeader>
-            <DialogTitle>Ubah Data Anggota</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Ubah Data Anggota</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">Kategori</Label>
-              <Select value={formData.type} onValueChange={v => setFormData({...formData, type: v as any})}>
-                <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="Student">Siswa</SelectItem><SelectItem value="Teacher">Guru</SelectItem></SelectContent>
-              </Select>
+              <Select value={formData.type} onValueChange={v => setFormData({...formData, type: v as any})}><SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Student">Siswa</SelectItem><SelectItem value="Teacher">Guru</SelectItem></SelectContent></Select>
             </div>
-            <div className="space-y-2">
-              <Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label>
-              <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" />
-            </div>
-            <div className="space-y-2">
-              <Label className="font-semibold text-xs uppercase text-muted-foreground">
-                {formData.type === 'Teacher' ? 'Mengajar / Kelas' : 'Kelas'}
-              </Label>
-              <Input 
-                value={formData.classPart ?? ""} 
-                onChange={e => setFormData({...formData, classPart: e.target.value})} 
-                className="bg-white border-slate-300 h-11" 
-                placeholder={formData.type === 'Teacher' ? "Cth: BAHASA INGGRIS/VII" : "Cth: VII A"} 
-              />
-            </div>
+            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label><Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" /></div>
+            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">{formData.type === 'Teacher' ? 'Mengajar / Kelas' : 'Kelas'}</Label><Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder={formData.type === 'Teacher' ? "Cth: BAHASA INGGRIS/VII" : "Cth: VII A"} /></div>
           </div>
           <DialogFooter><Button onClick={handleUpdateMember} className="w-full h-11">Simpan Perubahan</Button></DialogFooter>
         </DialogContent>
@@ -664,14 +530,8 @@ export default function MembersPage() {
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={(v) => { setIsDeleteDialogOpen(v); if(!v) forceUnlockUI(); }}>
         <AlertDialogContent className="rounded-3xl border-none">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="font-black text-primary uppercase tracking-tight">Hapus Anggota?</AlertDialogTitle>
-            <AlertDialogDescription>Data identitas akan dihapus secara permanen dari database.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel onClick={() => { setMemberToDelete(null); forceUnlockUI(); }} className="rounded-xl font-bold">Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteMember} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl font-bold">Ya, Hapus</AlertDialogAction>
-          </AlertDialogFooter>
+          <AlertDialogHeader><AlertDialogTitle className="font-black text-primary uppercase tracking-tight">Hapus Anggota?</AlertDialogTitle><AlertDialogDescription>Data identitas akan dihapus secara permanen dari database.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter className="gap-2"><AlertDialogCancel onClick={() => { setMemberToDelete(null); forceUnlockUI(); }} className="rounded-xl font-bold">Batal</AlertDialogCancel><AlertDialogAction onClick={handleDeleteMember} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl font-bold">Ya, Hapus</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
