@@ -104,7 +104,7 @@ export default function MembersPage() {
         document.body.style.pointerEvents = 'auto';
         document.body.style.overflow = 'auto';
         const overlays = document.querySelectorAll('[data-radix-focus-guard]');
-        overlays.forEach(el => el.remove());
+        overlays.forEach(el => (el as HTMLElement).remove());
       }, 300);
     }
   }, []);
@@ -140,7 +140,7 @@ export default function MembersPage() {
   const handleOpenAdd = () => {
     setFormData({
       ...INITIAL_MEMBER_DATA,
-      joinDate: new Date().toISOString().split('T')[0]
+      joinDate: isMounted ? new Date().toISOString().split('T')[0] : ""
     });
     setIsOpen(true);
   }
@@ -217,6 +217,7 @@ export default function MembersPage() {
       </html>
     `)
     printWindow.document.close()
+    forceUnlockUI()
   }
 
   const handleSaveMember = () => {

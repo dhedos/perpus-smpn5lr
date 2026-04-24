@@ -144,7 +144,7 @@ export default function BooksPage() {
         document.body.style.pointerEvents = 'auto';
         document.body.style.overflow = 'auto';
         const overlays = document.querySelectorAll('[data-radix-focus-guard]');
-        overlays.forEach(el => el.remove());
+        overlays.forEach(el => (el as HTMLElement).remove());
       }, 300);
     }
   }, []);
@@ -215,8 +215,8 @@ export default function BooksPage() {
     setFormData({
       ...INITIAL_FORM_DATA,
       mainHeader: settings?.libraryName || "LANTERA BACA",
-      publicationYear: new Date().getFullYear().toString(),
-      acquisitionDate: new Date().toISOString().split('T')[0]
+      publicationYear: isHydrated ? new Date().getFullYear().toString() : "",
+      acquisitionDate: isHydrated ? new Date().toISOString().split('T')[0] : ""
     });
     setIsOpen(true);
   }
