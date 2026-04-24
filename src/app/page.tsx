@@ -141,7 +141,7 @@ export default function LoginPage() {
   const displayTitle = (isMounted && settings?.libraryName) ? settings.libraryName : "LANTERA BACA";
   const displaySubtitle = (isMounted && settings?.librarySubtitle) ? settings.librarySubtitle : "SMPN 5 LANGKE REMBONG";
 
-  // Identical loading logic and UI to DashboardLayout
+  // Identical loading UI to DashboardLayout
   const shouldShowLoading = !isMounted || (authLoading && !user) || (user && user.role && isRedirecting) || isRedirecting;
 
   if (shouldShowLoading) {
@@ -178,7 +178,7 @@ export default function LoginPage() {
             <CardTitle className="text-3xl font-black font-headline uppercase tracking-tighter text-primary">
               {displayTitle}
             </CardTitle>
-            <CardDescription className="font-bold text-secondary uppercase tracking-[0.15em] text-xs">
+            <CardDescription className="font-bold text-secondary uppercase tracking-[0.15em] text-xs text-center px-4">
               {isSetupMode ? "Inisialisasi Sistem Baru" : displaySubtitle}
             </CardDescription>
           </div>

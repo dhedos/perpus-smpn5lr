@@ -88,8 +88,8 @@ const INITIAL_FORM_DATA = {
   title: "",
   accountCode: "",
   publisher: "",
-  publicationYear: new Date().getFullYear(),
-  acquisitionDate: new Date().toISOString().split('T')[0],
+  publicationYear: "",
+  acquisitionDate: "",
   isbn: "",
   category: "",
   rackLocation: "",
@@ -205,6 +205,15 @@ export default function BooksPage() {
       document.body.style.overflow = 'auto'
     }
   }, [])
+
+  const handleOpenAdd = () => {
+    setFormData({
+      ...INITIAL_FORM_DATA,
+      publicationYear: new Date().getFullYear().toString(),
+      acquisitionDate: new Date().toISOString().split('T')[0]
+    });
+    setIsOpen(true);
+  }
 
   const handleSaveToLocalQueue = () => {
     if (isLockedForUser) {
@@ -350,7 +359,7 @@ export default function BooksPage() {
               NIP. ${settings?.principalNip || '198507272011011020'}
             </div>
           </div>
-          <div class="print-footer">LANTERA BACA - ${settings?.librarySubtitle || 'SMPN 5 LANGKE REMBONG'} | Laporan Daftar Koleksi</div>
+          <div class="print-footer">${settings?.libraryName || 'LANTERA BACA'} - ${settings?.librarySubtitle || 'SMPN 5 LANGKE REMBONG'} | Laporan Daftar Koleksi</div>
         </body>
       </html>
     `)
@@ -365,7 +374,7 @@ export default function BooksPage() {
     const stickersHtml = filteredBooks.map(book => `
       <div class="label-card">
         <div class="info-section">
-          <div class="header-text">${book.mainHeader || 'LANTERA BACA'}</div>
+          <div class="header-text">${book.mainHeader || settings?.libraryName || 'LANTERA BACA'}</div>
           <div class="source-text">${book.budgetSource || 'BOSP'}</div>
           <div class="book-title">${book.title}</div>
           <div class="book-details">
@@ -533,13 +542,7 @@ export default function BooksPage() {
           )}
           <Button variant="outline" size="sm" onClick={handlePrintAllQrs} className="hidden md:flex"><Printer className="h-4 w-4 mr-2" />Cetak Semua QR</Button>
           <Button variant="outline" size="sm" onClick={handlePrintTable}><Printer className="h-4 w-4 mr-2" />Cetak Daftar</Button>
-          <Button 
-            size="sm" 
-            onClick={() => {
-              setFormData(INITIAL_FORM_DATA);
-              setIsOpen(true);
-            }}
-          >
+          <Button size="sm" onClick={handleOpenAdd}>
             <Plus className="h-4 w-4 mr-2" />Tambah Buku
           </Button>
         </div>
@@ -643,15 +646,15 @@ export default function BooksPage() {
                             title: book.title || "",
                             accountCode: book.accountCode || "",
                             publisher: book.publisher || "",
-                            publicationYear: Number(book.publicationYear || new Date().getFullYear()),
-                            acquisitionDate: book.acquisitionDate || new Date().toISOString().split('T')[0],
+                            publicationYear: book.publicationYear?.toString() || "",
+                            acquisitionDate: book.acquisitionDate || "",
                             isbn: book.isbn || "",
                             category: book.category || "",
                             rackLocation: book.rackLocation || "",
                             totalStock: Number(book.totalStock || 0),
                             availableStock: Number(book.availableStock || 0),
                             description: book.description || "",
-                            mainHeader: book.mainHeader || "LANTERA BACA",
+                            mainHeader: book.mainHeader || settings?.libraryName || "LANTERA BACA",
                             budgetSource: book.budgetSource || "BOSP"
                           }); 
                           setIsEditOpen(true);
@@ -674,7 +677,7 @@ export default function BooksPage() {
         </Table>
       </Card>
 
-      <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); forceUnlockUI(); }}>
+      <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-2xl bg-white max-h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl border-none">
           <DialogHeader className="p-6 pb-4 border-b bg-white shrink-0">
             <DialogTitle className="text-xl font-bold text-primary">Tambah Buku Baru</DialogTitle>
@@ -749,7 +752,7 @@ export default function BooksPage() {
                   <Input 
                     type="number" 
                     value={formData.publicationYear ?? ""} 
-                    onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} 
+                    onChange={e => setFormData({ ...formData, publicationYear: e.target.value })} 
                     className="h-11" 
                     disabled={isLockedForUser}
                   />
@@ -820,7 +823,7 @@ export default function BooksPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); forceUnlockUI(); }}>
+      <Dialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-2xl bg-white max-h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl border-none">
           <DialogHeader className="p-6 pb-4 border-b bg-white shrink-0">
             <DialogTitle className="text-xl font-bold text-primary">Ubah Data Buku</DialogTitle>
@@ -862,7 +865,7 @@ export default function BooksPage() {
                 <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Judul Buku</Label><Input value={formData.title ?? ""} onChange={e => setFormData({ ...formData, title: e.target.value })} className="h-11" disabled={isLockedForUser} /></div>
                 <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Kode Rekening</Label><Input value={formData.accountCode ?? ""} onChange={e => setFormData({ ...formData, accountCode: e.target.value })} className="h-11" disabled={isLockedForUser} /></div>
                 <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Penerbit</Label><Input value={formData.publisher ?? ""} onChange={e => setFormData({ ...formData, publisher: e.target.value })} className="h-11" disabled={isLockedForUser} /></div>
-                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Tahun Terbit</Label><Input type="number" value={formData.publicationYear ?? ""} onChange={e => setFormData({ ...formData, publicationYear: Number(e.target.value) })} className="h-11" disabled={isLockedForUser} /></div>
+                <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Tahun Terbit</Label><Input type="number" value={formData.publicationYear ?? ""} onChange={e => setFormData({ ...formData, publicationYear: e.target.value })} className="h-11" disabled={isLockedForUser} /></div>
                 <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">ISBN</Label><Input value={formData.isbn ?? ""} onChange={e => setFormData({ ...formData, isbn: e.target.value })} className="h-11" disabled={isLockedForUser} /></div>
                 <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Jenis / Kategori</Label><Input value={formData.category ?? ""} onChange={e => setFormData({ ...formData, category: e.target.value })} className="h-11" disabled={isLockedForUser} /></div>
                 <div className="space-y-2"><Label className="font-semibold text-[10px] uppercase text-muted-foreground tracking-widest">Lokasi Rak</Label><Input value={formData.rackLocation ?? ""} onChange={e => setFormData({ ...formData, rackLocation: e.target.value })} className="h-11" disabled={isLockedForUser} /></div>
@@ -885,7 +888,7 @@ export default function BooksPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isDetailOpen} onOpenChange={v => { setIsDetailOpen(v); forceUnlockUI(); }}>
+      <Dialog open={isDetailOpen} onOpenChange={v => { setIsDetailOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader><DialogTitle>Rincian Informasi Buku</DialogTitle></DialogHeader>
           {selectedBookDetail && (
@@ -927,7 +930,7 @@ export default function BooksPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isQrOpen} onOpenChange={v => { setIsQrOpen(v); forceUnlockUI(); }}>
+      <Dialog open={isQrOpen} onOpenChange={v => { setIsQrOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-md text-center p-8">
           <DialogHeader><DialogTitle>QR Label Buku</DialogTitle></DialogHeader>
           <div className="flex flex-col items-center gap-6 mt-4">
@@ -946,7 +949,7 @@ export default function BooksPage() {
                   <head><title> </title><style>@page { margin: 0; } body { display:flex; justify-content:center; align-items:center; height:100vh; margin:0; font-family:sans-serif; }</style></head>
                   <body onload="window.print(); window.close();">
                     <div style="text-align:center; border:1px solid #000; padding:20px; width: 80mm;">
-                      <div style="font-weight:bold; font-size:10px; color:#2E6ECE;">${selectedBookQr?.mainHeader || 'LANTERA BACA'}</div>
+                      <div style="font-weight:bold; font-size:10px; color:#2E6ECE;">${selectedBookQr?.mainHeader || settings?.libraryName || 'LANTERA BACA'}</div>
                       <div style="font-size:16px; font-weight:900; margin:10px 0;">${selectedBookQr?.title}</div>
                       <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${selectedBookQr?.code}" />
                       <div style="font-family:monospace; font-weight:bold; margin-top:10px; font-size:14px;">${selectedBookQr?.code}</div>
@@ -960,7 +963,7 @@ export default function BooksPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isQueueOpen} onOpenChange={v => { setIsQueueOpen(v); forceUnlockUI(); }}>
+      <Dialog open={isQueueOpen} onOpenChange={v => { setIsQueueOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-xl max-h-[80vh] flex flex-col p-0">
           <DialogHeader className="p-6 border-b">
             <DialogTitle className="flex items-center gap-2">
@@ -1006,7 +1009,7 @@ export default function BooksPage() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={(v) => { setIsDeleteDialogOpen(v); forceUnlockUI(); }}>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={(v) => { setIsDeleteDialogOpen(v); if(!v) forceUnlockUI(); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Buku dari Koleksi?</AlertDialogTitle>

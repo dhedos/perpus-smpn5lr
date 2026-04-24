@@ -35,7 +35,7 @@ export default function DashboardLayout({
     }
   }, [user, loading, router, isRedirecting, isMounted])
 
-  // Hydration-safe display logic: Always use fallbacks during SSR and first client render
+  // Hydration-safe display logic
   const displayTitle = (isMounted && settings?.libraryName) ? settings.libraryName : "LANTERA BACA";
   const displaySubtitle = (isMounted && settings?.librarySubtitle) ? settings.librarySubtitle : "SMPN 5 LANGKE REMBONG";
 
