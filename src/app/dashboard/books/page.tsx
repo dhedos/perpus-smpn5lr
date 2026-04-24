@@ -1,7 +1,8 @@
 
 "use client"
 
-import { useState, useMemo, useRef, useEffect, useCallback } from "react"
+import { useState, useMemo, useRef, useEffect, useCallback, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -101,10 +102,11 @@ const INITIAL_FORM_DATA = {
 
 const STORAGE_KEY = 'perpus_local_queue_v3'
 
-export default function BooksPage() {
+function BooksContent() {
   const db = useFirestore()
   const { isAdmin } = useUser()
   const { toast } = useToast()
+  const searchParams = useSearchParams()
   
   const [search, setSearch] = useState("")
   const [filterCategory, setFilterCategory] = useState("all")
@@ -140,7 +142,6 @@ export default function BooksPage() {
 
   const forceUnlockUI = useCallback(() => {
     if (typeof document !== 'undefined') {
-      // Membersihkan paksa sisa interaksi browser
       document.body.style.pointerEvents = 'auto';
       document.body.style.overflow = 'auto';
       
@@ -170,6 +171,11 @@ export default function BooksPage() {
     }
     forceUnlockUI();
   }, [forceUnlockUI])
+
+  useEffect(() => {
+    const q = searchParams.get('q')
+    if (q) setSearch(q)
+  }, [searchParams])
 
   useEffect(() => {
     if (isHydrated) {
@@ -366,7 +372,7 @@ export default function BooksPage() {
               NIP. ${settings?.principalNip || '198507272011011020'}
             </div>
           </div>
-          <div class="print-footer">${settings?.libraryName || 'LANTERA BACA'} - ${settings?.librarySubtitle || 'SMPN 5 LANGKE REMBONG'} | Laporan Daftar Koleksi</div>
+          <div class="print-footer">${settings?.libraryName || 'LANTERA BACA'} - © 2026 Lantera Baca</div>
         </body>
       </html>
     `)
@@ -1030,5 +1036,13 @@ export default function BooksPage() {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+export default function BooksPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>}>
+      <BooksContent />
+    </Suspense>
   )
 }

@@ -326,17 +326,16 @@ function TransactionsContent() {
   }
 
   const handlePrintReport = () => {
-    const targetData = activeTab === "return" ? filteredActiveTrans : (historyTrans || []);
+    const targetData = activeTab === "borrow" ? (historyTrans || []) : filteredActiveTrans;
     if (targetData.length === 0) return
 
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
-    const titleLabel = activeTab === "return" ? "DAFTAR PEMINJAMAN SISWA AKTIF" : "RIWAYAT SIRKULASI SISWA (KEMBALI)"
+    const titleLabel = activeTab === "borrow" ? "RIWAYAT SIRKULASI SISWA (KEMBALI)" : "DAFTAR PEMINJAMAN SISWA AKTIF"
     
     const rowsHtml = targetData.map((t, index) => {
         const borrowDate = t.borrowDate ? parseISO(t.borrowDate) : new Date();
-        const effectiveDueDate = addDays(borrowDate, loanDays);
         const returnDateStr = t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yyyy') : (t.status === 'active' ? 'PINJAM' : '-');
         const fineStr = t.fineAmount ? `Rp ${t.fineAmount.toLocaleString('id-ID')}` : '-';
 

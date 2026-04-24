@@ -1,7 +1,8 @@
 
 "use client"
 
-import { useState, useMemo, useEffect, useCallback } from "react"
+import { useState, useMemo, useEffect, useCallback, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -80,9 +81,10 @@ const INITIAL_MEMBER_DATA = {
   joinDate: ""
 }
 
-export default function MembersPage() {
+function MembersContent() {
   const db = useFirestore()
   const { toast } = useToast()
+  const searchParams = useSearchParams()
   
   const [search, setSearch] = useState("")
   const [displayLimit, setDisplayLimit] = useState(50)
@@ -114,6 +116,11 @@ export default function MembersPage() {
     setIsMounted(true)
     forceUnlockUI()
   }, [forceUnlockUI])
+
+  useEffect(() => {
+    const q = searchParams.get('q')
+    if (q) setSearch(q)
+  }, [searchParams])
 
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
@@ -537,5 +544,13 @@ export default function MembersPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  )
+}
+
+export default function MembersPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>}>
+      <MembersContent />
+    </Suspense>
   )
 }
