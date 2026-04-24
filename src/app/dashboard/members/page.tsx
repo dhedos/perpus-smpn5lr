@@ -29,8 +29,7 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogFooter, 
-  DialogTrigger 
+  DialogFooter
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { 
@@ -217,7 +216,7 @@ export default function MembersPage() {
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
             NIP. ${settings?.principalNip || '198507272011011020'}
           </div>
-          <div class="print-footer">LANTERA BACA - ${settings?.librarySubtitle || 'SMPN 5 LANGKE REMBONG'} | Daftar Anggota ${labelType}</div>
+          <div class="print-footer">${settings?.libraryName || 'LANTERA BACA'} - ${settings?.librarySubtitle || 'SMPN 5 LANGKE REMBONG'} | Daftar Anggota ${labelType}</div>
         </body>
       </html>
     `)
@@ -249,39 +248,55 @@ export default function MembersPage() {
               position: relative;
               overflow: hidden;
             }
-            .header { padding: 4mm 2mm; }
-            .school-name { font-size: 10pt; font-weight: 800; color: #1e4b8f; text-transform: uppercase; margin: 0; line-height: 1.1; }
-            .address { font-size: 6pt; color: #777; margin-top: 1mm; font-weight: 500; }
-            .blue-bar-top { height: 1.5mm; background: #1e4b8f; width: 100%; margin: 1mm 0 3mm 0; }
-            .card-title { font-size: 8pt; font-weight: 900; color: #333; text-transform: uppercase; margin-bottom: 4mm; letter-spacing: 0.5px; }
-            .qr-section { flex: 1; display: flex; justify-content: center; align-items: center; padding: 0 4mm; }
-            .qr-section img { width: 100%; height: auto; border: 0.5pt solid #eee; }
-            .info-section { padding-bottom: 5mm; }
-            .member-name { font-size: 11pt; font-weight: 900; text-transform: uppercase; color: #000; margin: 3mm 0 1mm 0; padding: 0 2mm; line-height: 1.1; }
-            .member-id { font-size: 12pt; font-weight: 800; color: #1e4b8f; font-family: 'Courier New', monospace; margin-bottom: 1mm; }
-            .member-class { font-size: 7.5pt; font-weight: 700; color: #666; text-transform: uppercase; }
-            .footer { background: #1e4b8f; color: #fff; padding: 2.5mm 0; width: 100%; position: absolute; bottom: 0; }
-            .footer-text { font-size: 9pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+            .header-box { padding: 5mm 2mm 2mm 2mm; }
+            .school-name { font-size: 11pt; font-weight: 900; color: #1e4b8f; text-transform: uppercase; margin: 0; line-height: 1.2; white-space: nowrap; }
+            .address { font-size: 5.5pt; color: #333; margin-top: 1mm; font-weight: 500; line-height: 1.2; padding: 0 1mm; }
+            
+            .card-title-box { margin-top: 6mm; margin-bottom: 2mm; }
+            .card-title { font-size: 8.5pt; font-weight: 800; color: #333; text-transform: uppercase; line-height: 1.2; }
+            
+            .qr-section { flex: 1; display: flex; justify-content: center; align-items: center; padding: 2mm 6mm; }
+            .qr-section img { width: 100%; height: auto; border: none; }
+            
+            .info-section { padding-bottom: 12mm; }
+            .member-name { font-size: 10pt; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 1mm; }
+            .member-id { font-size: 11pt; font-weight: 800; color: #1e4b8f; font-family: monospace; margin-bottom: 0.5mm; }
+            .member-class { font-size: 7pt; font-weight: 700; color: #555; text-transform: uppercase; }
+            
+            .footer { 
+              background: #1e4b8f; 
+              color: #fff; 
+              padding: 2.5mm 0; 
+              width: 100%; 
+              position: absolute; 
+              bottom: 0; 
+            }
+            .footer-text { font-size: 9.5pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: #fff; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
           <div class="card-container">
-            <div class="header">
+            <div class="header-box">
               <div class="school-name">${settings?.schoolName || 'SMPN 5 LANGKE REMBONG'}</div>
-              <div class="address">${settings?.schoolAddress || 'Mando, Compang Carep Kab. Manggarai NTT'}</div>
+              <div class="address">${settings?.schoolAddress || 'Mando, Compang Carep Kec. Langke Rembong'}</div>
             </div>
-            <div class="blue-bar-top"></div>
-            <div class="card-title">KARTU ANGGOTA PERPUSTAKAAN</div>
+            
+            <div class="card-title-box">
+              <div class="card-title">KARTU ANGGOTA<br/>PERPUSTAKAAN</div>
+            </div>
+            
             <div class="qr-section">
-               <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${member.memberId}" />
+               <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${member.memberId}" />
             </div>
+            
             <div class="info-section">
               <div class="member-name">${member.name}</div>
               <div class="member-id">${member.memberId}</div>
               <div class="member-class">KELAS: ${member.classOrSubject || '-'}</div>
             </div>
+            
             <div class="footer">
-              <div class="footer-text">PUSTAKA NUSANTARA</div>
+              <div class="footer-text">${settings?.libraryName || 'PUSTAKA NUSANTARA'}</div>
             </div>
           </div>
         </body>
@@ -440,7 +455,7 @@ export default function MembersPage() {
                           setSelectedMemberQr(member); 
                           setIsQrOpen(true);
                         }, 100);
-                      }}><QrCode className="h-4 w-4 mr-2" /> Kartu QR</DropdownMenuItem>
+                      }}><QrCode className="h-4 w-4 mr-2" /> Kartu Anggota</DropdownMenuItem>
                       <DropdownMenuItem onSelect={(e) => { 
                         e.preventDefault();
                         forceUnlockUI();

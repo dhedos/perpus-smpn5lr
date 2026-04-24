@@ -4,7 +4,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * PERPUSTAKAAN SEKOLAH - SECURITY RULES (EXPLICIT & ROBUST)
+     * PERPUSTAKAAN SEKOLAH - SECURITY RULES (ROBUST & EXPLICIT)
      */
 
     // 1. Pengaturan Umum: Bisa dibaca publik untuk identitas di halaman Login
@@ -13,7 +13,7 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
-    // 2. Koleksi Anggota (Members) - Memberikan izin eksplisit untuk list/get
+    // 2. Koleksi Anggota (Members)
     match /members/{docId} {
       allow list, get, create, update, delete: if request.auth != null;
     }
