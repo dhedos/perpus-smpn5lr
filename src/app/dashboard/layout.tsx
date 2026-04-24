@@ -27,7 +27,6 @@ export default function DashboardLayout({
     setIsMounted(true)
   }, [])
 
-  // Fast protected route redirect
   useEffect(() => {
     if (isMounted && !loading && !user && !isRedirecting) {
       setIsRedirecting(true)
@@ -35,7 +34,6 @@ export default function DashboardLayout({
     }
   }, [user, loading, router, isRedirecting, isMounted])
 
-  // Hydration-safe display logic
   const displayTitle = (isMounted && settings?.libraryName) ? settings.libraryName : "LANTERA BACA";
   const displaySubtitle = (isMounted && settings?.librarySubtitle) ? settings.librarySubtitle : "SMPN 5 LANGKE REMBONG";
 

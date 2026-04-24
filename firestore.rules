@@ -4,7 +4,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * LANTERA BACA - SECURITY RULES v7.0
+     * LANTERA BACA - SECURITY RULES v8.0
      * Keamanan akses data perpustakaan sekolah.
      */
 
@@ -19,38 +19,14 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    // 3. Koleksi Utama (Members, Books, Transactions, Logs)
-    // Menggunakan wildcard eksplisit untuk koleksi dan dokumen
-    match /members {
+    // 3. Koleksi Utama (Semua dokumen di bawah koleksi ini wajib login)
+    // Berlaku untuk members, books, transactions, activity_logs
+    match /{collectionName}/{docId} {
       allow read, write: if request.auth != null;
-      match /{allPaths=**} {
-        allow read, write: if request.auth != null;
-      }
     }
     
-    match /books {
-      allow read, write: if request.auth != null;
-      match /{allPaths=**} {
-        allow read, write: if request.auth != null;
-      }
-    }
-    
-    match /transactions {
-      allow read, write: if request.auth != null;
-      match /{allPaths=**} {
-        allow read, write: if request.auth != null;
-      }
-    }
-    
-    match /activity_logs {
-      allow read, write: if request.auth != null;
-      match /{allPaths=**} {
-        allow read, write: if request.auth != null;
-      }
-    }
-
-    // 4. Rule Global (Fallback)
-    match /{document=**} {
+    // 4. Wildcard Rekursif untuk sub-koleksi jika ada di masa depan
+    match /{path=**} {
       allow read, write: if request.auth != null;
     }
   }
