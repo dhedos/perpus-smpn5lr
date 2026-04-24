@@ -16,11 +16,11 @@ service cloud.firestore {
 
     // 2. Profil Pengguna & Data Petugas
     match /users/{userId} {
-      allow read, write: if request.auth != null || true;
+      allow read, write: if request.auth != null;
     }
 
-    // 3. Koleksi Operasional: Wajib login untuk semua aksi (List, Get, Create, Update, Delete)
-    // Berlaku untuk anggota, buku, transaksi, dan log aktivitas.
+    // 3. Koleksi Operasional: Izin bagi petugas yang login
+    // Menggunakan wildcard {document=**} untuk mencakup akses list (collection) dan get (document)
     
     match /members/{document=**} {
       allow read, write: if request.auth != null;

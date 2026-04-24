@@ -98,7 +98,7 @@ function TransactionsContent() {
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
 
-  // Hanya ambil anggota dengan kategori Student
+  // HANYA SISWA - Fokus utama menu ini
   const studentMembersRef = useMemoFirebase(() => 
     db ? query(collection(db, 'members'), where('type', '==', 'Student'), orderBy('name', 'asc')) : null, [db])
   const booksRef = useMemoFirebase(() => db ? query(collection(db, 'books'), orderBy('title', 'asc')) : null, [db])
@@ -106,7 +106,7 @@ function TransactionsContent() {
   const { data: members } = useCollection(studentMembersRef)
   const { data: books } = useCollection(booksRef)
 
-  // Hanya ambil transaksi bertipe 'borrow' (milik siswa) yang sedang aktif
+  // HANYA TRANSAKSI PINJAM SISWA (type == 'borrow')
   const activeTransQuery = useMemoFirebase(() => {
     if (!db) return null;
     return query(
