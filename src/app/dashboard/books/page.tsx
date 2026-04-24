@@ -138,13 +138,19 @@ export default function BooksPage() {
   
   const isLockedForUser = Boolean(settings?.isDataLocked === true && !isAdmin);
 
+  /**
+   * FORCE UNLOCK UI
+   * Fungsi ini sangat penting untuk mencegah halaman macet (freezing)
+   * setelah menutup dialog atau menu dropdown.
+   */
   const forceUnlockUI = useCallback(() => {
     if (typeof document !== 'undefined') {
       setTimeout(() => {
         document.body.style.pointerEvents = 'auto';
         document.body.style.overflow = 'auto';
-        const overlays = document.querySelectorAll('[data-radix-focus-guard]');
-        overlays.forEach(el => (el as HTMLElement).remove());
+        // Hapus elemen pelindung fokus Radix jika tertinggal
+        const overlays = document.querySelectorAll('[data-radix-focus-guard], [data-radix-portal]');
+        overlays.forEach(el => (el as HTMLElement).style.display = 'none');
       }, 300);
     }
   }, []);

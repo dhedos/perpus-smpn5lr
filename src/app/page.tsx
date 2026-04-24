@@ -141,15 +141,15 @@ export default function LoginPage() {
   const displayTitle = (isMounted && settings?.libraryName) ? settings.libraryName : "LANTERA BACA";
   const displaySubtitle = (isMounted && settings?.librarySubtitle) ? settings.librarySubtitle : "SMPN 5 LANGKE REMBONG";
 
-  // SYNCED LOADING UI
+  // SYNCED LOADING UI (Identical to layout.tsx)
   const shouldShowLoading = !isMounted || (authLoading && !user) || (user && user.role && isRedirecting) || isRedirecting;
 
   if (shouldShowLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-6 animate-in fade-in duration-500">
-          <div className="w-20 h-20 flex items-center justify-center rounded-3xl bg-primary/10 text-primary shadow-inner">
-            <Library className="h-12 w-12 animate-pulse" />
+          <div className="w-24 h-24 flex items-center justify-center rounded-[2rem] bg-primary/10 text-primary shadow-sm">
+            <Library className="h-12 w-12" />
           </div>
           <div className="flex flex-col items-center space-y-2 text-center">
             <div className="flex items-center gap-2">
