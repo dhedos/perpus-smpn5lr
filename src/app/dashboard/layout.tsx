@@ -38,7 +38,7 @@ export default function DashboardLayout({
   const displayTitle = isMounted ? (settings?.libraryName || "LANTERA BACA") : "LANTERA BACA";
   const displaySubtitle = isMounted ? (settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG") : "SMPN 5 LANGKE REMBONG";
 
-  // Identical loading screen for seamless transition
+  // Unified loading screen for seamless transition
   const loadingUI = (
     <div className="h-screen w-full flex items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-6 animate-in fade-in duration-500">

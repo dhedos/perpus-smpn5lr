@@ -144,7 +144,7 @@ export default function LoginPage() {
   const displayTitle = isMounted ? (settings?.libraryName || "LANTERA BACA") : "LANTERA BACA";
   const displaySubtitle = isMounted ? (settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG") : "SMPN 5 LANGKE REMBONG";
 
-  // Light loading condition: only block when strictly necessary
+  // Unified loading screen for seamless transition
   const shouldShowLoading = !isMounted || (authLoading && !user) || (user && user.role && isRedirecting) || isRedirecting;
 
   if (shouldShowLoading) {
@@ -161,7 +161,7 @@ export default function LoginPage() {
                 {displayTitle}
               </p>
             </div>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50">
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50 px-4">
               {displaySubtitle}
             </p>
           </div>
