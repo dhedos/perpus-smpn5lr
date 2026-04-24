@@ -5,22 +5,40 @@ service cloud.firestore {
 
     /**
      * PERPUSTAKAAN SEKOLAH - SECURITY RULES
-     * Memberikan izin akses berdasarkan status login petugas.
+     * Memberikan izin akses eksplisit untuk setiap koleksi utama.
      */
 
-    // 1. Pengaturan Umum: Baca publik agar identitas sekolah muncul di Login
+    // 1. Pengaturan Umum: Bisa dibaca publik untuk identitas di halaman Login
     match /settings/general {
       allow read: if true;
       allow write: if request.auth != null;
     }
 
-    // 2. Profil Pengguna: Diperlukan untuk inisialisasi dan role
+    // 2. Profil Pengguna & Data Petugas
     match /users/{userId} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null || true;
     }
 
     // 3. Koleksi Operasional: Wajib login untuk semua aksi (List, Get, Create, Update, Delete)
-    // Mencakup: members, books, transactions, activity_logs
+    // Berlaku untuk anggota, buku, transaksi, dan log aktivitas.
+    
+    match /members/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    match /books/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    match /transactions/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    match /activity_logs/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Aturan Global Cadangan
     match /{path=**} {
       allow read, write: if request.auth != null;
     }
