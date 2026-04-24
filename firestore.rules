@@ -7,7 +7,7 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // 1. Izin Baca Publik untuk Users (untuk login & setup)
+    // 1. Izin Baca Publik untuk Users & Settings (untuk login & inisialisasi)
     match /users/{userId} {
       allow read: if true;
       allow write: if isSignedIn();
@@ -16,42 +16,30 @@ service cloud.firestore {
       allow list: if true;
     }
 
-    // 2. Izin Baca Publik untuk Pengaturan Umum
     match /settings/{docId} {
       allow read: if true;
       allow write: if isSignedIn();
     }
 
-    // 3. Izin Penuh untuk Petugas Terdaftar pada koleksi utama
-    match /members/{docId} {
+    // 2. Izin Penuh untuk Petugas Terdaftar pada koleksi utama
+    // Menggunakan wildcard {allPaths=**} untuk menjamin akses list/get yang konsisten
+    match /members/{allPaths=**} {
       allow read, write: if isSignedIn();
-    }
-    match /members {
-      allow list: if isSignedIn();
     }
     
-    match /books/{docId} {
+    match /books/{allPaths=**} {
       allow read, write: if isSignedIn();
-    }
-    match /books {
-      allow list: if isSignedIn();
     }
     
-    match /transactions/{docId} {
+    match /transactions/{allPaths=**} {
       allow read, write: if isSignedIn();
-    }
-    match /transactions {
-      allow list: if isSignedIn();
     }
     
-    match /activity_logs/{docId} {
+    match /activity_logs/{allPaths=**} {
       allow read, write: if isSignedIn();
-    }
-    match /activity_logs {
-      allow list: if isSignedIn();
     }
 
-    // 4. Fallback Global
+    // 3. Fallback Global
     match /{path=**} {
       allow read, write: if isSignedIn();
     }
