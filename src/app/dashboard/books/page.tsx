@@ -139,19 +139,22 @@ export default function BooksPage() {
   const isLockedForUser = Boolean(settings?.isDataLocked === true && !isAdmin);
 
   /**
-   * FORCE UNLOCK UI
-   * Fungsi ini sangat penting untuk mencegah halaman macet (freezing)
-   * setelah menutup dialog atau menu dropdown.
+   * AGGRESSIVE UI UNLOCKER
+   * Membersihkan paksa pengunci interaksi browser yang ditinggalkan Radix UI.
    */
   const forceUnlockUI = useCallback(() => {
     if (typeof document !== 'undefined') {
+      // Hilangkan paksa pointer-events: none pada body
+      document.body.style.pointerEvents = 'auto';
+      document.body.style.overflow = 'auto';
+      
+      // Berikan jeda kecil untuk memastikan elemen radix portal/guard dihapus
       setTimeout(() => {
         document.body.style.pointerEvents = 'auto';
         document.body.style.overflow = 'auto';
-        // Hapus elemen pelindung fokus Radix jika tertinggal
-        const overlays = document.querySelectorAll('[data-radix-focus-guard], [data-radix-portal]');
-        overlays.forEach(el => (el as HTMLElement).style.display = 'none');
-      }, 300);
+        const focusGuards = document.querySelectorAll('[data-radix-focus-guard], [data-radix-portal]');
+        focusGuards.forEach(el => (el as HTMLElement).remove());
+      }, 50);
     }
   }, []);
 
@@ -696,41 +699,53 @@ export default function BooksPage() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onSelect={(e) => { 
                         e.preventDefault();
-                        setSelectedBookDetail(book); 
-                        setIsDetailOpen(true);
+                        forceUnlockUI();
+                        setTimeout(() => {
+                          setSelectedBookDetail(book); 
+                          setIsDetailOpen(true);
+                        }, 100);
                       }}><Eye className="h-4 w-4 mr-2" />Lihat Detail</DropdownMenuItem>
                       <DropdownMenuItem onSelect={(e) => { 
                         e.preventDefault();
-                        setSelectedBookQr(book); 
-                        setIsQrOpen(true);
+                        forceUnlockUI();
+                        setTimeout(() => {
+                          setSelectedBookQr(book); 
+                          setIsQrOpen(true);
+                        }, 100);
                       }}><QrCode className="h-4 w-4 mr-2" />Tampilkan QR</DropdownMenuItem>
                       
                       <DropdownMenuItem onSelect={(e) => { 
                         e.preventDefault();
-                        setEditingBookId(book.id); 
-                        setFormData({
-                          code: book.code || "",
-                          title: book.title || "",
-                          accountCode: book.accountCode || "",
-                          publisher: book.publisher || "",
-                          publicationYear: book.publicationYear?.toString() || "",
-                          acquisitionDate: book.acquisitionDate || "",
-                          isbn: book.isbn || "",
-                          category: book.category || "",
-                          rackLocation: book.rackLocation || "",
-                          totalStock: Number(book.totalStock || 0),
-                          availableStock: Number(book.availableStock || 0),
-                          description: book.description || "",
-                          mainHeader: book.mainHeader || settings?.libraryName || "LANTERA BACA",
-                          budgetSource: book.budgetSource || "BOSP"
-                        }); 
-                        setIsEditOpen(true);
+                        forceUnlockUI();
+                        setTimeout(() => {
+                          setEditingBookId(book.id); 
+                          setFormData({
+                            code: book.code || "",
+                            title: book.title || "",
+                            accountCode: book.accountCode || "",
+                            publisher: book.publisher || "",
+                            publicationYear: book.publicationYear?.toString() || "",
+                            acquisitionDate: book.acquisitionDate || "",
+                            isbn: book.isbn || "",
+                            category: book.category || "",
+                            rackLocation: book.rackLocation || "",
+                            totalStock: Number(book.totalStock || 0),
+                            availableStock: Number(book.availableStock || 0),
+                            description: book.description || "",
+                            mainHeader: book.mainHeader || settings?.libraryName || "LANTERA BACA",
+                            budgetSource: book.budgetSource || "BOSP"
+                          }); 
+                          setIsEditOpen(true);
+                        }, 100);
                       }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
 
                       <DropdownMenuItem className="text-destructive" onSelect={(e) => { 
                         e.preventDefault();
-                        setBookToDelete(book.id); 
-                        setIsDeleteDialogOpen(true);
+                        forceUnlockUI();
+                        setTimeout(() => {
+                          setBookToDelete(book.id); 
+                          setIsDeleteDialogOpen(true);
+                        }, 100);
                       }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -966,14 +981,11 @@ export default function BooksPage() {
 
       <Dialog open={isDetailOpen} onOpenChange={(v) => { setIsDetailOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-2xl bg-white p-0 overflow-hidden shadow-2xl rounded-3xl border-none">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Detail Buku</DialogTitle>
+          <DialogHeader className="p-8 pb-4 bg-primary/5 shrink-0 border-b">
+            <Badge className="mb-4 bg-primary text-primary-foreground border-none font-mono">DETAIL: {selectedBookDetail?.code}</Badge>
+            <DialogTitle className="text-3xl font-black text-primary leading-tight uppercase tracking-tight">{selectedBookDetail?.title}</DialogTitle>
           </DialogHeader>
-          <div className="bg-primary/5 p-8 border-b">
-             <Badge className="mb-4 bg-primary text-primary-foreground border-none font-mono">{selectedBookDetail?.code}</Badge>
-             <h2 className="text-3xl font-black text-primary leading-tight uppercase tracking-tight">{selectedBookDetail?.title}</h2>
-          </div>
-          <div className="p-8 space-y-6">
+          <div className="p-8 space-y-6 overflow-y-auto">
             <div className="grid grid-cols-2 gap-8">
               <div className="space-y-1">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Kategori & Penerbit</p>
@@ -991,7 +1003,7 @@ export default function BooksPage() {
               </p>
             </div>
           </div>
-          <DialogFooter className="p-6 bg-slate-50">
+          <DialogFooter className="p-6 bg-slate-50 shrink-0">
              <Button className="w-full h-12 rounded-xl" onClick={() => setIsDetailOpen(false)}>Tutup Detail</Button>
           </DialogFooter>
         </DialogContent>

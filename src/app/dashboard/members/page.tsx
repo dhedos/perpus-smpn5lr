@@ -100,12 +100,14 @@ export default function MembersPage() {
 
   const forceUnlockUI = useCallback(() => {
     if (typeof document !== 'undefined') {
+      document.body.style.pointerEvents = 'auto';
+      document.body.style.overflow = 'auto';
       setTimeout(() => {
         document.body.style.pointerEvents = 'auto';
         document.body.style.overflow = 'auto';
-        const overlays = document.querySelectorAll('[data-radix-focus-guard]');
+        const overlays = document.querySelectorAll('[data-radix-focus-guard], [data-radix-portal]');
         overlays.forEach(el => (el as HTMLElement).remove());
-      }, 300);
+      }, 50);
     }
   }, []);
 
@@ -362,13 +364,17 @@ export default function MembersPage() {
                   <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onSelect={() => { 
+                      <DropdownMenuItem onSelect={(e) => { 
+                        e.preventDefault();
+                        forceUnlockUI();
                         setTimeout(() => {
                           setSelectedMemberQr(member); 
                           setIsQrOpen(true);
-                        }, 10);
+                        }, 100);
                       }}><QrCode className="h-4 w-4 mr-2" /> Kartu QR</DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => { 
+                      <DropdownMenuItem onSelect={(e) => { 
+                        e.preventDefault();
+                        forceUnlockUI();
                         setTimeout(() => {
                           setEditingMemberId(member.id); 
                           setFormData({
@@ -380,13 +386,15 @@ export default function MembersPage() {
                             joinDate: member.joinDate || new Date().toISOString().split('T')[0]
                           }); 
                           setIsEditOpen(true);
-                        }, 10);
+                        }, 100);
                       }}><Edit className="h-4 w-4 mr-2" /> Ubah</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onSelect={() => { 
+                      <DropdownMenuItem className="text-destructive" onSelect={(e) => { 
+                        e.preventDefault();
+                        forceUnlockUI();
                         setTimeout(() => {
                           setMemberToDelete(member.id); 
                           setIsDeleteDialogOpen(true);
-                        }, 10);
+                        }, 100);
                       }}><Trash2 className="h-4 w-4 mr-2" /> Hapus</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

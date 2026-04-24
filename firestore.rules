@@ -13,7 +13,7 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
-    // 2. Koleksi Anggota (Members) - Menjamin izin list dan get
+    // 2. Koleksi Anggota (Members)
     match /members/{docId} {
       allow read, write: if request.auth != null;
     }
@@ -38,7 +38,7 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
 
-    // 7. Fallback Global
+    // 7. Fallback Global - Menjamin akses list/get untuk semua koleksi jika terautentikasi
     match /{path=**} {
       allow read, write: if request.auth != null;
     }
