@@ -141,7 +141,6 @@ export default function LoginPage() {
   const displayTitle = (isMounted && settings?.libraryName) ? settings.libraryName : "LANTERA BACA";
   const displaySubtitle = (isMounted && settings?.librarySubtitle) ? settings.librarySubtitle : "SMPN 5 LANGKE REMBONG";
 
-  // SYNCED LOADING UI (Identical to layout.tsx)
   const shouldShowLoading = !isMounted || (authLoading && !user) || (user && user.role && isRedirecting) || isRedirecting;
 
   if (shouldShowLoading) {
@@ -240,7 +239,7 @@ export default function LoginPage() {
             </Button>
           )}
           {isSetupMode && <Button variant="ghost" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground" onClick={() => setIsSetupMode(false)}>Kembali ke Login</Button>}
-          <p className="text-[10px] text-muted-foreground/60 text-center uppercase font-bold tracking-[0.2em]">&copy; 2026 {displaySubtitle}</p>
+          <p className="text-[10px] text-muted-foreground/60 text-center uppercase font-bold tracking-[0.2em]">&copy; 2026 LANTERA BACA</p>
         </CardFooter>
       </Card>
 

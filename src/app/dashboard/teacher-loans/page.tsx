@@ -63,7 +63,6 @@ export default function TeacherLoansPage() {
   const { toast } = useToast()
   
   const [activeTab, setActiveTab] = useState("borrow")
-  const [search, setSearch] = useState("")
   const [memberSearch, setMemberSearch] = useState("")
   const [bookSearch, setBookSearch] = useState("")
   const [returnSearch, setReturnSearch] = useState("")

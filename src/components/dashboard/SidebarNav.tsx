@@ -125,7 +125,7 @@ export function SidebarNav() {
         })}
       </div>
 
-      <div className="p-4 shrink-0">
+      <div className="p-4 shrink-0 space-y-4">
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button 
@@ -151,6 +151,11 @@ export function SidebarNav() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        <div className="text-center">
+           <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest opacity-40">
+             &copy; 2026 LANTERA BACA
+           </p>
+        </div>
       </div>
     </div>
   )

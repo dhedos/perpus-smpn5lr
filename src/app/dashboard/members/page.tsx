@@ -230,6 +230,8 @@ export default function MembersPage() {
       .replace(/Kecamatan/gi, 'Kec.')
       .replace(/Kabupaten/gi, 'Kab.');
 
+    const libName = settings?.libraryName || 'PUSTAKA NUSANTARA';
+
     printWindow.document.write(`
       <html>
         <head>
@@ -346,7 +348,7 @@ export default function MembersPage() {
             </div>
             
             <div class="footer">
-              <div class="footer-text">${settings?.libraryName || 'PUSTAKA NUSANTARA'}</div>
+              <div class="footer-text">${libName}</div>
               <div class="footer-subtext">Kartu ini digunakan untuk proses peminjaman & pengembalian koleksi buku sekolah</div>
             </div>
           </div>
