@@ -207,7 +207,6 @@ export default function BooksPage() {
   }, [])
 
   const handleOpenAdd = () => {
-    // PREVENT HYDRATION ERROR: Initialize dates only on client-side mount
     setFormData({
       ...INITIAL_FORM_DATA,
       mainHeader: settings?.libraryName || "LANTERA BACA",
@@ -543,7 +542,7 @@ export default function BooksPage() {
             </Button>
           )}
           <Button variant="outline" size="sm" onClick={handlePrintAllQrs} className="hidden md:flex"><Printer className="h-4 w-4 mr-2" />Cetak Semua QR</Button>
-          <Button variant="outline" size="sm" onClick={handlePrintTable}><Printer className="h-4 w-4 mr-2" />Cetak Daftar</Button>
+          <Button variant="outline" size="sm" onClick={handlePrintTable}><Printer className="h-4 w-4 mr-2" />Cetak Daftar Buku</Button>
           <Button size="sm" onClick={handleOpenAdd}>
             <Plus className="h-4 w-4 mr-2" />Tambah Buku
           </Button>
@@ -824,7 +823,7 @@ export default function BooksPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* Edit and Detail dialogs would go here - omitted for brevity but logic remains same */}
+      {/* Edit and Detail dialogs omitted for brevity */}
     </div>
   )
 }
