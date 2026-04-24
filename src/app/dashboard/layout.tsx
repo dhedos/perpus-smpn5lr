@@ -44,11 +44,11 @@ export default function DashboardLayout({
           <div className="flex items-center gap-2">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
             <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">
-              {settings?.libraryName || "Pustaka Nusantara"}
+              LANTERA BACA
             </p>
           </div>
           <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50 text-center">
-            {settings?.librarySubtitle || "Menyelaraskan Sesi Cloud..."}
+            {settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG"}
           </p>
         </div>
       </div>

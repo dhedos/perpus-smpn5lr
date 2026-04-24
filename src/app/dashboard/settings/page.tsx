@@ -29,9 +29,9 @@ export default function SettingsPage() {
   const { toast } = useToast()
   const [isSaving, setIsSaving] = useState(false)
 
-  // Settings State
+  // Settings State - libraryName is now hardcoded to LANTERA BACA
   const [settings, setSettings] = useState({
-    libraryName: "Perpustakaan SMPN 5",
+    libraryName: "LANTERA BACA",
     librarySubtitle: "SMPN 5 LANGKE REMBONG",
     schoolName: "SMP NEGERI 5 LANGKE REMBONG",
     loanPeriod: 7,
@@ -63,6 +63,7 @@ export default function SettingsPage() {
       setSettings(prev => ({ 
         ...prev, 
         ...remoteSettings,
+        libraryName: "LANTERA BACA", // Ensure it stays LANTERA BACA
         loanPeriod: Number(remoteSettings.loanPeriod ?? 7),
         fineAmount: Number(remoteSettings.fineAmount ?? 500),
         damagedBookFine: Number(remoteSettings.damagedBookFine ?? 10000),
@@ -79,6 +80,7 @@ export default function SettingsPage() {
     
     const dataToSave = {
       ...settings,
+      libraryName: "LANTERA BACA", // Force save as LANTERA BACA
       loanPeriod: Math.max(1, Number(settings.loanPeriod)),
       fineAmount: Math.max(0, Number(settings.fineAmount)),
       damagedBookFine: Math.max(0, Number(settings.damagedBookFine)),
@@ -130,24 +132,21 @@ export default function SettingsPage() {
           <Card className="border-none shadow-sm overflow-hidden">
             <CardHeader className="bg-slate-50/50">
               <CardTitle>Kebijakan Sirkulasi Utama</CardTitle>
-              <CardDescription>Atur identitas perpustakaan, denda, dan tahun ajaran.</CardDescription>
+              <CardDescription>Atur identitas sub-judul perpustakaan, denda, dan tahun ajaran.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
               <div className="grid md:grid-cols-2 gap-8">
                 <div className="space-y-6">
                   <div className="grid gap-2">
-                    <Label htmlFor="lib-name" className="font-bold text-xs uppercase text-muted-foreground">Nama Perpustakaan</Label>
-                    <Input 
-                      id="lib-name" 
-                      value={settings.libraryName} 
-                      onChange={(e) => setSettings({ ...settings, libraryName: e.target.value })}
-                      className="bg-slate-50 border-slate-200 h-11"
-                    />
+                    <Label className="font-bold text-xs uppercase text-muted-foreground">Nama Perpustakaan (Tetap)</Label>
+                    <div className="h-11 bg-muted/50 border border-slate-200 rounded-md flex items-center px-3 font-black text-primary">
+                      LANTERA BACA
+                    </div>
                   </div>
 
                   <div className="grid gap-2">
                     <Label htmlFor="lib-subtitle" className="font-bold text-xs uppercase text-muted-foreground flex items-center gap-2">
-                      <Type className="h-3 w-3" /> Sub-judul (Nama Sekolah)
+                      <Type className="h-3 w-3" /> Sub-judul (Dapat Diubah)
                     </Label>
                     <Input 
                       id="lib-subtitle" 

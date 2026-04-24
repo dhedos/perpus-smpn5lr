@@ -74,7 +74,7 @@ export function SidebarNav() {
         </div>
         <div className="flex flex-col">
           <span className="text-sm font-black leading-tight text-primary tracking-tight uppercase">
-            {settings?.libraryName || "PUSTAKA NUSANTARA"}
+            LANTERA BACA
           </span>
           <span className="text-[10px] font-bold leading-tight text-secondary uppercase tracking-widest">
             {settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG"}
@@ -138,7 +138,7 @@ export function SidebarNav() {
             <AlertDialogHeader>
               <AlertDialogTitle className="font-black uppercase tracking-tight text-primary">Konfirmasi Keluar</AlertDialogTitle>
               <AlertDialogDescription>
-                Apakah Anda yakin ingin mengakhiri sesi pengerjaan di Pustaka Nusantara?
+                Apakah Anda yakin ingin mengakhiri sesi pengerjaan di LANTERA BACA?
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="gap-2">

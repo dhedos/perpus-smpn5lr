@@ -150,11 +150,11 @@ export default function LoginPage() {
           <div className="flex items-center gap-2">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
             <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">
-              {settings?.libraryName || "Pustaka Nusantara"}
+              LANTERA BACA
             </p>
           </div>
           <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50 text-center">
-            {settings?.librarySubtitle || "Menyelaraskan Sesi Cloud..."}
+            {settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG"}
           </p>
         </div>
       </div>
@@ -174,7 +174,7 @@ export default function LoginPage() {
           </div>
           <div className="space-y-1">
             <CardTitle className="text-3xl font-black font-headline uppercase tracking-tighter text-primary">
-              {settings?.libraryName || "PUSTAKA NUSANTARA"}
+              LANTERA BACA
             </CardTitle>
             <CardDescription className="font-bold text-secondary uppercase tracking-[0.15em] text-xs">
               {isSetupMode ? "Inisialisasi Sistem Baru" : (settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG")}
@@ -238,7 +238,7 @@ export default function LoginPage() {
             </Button>
           )}
           {isSetupMode && <Button variant="ghost" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground" onClick={() => setIsSetupMode(false)}>Kembali ke Login</Button>}
-          <p className="text-[10px] text-muted-foreground/60 text-center uppercase font-bold tracking-[0.2em]">&copy; 2026 {settings?.librarySubtitle || "PUSTAKA NUSANTARA"}</p>
+          <p className="text-[10px] text-muted-foreground/60 text-center uppercase font-bold tracking-[0.2em]">&copy; 2026 {settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG"}</p>
         </CardFooter>
       </Card>
 
