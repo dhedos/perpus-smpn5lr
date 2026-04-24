@@ -4,48 +4,53 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * LANTERA BACA - GLOBAL SECURITY RULES (Optimized)
+     * LANTERA BACA - GLOBAL SECURITY RULES (Robust & Explicit)
      */
+
+    // Fungsi pembantu untuk cek login
+    function isSignedIn() {
+      return request.auth != null;
+    }
 
     // 1. Pengaturan Umum: Bisa dibaca publik untuk identitas sistem
     match /settings/general {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isSignedIn();
     }
 
     // 2. Koleksi Pengguna (Users):
-    // Diperlukan untuk deteksi admin pertama dan profil
+    // Diperlukan akses list publik terbatas untuk inisialisasi admin & logout
     match /users/{userId} {
       allow get, list, read: if true;
-      allow write: if request.auth != null;
+      allow write: if isSignedIn();
     }
     
     match /users {
       allow list, read: if true;
     }
     
-    // 3. Koleksi Utama (Authenticated Access)
-    // Berikan izin eksplisit penuh bagi petugas yang sudah login
+    // 3. Koleksi Utama (Authenticated Access Only)
+    // Berikan izin eksplisit penuh bagi petugas yang sudah login untuk query list/get
     match /members/{docId} {
-      allow read, write, get, list, create, update, delete: if request.auth != null;
+      allow read, write, get, list, create, update, delete: if isSignedIn();
     }
     
     match /books/{docId} {
-      allow read, write, get, list, create, update, delete: if request.auth != null;
+      allow read, write, get, list, create, update, delete: if isSignedIn();
     }
     
     match /transactions/{docId} {
-      allow read, write, get, list, create, update, delete: if request.auth != null;
+      allow read, write, get, list, create, update, delete: if isSignedIn();
     }
     
     match /activity_logs/{docId} {
-      allow read, write, get, list, create, update, delete: if request.auth != null;
+      allow read, write, get, list, create, update, delete: if isSignedIn();
     }
 
     // 4. Akses Global Fallback
     match /{path=**} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isSignedIn();
     }
   }
 }

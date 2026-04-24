@@ -191,6 +191,7 @@ function MembersContent() {
             table { width: 100%; border-collapse: collapse; }
             th { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 10px; }
             .footer { margin-top: 40px; float: right; text-align: center; width: 250px; }
+            .print-footer { position: fixed; bottom: 5mm; left: 15mm; right: 15mm; font-size: 8px; text-align: center; color: #999; border-top: 1px solid #eee; padding-top: 2mm; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
@@ -219,6 +220,7 @@ function MembersContent() {
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
             NIP. ${settings?.principalNip || '198507272011011020'}
           </div>
+          <div class="print-footer">© 2026 Lantera Baca - Sistem Informasi Perpustakaan</div>
         </body>
       </html>
     `)
@@ -543,6 +545,12 @@ function MembersContent() {
           <AlertDialogFooter className="gap-2"><AlertDialogCancel onClick={() => { setMemberToDelete(null); forceUnlockUI(); }} className="rounded-xl font-bold">Batal</AlertDialogCancel><AlertDialogAction onClick={handleDeleteMember} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl font-bold">Ya, Hapus</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      <div className="text-center py-4">
+        <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest opacity-40">
+          © 2026 Lantera Baca
+        </p>
+      </div>
     </div>
   )
 }

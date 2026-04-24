@@ -103,9 +103,9 @@ function TransactionsContent() {
 
   useEffect(() => {
     const tab = searchParams.get('tab')
-    if (tab === 'return') {
-      setActiveTab('return')
-    }
+    const q = searchParams.get('q')
+    if (tab === 'return') setActiveTab('return')
+    if (q) setReturnSearch(q)
     forceUnlockUI()
   }, [searchParams, forceUnlockUI])
 
@@ -367,6 +367,7 @@ function TransactionsContent() {
             table { width: 100%; border-collapse: collapse; }
             th { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; }
             .footer-sign { margin-top: 40px; float: right; text-align: center; width: 250px; }
+            .print-footer { position: fixed; bottom: 5mm; left: 15mm; right: 15mm; font-size: 8px; text-align: center; color: #999; border-top: 1px solid #eee; padding-top: 2mm; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
@@ -374,6 +375,7 @@ function TransactionsContent() {
             <div>${settings?.govtInstitution || 'PEMERINTAH KABUPATEN MANGGARAI'}</div>
             <div>${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
             <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
+            <div style="font-size: 9px;">${settings?.schoolAddress || 'Mando, Compang Carep'}</div>
           </div>
           <div class="title">${titleLabel}</div>
           <table>
@@ -396,6 +398,7 @@ function TransactionsContent() {
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
             NIP. ${settings?.principalNip || '198507272011011020'}
           </div>
+          <div class="print-footer">© 2026 Lantera Baca - Sistem Informasi Perpustakaan</div>
         </body>
       </html>
     `)
