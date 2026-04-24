@@ -239,7 +239,7 @@ export default function LoginPage() {
             </Button>
           )}
           {isSetupMode && <Button variant="ghost" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground" onClick={() => setIsSetupMode(false)}>Kembali ke Login</Button>}
-          <p className="text-[10px] text-muted-foreground/60 text-center uppercase font-bold tracking-[0.2em]">&copy; 2026 LANTERA BACA</p>
+          <p className="text-[10px] text-muted-foreground/60 text-center uppercase font-bold tracking-[0.2em]">LANTERA BACA 2026</p>
         </CardFooter>
       </Card>
 
