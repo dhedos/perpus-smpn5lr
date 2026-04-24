@@ -4,19 +4,24 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * PERPUSTAKAAN SMPN 5 LANGKE REMBONG - SECURITY RULES
-     * Versi Stabil: 3.0 (Reset ke izin global untuk Admin & Petugas)
+     * LANTERA BACA - SECURITY RULES
+     * Versi 4.0: Izin publik untuk konfigurasi dasar (Kop & Subtitle)
      */
 
-    // Rule Global: Mengizinkan akses baca dan tulis bagi seluruh personil yang telah login.
-    // Ini mencakup get, list, create, update, dan delete.
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+    // Izin Baca Publik: Diperlukan untuk menampilkan Sub-judul di Login & Loading Screen
+    match /settings/general {
+      allow read: if true;
+      allow write: if request.auth != null;
     }
 
-    // Rule Khusus Profil: Diperlukan untuk proses registrasi awal/google login
+    // Profil Pengguna: Diperlukan untuk pendaftaran dan login
     match /users/{userId} {
       allow read, write: if true;
+    }
+
+    // Rule Global: Seluruh data operasional lainnya wajib Login
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }
