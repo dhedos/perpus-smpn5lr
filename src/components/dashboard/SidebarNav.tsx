@@ -66,17 +66,19 @@ export function SidebarNav() {
     }
   }
 
+  const displayTitle = settings?.libraryName || "LANTERA BACA";
+
   return (
     <div className="flex h-full flex-col bg-card text-card-foreground border-r">
       <div className="flex h-20 items-center px-4 shrink-0 gap-3">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <Library className="h-8 w-8" />
         </div>
-        <div className="flex flex-col">
-          <span className="text-sm font-black leading-tight text-primary tracking-tight uppercase">
-            LANTERA BACA
+        <div className="flex flex-col overflow-hidden">
+          <span className="text-sm font-black leading-tight text-primary tracking-tight uppercase truncate">
+            {displayTitle}
           </span>
-          <span className="text-[10px] font-bold leading-tight text-secondary uppercase tracking-widest">
+          <span className="text-[10px] font-bold leading-tight text-secondary uppercase tracking-widest truncate">
             {settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG"}
           </span>
         </div>
@@ -138,7 +140,7 @@ export function SidebarNav() {
             <AlertDialogHeader>
               <AlertDialogTitle className="font-black uppercase tracking-tight text-primary">Konfirmasi Keluar</AlertDialogTitle>
               <AlertDialogDescription>
-                Apakah Anda yakin ingin mengakhiri sesi pengerjaan di LANTERA BACA?
+                Apakah Anda yakin ingin mengakhiri sesi pengerjaan di {displayTitle}?
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="gap-2">

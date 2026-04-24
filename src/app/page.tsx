@@ -73,7 +73,6 @@ export default function LoginPage() {
     setLoading(true)
     try {
       await signInWithEmailAndPassword(auth, email, password)
-      // Redirect handled by useEffect
     } catch (error: any) {
       toast({ title: "Gagal Masuk", description: "Email atau kata sandi salah.", variant: "destructive" })
       setLoading(false)
@@ -142,6 +141,7 @@ export default function LoginPage() {
     }
   }
 
+  const displayTitle = isMounted ? (settings?.libraryName || "LANTERA BACA") : "LANTERA BACA";
   const displaySubtitle = isMounted ? (settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG") : "SMPN 5 LANGKE REMBONG";
 
   // Light loading condition: only block when strictly necessary
@@ -154,14 +154,14 @@ export default function LoginPage() {
           <div className="w-20 h-20 flex items-center justify-center rounded-3xl bg-primary/10 text-primary shadow-inner">
             <Library className="h-12 w-12 animate-pulse" />
           </div>
-          <div className="flex flex-col items-center space-y-2">
+          <div className="flex flex-col items-center space-y-2 text-center">
             <div className="flex items-center gap-2">
               <Loader2 className="h-5 w-5 animate-spin text-primary" />
               <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">
-                LANTERA BACA
+                {displayTitle}
               </p>
             </div>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50 text-center">
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50">
               {displaySubtitle}
             </p>
           </div>
@@ -179,7 +179,7 @@ export default function LoginPage() {
           </div>
           <div className="space-y-1">
             <CardTitle className="text-3xl font-black font-headline uppercase tracking-tighter text-primary">
-              LANTERA BACA
+              {displayTitle}
             </CardTitle>
             <CardDescription className="font-bold text-secondary uppercase tracking-[0.15em] text-xs">
               {isSetupMode ? "Inisialisasi Sistem Baru" : displaySubtitle}

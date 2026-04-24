@@ -35,6 +35,7 @@ export default function DashboardLayout({
     }
   }, [user, loading, router, isRedirecting, isMounted])
 
+  const displayTitle = isMounted ? (settings?.libraryName || "LANTERA BACA") : "LANTERA BACA";
   const displaySubtitle = isMounted ? (settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG") : "SMPN 5 LANGKE REMBONG";
 
   // Identical loading screen for seamless transition
@@ -44,14 +45,14 @@ export default function DashboardLayout({
         <div className="w-20 h-20 flex items-center justify-center rounded-3xl bg-primary/10 text-primary shadow-inner">
           <Library className="h-12 w-12 animate-pulse" />
         </div>
-        <div className="flex flex-col items-center space-y-2">
+        <div className="flex flex-col items-center space-y-2 text-center">
           <div className="flex items-center gap-2">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
             <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">
-              LANTERA BACA
+              {displayTitle}
             </p>
           </div>
-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50 text-center">
+          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50 px-4">
             {displaySubtitle}
           </p>
         </div>
