@@ -98,7 +98,7 @@ function TransactionsContent() {
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
 
-  // HANYA SISWA - Fokus utama menu ini
+  // STUDENT FOCUS: Filter members to 'Student' type only
   const studentMembersRef = useMemoFirebase(() => 
     db ? query(collection(db, 'members'), where('type', '==', 'Student'), orderBy('name', 'asc')) : null, [db])
   const booksRef = useMemoFirebase(() => db ? query(collection(db, 'books'), orderBy('title', 'asc')) : null, [db])
@@ -106,7 +106,7 @@ function TransactionsContent() {
   const { data: members } = useCollection(studentMembersRef)
   const { data: books } = useCollection(booksRef)
 
-  // HANYA TRANSAKSI PINJAM SISWA (type == 'borrow')
+  // STUDENT FOCUS: Filter transactions to 'borrow' type only
   const activeTransQuery = useMemoFirebase(() => {
     if (!db) return null;
     return query(

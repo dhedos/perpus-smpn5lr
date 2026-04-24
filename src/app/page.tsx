@@ -138,11 +138,10 @@ export default function LoginPage() {
     }
   }
 
-  // IDENTICAL LOADING CONSTANTS
   const displayTitle = (isMounted && settings?.libraryName) ? settings.libraryName : "LANTERA BACA";
   const displaySubtitle = (isMounted && settings?.librarySubtitle) ? settings.librarySubtitle : "SMPN 5 LANGKE REMBONG";
 
-  // IDENTICAL LOADING UI TO DashboardLayout
+  // SYNCED LOADING UI WITH layout.tsx
   const shouldShowLoading = !isMounted || (authLoading && !user) || (user && user.role && isRedirecting) || isRedirecting;
 
   if (shouldShowLoading) {
