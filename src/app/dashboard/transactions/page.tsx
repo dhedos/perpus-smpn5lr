@@ -97,7 +97,7 @@ function TransactionsContent() {
         document.body.style.overflow = 'auto';
         const overlays = document.querySelectorAll('[data-radix-focus-guard]');
         overlays.forEach(el => (el as HTMLElement).remove());
-      }, 100);
+      }, 150);
     }
   }, []);
 
@@ -828,6 +828,10 @@ function TransactionsContent() {
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>
         </DialogContent>
       </Dialog>
+      
+      <div className="text-center py-6 opacity-30">
+        <p className="text-[10px] font-black uppercase tracking-widest">© 2026 Lantera Baca</p>
+      </div>
     </div>
   )
 }

@@ -108,7 +108,7 @@ function MembersContent() {
         document.body.style.overflow = 'auto';
         const focusGuards = document.querySelectorAll('[data-radix-focus-guard]');
         focusGuards.forEach(el => (el as HTMLElement).remove());
-      }, 100);
+      }, 150);
     }
   }, []);
 
@@ -547,8 +547,8 @@ function MembersContent() {
         </AlertDialogContent>
       </AlertDialog>
       
-      <div className="text-center py-4">
-        <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest opacity-40">
+      <div className="text-center py-4 opacity-30">
+        <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">
           © 2026 Lantera Baca
         </p>
       </div>

@@ -427,6 +427,10 @@ export default function StockOpnamePage() {
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>
         </DialogContent>
       </Dialog>
+      
+      <div className="text-center py-6 opacity-30">
+        <p className="text-[10px] font-black uppercase tracking-widest">© 2026 Lantera Baca</p>
+      </div>
     </div>
   )
 }

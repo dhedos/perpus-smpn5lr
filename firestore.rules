@@ -7,7 +7,7 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // 1. Izin Publik terbatas untuk login & inisialisasi
+    // 1. Izin Baca Publik untuk Users (untuk login & setup)
     match /users/{userId} {
       allow read: if true;
       allow write: if isSignedIn();
@@ -15,25 +15,43 @@ service cloud.firestore {
     match /users {
       allow list: if true;
     }
-    match /settings/general {
+
+    // 2. Izin Baca Publik untuk Pengaturan Umum
+    match /settings/{docId} {
       allow read: if true;
       allow write: if isSignedIn();
     }
 
-    // 2. Izin Penuh untuk Petugas Terdaftar pada seluruh koleksi utama
-    match /members/{docId} { allow read, write: if isSignedIn(); }
-    match /members { allow list: if isSignedIn(); }
+    // 3. Izin Penuh untuk Petugas Terdaftar pada koleksi utama
+    match /members/{docId} {
+      allow read, write: if isSignedIn();
+    }
+    match /members {
+      allow list: if isSignedIn();
+    }
     
-    match /books/{docId} { allow read, write: if isSignedIn(); }
-    match /books { allow list: if isSignedIn(); }
+    match /books/{docId} {
+      allow read, write: if isSignedIn();
+    }
+    match /books {
+      allow list: if isSignedIn();
+    }
     
-    match /transactions/{docId} { allow read, write: if isSignedIn(); }
-    match /transactions { allow list: if isSignedIn(); }
+    match /transactions/{docId} {
+      allow read, write: if isSignedIn();
+    }
+    match /transactions {
+      allow list: if isSignedIn();
+    }
     
-    match /activity_logs/{docId} { allow read, write: if isSignedIn(); }
-    match /activity_logs { allow list: if isSignedIn(); }
+    match /activity_logs/{docId} {
+      allow read, write: if isSignedIn();
+    }
+    match /activity_logs {
+      allow list: if isSignedIn();
+    }
 
-    // 3. Fallback Global
+    // 4. Fallback Global
     match /{path=**} {
       allow read, write: if isSignedIn();
     }

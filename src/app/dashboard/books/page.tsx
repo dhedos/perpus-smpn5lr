@@ -150,7 +150,7 @@ function BooksContent() {
         document.body.style.overflow = 'auto';
         const focusGuards = document.querySelectorAll('[data-radix-focus-guard]');
         focusGuards.forEach(el => (el as HTMLElement).remove());
-      }, 100);
+      }, 150);
     }
   }, []);
 
@@ -1035,6 +1035,10 @@ function BooksContent() {
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white" onClick={stopScanner}><X /></Button>
         </DialogContent>
       </Dialog>
+
+      <div className="text-center py-6 opacity-30">
+        <p className="text-[10px] font-black uppercase tracking-widest">© 2026 Lantera Baca</p>
+      </div>
     </div>
   )
 }
