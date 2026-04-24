@@ -22,19 +22,32 @@ service cloud.firestore {
     }
 
     // 2. Izin Penuh untuk Petugas Terdaftar pada koleksi utama
-    // Menggunakan wildcard {allPaths=**} untuk menjamin sub-koleksi & listing diizinkan
+    // Memberikan izin eksplisit untuk list dan write pada setiap koleksi
+    
+    match /members {
+      allow list: if isSignedIn();
+    }
     match /members/{allPaths=**} {
       allow read, write: if isSignedIn();
     }
     
+    match /books {
+      allow list: if isSignedIn();
+    }
     match /books/{allPaths=**} {
       allow read, write: if isSignedIn();
     }
     
+    match /transactions {
+      allow list: if isSignedIn();
+    }
     match /transactions/{allPaths=**} {
       allow read, write: if isSignedIn();
     }
     
+    match /activity_logs {
+      allow list: if isSignedIn();
+    }
     match /activity_logs/{allPaths=**} {
       allow read, write: if isSignedIn();
     }
