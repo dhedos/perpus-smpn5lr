@@ -52,7 +52,7 @@ import {
   useDoc,
   useUser
 } from '@/firebase'
-import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc, orderBy } from 'firebase/firestore'
+import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc, orderBy, limit } from 'firebase/firestore'
 import { differenceInDays, parseISO, format, isAfter, addDays, startOfDay } from "date-fns"
 import { cn } from "@/lib/utils"
 
@@ -128,7 +128,19 @@ function TransactionsContent() {
     );
   }, [db])
 
+  const historyTransQuery = useMemoFirebase(() => {
+    if (!db) return null;
+    return query(
+      collection(db, 'transactions'),
+      where('status', '==', 'returned'),
+      where('type', '==', 'return'),
+      orderBy('returnDate', 'desc'),
+      limit(50)
+    );
+  }, [db])
+
   const { data: activeTrans, isLoading: loadingActive } = useCollection(activeTransQuery)
+  const { data: historyTrans } = useCollection(historyTransQuery)
 
   const loanDays = useMemo(() => settings?.loanPeriod ? Number(settings.loanPeriod) : 7, [settings]);
 
@@ -313,23 +325,30 @@ function TransactionsContent() {
     }).finally(() => setIsProcessing(false))
   }
 
-  const handlePrintActive = () => {
-    if (filteredActiveTrans.length === 0) return
+  const handlePrintReport = () => {
+    const targetData = activeTab === "return" ? filteredActiveTrans : (historyTrans || []);
+    if (targetData.length === 0) return
+
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
-    const rowsHtml = filteredActiveTrans.map((t, index) => {
+    const titleLabel = activeTab === "return" ? "DAFTAR PEMINJAMAN SISWA AKTIF" : "RIWAYAT SIRKULASI SISWA (KEMBALI)"
+    
+    const rowsHtml = targetData.map((t, index) => {
         const borrowDate = t.borrowDate ? parseISO(t.borrowDate) : new Date();
         const effectiveDueDate = addDays(borrowDate, loanDays);
+        const returnDateStr = t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yyyy') : (t.status === 'active' ? 'PINJAM' : '-');
+        const fineStr = t.fineAmount ? `Rp ${t.fineAmount.toLocaleString('id-ID')}` : '-';
+
         return `
           <tr>
             <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
-            <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle} ${t.quantity > 1 ? `(${t.quantity} unit)` : ''}</td>
             <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold;">${t.memberName}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle} ${t.quantity > 1 ? `(${t.quantity} unit)` : ''}</td>
             <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.memberId}</td>
-            <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.classOrSubject || '-'}</td>
             <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${format(borrowDate, 'dd/MM/yyyy')}</td>
-            <td style="border: 1px solid #ccc; padding: 8px; text-align: center; color: ${isAfter(new Date(), effectiveDueDate) ? 'red' : 'black'}">${format(effectiveDueDate, 'dd/MM/yyyy')}</td>
+            <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${returnDateStr}</td>
+            <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${fineStr}</td>
           </tr>
         `
     }).join('')
@@ -343,9 +362,10 @@ function TransactionsContent() {
             body { font-family: 'Inter', sans-serif; font-size: 11px; margin: 0; padding: 15mm; }
             .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
             .school-name { font-size: 16px; font-weight: 900; }
-            .title { text-align: center; font-size: 14px; font-weight: 800; margin: 20px 0; text-transform: uppercase; }
+            .title { text-align: center; font-size: 12px; font-weight: 800; margin: 20px 0; text-transform: uppercase; }
             table { width: 100%; border-collapse: collapse; }
             th { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; }
+            .footer-sign { margin-top: 40px; float: right; text-align: center; width: 250px; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
@@ -354,22 +374,22 @@ function TransactionsContent() {
             <div>${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
             <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
           </div>
-          <div class="title">DAFTAR PEMINJAMAN SISWA AKTIF</div>
+          <div class="title">${titleLabel}</div>
           <table>
             <thead>
               <tr>
-                <th>No</th>
+                <th style="width: 30px;">No</th>
+                <th>Nama Siswa</th>
                 <th>Judul Buku</th>
-                <th>Nama Peminjam</th>
-                <th>ID (NIS/NIP)</th>
-                <th>Kelas</th>
+                <th>NIS/NIP</th>
                 <th>Tgl Pinjam</th>
-                <th>Jatuh Tempo</th>
+                <th>Tgl Kembali</th>
+                <th>Denda</th>
               </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>
           </table>
-          <div style="margin-top: 40px; float: right; text-align: center; width: 250px;">
+          <div class="footer-sign">
             ${settings?.reportCity || 'Mando'}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>
             Kepala Sekolah,<br/><br/><br/><br/>
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
@@ -460,8 +480,8 @@ function TransactionsContent() {
         </div>
         <div className="text-right flex flex-col items-end gap-2">
           <div className="flex gap-2">
-             <Button variant="outline" size="sm" onClick={handlePrintActive}>
-               <Printer className="h-4 w-4 mr-2" /> Cetak Aktif
+             <Button variant="outline" size="sm" onClick={handlePrintReport}>
+               <Printer className="h-4 w-4 mr-2" /> Cetak Laporan
              </Button>
              <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold gap-2 py-1.5 px-3">
               <CalendarDays className="h-4 w-4" />
