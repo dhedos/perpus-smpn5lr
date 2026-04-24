@@ -471,7 +471,9 @@ export default function MembersPage() {
 
       <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="bg-slate-50 max-w-md border-none">
-          <DialogHeader><DialogTitle>Daftarkan Anggota Baru</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Daftarkan Anggota Baru</DialogTitle>
+          </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -498,7 +500,9 @@ export default function MembersPage() {
 
       <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-md text-center border-none p-0 overflow-hidden rounded-3xl">
-          <DialogHeader className="p-6 bg-white shrink-0 border-b"><DialogTitle className="text-center font-bold text-primary">Kartu Digital Anggota</DialogTitle></DialogHeader>
+          <DialogHeader className="p-6 bg-white shrink-0 border-b">
+            <DialogTitle className="text-center font-bold text-primary">Kartu Digital Anggota</DialogTitle>
+          </DialogHeader>
           <div className="p-6 space-y-6">
             <div className="bg-white p-8 rounded-3xl border-2 border-primary/20 space-y-4 shadow-xl flex flex-col items-center">
               <div className="p-4 bg-white rounded-2xl border shadow-inner">{selectedMemberQr && <QRCodeSVG value={selectedMemberQr.memberId} size={200} level="H" includeMargin />}</div>
@@ -515,7 +519,9 @@ export default function MembersPage() {
 
       <Dialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="bg-slate-50 max-md border-none">
-          <DialogHeader><DialogTitle>Ubah Data Anggota</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Ubah Data Anggota</DialogTitle>
+          </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">Kategori</Label>
@@ -530,7 +536,10 @@ export default function MembersPage() {
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={(v) => { setIsDeleteDialogOpen(v); if(!v) forceUnlockUI(); }}>
         <AlertDialogContent className="rounded-3xl border-none">
-          <AlertDialogHeader><AlertDialogTitle className="font-black text-primary uppercase tracking-tight">Hapus Anggota?</AlertDialogTitle><AlertDialogDescription>Data identitas akan dihapus secara permanen dari database.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-black text-primary uppercase tracking-tight">Hapus Anggota?</AlertDialogTitle>
+            <AlertDialogDescription>Data identitas akan dihapus secara permanen dari database.</AlertDialogDescription>
+          </AlertDialogHeader>
           <AlertDialogFooter className="gap-2"><AlertDialogCancel onClick={() => { setMemberToDelete(null); forceUnlockUI(); }} className="rounded-xl font-bold">Batal</AlertDialogCancel><AlertDialogAction onClick={handleDeleteMember} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl font-bold">Ya, Hapus</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

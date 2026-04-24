@@ -147,7 +147,7 @@ export default function TeacherLoansPage() {
         document.body.style.pointerEvents = 'auto';
         document.body.style.overflow = 'auto';
         const overlays = document.querySelectorAll('[data-radix-focus-guard]');
-        overlays.forEach(el => el.remove());
+        overlays.forEach(el => (el as HTMLElement).remove());
       }, 300);
     }
   }, []);
@@ -616,8 +616,8 @@ export default function TeacherLoansPage() {
 
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
         <DialogContent className="p-0 border-none bg-black max-w-xl h-[400px] overflow-hidden">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Pemindai Buku Guru</DialogTitle>
+          <DialogHeader>
+             <DialogTitle className="sr-only">Pemindai Buku Guru</DialogTitle>
           </DialogHeader>
           <div id="teacher-scanner" className="w-full h-full bg-black"></div>
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>

@@ -4,42 +4,18 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * PERPUSTAKAAN SEKOLAH - EXPLICIT SECURITY RULES
-     * Memberikan izin eksplisit untuk menghindari error "Missing or insufficient permissions"
+     * PERPUSTAKAAN SEKOLAH - GLOBAL SECURITY RULES
+     * Memberikan izin penuh bagi petugas yang sudah login untuk menjamin kelancaran operasional.
      */
 
     // 1. Pengaturan Umum: Bisa dibaca publik untuk identitas di halaman Login
     match /settings/general {
-      allow get, list: if true;
-      allow create, update, delete: if request.auth != null;
+      allow read: if true;
+      allow write: if request.auth != null;
     }
 
-    // 2. Koleksi Anggota (Members)
-    match /members/{docId} {
-      allow list, get, create, update, delete: if request.auth != null;
-    }
-
-    // 3. Koleksi Buku (Books)
-    match /books/{docId} {
-      allow list, get, create, update, delete: if request.auth != null;
-    }
-
-    // 4. Koleksi Transaksi (Transactions)
-    match /transactions/{docId} {
-      allow list, get, create, update, delete: if request.auth != null;
-    }
-
-    // 5. Koleksi Log Aktivitas (Activity Logs)
-    match /activity_logs/{docId} {
-      allow list, get, create, update, delete: if request.auth != null;
-    }
-
-    // 6. Koleksi Pengguna (Users)
-    match /users/{docId} {
-      allow list, get, create, update, delete: if request.auth != null;
-    }
-
-    // 7. Fallback Global
+    // 2. Akses Koleksi Utama: Hanya untuk petugas yang sudah login
+    // Menggunakan wildcard {allPaths=**} untuk mencakup semua sub-koleksi dan dokumen
     match /{path=**} {
       allow read, write: if request.auth != null;
     }
