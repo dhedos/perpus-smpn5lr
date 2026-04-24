@@ -99,15 +99,22 @@ function TransactionsContent() {
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
 
-  const membersRef = useMemoFirebase(() => db ? query(collection(db, 'members'), orderBy('name', 'asc')) : null, [db])
+  // Hanya ambil anggota dengan kategori Student
+  const studentMembersRef = useMemoFirebase(() => 
+    db ? query(collection(db, 'members'), where('type', '==', 'Student'), orderBy('name', 'asc')) : null, [db])
   const booksRef = useMemoFirebase(() => db ? query(collection(db, 'books'), orderBy('title', 'asc')) : null, [db])
 
-  const { data: members } = useCollection(membersRef)
+  const { data: members } = useCollection(studentMembersRef)
   const { data: books } = useCollection(booksRef)
 
+  // Hanya ambil transaksi bertipe 'borrow' (milik siswa) yang sedang aktif
   const activeTransQuery = useMemoFirebase(() => {
     if (!db) return null;
-    return query(collection(db, 'transactions'), where('status', '==', 'active'));
+    return query(
+      collection(db, 'transactions'), 
+      where('status', '==', 'active'),
+      where('type', '==', 'borrow')
+    );
   }, [db])
 
   const { data: activeTrans, isLoading: loadingActive } = useCollection(activeTransQuery)
@@ -158,7 +165,7 @@ function TransactionsContent() {
         setSelectedMember(member); 
         setMemberSearch(""); 
         setShowMemberSuggestions(false); 
-        toast({ title: "Anggota Terpilih" }) 
+        toast({ title: "Siswa Terpilih" }) 
         return true
       }
       else if (book) { 
@@ -245,6 +252,7 @@ function TransactionsContent() {
     if (typeof document !== 'undefined') {
       setTimeout(() => {
         document.body.style.pointerEvents = 'auto'
+        document.body.style.overflow = 'auto'
       }, 100)
     }
   }
@@ -258,7 +266,7 @@ function TransactionsContent() {
     if (totalInput !== expectedTotal) {
       toast({ 
         title: "Jumlah Tidak Sesuai", 
-        description: `Total unit harus ${expectedTotal}. Saat ini: ${totalInput}.`,
+        description: `Total unit harus ${expectedTotal}.`,
         variant: "destructive"
       });
       return;
@@ -298,7 +306,7 @@ function TransactionsContent() {
           availableStock: currentAvail + backToShelf
         })
       }
-      toast({ title: "Berhasil!", description: "Pengembalian buku telah dicatat." })
+      toast({ title: "Berhasil!", description: "Pengembalian buku siswa telah dicatat." })
       setReturnSearch("");
     }).finally(() => setIsProcessing(false))
   }
@@ -355,7 +363,7 @@ function TransactionsContent() {
                 <th>Judul Buku</th>
                 <th>Nama Peminjam</th>
                 <th>ID (NIS/NIP)</th>
-                <th>Mengajar / Kelas</th>
+                <th>Kelas</th>
                 <th>Tgl Pinjam</th>
                 <th>Jatuh Tempo</th>
               </tr>
@@ -418,7 +426,7 @@ function TransactionsContent() {
     const newBorrow = {
       memberId: selectedMember.memberId, 
       memberName: selectedMember.name, 
-      memberType: selectedMember.type || "Student",
+      memberType: "Student",
       classOrSubject: selectedMember.classOrSubject || "-",
       bookId: selectedBook.id, 
       bookTitle: selectedBook.title, 
@@ -436,7 +444,7 @@ function TransactionsContent() {
       updateDoc(doc(db, 'books', selectedBook.id), { availableStock: Math.max(0, avail - borrowQuantity) })
       toast({ 
         title: "Peminjaman Berhasil", 
-        description: `Buku: ${selectedBook.title} (${borrowQuantity} unit).` 
+        description: `Siswa: ${selectedMember.name}` 
       }); 
       setSelectedBook(null); 
       setSelectedMember(null);
@@ -449,16 +457,16 @@ function TransactionsContent() {
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-primary flex items-center gap-2"><ArrowRightLeft className="h-6 w-6" /> Sirkulasi Siswa</h1>
-          <p className="text-sm text-muted-foreground">Peminjaman dan pengembalian harian untuk siswa.</p>
+          <p className="text-sm text-muted-foreground">Fokus peminjaman dan pengembalian buku untuk siswa.</p>
         </div>
         <div className="text-right flex flex-col items-end gap-2">
           <div className="flex gap-2">
              <Button variant="outline" size="sm" onClick={handlePrintActive}>
-               <Printer className="h-4 w-4 mr-2" /> Cetak Peminjaman
+               <Printer className="h-4 w-4 mr-2" /> Cetak Aktif
              </Button>
              <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold gap-2 py-1.5 px-3">
               <CalendarDays className="h-4 w-4" />
-              Batas Pinjam: {loanDays} Hari
+              Batas: {loanDays} Hari
             </Badge>
           </div>
         </div>
@@ -466,16 +474,16 @@ function TransactionsContent() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 h-14 p-1 bg-muted/50">
-          <TabsTrigger value="borrow" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Peminjaman</TabsTrigger>
-          <TabsTrigger value="return" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Pengembalian</TabsTrigger>
+          <TabsTrigger value="borrow" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Peminjaman Siswa</TabsTrigger>
+          <TabsTrigger value="return" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Pengembalian Siswa</TabsTrigger>
         </TabsList>
         
         <div className="mt-8">
           <TabsContent value="borrow" className="space-y-6">
             <Card className="bg-primary/5 border-primary/20 overflow-hidden">
               <CardContent className="pt-8 pb-8 text-center space-y-4">
-                <Button size="lg" className="h-16 px-12 gap-3 shadow-xl hover:shadow-2xl transition-all" onClick={startScanner}><ScanBarcode className="h-6 w-6" /> Buka Smart Scan</Button>
-                <div className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Scan QR Siswa atau Buku</div>
+                <Button size="lg" className="h-16 px-12 gap-3 shadow-xl hover:shadow-2xl transition-all" onClick={startScanner}><ScanBarcode className="h-6 w-6" /> Smart Scan</Button>
+                <div className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Scan Kartu Siswa atau Buku</div>
               </CardContent>
             </Card>
 
@@ -488,7 +496,7 @@ function TransactionsContent() {
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
-                      placeholder="Cari Nama atau NIS..." 
+                      placeholder="Cari Nama Siswa / NIS..." 
                       className="pl-10 h-12" 
                       value={memberSearch} 
                       onChange={e => {
@@ -573,7 +581,7 @@ function TransactionsContent() {
                             </div>
                             <div className="flex items-center gap-2">
                               <Badge variant={b.availableStock <= 0 ? "destructive" : "outline"} className="text-[8px] h-4">
-                                {b.availableStock} Tersedia
+                                {b.availableStock} Unit
                               </Badge>
                               <ChevronRight className="h-4 w-4 text-muted-foreground" />
                             </div>
@@ -634,17 +642,17 @@ function TransactionsContent() {
             </div>
 
             <Button className="w-full h-16 text-lg font-black shadow-lg shadow-primary/20 mt-4" disabled={!selectedMember || !selectedBook || isProcessing} onClick={handleProcessBorrow}>
-              {isProcessing ? <Loader2 className="animate-spin h-6 w-6" /> : "KONFIRMASI PEMINJAMAN"}
+              {isProcessing ? <Loader2 className="animate-spin h-6 w-6" /> : "PROSES PEMINJAMAN SISWA"}
             </Button>
           </TabsContent>
 
           <TabsContent value="return" className="space-y-6">
             <div className="grid md:grid-cols-3 gap-6">
               <Card className="md:col-span-1 border-none shadow-sm bg-accent/30 flex flex-col items-center justify-center p-8 gap-4">
-                <Button variant="secondary" className="h-20 w-full gap-3 shadow-md font-bold" onClick={startScanner}><ScanBarcode className="h-8 w-8" /> Scan Buku</Button>
+                <Button variant="secondary" className="h-20 w-full gap-3 shadow-md font-bold" onClick={startScanner}><ScanBarcode className="h-8 w-8" /> Scan Buku Siswa</Button>
                 <div className="w-full space-y-2">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Pencarian Manual</Label>
-                  <Input placeholder="Cari Nama/Kode..." className="h-12 bg-white" value={returnSearch} onChange={e => setReturnSearch(e.target.value)} />
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Pencarian Siswa</Label>
+                  <Input placeholder="Cari Nama/NIS..." className="h-12 bg-white" value={returnSearch} onChange={e => setReturnSearch(e.target.value)} />
                 </div>
               </Card>
 
@@ -652,8 +660,8 @@ function TransactionsContent() {
                 <CardHeader className="pb-3 border-b">
                   <div className="flex justify-between items-center">
                     <div>
-                      <CardTitle className="text-sm font-bold uppercase tracking-wider">Peminjaman Siswa Aktif</CardTitle>
-                      <CardDescription className="text-xs">Daftar buku yang sedang dipinjam oleh siswa.</CardDescription>
+                      <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Peminjaman Siswa Aktif</CardTitle>
+                      <CardDescription className="text-xs">Daftar buku yang sedang dipinjam oleh siswa (Bukan Guru).</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
@@ -664,7 +672,7 @@ function TransactionsContent() {
                         <TableRow>
                           <TableHead className="w-12 text-center">No.</TableHead>
                           <TableHead>Peminjam & Buku</TableHead>
-                          <TableHead>Mengajar / Kelas</TableHead>
+                          <TableHead>Kelas</TableHead>
                           <TableHead className="w-24 text-center">Tipe</TableHead>
                           <TableHead className="w-32">Jatuh Tempo</TableHead>
                           <TableHead className="w-24 text-right">Aksi</TableHead>
@@ -720,7 +728,7 @@ function TransactionsContent() {
         <DialogContent className="max-w-md bg-white">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-primary font-bold">
-              <CheckCircle className="h-5 w-5" /> Konfirmasi Pengembalian
+              <CheckCircle className="h-5 w-5" /> Konfirmasi Pengembalian Siswa
             </DialogTitle>
           </DialogHeader>
           
@@ -728,7 +736,7 @@ function TransactionsContent() {
             <div className="space-y-6 py-4">
               <div className="p-4 bg-slate-50 rounded-xl border space-y-3">
                 <div className="flex-1">
-                  <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Buku & Peminjam</div>
+                  <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Buku & Siswa</div>
                   <div className="text-sm font-black">{pendingReturnTrans.bookTitle} ({pendingReturnTrans.quantity} unit)</div>
                   <div className="text-xs font-bold text-primary mt-1">{pendingReturnTrans.memberName} / {pendingReturnTrans.memberId} / {pendingReturnTrans.classOrSubject}</div>
                 </div>
@@ -771,13 +779,8 @@ function TransactionsContent() {
                       <Coins className="h-5 w-5 text-orange-700" />
                     </div>
                     <div>
-                      <div className="text-[10px] font-bold text-orange-800 uppercase tracking-tighter">Estimasi Denda Terakumulasi</div>
+                      <div className="text-[10px] font-bold text-orange-800 uppercase tracking-tighter">Estimasi Denda</div>
                       <div className="text-xl font-black text-orange-700">Rp {calculatedFine.toLocaleString('id-ID')}</div>
-                      <div className="flex flex-col gap-0.5 mt-1">
-                         {lateDays > 0 && <span className="text-[9px] text-orange-600 font-bold">Lateness: {lateDays} Hari x Rp{settings?.fineAmount || 500}</span>}
-                         {returnDamagedQty > 0 && <span className="text-[9px] text-orange-600 font-bold">Damage: {returnDamagedQty} unit x Rp{settings?.damagedBookFine || 10000}</span>}
-                         {returnLostQty > 0 && <span className="text-[9px] text-orange-600 font-bold">Lost: {returnLostQty} unit x Rp{settings?.lostBookFine || 50000}</span>}
-                      </div>
                     </div>
                   </div>
                   <Badge variant="outline" className="border-orange-300 text-orange-700 text-[8px] font-bold bg-white/50">WAJIB BAYAR</Badge>

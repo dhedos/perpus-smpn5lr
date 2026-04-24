@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo, useRef } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,7 +17,10 @@ import {
   ChevronRight,
   Clock,
   Printer,
-  Lock
+  CheckCircle,
+  AlertTriangle,
+  Minus,
+  Plus
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -26,6 +29,7 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle,
+  DialogFooter
 } from "@/components/ui/dialog"
 import {
   Table,
@@ -47,6 +51,7 @@ import {
 } from '@/firebase'
 import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc, orderBy } from 'firebase/firestore'
 import { format } from "date-fns"
+import { cn } from "@/lib/utils"
 
 export default function TeacherLoansPage() {
   const db = useFirestore()
@@ -68,12 +73,19 @@ export default function TeacherLoansPage() {
   const [showMemberSuggestions, setShowMemberSuggestions] = useState(false)
   const [showBookSuggestions, setShowBookSuggestions] = useState(false)
 
+  // State Pengembalian Detil
+  const [isReturnConfirmOpen, setIsReturnConfirmOpen] = useState(false)
+  const [pendingReturnTrans, setPendingReturnTrans] = useState<any>(null)
+  const [returnNormalQty, setReturnNormalQty] = useState(0)
+  const [returnDamagedQty, setReturnDamagedQty] = useState(0)
+  const [returnLostQty, setReturnLostQty] = useState(0)
+
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
   
   const isLockedForUser = Boolean(settings?.isDataLocked && !isAdmin);
 
-  const membersRef = useMemoFirebase(() => 
+  const teachersRef = useMemoFirebase(() => 
     db ? query(collection(db, 'members'), where('type', '==', 'Teacher')) : null, [db])
   const booksRef = useMemoFirebase(() => 
     db ? query(collection(db, 'books'), orderBy('title', 'asc')) : null, [db])
@@ -86,7 +98,7 @@ export default function TeacherLoansPage() {
     )
   }, [db])
 
-  const { data: teachers } = useCollection(membersRef)
+  const { data: teachers } = useCollection(teachersRef)
   const { data: books } = useCollection(booksRef)
   const { data: allTransactions, isLoading: loadingTrans } = useCollection(teacherTransQuery)
 
@@ -129,6 +141,15 @@ export default function TeacherLoansPage() {
     )
   }, [transactions, search])
 
+  const forceUnlockUI = () => {
+    if (typeof document !== 'undefined') {
+      setTimeout(() => {
+        document.body.style.pointerEvents = 'auto'
+        document.body.style.overflow = 'auto'
+      }, 100)
+    }
+  }
+
   const startScanner = async (mode: "member" | "book") => {
     setScannerMode(mode)
     setIsScannerOpen(true)
@@ -153,6 +174,7 @@ export default function TeacherLoansPage() {
   const stopScanner = async () => {
     if (scannerInstanceRef.current?.isScanning) await scannerInstanceRef.current.stop()
     setIsScannerOpen(false)
+    forceUnlockUI()
   }
 
   const handleProcessLoan = () => {
@@ -187,26 +209,77 @@ export default function TeacherLoansPage() {
     }).finally(() => setIsProcessing(false))
   }
 
-  const handleReturn = (trans: any) => {
-    if (!db) return
-    if (isLockedForUser) {
-      toast({ title: "Akses Terkunci", description: "Modifikasi sedang dibatasi oleh Administrator.", variant: "destructive" })
-      return
+  const prepareReturn = (trans: any) => {
+    setPendingReturnTrans(trans);
+    setReturnNormalQty(Number(trans.quantity || 1));
+    setReturnDamagedQty(0);
+    setReturnLostQty(0);
+    setIsReturnConfirmOpen(true);
+  }
+
+  const handleDamagedQtyChange = (val: number) => {
+    if (!pendingReturnTrans) return
+    const total = Number(pendingReturnTrans.quantity || 1)
+    const newDamaged = Math.min(Math.max(0, val), total - returnLostQty)
+    setReturnDamagedQty(newDamaged)
+    setReturnNormalQty(total - newDamaged - returnLostQty)
+  }
+
+  const handleLostQtyChange = (val: number) => {
+    if (!pendingReturnTrans) return
+    const total = Number(pendingReturnTrans.quantity || 1)
+    const newLost = Math.min(Math.max(0, val), total - returnDamagedQty)
+    setReturnLostQty(newLost)
+    setReturnNormalQty(total - returnDamagedQty - newLost)
+  }
+
+  const handleConfirmReturn = () => {
+    if (!db || !pendingReturnTrans) return
+    
+    const totalInput = returnNormalQty + returnDamagedQty + returnLostQty;
+    const expectedTotal = Number(pendingReturnTrans.quantity || 1);
+    
+    if (totalInput !== expectedTotal) {
+      toast({ 
+        title: "Jumlah Tidak Sesuai", 
+        description: `Total unit harus ${expectedTotal}.`,
+        variant: "destructive"
+      });
+      return;
     }
 
     setIsProcessing(true)
-    const transRef = doc(db, 'transactions', trans.id)
-    updateDoc(transRef, { 
+    
+    const transRef = doc(db, 'transactions', pendingReturnTrans.id)
+    const updateData = { 
       status: 'returned', 
-      returnDate: new Date().toISOString() 
-    }).then(async () => {
-      const bRef = doc(db, 'books', trans.bookId)
+      returnDate: new Date().toISOString(),
+      rincianKondisi: {
+        normal: returnNormalQty,
+        damaged: returnDamagedQty,
+        lost: returnLostQty
+      }
+    }
+
+    setIsReturnConfirmOpen(false)
+    forceUnlockUI()
+
+    updateDoc(transRef, updateData).then(async () => {
+      const bRef = doc(db, 'books', pendingReturnTrans.bookId)
       const bDoc = await getDoc(bRef)
       if (bDoc.exists()) {
-        const avail = Number(bDoc.data().availableStock || 0)
-        updateDoc(bRef, { availableStock: avail + 1 })
+        const currentTotal = Number(bDoc.data().totalStock || 0)
+        const currentAvail = Number(bDoc.data().availableStock || 0)
+        
+        const backToShelf = returnNormalQty + returnDamagedQty;
+        const permanentLoss = returnLostQty;
+
+        updateDoc(bRef, { 
+          totalStock: Math.max(0, currentTotal - permanentLoss),
+          availableStock: currentAvail + backToShelf
+        })
       }
-      toast({ title: "Buku Telah Kembali", description: "Buku pegangan telah dikembalikan ke perpustakaan." })
+      toast({ title: "Berhasil!", description: "Pengembalian buku pegangan telah dicatat." })
     }).finally(() => setIsProcessing(false))
   }
 
@@ -293,7 +366,7 @@ export default function TeacherLoansPage() {
           <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
             <GraduationCap className="h-7 w-7" /> Buku Pegangan Guru
           </h1>
-          <p className="text-sm text-muted-foreground">Peminjaman jangka panjang untuk kebutuhan mengajar di kelas.</p>
+          <p className="text-sm text-muted-foreground">Peminjaman dan Pengembalian buku untuk kebutuhan mengajar di kelas.</p>
         </div>
         <div className="flex items-center gap-2">
            <Button variant="outline" size="sm" onClick={handlePrintBukti}>
@@ -457,7 +530,7 @@ export default function TeacherLoansPage() {
                               size="sm" 
                               variant="outline" 
                               className="h-8 text-[10px] font-bold gap-1"
-                              onClick={() => handleReturn(t)}
+                              onClick={() => prepareReturn(t)}
                               disabled={isProcessing || isLockedForUser}
                             >
                               <History className="h-3 w-3" /> Kembali
@@ -473,6 +546,65 @@ export default function TeacherLoansPage() {
           </Tabs>
         </Card>
       </div>
+
+      <Dialog open={isReturnConfirmOpen} onOpenChange={(v) => { setIsReturnConfirmOpen(v); if(!v) forceUnlockUI(); }}>
+        <DialogContent className="max-w-md bg-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-primary font-bold">
+              <CheckCircle className="h-5 w-5" /> Konfirmasi Pengembalian Guru
+            </DialogTitle>
+          </DialogHeader>
+          
+          {pendingReturnTrans && (
+            <div className="space-y-6 py-4">
+              <div className="p-4 bg-slate-50 rounded-xl border space-y-3">
+                <div className="flex-1">
+                  <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Buku & Peminjam</div>
+                  <div className="text-sm font-black">{pendingReturnTrans.bookTitle}</div>
+                  <div className="text-xs font-bold text-primary mt-1">{pendingReturnTrans.memberName} / {pendingReturnTrans.memberId}</div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Konfirmasi Kondisi Buku</div>
+                <div className="grid gap-3">
+                  <div className="flex items-center justify-between p-3 rounded-xl border bg-green-50/50">
+                    <Label className="font-bold text-sm">Kembali Baik</Label>
+                    <div className="w-16 h-8 flex items-center justify-center font-bold bg-white rounded border">
+                      {returnNormalQty}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between p-3 rounded-xl border bg-orange-50/50">
+                    <Label className="font-bold text-sm">Rusak</Label>
+                    <Input 
+                      type="number" 
+                      className="w-16 h-8 text-center font-bold" 
+                      value={returnDamagedQty} 
+                      onChange={(e) => handleDamagedQtyChange(Number(e.target.value))} 
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3 rounded-xl border bg-red-50/50">
+                    <Label className="font-bold text-sm">Hilang</Label>
+                    <Input 
+                      type="number" 
+                      className="w-16 h-8 text-center font-bold" 
+                      value={returnLostQty} 
+                      onChange={(e) => handleLostQtyChange(Number(e.target.value))} 
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIsReturnConfirmOpen(false)} disabled={isProcessing} className="flex-1">Batal</Button>
+            <Button onClick={handleConfirmReturn} disabled={isProcessing} className="flex-1 shadow-lg shadow-primary/20">
+              {isProcessing ? <Loader2 className="animate-spin" /> : "Simpan Pengembalian"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
         <DialogContent className="p-0 border-none bg-black max-w-xl h-[400px] overflow-hidden">
