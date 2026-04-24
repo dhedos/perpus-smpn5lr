@@ -312,7 +312,7 @@ function MembersContent() {
               position: absolute; 
               bottom: 0; 
               left: 0;
-              padding: 0 1mm;
+              padding: 0 1.5mm;
               box-sizing: border-box;
             }
             .footer-text { 
@@ -324,14 +324,15 @@ function MembersContent() {
               line-height: 1.1;
             }
             .footer-subtext {
-              font-size: 4.2pt;
-              font-weight: 600;
-              color: rgba(255, 255, 255, 0.85) !important;
+              font-size: 4pt;
+              font-weight: 500;
+              color: rgba(255, 255, 255, 0.9) !important;
               text-transform: none;
-              letter-spacing: 0.1px;
+              letter-spacing: 0;
               margin-top: 0.8mm;
               line-height: 1.1;
-              max-width: 90%;
+              max-width: 95%;
+              text-align: center;
             }
           </style>
         </head>

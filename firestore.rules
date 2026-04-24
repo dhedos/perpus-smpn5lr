@@ -21,7 +21,7 @@ service cloud.firestore {
     // 2. Koleksi Pengguna (Users):
     // Diperlukan akses list publik terbatas untuk inisialisasi admin & logout
     match /users/{userId} {
-      allow get, list, read: if true;
+      allow read: if true;
       allow write: if isSignedIn();
     }
     
@@ -30,26 +30,26 @@ service cloud.firestore {
     }
     
     // 3. Koleksi Utama (Authenticated Access Only)
-    // Berikan izin eksplisit penuh bagi petugas yang sudah login untuk query list/get
+    // Memberikan izin eksplisit untuk list dan get pada koleksi utama
     match /members/{docId} {
-      allow read, write, get, list, create, update, delete: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
     
     match /books/{docId} {
-      allow read, write, get, list, create, update, delete: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
     
     match /transactions/{docId} {
-      allow read, write, get, list, create, update, delete: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
     
     match /activity_logs/{docId} {
-      allow read, write, get, list, create, update, delete: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
 
     // 4. Akses Global Fallback
     match /{path=**} {
-      allow read: if true;
+      allow read: if isSignedIn() || path == 'settings/general' || path == 'users';
       allow write: if isSignedIn();
     }
   }
