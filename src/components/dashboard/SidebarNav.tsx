@@ -1,7 +1,7 @@
 
 "use client"
 
-import Link from "next/link"
+import Link from "link"
 import { usePathname } from "next/navigation"
 import { 
   LayoutDashboard, 

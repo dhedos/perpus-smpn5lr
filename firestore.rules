@@ -4,10 +4,9 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * LANTERA BACA - GLOBAL SECURITY RULES (Robust & Explicit)
+     * LANTERA BACA - GLOBAL SECURITY RULES (Explicit & Robust)
      */
 
-    // Fungsi pembantu untuk cek login
     function isSignedIn() {
       return request.auth != null;
     }
@@ -19,7 +18,7 @@ service cloud.firestore {
     }
 
     // 2. Koleksi Pengguna (Users):
-    // Diperlukan akses list publik terbatas untuk inisialisasi admin & logout
+    // Diperlukan akses publik terbatas untuk inisialisasi admin & logout
     match /users/{userId} {
       allow read: if true;
       allow write: if isSignedIn();
@@ -30,27 +29,38 @@ service cloud.firestore {
     }
     
     // 3. Koleksi Utama (Authenticated Access Only)
-    // Memberikan izin eksplisit untuk list dan get pada koleksi utama
+    // Memberikan izin eksplisit untuk list dan get pada koleksi utama untuk menghindari error permission
     match /members/{docId} {
       allow read, write: if isSignedIn();
+    }
+    match /members {
+      allow list: if isSignedIn();
     }
     
     match /books/{docId} {
       allow read, write: if isSignedIn();
     }
+    match /books {
+      allow list: if isSignedIn();
+    }
     
     match /transactions/{docId} {
       allow read, write: if isSignedIn();
+    }
+    match /transactions {
+      allow list: if isSignedIn();
     }
     
     match /activity_logs/{docId} {
       allow read, write: if isSignedIn();
     }
+    match /activity_logs {
+      allow list: if isSignedIn();
+    }
 
     // 4. Akses Global Fallback
     match /{path=**} {
-      allow read: if isSignedIn() || path == 'settings/general' || path == 'users';
-      allow write: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
   }
 }
