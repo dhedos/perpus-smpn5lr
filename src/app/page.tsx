@@ -244,7 +244,7 @@ export default function LoginPage() {
       </Card>
 
       <Dialog open={isResetOpen} onOpenChange={setIsResetOpen}>
-        <DialogContent className="bg-white rounded-3xl max-w-sm">
+        <DialogContent className="bg-white rounded-3xl max-w-sm border-none shadow-2xl">
           <form onSubmit={handleSendResetEmail}>
             <DialogHeader>
               <DialogTitle className="font-black uppercase tracking-tight text-primary">Reset Kata Sandi</DialogTitle>

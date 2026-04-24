@@ -136,7 +136,7 @@ export function SidebarNav() {
               <span className="text-sm font-medium">Keluar</span>
             </Button>
           </AlertDialogTrigger>
-          <AlertDialogContent className="rounded-3xl">
+          <AlertDialogContent className="rounded-3xl border-none shadow-2xl">
             <AlertDialogHeader>
               <AlertDialogTitle className="font-black uppercase tracking-tight text-primary">Konfirmasi Keluar</AlertDialogTitle>
               <AlertDialogDescription>
