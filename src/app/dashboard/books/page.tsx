@@ -138,6 +138,18 @@ export default function BooksPage() {
   
   const isLockedForUser = Boolean(settings?.isDataLocked === true && !isAdmin);
 
+  const forceUnlockUI = useCallback(() => {
+    if (typeof document !== 'undefined') {
+      setTimeout(() => {
+        document.body.style.pointerEvents = 'auto';
+        document.body.style.overflow = 'auto';
+        // Cleanup leftover Shadcn/Radix overlays if any
+        const overlays = document.querySelectorAll('[data-radix-focus-guard]');
+        overlays.forEach(el => el.remove());
+      }, 300);
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(STORAGE_KEY)
@@ -199,13 +211,6 @@ export default function BooksPage() {
       return matchesSearch && matchesCategory && matchesYear;
     })
   }, [books, search, filterCategory, filterYear])
-
-  const forceUnlockUI = useCallback(() => {
-    if (typeof document !== 'undefined') {
-      document.body.style.pointerEvents = 'auto'
-      document.body.style.overflow = 'auto'
-    }
-  }, [])
 
   const handleOpenAdd = () => {
     setFormData({
@@ -366,6 +371,7 @@ export default function BooksPage() {
       </html>
     `)
     printWindow.document.close()
+    forceUnlockUI()
   }
 
   const handlePrintSingleQr = (book: any) => {
@@ -383,7 +389,7 @@ export default function BooksPage() {
             .label-card { 
               width: 80mm; 
               height: 30mm; 
-              border: none; 
+              border: 0.5pt solid #000; 
               padding: 2mm; 
               box-sizing: border-box; 
               display: flex;
@@ -428,6 +434,7 @@ export default function BooksPage() {
       </html>
     `)
     printWindow.document.close()
+    forceUnlockUI()
   }
 
   const handlePrintAllQrs = () => {
@@ -496,6 +503,7 @@ export default function BooksPage() {
       </html>
     `)
     printWindow.document.close()
+    forceUnlockUI()
   }
 
   const handleGenerateDescription = async () => {
@@ -688,49 +696,41 @@ export default function BooksPage() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onSelect={(e) => { 
                         e.preventDefault();
-                        setTimeout(() => {
-                          setSelectedBookDetail(book); 
-                          setIsDetailOpen(true);
-                        }, 100);
+                        setSelectedBookDetail(book); 
+                        setIsDetailOpen(true);
                       }}><Eye className="h-4 w-4 mr-2" />Lihat Detail</DropdownMenuItem>
                       <DropdownMenuItem onSelect={(e) => { 
                         e.preventDefault();
-                        setTimeout(() => {
-                          setSelectedBookQr(book); 
-                          setIsQrOpen(true);
-                        }, 100);
+                        setSelectedBookQr(book); 
+                        setIsQrOpen(true);
                       }}><QrCode className="h-4 w-4 mr-2" />Tampilkan QR</DropdownMenuItem>
                       
                       <DropdownMenuItem onSelect={(e) => { 
                         e.preventDefault();
-                        setTimeout(() => {
-                          setEditingBookId(book.id); 
-                          setFormData({
-                            code: book.code || "",
-                            title: book.title || "",
-                            accountCode: book.accountCode || "",
-                            publisher: book.publisher || "",
-                            publicationYear: book.publicationYear?.toString() || "",
-                            acquisitionDate: book.acquisitionDate || "",
-                            isbn: book.isbn || "",
-                            category: book.category || "",
-                            rackLocation: book.rackLocation || "",
-                            totalStock: Number(book.totalStock || 0),
-                            availableStock: Number(book.availableStock || 0),
-                            description: book.description || "",
-                            mainHeader: book.mainHeader || settings?.libraryName || "LANTERA BACA",
-                            budgetSource: book.budgetSource || "BOSP"
-                          }); 
-                          setIsEditOpen(true);
-                        }, 100);
+                        setEditingBookId(book.id); 
+                        setFormData({
+                          code: book.code || "",
+                          title: book.title || "",
+                          accountCode: book.accountCode || "",
+                          publisher: book.publisher || "",
+                          publicationYear: book.publicationYear?.toString() || "",
+                          acquisitionDate: book.acquisitionDate || "",
+                          isbn: book.isbn || "",
+                          category: book.category || "",
+                          rackLocation: book.rackLocation || "",
+                          totalStock: Number(book.totalStock || 0),
+                          availableStock: Number(book.availableStock || 0),
+                          description: book.description || "",
+                          mainHeader: book.mainHeader || settings?.libraryName || "LANTERA BACA",
+                          budgetSource: book.budgetSource || "BOSP"
+                        }); 
+                        setIsEditOpen(true);
                       }}><Edit className="h-4 w-4 mr-2" />Ubah</DropdownMenuItem>
 
                       <DropdownMenuItem className="text-destructive" onSelect={(e) => { 
                         e.preventDefault();
-                        setTimeout(() => {
-                          setBookToDelete(book.id); 
-                          setIsDeleteDialogOpen(true);
-                        }, 100);
+                        setBookToDelete(book.id); 
+                        setIsDeleteDialogOpen(true);
                       }}><Trash2 className="h-4 w-4 mr-2" />Hapus</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
