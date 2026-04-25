@@ -218,7 +218,7 @@ export default function TeacherLoansPage() {
         } catch (e: any) {
           console.error("Camera access error:", e)
           setHasCameraPermission(false)
-          toast({ title: "Akses Kamera Ditolak", variant: "destructive" })
+          toast({ title: "Akses Kamera Ditolak", description: "Mohon aktifkan izin kamera di pengaturan browser.", variant: "destructive" })
         }
       }, 500)
     } catch (e) { 
@@ -400,7 +400,7 @@ export default function TeacherLoansPage() {
             <Card className="lg:col-span-1 border-none shadow-sm bg-blue-50/50">
               <CardHeader>
                 <CardTitle className="text-sm font-bold uppercase tracking-wider">Identitas Penyerahan</CardTitle>
-                <DialogDescription>Pilih nama guru dan judul buku yang akan diserahkan.</DialogDescription>
+                <CardDescription>Pilih nama guru dan judul buku yang akan diserahkan.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -490,7 +490,7 @@ export default function TeacherLoansPage() {
                 <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
                   <History className="h-4 w-4 text-primary" /> Riwayat Guru (Terakhir)
                 </CardTitle>
-                <DialogDescription>Daftar 10 penyerahan buku terakhir kepada guru.</DialogDescription>
+                <CardDescription>Daftar 10 penyerahan buku terakhir kepada guru.</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
                 <Table>
@@ -535,7 +535,7 @@ export default function TeacherLoansPage() {
             <Card className="md:col-span-2 border-none shadow-sm overflow-hidden">
               <CardHeader className="pb-3 border-b">
                 <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Buku Guru Aktif</CardTitle>
-                <DialogDescription>Daftar buku yang saat ini masih dipegang oleh bapak/ibu guru.</DialogDescription>
+                <CardDescription>Daftar buku yang saat ini masih dipegang oleh bapak/ibu guru.</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="max-h-[500px] overflow-y-auto">

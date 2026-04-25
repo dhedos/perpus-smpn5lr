@@ -383,7 +383,7 @@ function TransactionsContent() {
           } catch (e: any) {
             console.error("Camera access error:", e)
             setHasCameraPermission(false)
-            toast({ title: "Akses Kamera Ditolak", variant: "destructive" })
+            toast({ title: "Akses Kamera Ditolak", description: "Mohon aktifkan izin kamera di pengaturan browser.", variant: "destructive" })
           }
         } catch (err) {
           setHasCameraPermission(false)
@@ -478,7 +478,7 @@ function TransactionsContent() {
                 <Card className="border-none shadow-sm relative">
                   <CardHeader className="bg-slate-50/50 pb-4 border-b">
                     <CardTitle className="text-sm flex items-center gap-2 text-primary uppercase tracking-wider font-bold"><User className="h-4 w-4" /> Data Siswa</CardTitle>
-                    <DialogDescription>Gunakan NIS atau pencarian manual untuk memilih siswa.</DialogDescription>
+                    <CardDescription>Gunakan NIS atau pencarian manual untuk memilih siswa.</CardDescription>
                   </CardHeader>
                   <CardContent className="pt-6 space-y-4">
                     <div className="relative">
@@ -533,7 +533,7 @@ function TransactionsContent() {
                 <Card className="border-none shadow-sm relative">
                   <CardHeader className="bg-slate-50/50 pb-4 border-b">
                     <CardTitle className="text-sm flex items-center gap-2 text-secondary uppercase tracking-wider font-bold"><BookOpen className="h-4 w-4" /> Data Buku</CardTitle>
-                    <DialogDescription>Gunakan kode stiker buku atau judul untuk memilih buku.</DialogDescription>
+                    <CardDescription>Gunakan kode stiker buku atau judul untuk memilih buku.</CardDescription>
                   </CardHeader>
                   <CardContent className="pt-6 space-y-4">
                     <div className="relative">
@@ -596,7 +596,7 @@ function TransactionsContent() {
                     <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
                       <History className="h-4 w-4 text-primary" /> Riwayat Siswa (Terakhir)
                     </CardTitle>
-                    <DialogDescription>Daftar aktivitas sirkulasi yang baru saja diselesaikan.</DialogDescription>
+                    <CardDescription>Daftar aktivitas sirkulasi yang baru saja diselesaikan.</CardDescription>
                   </CardHeader>
                   <CardContent className="p-0">
                     <Table>
@@ -642,7 +642,7 @@ function TransactionsContent() {
               <Card className="md:col-span-2 border-none shadow-sm overflow-hidden">
                 <CardHeader className="pb-3 border-b">
                   <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Peminjaman Siswa Aktif</CardTitle>
-                  <DialogDescription>Daftar buku yang saat ini masih dipinjam oleh siswa.</DialogDescription>
+                  <CardDescription>Daftar buku yang saat ini masih dipinjam oleh siswa.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="max-h-[500px] overflow-y-auto">
