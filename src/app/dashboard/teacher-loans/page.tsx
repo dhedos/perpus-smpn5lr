@@ -367,7 +367,7 @@ export default function TeacherLoansPage() {
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
             NIP. ${settings?.principalNip || '198507272011011020'}
           </div>
-          <div class="print-footer">© 2026 Lantera Baca - Sistem Informasi Perpustakaan</div>
+          <div class="print-footer">© 2026 Lantera Baca</div>
         </body>
       </html>
     `)

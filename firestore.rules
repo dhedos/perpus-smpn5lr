@@ -2,8 +2,8 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // AKSES TOTAL: Siapa saja bisa baca dan tulis tanpa kecuali.
-    // Ini menjamin tidak ada lagi error "Missing or insufficient permissions".
+    // AKSES TOTAL: Membuka akses untuk siapa saja tanpa kecuali.
+    // Solusi paling ampuh untuk menghilangkan error "Missing or insufficient permissions".
     match /{allPaths=**} {
       allow read, write: if true;
     }

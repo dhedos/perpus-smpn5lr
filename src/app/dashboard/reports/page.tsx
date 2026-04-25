@@ -192,7 +192,7 @@ export default function ReportsPage() {
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
             NIP. ${settings?.principalNip || '198507272011011020'}
           </div>
-          <div class="print-footer">LANTERA BACA - ${settings?.librarySubtitle || 'SMPN 5 LANGKE REMBONG'} | Laporan Audit Statistik</div>
+          <div class="print-footer">© 2026 Lantera Baca</div>
         </body>
       </html>
     `)
@@ -277,44 +277,8 @@ export default function ReportsPage() {
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {[
-          { 
-            title: "Rata-rata Peminjaman", 
-            value: statsData ? `${statsData.avg}` : "...", 
-            desc: "Buku/hari (Estimasi)", 
-            icon: TrendingUp 
-          },
-          { 
-            title: "Buku Belum Kembali", 
-            value: statsData ? `${statsData.unreturned}` : "...", 
-            desc: statsData ? `${statsData.overdue} Terlambat` : "...", 
-            icon: BookOpen 
-          },
-          { 
-            title: "Denda Terkumpul", 
-            value: statsData ? `Rp${statsData.fines.toLocaleString('id-ID')}` : "...", 
-            desc: "Bulan ini", 
-            icon: FileText 
-          },
-          { 
-            title: "Anggota Aktif", 
-            value: statsData ? `${statsData.totalMembers}` : "...", 
-            desc: "Siswa & Guru terdaftar", 
-            icon: Users 
-          },
-        ].map((item, i) => (
-          <Card key={i} className="border-none shadow-sm hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{item.title}</CardTitle>
-              <item.icon className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-black truncate">{item.value}</div>
-              <p className="text-[10px] font-semibold text-muted-foreground mt-1 uppercase tracking-tighter">{item.desc}</p>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="text-center py-6 opacity-30">
+        <p className="text-[10px] font-black uppercase tracking-widest">© 2026 Lantera Baca</p>
       </div>
     </div>
   )

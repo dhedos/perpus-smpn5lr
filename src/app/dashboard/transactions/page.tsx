@@ -49,7 +49,7 @@ import {
   useDoc,
   useUser
 } from '@/firebase'
-import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc, orderBy, limit } from 'firebase/firestore'
+import { collection, addDoc, updateDoc, doc, serverTimestamp, getDoc } from 'firebase/firestore'
 import { differenceInDays, parseISO, format, addDays, startOfDay } from "date-fns"
 
 function TransactionsContent() {
@@ -108,36 +108,42 @@ function TransactionsContent() {
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
 
-  const studentMembersRef = useMemoFirebase(() => 
-    (db && user) ? query(collection(db, 'members'), where('type', '==', 'Student')) : null, [db, !!user])
-  const booksRef = useMemoFirebase(() => (db && user) ? query(collection(db, 'books'), orderBy('title', 'asc')) : null, [db, !!user])
+  // Ambil semua data utama tanpa filter berat untuk menghindari Index Error
+  const membersRef = useMemoFirebase(() => (db && user) ? collection(db, 'members') : null, [db, !!user])
+  const booksRef = useMemoFirebase(() => (db && user) ? collection(db, 'books') : null, [db, !!user])
+  const allTransRef = useMemoFirebase(() => (db && user) ? collection(db, 'transactions') : null, [db, !!user])
 
-  const { data: members } = useCollection(studentMembersRef)
-  const { data: books } = useCollection(booksRef)
-
-  const activeTransQuery = useMemoFirebase(() => {
-    if (!db || !user) return null;
-    return query(
-      collection(db, 'transactions'), 
-      where('status', '==', 'active'),
-      where('type', '==', 'borrow')
-    );
-  }, [db, !!user])
-
-  const historyTransQuery = useMemoFirebase(() => {
-    if (!db || !user) return null;
-    return query(
-      collection(db, 'transactions'),
-      where('status', '==', 'returned'),
-      orderBy('returnDate', 'desc'),
-      limit(50)
-    );
-  }, [db, !!user])
-
-  const { data: activeTrans, isLoading: loadingActive } = useCollection(activeTransQuery)
-  const { data: historyTrans, isLoading: loadingHistory } = useCollection(historyTransQuery)
+  const { data: allMembersData } = useCollection(membersRef)
+  const { data: allBooksData } = useCollection(booksRef)
+  const { data: allTransactions, isLoading: loadingAllTrans } = useCollection(allTransRef)
 
   const loanDays = useMemo(() => settings?.loanPeriod ? Number(settings.loanPeriod) : 7, [settings]);
+
+  const members = useMemo(() => {
+    if (!allMembersData) return [];
+    return allMembersData.filter(m => m.type === 'Student');
+  }, [allMembersData]);
+
+  const books = useMemo(() => {
+    if (!allBooksData) return [];
+    return [...allBooksData].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+  }, [allBooksData]);
+
+  const activeTrans = useMemo(() => {
+    if (!allTransactions) return [];
+    return allTransactions.filter(t => t.status === 'active' && t.type === 'borrow');
+  }, [allTransactions]);
+
+  const historyTrans = useMemo(() => {
+    if (!allTransactions) return [];
+    return allTransactions
+      .filter(t => t.status === 'returned')
+      .sort((a, b) => {
+        const dateA = a.returnDate ? new Date(a.returnDate).getTime() : 0;
+        const dateB = b.returnDate ? new Date(b.returnDate).getTime() : 0;
+        return dateB - dateA;
+      });
+  }, [allTransactions]);
 
   const memberSuggestions = useMemo(() => {
     if (!memberSearch || memberSearch.length < 1 || !members) return [];
@@ -577,7 +583,7 @@ function TransactionsContent() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {loadingHistory ? (
+                        {loadingAllTrans ? (
                           <TableRow><TableCell colSpan={4} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
                         ) : historyTrans?.length === 0 ? (
                           <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">Belum ada riwayat.</TableCell></TableRow>
@@ -625,7 +631,7 @@ function TransactionsContent() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {loadingActive ? (
+                        {loadingAllTrans ? (
                           <TableRow><TableCell colSpan={4} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
                         ) : filteredActiveTrans.length === 0 ? (
                           <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground italic">Tidak ada peminjaman aktif.</TableCell></TableRow>
