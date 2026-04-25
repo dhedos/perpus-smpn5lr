@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo, useRef, useEffect, useCallback, Suspense } from "react"
@@ -50,7 +49,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardDescription } from "@/components/ui/card"
+import { Card, CardDescription, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -84,7 +83,7 @@ import { collection, addDoc, deleteDoc, doc, updateDoc, query, limit, orderBy, s
 
 const INITIAL_FORM_DATA = {
   mainHeader: "LANTERA BACA",
-  budgetSource: "BOSP",
+  budgetSource: "",
   code: "",
   title: "",
   accountCode: "",
@@ -362,7 +361,6 @@ function BooksContent() {
     
     try {
       const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
-      // Delay kecil untuk memastikan modal sudah tampil dan elemen DOM tersedia
       setTimeout(async () => {
         const scannerElement = document.getElementById("scanner-view")
         if (!scannerElement) return
@@ -390,7 +388,7 @@ function BooksContent() {
           setHasCameraPermission(false)
           toast({ title: "Akses Kamera Ditolak", description: "Mohon aktifkan izin kamera di pengaturan browser.", variant: "destructive" })
         }
-      }, 200)
+      }, 50)
     } catch (e) { 
       setHasCameraPermission(false)
     }
@@ -402,7 +400,6 @@ function BooksContent() {
         if (scannerInstanceRef.current.isScanning) {
           await scannerInstanceRef.current.stop()
         }
-        // Pastikan element masih ada sebelum clear untuk menghindari NotFoundError
         const el = document.getElementById("scanner-view")
         if (el) {
           await scannerInstanceRef.current.clear()
@@ -777,7 +774,7 @@ function BooksContent() {
                 <div className="space-y-2">
                   <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">Sumber Anggaran</Label>
                   <Select value={formData.budgetSource} onValueChange={v => setFormData({...formData, budgetSource: v})}>
-                    <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue placeholder="Pilih Sumber..." /></SelectTrigger>
                     <SelectContent>
                       {budgetSourcesList.map(source => (
                         <SelectItem key={source} value={source}>{source}</SelectItem>
@@ -863,7 +860,7 @@ function BooksContent() {
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Sumber</Label>
                   <Select value={formData.budgetSource} onValueChange={v => setFormData({...formData, budgetSource: v})}>
-                    <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue placeholder="Pilih Sumber..." /></SelectTrigger>
                     <SelectContent>
                       {budgetSourcesList.map(source => (
                         <SelectItem key={source} value={source}>{source}</SelectItem>

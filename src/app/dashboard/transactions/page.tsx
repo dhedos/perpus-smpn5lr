@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo, useRef, useEffect, Suspense, useCallback } from "react"
@@ -388,7 +387,7 @@ function TransactionsContent() {
           setHasCameraPermission(false)
           toast({ title: "Akses Kamera Ditolak", description: "Mohon aktifkan izin kamera di pengaturan browser.", variant: "destructive" })
         }
-      }, 200)
+      }, 50)
     } catch (e) { 
       setIsScannerOpen(false) 
     }

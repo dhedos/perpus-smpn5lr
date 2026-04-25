@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useRef, useMemo, useEffect } from "react"
@@ -100,7 +99,7 @@ export default function StockOpnamePage() {
           setHasCameraPermission(false)
           toast({ title: "Akses Kamera Ditolak", description: "Mohon aktifkan izin kamera di pengaturan browser.", variant: "destructive" })
         }
-      }, 200)
+      }, 50)
     } catch (e) {
       setHasCameraPermission(false)
     }

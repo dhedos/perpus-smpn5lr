@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
@@ -233,7 +232,7 @@ export default function TeacherLoansPage() {
           setHasCameraPermission(false)
           toast({ title: "Akses Kamera Ditolak", description: "Mohon aktifkan izin kamera di pengaturan browser.", variant: "destructive" })
         }
-      }, 200)
+      }, 50)
     } catch (e) { 
       setIsScannerOpen(false)
     }
