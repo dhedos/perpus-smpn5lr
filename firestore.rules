@@ -3,18 +3,36 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Izin Global: Pengguna yang sudah login memiliki akses penuh ke semua data operasional
-    match /{allPaths=**} {
+    // Izin Publik: Diperlukan untuk inisialisasi aplikasi (halaman login/pengaturan awal)
+    match /settings/{allPaths=**} {
+      allow read, write: if true;
+    }
+    
+    match /users/{allPaths=**} {
+      allow read, write: if true;
+    }
+
+    // Izin Koleksi Utama: Hanya untuk petugas yang sudah login
+    // Menggunakan recursive wildcard {allPaths=**} untuk menjamin izin 'list' pada kueri
+    match /transactions/{allPaths=**} {
       allow read, write: if request.auth != null;
     }
-    
-    // Izin Publik: Diperlukan untuk inisialisasi aplikasi (halaman login/pengaturan awal)
-    match /settings/{docId} {
-      allow read: if true;
+
+    match /books/{allPaths=**} {
+      allow read, write: if request.auth != null;
     }
-    
-    match /users/{docId} {
-      allow read: if true;
+
+    match /members/{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /activity_logs/{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Fallback Global untuk keamanan tambahan
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }
