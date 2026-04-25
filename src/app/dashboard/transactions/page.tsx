@@ -667,6 +667,9 @@ function TransactionsContent() {
             <Button className="w-full h-16 text-lg font-black shadow-lg shadow-primary/20 mt-4" disabled={!selectedMember || !selectedBook || isProcessing} onClick={handleProcessBorrow}>
               {isProcessing ? <Loader2 className="animate-spin h-6 w-6" /> : "PROSES PEMINJAMAN SISWA"}
             </Button>
+            <div className="text-center py-6 opacity-30">
+              <p className="text-[10px] font-black uppercase tracking-widest">© 2026 Lantera Baca</p>
+            </div>
           </TabsContent>
 
           <TabsContent value="return" className="space-y-6">
@@ -740,6 +743,9 @@ function TransactionsContent() {
                   </div>
                 </CardContent>
               </Card>
+            </div>
+            <div className="text-center py-6 opacity-30">
+              <p className="text-[10px] font-black uppercase tracking-widest">© 2026 Lantera Baca</p>
             </div>
           </TabsContent>
         </div>
@@ -828,10 +834,6 @@ function TransactionsContent() {
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>
         </DialogContent>
       </Dialog>
-      
-      <div className="text-center py-6 opacity-30">
-        <p className="text-[10px] font-black uppercase tracking-widest">© 2026 Lantera Baca</p>
-      </div>
     </div>
   )
 }
