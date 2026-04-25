@@ -406,7 +406,6 @@ function BooksContent() {
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
-    // URUTKAN BERDASARKAN TAHUN (Descending)
     const sortedForPrint = [...filteredBooks].sort((a, b) => {
       const yearA = Number(a.publicationYear) || 0;
       const yearB = Number(b.publicationYear) || 0;
@@ -415,66 +414,87 @@ function BooksContent() {
 
     const rowsHtml = sortedForPrint.map((book, index) => `
       <tr>
-        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
-        <td style="border: 1px solid #ccc; padding: 8px; font-family: monospace;">${book.code}</td>
-        <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold;">${book.title}</td>
-        <td style="border: 1px solid #ccc; padding: 8px;">${book.publisher || '-'}</td>
-        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${book.publicationYear || '-'}</td>
-        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${book.totalStock || 0}</td>
+        <td style="border: 1px solid #000; padding: 10px; text-align: center;">${index + 1}</td>
+        <td style="border: 1px solid #000; padding: 10px; font-family: monospace; font-weight: bold;">${book.code}</td>
+        <td style="border: 1px solid #000; padding: 10px; font-weight: 800;">${book.title}</td>
+        <td style="border: 1px solid #000; padding: 10px;">${book.publisher || '-'}</td>
+        <td style="border: 1px solid #000; padding: 10px; text-align: center;">${book.publicationYear || '-'}</td>
+        <td style="border: 1px solid #000; padding: 10px; text-align: center; font-weight: bold;">${book.totalStock || 0}</td>
       </tr>
     `).join('')
 
     const now = new Date();
-    const formattedDateTime = now.toLocaleString('id-ID', { 
-      day: 'numeric', 
-      month: 'numeric', 
-      year: '2-digit', 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    }).replace(/\./g, ':');
+    const formattedDate = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'numeric', year: '2-digit' });
+    const formattedTime = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    const formattedDateTime = `${formattedDate}, ${formattedTime}`;
 
     printWindow.document.write(`
       <html>
         <head>
-          <title>Daftar Koleksi Buku</title>
+          <title>Laporan Koleksi Buku</title>
           <style>
-            @page { 
-              size: A4; 
-              margin: 0; /* Menghilangkan header browser bawaan agar about:blank hilang */
-            }
+            @page { size: A4; margin: 0; }
             body { 
               font-family: 'Inter', sans-serif; 
-              font-size: 11px; 
+              font-size: 11pt; 
               margin: 0; 
-              padding: 15mm; /* Margin dipindahkan ke body */
+              padding: 15mm; 
+              color: #000; 
             }
-            .top-meta { font-size: 8px; color: #666; margin-bottom: 8px; font-weight: bold; }
-            .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
-            .school-name { font-size: 18px; font-weight: 900; text-transform: uppercase; }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            th { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; text-align: left; }
-            td { border: 1px solid #ccc; padding: 8px; }
-            .footer-sign { margin-top: 40px; float: right; text-align: center; width: 250px; }
-            .print-footer { position: fixed; bottom: 5mm; left: 15mm; right: 15mm; font-size: 8px; text-align: center; color: #999; border-top: 1px solid #eee; padding-top: 2mm; }
+            .top-meta { 
+              font-size: 9px; 
+              color: #000; 
+              font-weight: 500; 
+              position: absolute; 
+              top: 8mm; 
+              left: 15mm; 
+            }
+            .header { 
+              text-align: center; 
+              border-bottom: 2.5px solid #000; 
+              padding-bottom: 12px; 
+              margin-bottom: 25px; 
+              margin-top: 10px;
+            }
+            .header .instansi { font-size: 11pt; font-weight: 600; line-height: 1.2; text-transform: uppercase; }
+            .header .school-name { font-size: 16pt; font-weight: 900; text-transform: uppercase; margin-top: 2px; }
+            
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; border: 1.5px solid #000; }
+            th { background: #f2f2f2; border: 1px solid #000; padding: 10px; text-align: center; font-weight: 900; font-size: 11pt; }
+            td { border: 1px solid #000; padding: 10px; font-size: 10.5pt; color: #000; }
+            
+            .footer-sign { margin-top: 50px; float: right; text-align: center; width: 280px; font-size: 10.5pt; }
+            .print-footer { 
+              position: fixed; 
+              bottom: 8mm; 
+              left: 15mm; 
+              right: 15mm; 
+              font-size: 8pt; 
+              text-align: center; 
+              color: #333; 
+              border-top: 1px solid #ccc; 
+              padding-top: 2mm; 
+            }
+            h3 { font-size: 12pt; font-weight: 900; margin-bottom: 15px; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
           <div class="top-meta">Daftar Koleksi Buku - ${formattedDateTime}</div>
           <div class="header">
-            <div>${settings?.govtInstitution || 'PEMERINTAH KABUPATEN MANGGARAI'}</div>
-            <div>${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
+            <div class="instansi">${settings?.govtInstitution || 'PEMERINTAH KABUPATEN MANGGARAI'}</div>
+            <div class="instansi">${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
             <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
           </div>
-          <h3 style="text-align: center; text-transform: uppercase; margin-bottom: 20px;">LAPORAN DAFTAR KOLEKSI BUKU PERPUSTAKAAN</h3>
+          <h3 style="text-align: center; text-transform: uppercase;">LAPORAN DAFTAR KOLEKSI BUKU PERPUSTAKAAN</h3>
           <table>
             <thead>
               <tr>
-                <th style="width: 30px; text-align: center;">No</th>
-                <th style="width: 80px;">Kode Buku</th>
+                <th style="width: 35px;">No</th>
+                <th style="width: 90px;">Kode Buku</th>
                 <th>Judul Buku</th>
-                <th>Penerbit</th>
-                <th style="width: 50px; text-align: center;">Tahun</th>
-                <th style="width: 50px; text-align: center;">Stok</th>
+                <th style="width: 130px;">Penerbit</th>
+                <th style="width: 60px;">Tahun</th>
+                <th style="width: 55px;">Stok</th>
               </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>
