@@ -148,7 +148,7 @@ export function SidebarNav() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="gap-2">
-              <AlertDialogCancel className="rounded-xl font-bold" onClick={() => {}}>Batal</AlertDialogCancel>
+              <AlertDialogCancel className="rounded-xl font-bold">Batal</AlertDialogCancel>
               <AlertDialogAction onClick={handleLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl font-bold">
                 Ya, Keluar Sekarang
               </AlertDialogAction>

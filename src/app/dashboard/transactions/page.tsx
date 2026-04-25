@@ -115,8 +115,8 @@ function TransactionsContent() {
   const { data: settings } = useDoc(settingsRef)
 
   const studentMembersRef = useMemoFirebase(() => 
-    (db && user) ? query(collection(db, 'members'), where('type', '==', 'Student')) : null, [db, user])
-  const booksRef = useMemoFirebase(() => (db && user) ? query(collection(db, 'books'), orderBy('title', 'asc')) : null, [db, user])
+    (db && user) ? query(collection(db, 'members'), where('type', '==', 'Student')) : null, [db, !!user])
+  const booksRef = useMemoFirebase(() => (db && user) ? query(collection(db, 'books'), orderBy('title', 'asc')) : null, [db, !!user])
 
   const { data: members } = useCollection(studentMembersRef)
   const { data: books } = useCollection(booksRef)
@@ -128,7 +128,7 @@ function TransactionsContent() {
       where('status', '==', 'active'),
       where('type', '==', 'borrow')
     );
-  }, [db, user])
+  }, [db, !!user])
 
   const historyTransQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -138,7 +138,7 @@ function TransactionsContent() {
       orderBy('returnDate', 'desc'),
       limit(50)
     );
-  }, [db, user])
+  }, [db, !!user])
 
   const { data: activeTrans, isLoading: loadingActive } = useCollection(activeTransQuery)
   const { data: historyTrans, isLoading: loadingHistory } = useCollection(historyTransQuery)
@@ -328,87 +328,44 @@ function TransactionsContent() {
 
   const handlePrintReport = () => {
     const targetData = activeTab === "borrow" ? (historyTrans || []) : filteredActiveTrans;
-    if (targetData.length === 0) {
-      toast({ title: "Data Kosong", description: "Tidak ada data untuk dicetak." });
-      return;
-    }
+    if (targetData.length === 0) return
 
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
-    const titleLabel = activeTab === "borrow" ? "RIWAYAT SIRKULASI SISWA (SUDAH KEMBALI)" : "DAFTAR PEMINJAMAN SISWA AKTIF"
-    
-    const rowsHtml = targetData.map((t, index) => {
-        const borrowDateStr = t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yyyy') : '-';
-        const returnDateStr = t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yyyy') : (t.status === 'active' ? 'PINJAM' : '-');
-        const fineStr = t.fineAmount ? `Rp ${t.fineAmount.toLocaleString('id-ID')}` : '-';
-
-        return `
-          <tr>
-            <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
-            <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold;">${t.memberName}</td>
-            <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle} ${t.quantity > 1 ? `(${t.quantity} unit)` : ''}</td>
-            <td style="border: 1px solid #ccc; padding: 8px; text-align: center; font-family: monospace;">${t.memberId}</td>
-            <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${borrowDateStr}</td>
-            <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${returnDateStr}</td>
-            <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${fineStr}</td>
-          </tr>
-        `
-    }).join('')
+    const rowsHtml = targetData.map((t, index) => `
+      <tr>
+        <td style="border: 1px solid #000; padding: 5px;">${index + 1}</td>
+        <td style="border: 1px solid #000; padding: 5px;">${t.memberName}</td>
+        <td style="border: 1px solid #000; padding: 5px;">${t.bookTitle}</td>
+        <td style="border: 1px solid #000; padding: 5px;">${t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yyyy') : '-'}</td>
+        <td style="border: 1px solid #000; padding: 5px;">${t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yyyy') : 'Pinjam'}</td>
+        <td style="border: 1px solid #000; padding: 5px;">Rp ${(t.fineAmount || 0).toLocaleString()}</td>
+      </tr>
+    `).join('')
 
     printWindow.document.write(`
       <html>
-        <head>
-          <title> </title>
-          <style>
-            @page { size: A4 landscape; margin: 0; }
-            body { font-family: 'Inter', sans-serif; font-size: 11px; margin: 0; padding: 15mm; }
-            .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
-            .school-name { font-size: 18px; font-weight: 900; text-transform: uppercase; }
-            .dept-name { font-size: 14px; font-weight: 700; }
-            .address { font-size: 10px; font-style: italic; }
-            .title { text-align: center; font-size: 12px; font-weight: 800; margin: 20px 0; text-transform: uppercase; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-            th { background: #f0f0f0; border: 1px solid #ccc; padding: 10px; font-weight: bold; text-transform: uppercase; font-size: 10px; }
-            td { border: 1px solid #ccc; padding: 8px; }
-            .footer-sign { margin-top: 40px; float: right; text-align: center; width: 250px; }
-            .print-footer { position: fixed; bottom: 5mm; left: 15mm; right: 15mm; font-size: 8px; text-align: center; color: #999; border-top: 1px solid #eee; padding-top: 2mm; }
-          </style>
-        </head>
+        <head><title>Laporan Transaksi</title></head>
         <body onload="window.print(); window.close();">
-          <div class="header">
-            <div class="dept-name">${settings?.govtInstitution || 'PEMERINTAH KABUPATEN MANGGARAI'}</div>
-            <div class="dept-name">${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
-            <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
-            <div class="address">Alamat: ${settings?.schoolAddress || 'Mando, Kelurahan Compang Carep'}</div>
-          </div>
-          <div class="title">${titleLabel}</div>
-          <table>
+          <h2>DAFTAR TRANSAKSI PERPUSTAKAAN</h2>
+          <table style="width: 100%; border-collapse: collapse;">
             <thead>
               <tr>
-                <th style="width: 30px;">No</th>
-                <th>Nama Siswa</th>
-                <th>Judul Buku</th>
-                <th>NIS/NIP</th>
-                <th>Tgl Pinjam</th>
-                <th>Tgl Kembali</th>
-                <th>Denda</th>
+                <th style="border: 1px solid #000; padding: 5px;">No</th>
+                <th style="border: 1px solid #000; padding: 5px;">Nama Siswa</th>
+                <th style="border: 1px solid #000; padding: 5px;">Judul Buku</th>
+                <th style="border: 1px solid #000; padding: 5px;">Tgl Pinjam</th>
+                <th style="border: 1px solid #000; padding: 5px;">Tgl Kembali</th>
+                <th style="border: 1px solid #000; padding: 5px;">Denda</th>
               </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>
           </table>
-          <div class="footer-sign">
-            ${settings?.reportCity || 'Mando'}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>
-            Kepala Sekolah,<br/><br/><br/><br/>
-            <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
-            NIP. ${settings?.principalNip || '198507272011011020'}
-          </div>
-          <div class="print-footer">© 2026 Lantera Baca - Sistem Informasi Perpustakaan</div>
         </body>
       </html>
     `)
     printWindow.document.close()
-    forceUnlockUI()
   }
 
   const startScanner = async () => {
@@ -490,7 +447,7 @@ function TransactionsContent() {
         <div className="text-right flex flex-col items-end gap-2">
           <div className="flex gap-2">
              <Button variant="outline" size="sm" onClick={handlePrintReport}>
-               <Printer className="h-4 w-4 mr-2" /> Cetak Laporan
+               <Printer className="h-4 w-4 mr-2" /> Cetak
              </Button>
              <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold gap-2 py-1.5 px-3">
               <CalendarDays className="h-4 w-4" />
@@ -502,8 +459,8 @@ function TransactionsContent() {
 
       <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); forceUnlockUI(); }} className="w-full">
         <TabsList className="grid w-full grid-cols-2 h-14 p-1 bg-muted/50">
-          <TabsTrigger value="borrow" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Peminjaman Siswa</TabsTrigger>
-          <TabsTrigger value="return" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Pengembalian Siswa</TabsTrigger>
+          <TabsTrigger value="borrow" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Peminjaman</TabsTrigger>
+          <TabsTrigger value="return" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Pengembalian</TabsTrigger>
         </TabsList>
         
         <div className="mt-8">
@@ -548,7 +505,7 @@ function TransactionsContent() {
                             >
                               <div className="flex flex-col">
                                 <span className="font-bold text-sm">{m.name}</span>
-                                <span className="text-[10px] font-mono text-primary">{m.memberId} / {m.classOrSubject}</span>
+                                <span className="text-[10px] font-mono text-primary">{m.memberId}</span>
                               </div>
                               <ChevronRight className="h-4 w-4 text-muted-foreground" />
                             </div>
@@ -561,7 +518,7 @@ function TransactionsContent() {
                         <div className="flex justify-between items-center">
                           <div className="flex-1">
                             <div className="font-bold text-primary text-lg">{selectedMember.name}</div>
-                            <div className="text-xs font-mono text-muted-foreground">{selectedMember.memberId} / {selectedMember.classOrSubject}</div>
+                            <div className="text-xs font-mono text-muted-foreground">{selectedMember.memberId}</div>
                           </div>
                           <Button variant="ghost" size="icon" onClick={() => setSelectedMember(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
                         </div>
@@ -575,11 +532,6 @@ function TransactionsContent() {
                     <CardTitle className="text-sm flex items-center gap-2 text-secondary uppercase tracking-wider font-bold"><BookOpen className="h-4 w-4" /> Data Buku</CardTitle>
                   </CardHeader>
                   <CardContent className="pt-6 space-y-4">
-                    <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
-                      <Button variant={loanType === "personal" ? "default" : "ghost"} size="sm" className="gap-2 h-9" onClick={() => setLoanType("personal")}><Home className="h-3 w-3" /> Pribadi</Button>
-                      <Button variant={loanType === "class" ? "default" : "ghost"} size="sm" className="gap-2 h-9" onClick={() => setLoanType("class")}><UsersIcon className="h-3 w-3" /> Kolektif</Button>
-                    </div>
-
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input 
@@ -608,12 +560,7 @@ function TransactionsContent() {
                                 <span className="font-bold text-sm truncate max-w-[200px]">{b.title}</span>
                                 <span className="text-[10px] font-mono text-secondary-foreground">{b.code}</span>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <Badge variant={b.availableStock <= 0 ? "destructive" : "outline"} className="text-[8px] h-4">
-                                  {b.availableStock} Unit
-                                </Badge>
-                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                              </div>
+                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
                             </div>
                           ))}
                         </div>
@@ -628,49 +575,13 @@ function TransactionsContent() {
                           </div>
                           <Button variant="ghost" size="icon" onClick={() => setSelectedBook(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
                         </div>
-
-                        <div className="flex flex-col gap-2 pt-2 border-t border-secondary/10">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Jumlah Pinjam</Label>
-                          <div className="flex items-center gap-4">
-                            <Button 
-                              variant="outline" 
-                              size="icon" 
-                              className="h-8 w-8 rounded-full"
-                              onClick={() => setBorrowQuantity(prev => Math.max(1, prev - 1))}
-                              disabled={borrowQuantity <= 1}
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <Input 
-                              type="number"
-                              className="w-20 text-center font-black text-xl h-10 border-primary/20 bg-white"
-                              value={borrowQuantity}
-                              onChange={(e) => {
-                                const val = parseInt(e.target.value);
-                                const max = selectedBook.availableStock || 1;
-                                if (!isNaN(val)) {
-                                  setBorrowQuantity(Math.min(max, Math.max(1, val)));
-                                }
-                              }}
-                            />
-                            <Button 
-                              variant="outline" 
-                              size="icon" 
-                              className="h-8 w-8 rounded-full"
-                              onClick={() => setBorrowQuantity(prev => Math.min(selectedBook.availableStock || 1, prev + 1))}
-                              disabled={borrowQuantity >= (selectedBook.availableStock || 0)}
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
                       </div>
                     )}
                   </CardContent>
                 </Card>
 
                 <Button className="w-full h-16 text-lg font-black shadow-lg shadow-primary/20" disabled={!selectedMember || !selectedBook || isProcessing} onClick={handleProcessBorrow}>
-                  {isProcessing ? <Loader2 className="animate-spin h-6 w-6" /> : "PROSES PEMINJAMAN"}
+                  {isProcessing ? <Loader2 className="animate-spin h-6 w-6" /> : "PINJAM SEKARANG"}
                 </Button>
               </div>
 
@@ -678,7 +589,7 @@ function TransactionsContent() {
                 <Card className="border-none shadow-sm overflow-hidden h-full">
                   <CardHeader className="bg-slate-50/50 border-b">
                     <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                      <History className="h-4 w-4 text-primary" /> Riwayat Sirkulasi Terbaru
+                      <History className="h-4 w-4 text-primary" /> Riwayat Transaksi Terbaru
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
@@ -688,21 +599,21 @@ function TransactionsContent() {
                           <TableHead className="w-12 text-center">No.</TableHead>
                           <TableHead>Nama Siswa</TableHead>
                           <TableHead>Buku</TableHead>
-                          <TableHead className="text-right">Tgl Kembali</TableHead>
+                          <TableHead className="text-right">Status</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {loadingHistory ? (
                           <TableRow><TableCell colSpan={4} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
                         ) : historyTrans?.length === 0 ? (
-                          <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">Belum ada riwayat hari ini.</TableCell></TableRow>
+                          <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">Belum ada riwayat.</TableCell></TableRow>
                         ) : historyTrans?.slice(0, 10).map((t, index) => (
                           <TableRow key={t.id}>
                             <TableCell className="text-center text-xs">{index + 1}</TableCell>
                             <TableCell className="font-bold text-xs">{t.memberName}</TableCell>
                             <TableCell className="text-xs truncate max-w-[150px]">{t.bookTitle}</TableCell>
-                            <TableCell className="text-right text-xs text-muted-foreground">
-                              {t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yyyy') : '-'}
+                            <TableCell className="text-right text-xs">
+                              <Badge variant="outline" className="text-[8px] bg-green-50 text-green-700">KEMBALI</Badge>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -712,30 +623,21 @@ function TransactionsContent() {
                 </Card>
               </div>
             </div>
-            
-            <div className="text-center py-6 opacity-30">
-              <p className="text-[10px] font-black uppercase tracking-widest">© 2026 Lantera Baca</p>
-            </div>
           </TabsContent>
 
           <TabsContent value="return" className="space-y-6">
             <div className="grid md:grid-cols-3 gap-6">
               <Card className="md:col-span-1 border-none shadow-sm bg-accent/30 flex flex-col items-center justify-center p-8 gap-4">
-                <Button variant="secondary" className="h-20 w-full gap-3 shadow-md font-bold" onClick={startScanner}><ScanBarcode className="h-8 w-8" /> Scan Buku Siswa</Button>
+                <Button variant="secondary" className="h-20 w-full gap-3 shadow-md font-bold" onClick={startScanner}><ScanBarcode className="h-8 w-8" /> Scan Buku/Siswa</Button>
                 <div className="w-full space-y-2">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Pencarian Siswa</Label>
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Pencarian Manual</Label>
                   <Input placeholder="Cari Nama/NIS..." className="h-12 bg-white" value={returnSearch} onChange={e => setReturnSearch(e.target.value)} />
                 </div>
               </Card>
 
               <Card className="md:col-span-2 border-none shadow-sm overflow-hidden">
                 <CardHeader className="pb-3 border-b">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Peminjaman Siswa Aktif</CardTitle>
-                      <CardDescription className="text-xs">Daftar buku yang sedang dipinjam oleh siswa.</CardDescription>
-                    </div>
-                  </div>
+                  <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Daftar Peminjaman Aktif</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="max-h-[500px] overflow-y-auto">
@@ -744,37 +646,30 @@ function TransactionsContent() {
                         <TableRow>
                           <TableHead className="w-12 text-center">No.</TableHead>
                           <TableHead>Peminjam & Buku</TableHead>
-                          <TableHead className="w-24 text-center">Tipe</TableHead>
-                          <TableHead className="w-32">Jatuh Tempo</TableHead>
+                          <TableHead className="w-32">Batas Kembali</TableHead>
                           <TableHead className="w-24 text-right">Aksi</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {loadingActive ? (
-                          <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+                          <TableRow><TableCell colSpan={4} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
                         ) : filteredActiveTrans.length === 0 ? (
-                          <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground italic">Tidak ada peminjaman siswa aktif.</TableCell></TableRow>
+                          <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground italic">Tidak ada peminjaman aktif.</TableCell></TableRow>
                         ) : filteredActiveTrans.map((t, index) => {
                           const borrowDate = t.borrowDate ? parseISO(t.borrowDate) : new Date();
                           const effectiveDueDate = addDays(borrowDate, loanDays);
-                          const isOverdue = isAfter(new Date(), effectiveDueDate);
                           
                           return (
-                            <TableRow key={t.id} className={cn(isOverdue && "bg-red-50/50")}>
+                            <TableRow key={t.id}>
                               <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
                               <TableCell>
                                 <div className="space-y-1">
-                                  <div className="font-bold text-sm leading-tight">{t.bookTitle} {t.quantity > 1 && `(${t.quantity} unit)`}</div>
+                                  <div className="font-bold text-sm leading-tight">{t.bookTitle}</div>
                                   <div className="text-xs font-semibold">{t.memberName} <span className="text-muted-foreground font-normal">/ {t.memberId}</span></div>
                                 </div>
                               </TableCell>
-                              <TableCell className="text-center">
-                                <Badge variant="outline" className="text-[8px] h-4 uppercase font-bold">{t.loanType === 'class' ? "Kolektif" : "Pribadi"}</Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className={cn("text-xs font-bold", isOverdue ? "text-destructive" : "text-muted-foreground")}>
-                                  {format(effectiveDueDate, 'dd/MM/yyyy')}
-                                </div>
+                              <TableCell className="text-xs font-bold text-muted-foreground">
+                                {format(effectiveDueDate, 'dd/MM/yyyy')}
                               </TableCell>
                               <TableCell className="text-right">
                                 <Button size="sm" variant="outline" className="h-8 text-xs font-bold" onClick={() => prepareReturn(t)}>
@@ -790,9 +685,6 @@ function TransactionsContent() {
                 </CardContent>
               </Card>
             </div>
-            <div className="text-center py-6 opacity-30">
-              <p className="text-[10px] font-black uppercase tracking-widest">© 2026 Lantera Baca</p>
-            </div>
           </TabsContent>
         </div>
       </Tabs>
@@ -801,7 +693,7 @@ function TransactionsContent() {
         <DialogContent className="max-w-md bg-white border-none shadow-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-primary font-bold">
-              <CheckCircle className="h-5 w-5" /> Konfirmasi Pengembalian Siswa
+              <CheckCircle className="h-5 w-5" /> Konfirmasi Pengembalian
             </DialogTitle>
           </DialogHeader>
           
@@ -809,17 +701,17 @@ function TransactionsContent() {
             <div className="space-y-6 py-4">
               <div className="p-4 bg-slate-50 rounded-xl border space-y-3">
                 <div className="flex-1">
-                  <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Buku & Siswa</div>
-                  <div className="text-sm font-black">{pendingReturnTrans.bookTitle} ({pendingReturnTrans.quantity} unit)</div>
+                  <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Buku & Peminjam</div>
+                  <div className="text-sm font-black">{pendingReturnTrans.bookTitle}</div>
                   <div className="text-xs font-bold text-primary mt-1">{pendingReturnTrans.memberName} / {pendingReturnTrans.memberId}</div>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Rincian Kondisi</div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Kondisi Pengembalian</div>
                 <div className="grid gap-3">
                   <div className="flex items-center justify-between p-3 rounded-xl border bg-green-50/50">
-                    <Label className="font-bold text-sm">Kembali Normal</Label>
+                    <Label className="font-bold text-sm">Kembali Baik</Label>
                     <div className="w-16 h-8 flex items-center justify-center font-bold bg-white rounded border">
                       {returnNormalQty}
                     </div>
@@ -848,15 +740,10 @@ function TransactionsContent() {
               {calculatedFine > 0 && (
                 <div className="p-4 bg-orange-50 rounded-xl border border-orange-200 flex items-center justify-between animate-in fade-in zoom-in-95">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-orange-200 rounded-full">
-                      <Coins className="h-5 w-5 text-orange-700" />
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-bold text-orange-800 uppercase tracking-tighter">Estimasi Denda</div>
-                      <div className="text-xl font-black text-orange-700">Rp {calculatedFine.toLocaleString('id-ID')}</div>
-                    </div>
+                    <Coins className="h-5 w-5 text-orange-700" />
+                    <div className="text-xl font-black text-orange-700">Rp {calculatedFine.toLocaleString()}</div>
                   </div>
-                  <Badge variant="outline" className="border-orange-300 text-orange-700 text-[8px] font-bold bg-white/50">WAJIB BAYAR</Badge>
+                  <Badge variant="outline" className="border-orange-300 text-orange-700 text-[8px] font-bold">DENDA</Badge>
                 </div>
               )}
             </div>
@@ -865,7 +752,7 @@ function TransactionsContent() {
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => { setIsReturnConfirmOpen(false); forceUnlockUI(); }} disabled={isProcessing} className="flex-1">Batal</Button>
             <Button onClick={handleConfirmReturn} disabled={isProcessing} className="flex-1 shadow-lg shadow-primary/20">
-              {isProcessing ? <Loader2 className="animate-spin" /> : "Simpan Data"}
+              {isProcessing ? <Loader2 className="animate-spin" /> : "Simpan"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -874,12 +761,16 @@ function TransactionsContent() {
       <Dialog open={isScannerOpen} onOpenChange={o => { if(!o) stopScanner(); }}>
         <DialogContent className="p-0 border-none bg-black max-w-xl h-[400px] overflow-hidden">
           <DialogHeader className="sr-only">
-            <DialogTitle>Pemindai QR Code Siswa</DialogTitle>
+            <DialogTitle>Pemindai</DialogTitle>
           </DialogHeader>
           <div id="smart-scanner" className="w-full h-full bg-black"></div>
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>
         </DialogContent>
       </Dialog>
+      
+      <div className="text-center py-6 opacity-30">
+        <p className="text-[10px] font-black uppercase tracking-widest">© 2026 Lantera Baca</p>
+      </div>
     </div>
   )
 }
