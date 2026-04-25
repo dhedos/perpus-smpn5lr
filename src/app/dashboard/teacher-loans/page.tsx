@@ -185,7 +185,7 @@ export default function TeacherLoansPage() {
             if (b) { setSelectedBook(b); stopScanner(); }
           } else if (mode === "return") {
             const trans = activeTransactions?.find(t => t.memberId?.toLowerCase() === text.toLowerCase() || t.bookTitle?.toLowerCase().includes(text.toLowerCase()))
-            if (trans) { stopScanner(); setTimeout(() => prepareReturn(trans), 100); }
+            if (trans) { stopScanner(); setTimeout(() => prepareReturn(trans), 10); }
           }
         }, () => {})
       }, 500)
@@ -257,18 +257,6 @@ export default function TeacherLoansPage() {
   const handleConfirmReturn = () => {
     if (!db || !pendingReturnTrans) return
     
-    const totalInput = returnNormalQty + returnDamagedQty + returnLostQty;
-    const expectedTotal = Number(pendingReturnTrans.quantity || 1);
-    
-    if (totalInput !== expectedTotal) {
-      toast({ 
-        title: "Jumlah Tidak Sesuai", 
-        description: `Total unit harus ${expectedTotal}.`,
-        variant: "destructive"
-      });
-      return;
-    }
-
     setIsProcessing(true)
     
     const transRef = doc(db, 'transactions', pendingReturnTrans.id)
