@@ -335,38 +335,48 @@ function TransactionsContent() {
 
     const rowsHtml = targetData.map((t, index) => `
       <tr>
-        <td style="border: 1px solid #000; padding: 5px;">${index + 1}</td>
-        <td style="border: 1px solid #000; padding: 5px;">${t.memberName}</td>
-        <td style="border: 1px solid #000; padding: 5px;">${t.bookTitle}</td>
-        <td style="border: 1px solid #000; padding: 5px;">${t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yyyy') : '-'}</td>
-        <td style="border: 1px solid #000; padding: 5px;">${t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yyyy') : 'Pinjam'}</td>
-        <td style="border: 1px solid #000; padding: 5px;">Rp ${(t.fineAmount || 0).toLocaleString()}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
+        <td style="border: 1px solid #ccc; padding: 8px;">${t.memberName}</td>
+        <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yyyy') : '-'}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yyyy') : 'PINJAM'}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">${(t.fineAmount || 0).toLocaleString()}</td>
       </tr>
     `).join('')
 
     printWindow.document.write(`
       <html>
-        <head><title>Laporan Transaksi</title></head>
+        <head>
+          <title>Laporan Transaksi</title>
+          <style>
+            body { font-family: sans-serif; font-size: 12px; padding: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th { border: 1px solid #ccc; padding: 10px; background: #f0f0f0; }
+            td { border: 1px solid #ccc; padding: 8px; }
+            h2 { text-align: center; }
+          </style>
+        </head>
         <body onload="window.print(); window.close();">
           <h2>DAFTAR TRANSAKSI PERPUSTAKAAN</h2>
-          <table style="width: 100%; border-collapse: collapse;">
+          <table>
             <thead>
               <tr>
-                <th style="border: 1px solid #000; padding: 5px;">No</th>
-                <th style="border: 1px solid #000; padding: 5px;">Nama Siswa</th>
-                <th style="border: 1px solid #000; padding: 5px;">Judul Buku</th>
-                <th style="border: 1px solid #000; padding: 5px;">Tgl Pinjam</th>
-                <th style="border: 1px solid #000; padding: 5px;">Tgl Kembali</th>
-                <th style="border: 1px solid #000; padding: 5px;">Denda</th>
+                <th>No</th>
+                <th>Nama Siswa</th>
+                <th>Judul Buku</th>
+                <th>Tgl Pinjam</th>
+                <th>Tgl Kembali</th>
+                <th>Denda (Rp)</th>
               </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>
           </table>
-          <p style="text-align: center; font-size: 10px; margin-top: 20px;">© 2026 Lantera Baca</p>
+          <p style="text-align: center; margin-top: 30px; font-size: 10px;">© 2026 Lantera Baca</p>
         </body>
       </html>
     `)
     printWindow.document.close()
+    forceUnlockUI()
   }
 
   const startScanner = async () => {
