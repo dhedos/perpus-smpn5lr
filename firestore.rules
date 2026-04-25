@@ -2,13 +2,13 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 1. IZIN GLOBAL UNTUK PETUGAS TERDAFTAR
-    // Menjamin seluruh kueri 'list' dan 'get' pada semua koleksi diizinkan jika sudah login.
+    // 1. IZIN GLOBAL UNTUK PENGGUNA TEROTENTIKASI
+    // Memberikan hak baca (get/list) dan tulis ke seluruh koleksi bagi siapa saja yang sudah login.
     match /{allPaths=**} {
       allow read, write: if request.auth != null;
     }
     
-    // 2. IZIN KHUSUS KOLEKSI UTAMA (Double-Check)
+    // 2. IZIN KHUSUS KOLEKSI UTAMA (Double-Check untuk menjamin kueri list)
     match /transactions/{id} { allow read, write: if request.auth != null; }
     match /members/{id} { allow read, write: if request.auth != null; }
     match /books/{id} { allow read, write: if request.auth != null; }
