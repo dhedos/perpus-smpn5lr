@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { 
-  BookOpen, 
   Search, 
   Loader2, 
   CheckCircle,
@@ -20,12 +19,9 @@ import {
   Coins,
   CalendarDays,
   ChevronRight,
-  Minus,
-  Plus,
-  Home,
-  Users as UsersIcon,
   Printer,
-  History
+  History,
+  BookOpen
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -54,8 +50,7 @@ import {
   useUser
 } from '@/firebase'
 import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc, orderBy, limit } from 'firebase/firestore'
-import { differenceInDays, parseISO, format, isAfter, addDays, startOfDay } from "date-fns"
-import { cn } from "@/lib/utils"
+import { differenceInDays, parseISO, format, addDays, startOfDay } from "date-fns"
 
 function TransactionsContent() {
   const db = useFirestore()
@@ -75,7 +70,6 @@ function TransactionsContent() {
   const [selectedMember, setSelectedMember] = useState<any>(null)
   const [selectedBook, setSelectedBook] = useState<any>(null)
   const [borrowQuantity, setBorrowQuantity] = useState(1)
-  const [loanType, setLoanType] = useState<"personal" | "class">("personal")
 
   const [showMemberSuggestions, setShowMemberSuggestions] = useState(false)
   const [showBookSuggestions, setShowBookSuggestions] = useState(false)
@@ -193,28 +187,15 @@ function TransactionsContent() {
         return true
       }
       else if (book) { 
-        if (selectedBook && selectedBook.id === book.id) {
-          const maxAvail = book.availableStock || 0;
-          if (borrowQuantity < maxAvail) {
-            setBorrowQuantity(prev => prev + 1);
-            toast({ title: "Jumlah Bertambah", description: `${book.title} +1` });
-          } else {
-            toast({ title: "Stok Maksimal", description: "Tidak bisa menambah jumlah lagi.", variant: "destructive" });
-          }
-        } else {
-          setSelectedBook(book); 
-          setBookSearch(""); 
-          setShowBookSuggestions(false); 
-          setBorrowQuantity(1); 
-          toast({ title: "Buku Terpilih" }) 
-        }
+        setSelectedBook(book); 
+        setBookSearch(""); 
+        setShowBookSuggestions(false); 
+        setBorrowQuantity(1); 
+        toast({ title: "Buku Terpilih" }) 
         return true
       }
     } else {
-      const trans = activeTrans?.find(t => { 
-        const b = books?.find(bk => bk.id === t.bookId); 
-        return b?.code?.toLowerCase() === text.toLowerCase() || b?.isbn === text || t.memberId?.toLowerCase() === text.toLowerCase(); 
-      })
+      const trans = activeTrans?.find(t => t.memberId?.toLowerCase() === text.toLowerCase() || t.bookTitle?.toLowerCase().includes(text.toLowerCase()))
       if (trans) { 
         setTimeout(() => prepareReturn(trans), 10);
         return true
@@ -275,18 +256,6 @@ function TransactionsContent() {
   const handleConfirmReturn = () => {
     if (!db || !pendingReturnTrans) return
     
-    const totalInput = returnNormalQty + returnDamagedQty + returnLostQty;
-    const expectedTotal = Number(pendingReturnTrans.quantity || 1);
-    
-    if (totalInput !== expectedTotal) {
-      toast({ 
-        title: "Jumlah Tidak Sesuai", 
-        description: `Total unit harus ${expectedTotal}.`,
-        variant: "destructive"
-      });
-      return;
-    }
-
     setIsProcessing(true)
     
     const transRef = doc(db, 'transactions', pendingReturnTrans.id)
@@ -427,7 +396,6 @@ function TransactionsContent() {
       bookId: selectedBook.id, 
       bookTitle: selectedBook.title, 
       quantity: borrowQuantity,
-      loanType: loanType,
       type: 'borrow', 
       status: 'active', 
       borrowDate: today.toISOString(), 
@@ -438,10 +406,7 @@ function TransactionsContent() {
     addDoc(collection(db, 'transactions'), newBorrow).then(() => {
       const avail = Number(selectedBook.availableStock ?? 1);
       updateDoc(doc(db, 'books', selectedBook.id), { availableStock: Math.max(0, avail - borrowQuantity) })
-      toast({ 
-        title: "Peminjaman Berhasil", 
-        description: `Siswa: ${selectedMember.name}` 
-      }); 
+      toast({ title: "Peminjaman Berhasil", description: `Siswa: ${selectedMember.name}` }); 
       setSelectedBook(null); 
       setSelectedMember(null);
       setBorrowQuantity(1);
@@ -455,16 +420,14 @@ function TransactionsContent() {
           <h1 className="text-2xl font-bold text-primary flex items-center gap-2"><ArrowRightLeft className="h-6 w-6" /> Sirkulasi Siswa</h1>
           <p className="text-sm text-muted-foreground">Fokus peminjaman dan pengembalian buku untuk siswa.</p>
         </div>
-        <div className="text-right flex flex-col items-end gap-2">
-          <div className="flex gap-2">
-             <Button variant="outline" size="sm" onClick={handlePrintReport}>
-               <Printer className="h-4 w-4 mr-2" /> Cetak
-             </Button>
-             <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold gap-2 py-1.5 px-3">
-              <CalendarDays className="h-4 w-4" />
-              Batas: {loanDays} Hari
-            </Badge>
-          </div>
+        <div className="text-right flex items-center gap-2">
+           <Button variant="outline" size="sm" onClick={handlePrintReport}>
+             <Printer className="h-4 w-4 mr-2" /> Cetak
+           </Button>
+           <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold gap-2 py-1.5 px-3">
+            <CalendarDays className="h-4 w-4" />
+            Batas: {loanDays} Hari
+          </Badge>
         </div>
       </div>
 
@@ -666,30 +629,25 @@ function TransactionsContent() {
                           <TableRow><TableCell colSpan={4} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
                         ) : filteredActiveTrans.length === 0 ? (
                           <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground italic">Tidak ada peminjaman aktif.</TableCell></TableRow>
-                        ) : filteredActiveTrans.map((t, index) => {
-                          const borrowDate = t.borrowDate ? parseISO(t.borrowDate) : new Date();
-                          const effectiveDueDate = addDays(borrowDate, loanDays);
-                          
-                          return (
-                            <TableRow key={t.id}>
-                              <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
-                              <TableCell>
-                                <div className="space-y-1">
-                                  <div className="font-bold text-sm leading-tight">{t.bookTitle}</div>
-                                  <div className="text-xs font-semibold">{t.memberName} <span className="text-muted-foreground font-normal">/ {t.memberId}</span></div>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-xs font-bold text-muted-foreground">
-                                {format(effectiveDueDate, 'dd/MM/yyyy')}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Button size="sm" variant="outline" className="h-8 text-xs font-bold" onClick={() => prepareReturn(t)}>
-                                  Kembali
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
+                        ) : filteredActiveTrans.map((t, index) => (
+                          <TableRow key={t.id}>
+                            <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <div className="font-bold text-sm leading-tight">{t.bookTitle}</div>
+                                <div className="text-xs font-semibold">{t.memberName} <span className="text-muted-foreground font-normal">/ {t.memberId}</span></div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-xs font-bold text-muted-foreground">
+                              {t.dueDate ? format(parseISO(t.dueDate), 'dd/MM/yyyy') : '-'}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button size="sm" variant="outline" className="h-8 text-xs font-bold" onClick={() => prepareReturn(t)}>
+                                Kembali
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
                       </TableBody>
                     </Table>
                   </div>
