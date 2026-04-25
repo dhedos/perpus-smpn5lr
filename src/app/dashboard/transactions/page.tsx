@@ -362,6 +362,7 @@ function TransactionsContent() {
             </thead>
             <tbody>${rowsHtml}</tbody>
           </table>
+          <p style="text-align: center; font-size: 10px; margin-top: 20px;">© 2026 Lantera Baca</p>
         </body>
       </html>
     `)
