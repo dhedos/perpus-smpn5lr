@@ -3,39 +3,31 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 1. Aturan untuk Pengaturan Sistem & Pengguna
-    // Menggunakan recursive wildcard {allPaths=**} untuk memastikan semua sub-dokumen tercover
-    match /settings/{allPaths=**} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-    
-    match /users/{allPaths=**} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-
-    // 2. Koleksi Utama Sistem
-    // Izin diberikan secara eksplisit untuk read (get & list) serta write bagi user terotentikasi
-    
-    match /members/{allPaths=**} {
-      allow read, write: if request.auth != null;
-    }
-    
-    match /books/{allPaths=**} {
-      allow read, write: if request.auth != null;
-    }
-    
-    match /transactions/{allPaths=**} {
-      allow read, write: if request.auth != null;
-    }
-    
-    match /activity_logs/{allPaths=**} {
+    // 1. Aturan Global untuk Pengguna Terotentikasi
+    // Memberikan izin baca dan tulis ke seluruh koleksi bagi petugas yang sudah login
+    match /{allPaths=**} {
       allow read, write: if request.auth != null;
     }
 
-    // 3. Fallback Global
-    match /{document=**} {
+    // 2. Aturan Terbuka Khusus (Wajib untuk proses Login/Inisialisasi)
+    match /settings/{docId} {
+      allow read: if true;
+    }
+    
+    match /users/{docId} {
+      allow read: if true;
+    }
+
+    // 3. Aturan Eksplisit Koleksi Utama (Double-Safety)
+    match /transactions/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    match /members/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    match /books/{document=**} {
       allow read, write: if request.auth != null;
     }
   }
