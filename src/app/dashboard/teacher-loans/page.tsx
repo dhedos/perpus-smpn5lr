@@ -54,8 +54,7 @@ import {
 } from '@/firebase'
 import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc, orderBy } from 'firebase/firestore'
 import { format } from "date-fns"
-import { cn } from "@/utils"
-import { FirestorePermissionError } from "@/firebase/errors"
+import { cn } from "@/lib/utils"
 
 export default function TeacherLoansPage() {
   const db = useFirestore()
@@ -88,7 +87,6 @@ export default function TeacherLoansPage() {
   
   const isLockedForUser = Boolean(settings?.isDataLocked && !isAdmin);
 
-  // Menggunakan kueri dasar untuk menghindari Error Izin/Indeks
   const membersRef = useMemoFirebase(() => (db && user) ? collection(db, 'members') : null, [db, !!user])
   const booksRef = useMemoFirebase(() => (db && user) ? collection(db, 'books') : null, [db, !!user])
   const allTransRef = useMemoFirebase(() => (db && user) ? collection(db, 'transactions') : null, [db, !!user])
@@ -108,10 +106,11 @@ export default function TeacherLoansPage() {
     return [...allBooksData].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
   }, [allBooksData]);
 
+  // Transaksi aktif khusus peminjaman GURU (Diorganisir berdasarkan memberType)
   const activeTransactions = useMemo(() => {
     if (!allTransactions) return []
     return allTransactions
-      .filter(t => t.status === 'active' && t.type === 'teacher_handbook')
+      .filter(t => t.status === 'active' && t.memberType === 'Teacher')
       .sort((a, b) => {
         const dateA = a.borrowDate ? new Date(a.borrowDate).getTime() : 0;
         const dateB = b.borrowDate ? new Date(b.borrowDate).getTime() : 0;
@@ -122,7 +121,7 @@ export default function TeacherLoansPage() {
   const historyTransactions = useMemo(() => {
     if (!allTransactions) return []
     return allTransactions
-      .filter(t => t.status === 'returned' && t.type === 'teacher_handbook')
+      .filter(t => t.status === 'returned' && t.memberType === 'Teacher')
       .sort((a, b) => {
         const dateA = a.returnDate ? new Date(a.returnDate).getTime() : 0;
         const dateB = b.returnDate ? new Date(b.returnDate).getTime() : 0;
@@ -462,21 +461,19 @@ export default function TeacherLoansPage() {
                       <TableHead className="w-12 text-center">No.</TableHead>
                       <TableHead>Nama Guru</TableHead>
                       <TableHead>Judul Buku</TableHead>
-                      <TableHead>Tgl Serah</TableHead>
                       <TableHead className="text-right">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {loadingTrans ? (
-                      <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                      <TableRow><TableCell colSpan={4} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
                     ) : historyTransactions.length === 0 ? (
-                      <TableRow><TableCell colSpan={5} className="text-center py-10 text-muted-foreground italic">Belum ada riwayat guru.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">Belum ada riwayat guru.</TableCell></TableRow>
                     ) : historyTransactions.slice(0, 10).map((t, index) => (
                       <TableRow key={t.id}>
                         <TableCell className="text-center text-xs">{index + 1}</TableCell>
                         <TableCell className="font-bold text-xs">{t.memberName}</TableCell>
                         <TableCell className="text-xs">{t.bookTitle}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{t.borrowDate ? format(new Date(t.borrowDate), 'dd/MM/yyyy') : '-'}</TableCell>
                         <TableCell className="text-right">
                           <Badge variant="outline" className="bg-green-50 text-green-700 border-none text-[8px] font-bold">KEMBALI</Badge>
                         </TableCell>
@@ -510,15 +507,14 @@ export default function TeacherLoansPage() {
                       <TableRow>
                         <TableHead className="w-12 text-center">No.</TableHead>
                         <TableHead>Nama Guru & Buku</TableHead>
-                        <TableHead>Tgl Penyerahan</TableHead>
                         <TableHead className="text-right">Aksi</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {loadingTrans ? (
-                        <TableRow><TableCell colSpan={4} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                        <TableRow><TableCell colSpan={3} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
                       ) : filteredActive.length === 0 ? (
-                        <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground italic">Tidak ada buku guru aktif.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={3} className="text-center py-12 text-muted-foreground italic">Tidak ada buku guru aktif.</TableCell></TableRow>
                       ) : filteredActive.map((t, index) => (
                         <TableRow key={t.id}>
                           <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
@@ -527,9 +523,6 @@ export default function TeacherLoansPage() {
                               <div className="font-bold text-sm leading-tight">{t.bookTitle}</div>
                               <div className="text-xs font-semibold">{t.memberName} <span className="text-muted-foreground font-normal">/ {t.memberId}</span></div>
                             </div>
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
-                            {t.borrowDate ? format(new Date(t.borrowDate), 'dd/MM/yyyy') : '-'}
                           </TableCell>
                           <TableCell className="text-right">
                             <Button size="sm" variant="outline" className="h-8 text-xs font-bold" onClick={() => prepareReturn(t)} disabled={isLockedForUser}>

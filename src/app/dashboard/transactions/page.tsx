@@ -108,7 +108,6 @@ function TransactionsContent() {
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
 
-  // Menggunakan kueri paling dasar tanpa filter WHERE untuk menghindari Error Izin/Indeks
   const membersRef = useMemoFirebase(() => (db && user) ? collection(db, 'members') : null, [db, !!user])
   const booksRef = useMemoFirebase(() => (db && user) ? collection(db, 'books') : null, [db, !!user])
   const allTransRef = useMemoFirebase(() => (db && user) ? collection(db, 'transactions') : null, [db, !!user])
@@ -130,16 +129,16 @@ function TransactionsContent() {
     return [...allBooksData].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
   }, [allBooksData]);
 
-  // Transaksi aktif khusus peminjaman siswa
+  // Transaksi aktif khusus peminjaman SISWA (Diorganisir berdasarkan memberType)
   const activeTrans = useMemo(() => {
     if (!allTransactions) return [];
-    return allTransactions.filter(t => t.status === 'active' && t.type === 'borrow');
+    return allTransactions.filter(t => t.status === 'active' && t.memberType === 'Student');
   }, [allTransactions]);
 
   const historyTrans = useMemo(() => {
     if (!allTransactions) return [];
     return allTransactions
-      .filter(t => t.status === 'returned' && t.type === 'return')
+      .filter(t => t.status === 'returned' && t.memberType === 'Student')
       .sort((a, b) => {
         const dateA = a.returnDate ? new Date(a.returnDate).getTime() : 0;
         const dateB = b.returnDate ? new Date(b.returnDate).getTime() : 0;
@@ -334,7 +333,7 @@ function TransactionsContent() {
           </style>
         </head>
         <body onload="window.print(); window.close();">
-          <h2>DAFTAR TRANSAKSI PERPUSTAKAAN</h2>
+          <h2>DAFTAR TRANSAKSI PERPUSTAKAAN (SISWA)</h2>
           <table>
             <thead>
               <tr>
