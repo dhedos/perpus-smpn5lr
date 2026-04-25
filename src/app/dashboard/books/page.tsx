@@ -429,12 +429,12 @@ function BooksContent() {
 
     const rowsHtml = sortedForPrint.map((book, index) => `
       <tr>
-        <td style="border: 1px solid #000; padding: 10px; text-align: center;">${index + 1}</td>
-        <td style="border: 1px solid #000; padding: 10px; font-family: monospace;">${book.code}</td>
-        <td style="border: 1px solid #000; padding: 10px;">${book.title}</td>
-        <td style="border: 1px solid #000; padding: 10px;">${book.publisher || '-'}</td>
-        <td style="border: 1px solid #000; padding: 10px; text-align: center;">${book.publicationYear || '-'}</td>
-        <td style="border: 1px solid #000; padding: 10px; text-align: center;">${book.totalStock || 0}</td>
+        <td style="border: 1px solid #000; padding: 10px; text-align: center; font-weight: normal; font-size: 10.5pt;">${index + 1}</td>
+        <td style="border: 1px solid #000; padding: 10px; font-family: monospace; font-weight: normal; font-size: 10.5pt;">${book.code}</td>
+        <td style="border: 1px solid #000; padding: 10px; font-weight: normal; font-size: 10.5pt;">${book.title}</td>
+        <td style="border: 1px solid #000; padding: 10px; font-weight: normal; font-size: 10.5pt;">${book.publisher || '-'}</td>
+        <td style="border: 1px solid #000; padding: 10px; text-align: center; font-weight: normal; font-size: 10.5pt;">${book.publicationYear || '-'}</td>
+        <td style="border: 1px solid #000; padding: 10px; text-align: center; font-weight: normal; font-size: 10.5pt;">${book.totalStock || 0}</td>
       </tr>
     `).join('')
 
