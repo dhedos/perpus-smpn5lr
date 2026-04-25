@@ -54,7 +54,7 @@ import {
 } from '@/firebase'
 import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDoc, orderBy } from 'firebase/firestore'
 import { format } from "date-fns"
-import { cn } from "@/lib/utils"
+import { cn } from "@/utils"
 import { FirestorePermissionError } from "@/firebase/errors"
 
 export default function TeacherLoansPage() {
@@ -88,30 +88,33 @@ export default function TeacherLoansPage() {
   
   const isLockedForUser = Boolean(settings?.isDataLocked && !isAdmin);
 
-  const teachersRef = useMemoFirebase(() => 
-    (db && user) ? query(collection(db, 'members'), where('type', '==', 'Teacher')) : null, [db, user])
-  const booksRef = useMemoFirebase(() => 
-    (db && user) ? query(collection(db, 'books'), orderBy('title', 'asc')) : null, [db, user])
-  
-  const teacherTransQuery = useMemoFirebase(() => {
-    if (!db || !user) return null
-    return query(
-      collection(db, 'transactions'), 
-      where('type', '==', 'teacher_handbook')
-    )
-  }, [db, user])
+  // Menggunakan kueri dasar untuk menghindari Error Izin/Indeks
+  const membersRef = useMemoFirebase(() => (db && user) ? collection(db, 'members') : null, [db, !!user])
+  const booksRef = useMemoFirebase(() => (db && user) ? collection(db, 'books') : null, [db, !!user])
+  const allTransRef = useMemoFirebase(() => (db && user) ? collection(db, 'transactions') : null, [db, !!user])
 
-  const { data: teachers } = useCollection(teachersRef)
-  const { data: books } = useCollection(booksRef)
-  const { data: allTransactions, isLoading: loadingTrans } = useCollection(teacherTransQuery)
+  const { data: allMembersData } = useCollection(membersRef)
+  const { data: allBooksData } = useCollection(booksRef)
+  const { data: allTransactions, isLoading: loadingTrans } = useCollection(allTransRef)
+
+  // FILTER KHUSUS GURU
+  const teachers = useMemo(() => {
+    if (!allMembersData) return [];
+    return allMembersData.filter(m => m.type === 'Teacher');
+  }, [allMembersData]);
+
+  const books = useMemo(() => {
+    if (!allBooksData) return [];
+    return [...allBooksData].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+  }, [allBooksData]);
 
   const activeTransactions = useMemo(() => {
     if (!allTransactions) return []
     return allTransactions
-      .filter(t => t.status === 'active')
+      .filter(t => t.status === 'active' && t.type === 'teacher_handbook')
       .sort((a, b) => {
-        const dateA = a.createdAt?.seconds || 0
-        const dateB = b.createdAt?.seconds || 0
+        const dateA = a.borrowDate ? new Date(a.borrowDate).getTime() : 0;
+        const dateB = b.borrowDate ? new Date(b.borrowDate).getTime() : 0;
         return dateB - dateA
       })
   }, [allTransactions])
@@ -119,10 +122,10 @@ export default function TeacherLoansPage() {
   const historyTransactions = useMemo(() => {
     if (!allTransactions) return []
     return allTransactions
-      .filter(t => t.status === 'returned')
+      .filter(t => t.status === 'returned' && t.type === 'teacher_handbook')
       .sort((a, b) => {
-        const dateA = a.createdAt?.seconds || 0
-        const dateB = b.createdAt?.seconds || 0
+        const dateA = a.returnDate ? new Date(a.returnDate).getTime() : 0;
+        const dateB = b.returnDate ? new Date(b.returnDate).getTime() : 0;
         return dateB - dateA
       })
   }, [allTransactions])
@@ -303,75 +306,45 @@ export default function TeacherLoansPage() {
   }
 
   const handlePrintBukti = () => {
-    const targetData = activeTab === "borrow" ? historyTransactions : filteredActive;
+    const targetData = activeTab === "borrow" ? (historyTransactions || []) : filteredActive;
     if (targetData.length === 0) return
 
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
-    const titleLabel = activeTab === "borrow" ? "RIWAYAT PENYERAHAN BUKU PEGANGAN GURU" : "DAFTAR PENYERAHAN BUKU PEGANGAN GURU (AKTIF)"
-    
     const rowsHtml = targetData.map((t, index) => `
       <tr>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
-        <td style="border: 1px solid #ccc; padding: 8px; font-family: monospace;">${t.memberId}</td>
-        <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold;">${t.memberName}</td>
+        <td style="border: 1px solid #ccc; padding: 8px;">${t.memberName}</td>
         <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle}</td>
-        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.borrowDate ? format(new Date(t.borrowDate), 'dd/MM/yyyy') : '-'}</td>
-        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.returnDate ? format(new Date(t.returnDate), 'dd/MM/yyyy') : (t.status === 'active' ? 'PEGANG' : '-')}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.borrowDate ? new Date(t.borrowDate).toLocaleDateString('id-ID') : '-'}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.returnDate ? new Date(t.returnDate).toLocaleDateString('id-ID') : 'PEGANG'}</td>
       </tr>
     `).join('')
 
     printWindow.document.write(`
       <html>
-        <head>
-          <title> </title>
-          <style>
-            @page { size: A4 landscape; margin: 0; }
-            body { font-family: 'Inter', sans-serif; font-size: 11px; margin: 0; padding: 15mm; }
-            .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
-            .school-name { font-size: 16px; font-weight: 900; }
-            .dept-name { font-size: 14px; font-weight: 700; }
-            .address { font-size: 10px; font-style: italic; }
-            .title { text-align: center; font-size: 12px; font-weight: 800; margin: 20px 0; text-transform: uppercase; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-            th { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; }
-            .footer-sign { margin-top: 40px; float: right; text-align: center; width: 250px; }
-            .print-footer { position: fixed; bottom: 5mm; left: 15mm; right: 15mm; font-size: 8px; text-align: center; color: #999; border-top: 1px solid #eee; padding-top: 2mm; }
-          </style>
-        </head>
+        <head><title>Buku Pegangan Guru</title></head>
         <body onload="window.print(); window.close();">
-          <div class="header">
-            <div class="dept-name">${settings?.govtInstitution || 'PEMERINTAH KABUPATEN MANGGARAI'}</div>
-            <div class="dept-name">${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
-            <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
-            <div class="address">Alamat: ${settings?.schoolAddress || 'Mando, Kelurahan Compang Carep'}</div>
-          </div>
-          <div class="title">${titleLabel}</div>
-          <table>
+          <h2 style="text-align: center;">DAFTAR PENYERAHAN BUKU PEGANGAN GURU</h2>
+          <table style="width: 100%; border-collapse: collapse;">
             <thead>
               <tr>
-                <th style="width: 30px;">No</th>
-                <th>ID Guru</th>
-                <th>Nama Guru</th>
-                <th>Judul Buku</th>
-                <th>Tgl Penyerahan</th>
-                <th>Tgl Kembali</th>
+                <th style="border: 1px solid #ccc; padding: 10px;">No</th>
+                <th style="border: 1px solid #ccc; padding: 10px;">Nama Guru</th>
+                <th style="border: 1px solid #ccc; padding: 10px;">Judul Buku</th>
+                <th style="border: 1px solid #ccc; padding: 10px;">Tgl Serah</th>
+                <th style="border: 1px solid #ccc; padding: 10px;">Tgl Kembali</th>
               </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>
           </table>
-          <div class="footer-sign">
-            ${settings?.reportCity || 'Mando'}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>
-            Kepala Sekolah,<br/><br/><br/><br/>
-            <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
-            NIP. ${settings?.principalNip || '198507272011011020'}
-          </div>
-          <div class="print-footer">© 2026 Lantera Baca</div>
+          <p style="text-align: center; margin-top: 30px; font-size: 10px;">© 2026 Lantera Baca</p>
         </body>
       </html>
     `)
     printWindow.document.close()
+    forceUnlockUI()
   }
 
   return (
@@ -385,7 +358,7 @@ export default function TeacherLoansPage() {
         </div>
         <div className="flex items-center gap-2">
            <Button variant="outline" size="sm" onClick={handlePrintBukti}>
-             <Printer className="h-4 w-4 mr-2" /> Cetak Laporan
+             <Printer className="h-4 w-4 mr-2" /> Cetak
            </Button>
            <Badge variant="secondary" className="h-9 px-3 bg-blue-100 text-blue-700 border-none font-bold">
             TA {settings?.academicYear || "2024/2025"}
@@ -395,8 +368,8 @@ export default function TeacherLoansPage() {
 
       <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); forceUnlockUI(); }} className="w-full">
         <TabsList className="grid w-full grid-cols-2 h-14 p-1 bg-muted/50">
-          <TabsTrigger value="borrow" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Penyerahan Buku</TabsTrigger>
-          <TabsTrigger value="return" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Pengembalian Buku</TabsTrigger>
+          <TabsTrigger value="borrow" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Penyerahan</TabsTrigger>
+          <TabsTrigger value="return" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Pengembalian</TabsTrigger>
         </TabsList>
 
         <TabsContent value="borrow" className="mt-8 space-y-6">
@@ -407,7 +380,7 @@ export default function TeacherLoansPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase">Cari Guru</Label>
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase">Pilih Guru</Label>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
@@ -479,7 +452,7 @@ export default function TeacherLoansPage() {
             <Card className="lg:col-span-2 border-none shadow-sm overflow-hidden">
               <CardHeader className="bg-slate-50/50 border-b">
                 <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                  <History className="h-4 w-4 text-primary" /> Riwayat Penyerahan (Tahun Ini)
+                  <History className="h-4 w-4 text-primary" /> Riwayat Guru (Terakhir)
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
@@ -497,7 +470,7 @@ export default function TeacherLoansPage() {
                     {loadingTrans ? (
                       <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
                     ) : historyTransactions.length === 0 ? (
-                      <TableRow><TableCell colSpan={5} className="text-center py-10 text-muted-foreground italic">Belum ada riwayat penyerahan.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={5} className="text-center py-10 text-muted-foreground italic">Belum ada riwayat guru.</TableCell></TableRow>
                     ) : historyTransactions.slice(0, 10).map((t, index) => (
                       <TableRow key={t.id}>
                         <TableCell className="text-center text-xs">{index + 1}</TableCell>
@@ -505,7 +478,7 @@ export default function TeacherLoansPage() {
                         <TableCell className="text-xs">{t.bookTitle}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{t.borrowDate ? format(new Date(t.borrowDate), 'dd/MM/yyyy') : '-'}</TableCell>
                         <TableCell className="text-right">
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-none text-[8px] font-bold">SUDAH KEMBALI</Badge>
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-none text-[8px] font-bold">KEMBALI</Badge>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -528,8 +501,7 @@ export default function TeacherLoansPage() {
 
             <Card className="md:col-span-2 border-none shadow-sm overflow-hidden">
               <CardHeader className="pb-3 border-b">
-                <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Buku Pegangan Guru Aktif</CardTitle>
-                <CardDescription className="text-xs">Daftar buku yang saat ini masih dipegang oleh bapak/ibu guru.</CardDescription>
+                <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Buku Guru Aktif</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="max-h-[500px] overflow-y-auto">
@@ -546,7 +518,7 @@ export default function TeacherLoansPage() {
                       {loadingTrans ? (
                         <TableRow><TableCell colSpan={4} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
                       ) : filteredActive.length === 0 ? (
-                        <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground italic">Tidak ada buku pegangan aktif.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground italic">Tidak ada buku guru aktif.</TableCell></TableRow>
                       ) : filteredActive.map((t, index) => (
                         <TableRow key={t.id}>
                           <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
@@ -561,7 +533,7 @@ export default function TeacherLoansPage() {
                           </TableCell>
                           <TableCell className="text-right">
                             <Button size="sm" variant="outline" className="h-8 text-xs font-bold" onClick={() => prepareReturn(t)} disabled={isLockedForUser}>
-                              Terima Kembali
+                              Kembali
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -579,7 +551,7 @@ export default function TeacherLoansPage() {
         <DialogContent className="max-w-md bg-white border-none shadow-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-primary font-bold">
-              <CheckCircle className="h-5 w-5" /> Konfirmasi Pengembalian Guru
+              <CheckCircle className="h-5 w-5" /> Konfirmasi Guru
             </DialogTitle>
           </DialogHeader>
           
@@ -594,7 +566,7 @@ export default function TeacherLoansPage() {
               </div>
 
               <div className="space-y-4">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Konfirmasi Kondisi Buku</div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Kondisi Pengembalian</div>
                 <div className="grid gap-3">
                   <div className="flex items-center justify-between p-3 rounded-xl border bg-green-50/50">
                     <Label className="font-bold text-sm">Kembali Baik</Label>
@@ -628,7 +600,7 @@ export default function TeacherLoansPage() {
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => { setIsReturnConfirmOpen(false); forceUnlockUI(); }} disabled={isProcessing} className="flex-1">Batal</Button>
             <Button onClick={handleConfirmReturn} disabled={isProcessing} className="flex-1 shadow-lg shadow-primary/20">
-              {isProcessing ? <Loader2 className="animate-spin" /> : "Simpan Pengembalian"}
+              {isProcessing ? <Loader2 className="animate-spin" /> : "Simpan"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -637,7 +609,7 @@ export default function TeacherLoansPage() {
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
         <DialogContent className="p-0 border-none bg-black max-w-xl h-[400px] overflow-hidden">
           <DialogHeader className="sr-only">
-             <DialogTitle>Pemindai Buku Guru</DialogTitle>
+             <DialogTitle>Pemindai</DialogTitle>
           </DialogHeader>
           <div id="teacher-scanner" className="w-full h-full bg-black"></div>
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>

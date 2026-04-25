@@ -108,7 +108,7 @@ function TransactionsContent() {
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
 
-  // Ambil semua data utama tanpa filter berat untuk menghindari Index Error
+  // Menggunakan kueri paling dasar tanpa filter WHERE untuk menghindari Error Izin/Indeks
   const membersRef = useMemoFirebase(() => (db && user) ? collection(db, 'members') : null, [db, !!user])
   const booksRef = useMemoFirebase(() => (db && user) ? collection(db, 'books') : null, [db, !!user])
   const allTransRef = useMemoFirebase(() => (db && user) ? collection(db, 'transactions') : null, [db, !!user])
@@ -119,6 +119,7 @@ function TransactionsContent() {
 
   const loanDays = useMemo(() => settings?.loanPeriod ? Number(settings.loanPeriod) : 7, [settings]);
 
+  // FILTER KHUSUS SISWA
   const members = useMemo(() => {
     if (!allMembersData) return [];
     return allMembersData.filter(m => m.type === 'Student');
@@ -129,6 +130,7 @@ function TransactionsContent() {
     return [...allBooksData].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
   }, [allBooksData]);
 
+  // Transaksi aktif khusus peminjaman siswa
   const activeTrans = useMemo(() => {
     if (!allTransactions) return [];
     return allTransactions.filter(t => t.status === 'active' && t.type === 'borrow');
@@ -137,7 +139,7 @@ function TransactionsContent() {
   const historyTrans = useMemo(() => {
     if (!allTransactions) return [];
     return allTransactions
-      .filter(t => t.status === 'returned')
+      .filter(t => t.status === 'returned' && t.type === 'return')
       .sort((a, b) => {
         const dateA = a.returnDate ? new Date(a.returnDate).getTime() : 0;
         const dateB = b.returnDate ? new Date(b.returnDate).getTime() : 0;
@@ -569,7 +571,7 @@ function TransactionsContent() {
                 <Card className="border-none shadow-sm overflow-hidden h-full">
                   <CardHeader className="bg-slate-50/50 border-b">
                     <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                      <History className="h-4 w-4 text-primary" /> Riwayat Transaksi Terbaru
+                      <History className="h-4 w-4 text-primary" /> Riwayat Siswa (Terakhir)
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
@@ -586,7 +588,7 @@ function TransactionsContent() {
                         {loadingAllTrans ? (
                           <TableRow><TableCell colSpan={4} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
                         ) : historyTrans?.length === 0 ? (
-                          <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">Belum ada riwayat.</TableCell></TableRow>
+                          <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">Belum ada riwayat siswa.</TableCell></TableRow>
                         ) : historyTrans?.slice(0, 10).map((t, index) => (
                           <TableRow key={t.id}>
                             <TableCell className="text-center text-xs">{index + 1}</TableCell>
@@ -608,16 +610,16 @@ function TransactionsContent() {
           <TabsContent value="return" className="space-y-6">
             <div className="grid md:grid-cols-3 gap-6">
               <Card className="md:col-span-1 border-none shadow-sm bg-accent/30 flex flex-col items-center justify-center p-8 gap-4">
-                <Button variant="secondary" className="h-20 w-full gap-3 shadow-md font-bold" onClick={startScanner}><ScanBarcode className="h-8 w-8" /> Scan Buku/Siswa</Button>
+                <Button variant="secondary" className="h-20 w-full gap-3 shadow-md font-bold" onClick={startScanner}><ScanBarcode className="h-8 w-8" /> Scan Buku/Kartu</Button>
                 <div className="w-full space-y-2">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Pencarian Manual</Label>
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Pencarian Manual Siswa</Label>
                   <Input placeholder="Cari Nama/NIS..." className="h-12 bg-white" value={returnSearch} onChange={e => setReturnSearch(e.target.value)} />
                 </div>
               </Card>
 
               <Card className="md:col-span-2 border-none shadow-sm overflow-hidden">
                 <CardHeader className="pb-3 border-b">
-                  <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Daftar Peminjaman Aktif</CardTitle>
+                  <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Peminjaman Siswa Aktif</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="max-h-[500px] overflow-y-auto">
@@ -634,7 +636,7 @@ function TransactionsContent() {
                         {loadingAllTrans ? (
                           <TableRow><TableCell colSpan={4} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
                         ) : filteredActiveTrans.length === 0 ? (
-                          <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground italic">Tidak ada peminjaman aktif.</TableCell></TableRow>
+                          <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground italic">Tidak ada peminjaman siswa aktif.</TableCell></TableRow>
                         ) : filteredActiveTrans.map((t, index) => (
                           <TableRow key={t.id}>
                             <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
@@ -649,7 +651,7 @@ function TransactionsContent() {
                             </TableCell>
                             <TableCell className="text-right">
                               <Button size="sm" variant="outline" className="h-8 text-xs font-bold" onClick={() => prepareReturn(t)}>
-                                Kembali
+                                Terima
                               </Button>
                             </TableCell>
                           </TableRow>
