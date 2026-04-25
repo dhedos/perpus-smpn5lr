@@ -3,45 +3,56 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Fungsi pembantu untuk mengecek status login
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // 1. Profil Pengguna & Pengaturan Dasar
-    match /users/{userId} {
-      allow read: if true;
-      allow write: if isSignedIn();
-    }
-    match /users {
-      allow list: if true;
-    }
-
+    // 1. Pengaturan Sistem & Profil Pengguna
+    // Diperlukan akses baca publik agar sistem bisa mendeteksi admin pertama
     match /settings/{docId} {
       allow read: if true;
       allow write: if isSignedIn();
     }
-
-    // 2. Izin Penuh untuk Petugas Terdaftar pada koleksi utama
-    // Menggunakan recursive wildcard untuk menjamin akses list/get pada seluruh dokumen
     
-    match /members/{allPaths=**} {
-      allow read, write: if isSignedIn();
-    }
-    
-    match /books/{allPaths=**} {
-      allow read, write: if isSignedIn();
-    }
-    
-    match /transactions/{allPaths=**} {
-      allow read, write: if isSignedIn();
-    }
-    
-    match /activity_logs/{allPaths=**} {
-      allow read, write: if isSignedIn();
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if isSignedIn();
     }
 
-    // 3. Fallback Global untuk Keamanan
-    match /{path=**} {
+    // 2. Koleksi Utama: Anggota, Buku, Transaksi, dan Log
+    // Memberikan izin penuh (read/write) kepada petugas yang sudah login
+    
+    match /members/{memberId} {
+      allow read, write: if isSignedIn();
+    }
+    match /members {
+      allow list: if isSignedIn();
+    }
+    
+    match /books/{bookId} {
+      allow read, write: if isSignedIn();
+    }
+    match /books {
+      allow list: if isSignedIn();
+    }
+    
+    match /transactions/{transId} {
+      allow read, write: if isSignedIn();
+    }
+    match /transactions {
+      allow list: if isSignedIn();
+    }
+    
+    match /activity_logs/{logId} {
+      allow read, write: if isSignedIn();
+    }
+    match /activity_logs {
+      allow list: if isSignedIn();
+    }
+
+    // 3. Fallback Global
+    match /{document=**} {
       allow read, write: if isSignedIn();
     }
   }
