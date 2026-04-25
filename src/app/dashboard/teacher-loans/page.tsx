@@ -71,6 +71,7 @@ export default function TeacherLoansPage() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null)
+  const [scanMode, setScanMode] = useState<"member" | "book" | "return">("member")
   
   const scannerInstanceRef = useRef<any>(null)
   
@@ -97,7 +98,7 @@ export default function TeacherLoansPage() {
 
   const { data: allMembersData } = useCollection(membersRef)
   const { data: allBooksData } = useCollection(booksRef)
-  const { data: allTransactions, isLoading: loadingTrans } = useCollection(allTransRef)
+  const { data: allTransactions } = useCollection(allTransRef)
 
   // FILTER KHUSUS GURU
   const teachers = useMemo(() => {
@@ -110,7 +111,7 @@ export default function TeacherLoansPage() {
     return [...allBooksData].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
   }, [allBooksData]);
 
-  // Transaksi aktif khusus peminjaman GURU (Diorganisir berdasarkan memberType)
+  // Transaksi aktif khusus peminjaman GURU
   const activeTransactions = useMemo(() => {
     if (!allTransactions) return []
     return allTransactions
@@ -118,7 +119,7 @@ export default function TeacherLoansPage() {
       .sort((a, b) => {
         const dateA = a.borrowDate ? new Date(a.borrowDate).getTime() : 0;
         const dateB = b.borrowDate ? new Date(b.borrowDate).getTime() : 0;
-        return dateB - dateA
+        return dateB - dateA;
       })
   }, [allTransactions])
 
@@ -129,7 +130,7 @@ export default function TeacherLoansPage() {
       .sort((a, b) => {
         const dateA = a.returnDate ? new Date(a.returnDate).getTime() : 0;
         const dateB = b.returnDate ? new Date(b.returnDate).getTime() : 0;
-        return dateB - dateA
+        return dateB - dateA;
       })
   }, [allTransactions])
 
@@ -145,7 +146,8 @@ export default function TeacherLoansPage() {
     if (!bookSearch || bookSearch.length < 1 || !books) return []
     return books.filter(b => 
       b.title?.toLowerCase().includes(bookSearch.toLowerCase()) || 
-      b.code?.toLowerCase().startsWith(bookSearch.toLowerCase())
+      b.code?.toLowerCase().startsWith(bookSearch.toLowerCase()) ||
+      b.isbn?.startsWith(bookSearch)
     ).slice(0, 5)
   }, [bookSearch, books])
 
@@ -173,27 +175,45 @@ export default function TeacherLoansPage() {
     }
   }, []);
 
+  const handleManualLookup = (mode: string, text: string) => {
+     if (mode === "member") {
+        const m = teachers?.find(t => t.memberId?.toLowerCase() === text.toLowerCase());
+        if (m) setSelectedMember(m);
+     } else if (mode === "book") {
+        const b = books?.find(bk => bk.code?.toLowerCase() === text.toLowerCase() || bk.isbn === text);
+        if (b) setSelectedBook(b);
+     }
+  }
+
   const startScanner = async (mode: "member" | "book" | "return") => {
+    setScanMode(mode)
     setIsScannerOpen(true)
     setHasCameraPermission(null)
     try {
-      const { Html5Qrcode } = await import("html5-qrcode")
+      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
       setTimeout(async () => {
         const sc = new Html5Qrcode("teacher-scanner")
         scannerInstanceRef.current = sc
         try {
-          await sc.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, (text) => {
-            if (mode === "member") {
-              const m = teachers?.find(t => t.memberId?.toLowerCase() === text.toLowerCase())
-              if (m) { setSelectedMember(m); stopScanner(); }
-            } else if (mode === "book") {
-              const b = books?.find(bk => bk.code?.toLowerCase() === text.toLowerCase() || bk.isbn === text)
-              if (b) { setSelectedBook(b); stopScanner(); }
-            } else if (mode === "return") {
-              const trans = activeTransactions?.find(t => t.memberId?.toLowerCase() === text.toLowerCase() || t.bookTitle?.toLowerCase().includes(text.toLowerCase()))
-              if (trans) { stopScanner(); setTimeout(() => prepareReturn(trans), 10); }
-            }
-          }, () => {})
+          await sc.start(
+            { facingMode: "environment" }, 
+            { 
+              fps: 20, 
+              qrbox: (vw, vh) => ({ width: Math.min(vw, vh) * 0.7, height: Math.min(vw, vh) * 0.7 }),
+              formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.CODE_128]
+            }, 
+            (text) => {
+              if (mode === "member") {
+                const m = teachers?.find(t => t.memberId?.toLowerCase() === text.toLowerCase())
+                if (m) { setSelectedMember(m); stopScanner(); }
+              } else if (mode === "book") {
+                const b = books?.find(bk => bk.code?.toLowerCase() === text.toLowerCase() || bk.isbn === text)
+                if (b) { setSelectedBook(b); stopScanner(); }
+              } else if (mode === "return") {
+                const trans = activeTransactions?.find(t => t.memberId?.toLowerCase() === text.toLowerCase() || t.bookTitle?.toLowerCase().includes(text.toLowerCase()))
+                if (trans) { stopScanner(); setTimeout(() => prepareReturn(trans), 10); }
+              }
+            }, () => {})
           setHasCameraPermission(true)
         } catch (e: any) {
           console.error("Camera access error:", e)
@@ -209,6 +229,7 @@ export default function TeacherLoansPage() {
 
   const stopScanner = async () => {
     if (scannerInstanceRef.current?.isScanning) await scannerInstanceRef.current.stop()
+    if (scannerInstanceRef.current) await scannerInstanceRef.current.clear()
     setIsScannerOpen(false)
     forceUnlockUI()
   }
@@ -383,7 +404,12 @@ export default function TeacherLoansPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase">Pilih Guru</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase">Pilih Guru</Label>
+                    <Button variant="ghost" size="sm" className="h-6 text-[9px] gap-1 px-1" onClick={() => startScanner("member")}>
+                       <ScanBarcode className="h-3 w-3" /> Scan Guru
+                    </Button>
+                  </div>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
@@ -392,6 +418,7 @@ export default function TeacherLoansPage() {
                       value={memberSearch}
                       onChange={e => { setMemberSearch(e.target.value); setShowMemberSuggestions(true); }}
                       onFocus={() => setShowMemberSuggestions(true)}
+                      onKeyDown={e => e.key === 'Enter' && handleManualLookup("member", memberSearch)}
                     />
                     {showMemberSuggestions && memberSuggestions.length > 0 && (
                       <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border rounded-lg shadow-xl overflow-hidden">
@@ -413,7 +440,12 @@ export default function TeacherLoansPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase">Pilih Buku Pegangan</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase">Pilih Buku Pegangan</Label>
+                    <Button variant="ghost" size="sm" className="h-6 text-[9px] gap-1 px-1" onClick={() => startScanner("book")}>
+                       <ScanBarcode className="h-3 w-3" /> Scan Buku
+                    </Button>
+                  </div>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
@@ -422,6 +454,7 @@ export default function TeacherLoansPage() {
                       value={bookSearch}
                       onChange={e => { setBookSearch(e.target.value); setShowBookSuggestions(true); }}
                       onFocus={() => setShowBookSuggestions(true)}
+                      onKeyDown={e => e.key === 'Enter' && handleManualLookup("book", bookSearch)}
                     />
                     {showBookSuggestions && bookSuggestions.length > 0 && (
                       <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border rounded-lg shadow-xl overflow-hidden">
@@ -470,9 +503,7 @@ export default function TeacherLoansPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {loadingTrans ? (
-                      <TableRow><TableCell colSpan={4} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
-                    ) : historyTransactions.length === 0 ? (
+                    {historyTransactions.length === 0 ? (
                       <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">Belum ada riwayat guru.</TableCell></TableRow>
                     ) : historyTransactions.slice(0, 10).map((t, index) => (
                       <TableRow key={t.id}>
@@ -517,9 +548,7 @@ export default function TeacherLoansPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {loadingTrans ? (
-                        <TableRow><TableCell colSpan={3} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
-                      ) : filteredActive.length === 0 ? (
+                      {filteredActive.length === 0 ? (
                         <TableRow><TableCell colSpan={3} className="text-center py-12 text-muted-foreground italic">Tidak ada buku guru aktif.</TableCell></TableRow>
                       ) : filteredActive.map((t, index) => (
                         <TableRow key={t.id}>
@@ -607,9 +636,9 @@ export default function TeacherLoansPage() {
       </Dialog>
 
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
-        <DialogContent className="p-0 border-none bg-black max-w-xl h-[400px] overflow-hidden">
+        <DialogContent className="p-0 border-none bg-black max-w-xl h-[100dvh] sm:h-[450px] overflow-hidden rounded-none sm:rounded-3xl">
           <DialogHeader className="sr-only">
-             <DialogTitle>Pemindai</DialogTitle>
+             <DialogTitle>Pemindai {scanMode}</DialogTitle>
              <DialogDescription>Arahkan kamera ke kode buku atau kartu guru.</DialogDescription>
           </DialogHeader>
           <div id="teacher-scanner" className="w-full h-full bg-black flex items-center justify-center relative">
@@ -619,13 +648,19 @@ export default function TeacherLoansPage() {
                   <CameraOff className="h-4 w-4 text-white" />
                   <AlertTitle>Akses Kamera Ditolak</AlertTitle>
                   <AlertDescription className="text-xs opacity-80">
-                    Izin kamera diblokir browser. Silakan aktifkan izin kamera di pengaturan browser Anda (ikon gembok di sebelah alamat web).
+                    Izin kamera diblokir browser. Silakan aktifkan izin kamera di pengaturan browser Anda.
                   </AlertDescription>
                 </Alert>
               </div>
             )}
+            {hasCameraPermission === null && (
+               <div className="flex flex-col items-center gap-4 text-white opacity-40">
+                  <Loader2 className="h-10 w-10 animate-spin" />
+                  <p className="text-sm font-bold uppercase tracking-widest">Inisialisasi Kamera...</p>
+               </div>
+            )}
           </div>
-          <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20 z-50" onClick={stopScanner}><X /></Button>
+          <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20 z-50 rounded-full h-12 w-12" onClick={stopScanner}><X className="h-6 w-6" /></Button>
         </DialogContent>
       </Dialog>
       <div className="text-center py-6 opacity-30">

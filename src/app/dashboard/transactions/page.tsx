@@ -118,7 +118,7 @@ function TransactionsContent() {
 
   const { data: allMembersData } = useCollection(membersRef)
   const { data: allBooksData } = useCollection(booksRef)
-  const { data: allTransactions, isLoading: loadingAllTrans } = useCollection(allTransRef)
+  const { data: allTransactions } = useCollection(allTransRef)
 
   const loanDays = useMemo(() => settings?.loanPeriod ? Number(settings.loanPeriod) : 7, [settings]);
 
@@ -133,7 +133,7 @@ function TransactionsContent() {
     return [...allBooksData].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
   }, [allBooksData]);
 
-  // RIWAYAT TRANSAKSI SISWA (MUTLAK)
+  // RIWAYAT TRANSAKSI SISWA
   const activeTrans = useMemo(() => {
     if (!allTransactions) return [];
     return allTransactions.filter(t => 
@@ -333,19 +333,10 @@ function TransactionsContent() {
 
     printWindow.document.write(`
       <html>
-        <head>
-          <title>Laporan Transaksi</title>
-          <style>
-            body { font-family: sans-serif; font-size: 12px; padding: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th { border: 1px solid #ccc; padding: 10px; background: #f0f0f0; }
-            td { border: 1px solid #ccc; padding: 8px; }
-            h2 { text-align: center; }
-          </style>
-        </head>
+        <head><title>Laporan</title></head>
         <body onload="window.print(); window.close();">
-          <h2>DAFTAR TRANSAKSI PERPUSTAKAAN (SISWA)</h2>
-          <table>
+          <h2 style="text-align: center;">DAFTAR TRANSAKSI SISWA</h2>
+          <table style="width: 100%; border-collapse: collapse;">
             <thead>
               <tr>
                 <th>No</th>
@@ -370,17 +361,24 @@ function TransactionsContent() {
     setIsScannerOpen(true); 
     setHasCameraPermission(null)
     try {
-      const { Html5Qrcode } = await import("html5-qrcode")
+      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
       setTimeout(async () => {
         try {
           const scanner = new Html5Qrcode("smart-scanner")
           scannerInstanceRef.current = scanner
           try {
-            await scanner.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (text) => {
-              if (handleLookup(text)) {
-                stopScanner();
-              }
-            }, () => {})
+            await scanner.start(
+              { facingMode: "environment" }, 
+              { 
+                fps: 20, 
+                qrbox: (vw, vh) => ({ width: Math.min(vw, vh) * 0.7, height: Math.min(vw, vh) * 0.7 }),
+                formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.CODE_128]
+              }, 
+              (text) => {
+                if (handleLookup(text)) {
+                  stopScanner();
+                }
+              }, () => {})
             setHasCameraPermission(true)
           } catch (e: any) {
             console.error("Camera access error:", e)
@@ -396,6 +394,7 @@ function TransactionsContent() {
 
   const stopScanner = async () => {
     if (scannerInstanceRef.current?.isScanning) await scannerInstanceRef.current.stop()
+    if (scannerInstanceRef.current) await scannerInstanceRef.current.clear()
     setIsScannerOpen(false)
     forceUnlockUI()
   }
@@ -493,6 +492,7 @@ function TransactionsContent() {
                           setShowMemberSuggestions(true);
                         }}
                         onFocus={() => setShowMemberSuggestions(true)}
+                        onKeyDown={e => e.key === 'Enter' && handleLookup(memberSearch)}
                       />
                       {showMemberSuggestions && memberSuggestions.length > 0 && (
                         <div className="absolute z-[100] left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 max-h-[250px] overflow-y-auto">
@@ -547,6 +547,7 @@ function TransactionsContent() {
                           setShowBookSuggestions(true);
                         }}
                         onFocus={() => setShowBookSuggestions(true)}
+                        onKeyDown={e => e.key === 'Enter' && handleLookup(bookSearch)}
                       />
                       {showBookSuggestions && bookSuggestions.length > 0 && (
                         <div className="absolute z-[100] left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 max-h-[250px] overflow-y-auto">
@@ -608,9 +609,7 @@ function TransactionsContent() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {loadingAllTrans ? (
-                          <TableRow><TableCell colSpan={4} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
-                        ) : historyTrans?.length === 0 ? (
+                        {historyTrans?.length === 0 ? (
                           <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">Belum ada riwayat siswa.</TableCell></TableRow>
                         ) : historyTrans?.slice(0, 10).map((t, index) => (
                           <TableRow key={t.id}>
@@ -636,7 +635,7 @@ function TransactionsContent() {
                 <Button variant="secondary" className="h-20 w-full gap-3 shadow-md font-bold" onClick={startScanner}><ScanBarcode className="h-8 w-8" /> Scan Buku/Kartu</Button>
                 <div className="w-full space-y-2">
                   <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Pencarian Manual Siswa</Label>
-                  <Input placeholder="Cari Nama/NIS..." className="h-12 bg-white" value={returnSearch} onChange={e => setReturnSearch(e.target.value)} />
+                  <Input placeholder="Cari Nama/NIS..." className="h-12 bg-white" value={returnSearch} onChange={e => setReturnSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLookup(returnSearch)} />
                 </div>
               </Card>
 
@@ -657,9 +656,7 @@ function TransactionsContent() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {loadingAllTrans ? (
-                          <TableRow><TableCell colSpan={4} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
-                        ) : filteredActiveTrans.length === 0 ? (
+                        {filteredActiveTrans.length === 0 ? (
                           <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground italic">Tidak ada peminjaman siswa aktif.</TableCell></TableRow>
                         ) : filteredActiveTrans.map((t, index) => (
                           <TableRow key={t.id}>
@@ -761,7 +758,7 @@ function TransactionsContent() {
       </Dialog>
 
       <Dialog open={isScannerOpen} onOpenChange={o => { if(!o) stopScanner(); }}>
-        <DialogContent className="p-0 border-none bg-black max-w-xl h-[400px] overflow-hidden">
+        <DialogContent className="p-0 border-none bg-black max-w-xl h-[100dvh] sm:h-[450px] overflow-hidden rounded-none sm:rounded-3xl">
           <DialogHeader className="sr-only">
             <DialogTitle>Pemindai</DialogTitle>
             <DialogDescription>Arahkan kamera pada kode QR kartu siswa atau barcode buku.</DialogDescription>
@@ -773,13 +770,19 @@ function TransactionsContent() {
                   <CameraOff className="h-4 w-4 text-white" />
                   <AlertTitle>Akses Kamera Ditolak</AlertTitle>
                   <AlertDescription className="text-xs opacity-80">
-                    Izin kamera diblokir browser. Silakan aktifkan izin kamera di pengaturan browser Anda (ikon gembok di sebelah alamat web).
+                    Izin kamera diblokir browser. Silakan aktifkan izin kamera di pengaturan browser Anda.
                   </AlertDescription>
                 </Alert>
               </div>
             )}
+            {hasCameraPermission === null && (
+               <div className="flex flex-col items-center gap-4 text-white opacity-40">
+                  <Loader2 className="h-10 w-10 animate-spin" />
+                  <p className="text-sm font-bold uppercase tracking-widest">Inisialisasi Kamera...</p>
+               </div>
+            )}
           </div>
-          <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20 z-50" onClick={stopScanner}><X /></Button>
+          <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20 z-50 rounded-full h-12 w-12" onClick={stopScanner}><X className="h-6 w-6" /></Button>
         </DialogContent>
       </Dialog>
       
@@ -787,5 +790,13 @@ function TransactionsContent() {
         <p className="text-[10px] font-black uppercase tracking-widest">© 2026 Lantera Baca</p>
       </div>
     </div>
+  )
+}
+
+export default function TransactionsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>}>
+      <TransactionsContent />
+    </Suspense>
   )
 }

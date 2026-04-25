@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useRef, useMemo } from "react"
+import { useState, useRef, useMemo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -72,16 +72,18 @@ export default function StockOpnamePage() {
     setIsScannerOpen(true)
     setHasCameraPermission(null)
     try {
-      const { Html5Qrcode } = await import("html5-qrcode")
+      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
       setTimeout(async () => {
-        const scannerElement = document.getElementById("audit-scanner")
-        if (!scannerElement) return;
         const sc = new Html5Qrcode("audit-scanner")
         scannerInstanceRef.current = sc
         try {
           await sc.start(
             { facingMode: "environment" }, 
-            { fps: 15, qrbox: { width: 250, height: 150 } }, 
+            { 
+              fps: 15, 
+              qrbox: (vw, vh) => ({ width: Math.min(vw, vh) * 0.7, height: Math.min(vw, vh) * 0.7 }),
+              formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.CODE_128]
+            }, 
             (txt) => { handleLookup(txt); stopScanner(); }, 
             () => {}
           )
@@ -181,8 +183,6 @@ export default function StockOpnamePage() {
   const handlePrintAudit = () => {
     if (!audits || !books) return
     const stockAudits = audits.filter(a => a.actionType === 'STOCK_AUDIT')
-    
-    // FILTER: Hanya cetak buku yang masih ada di database
     const validAuditsForPrint = stockAudits.filter(a => books.some(b => b.id === a.bookId))
     
     if (validAuditsForPrint.length === 0) {
@@ -214,29 +214,10 @@ export default function StockOpnamePage() {
 
     printWindow.document.write(`
       <html>
-        <head>
-          <title> </title>
-          <style>
-            @page { size: A4 landscape; margin: 0; }
-            body { font-family: 'Inter', sans-serif; font-size: 11px; margin: 0; padding: 15mm; }
-            .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
-            .school-name { font-size: 16px; font-weight: 900; }
-            .title { text-align: center; font-size: 14px; font-weight: 800; margin: 20px 0; text-transform: uppercase; }
-            table { width: 100%; border-collapse: collapse; }
-            th { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; }
-            .footer-sign { margin-top: 40px; float: right; text-align: center; width: 250px; }
-            .print-footer { position: fixed; bottom: 5mm; left: 15mm; right: 15mm; font-size: 8px; text-align: center; color: #999; border-top: 1px solid #eee; padding-top: 2mm; }
-          </style>
-        </head>
+        <head><title>Stock Opname</title></head>
         <body onload="window.print(); window.close();">
-          <div class="header">
-            <div>${settings?.govtInstitution || 'PEMERINTAH KABUPATEN MANGGARAI'}</div>
-            <div>${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
-            <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
-            <div style="font-size: 9px;">Alamat: ${settings?.schoolAddress || 'Mando, Compang Carep'}</div>
-          </div>
-          <div class="title">LAPORAN HASIL AUDIT STOK PERPUSTAKAAN (STOCK OPNAME)</div>
-          <table>
+          <h2 style="text-align: center;">LAPORAN HASIL AUDIT STOK (STOCK OPNAME)</h2>
+          <table style="width: 100%; border-collapse: collapse;">
             <thead>
               <tr>
                 <th>No</th>
@@ -251,13 +232,7 @@ export default function StockOpnamePage() {
             </thead>
             <tbody>${rowsHtml}</tbody>
           </table>
-          <div class="footer-sign">
-            ${settings?.reportCity || 'Mando'}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>
-            Kepala Sekolah,<br/><br/><br/><br/>
-            <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
-            NIP. ${settings?.principalNip || '198507272011011020'}
-          </div>
-          <div class="print-footer">© 2026 Lantera Baca</div>
+          <p style="text-align: center; margin-top: 30px; font-size: 10px;">© 2026 Lantera Baca</p>
         </body>
       </html>
     `)
@@ -428,25 +403,31 @@ export default function StockOpnamePage() {
       </div>
 
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
-        <DialogContent className="sm:max-w-xl p-0 h-[100dvh] sm:h-auto border-none bg-black overflow-hidden">
+        <DialogContent className="sm:max-w-xl p-0 h-[100dvh] sm:h-auto border-none bg-black overflow-hidden rounded-none sm:rounded-3xl">
           <DialogHeader className="sr-only">
             <DialogTitle>Pemindai Stok Opname</DialogTitle>
             <DialogDescription>Arahkan kamera ke kode QR buku untuk verifikasi fisik.</DialogDescription>
           </DialogHeader>
-          <div id="audit-scanner" className="w-full h-full bg-black min-h-[300px] flex items-center justify-center relative">
+          <div id="audit-scanner" className="w-full h-full bg-black min-h-[400px] flex items-center justify-center relative">
             {hasCameraPermission === false && (
               <div className="p-6 w-full max-w-sm animate-in fade-in zoom-in-95 duration-300">
                 <Alert variant="destructive" className="bg-white/10 border-white/20 text-white">
                   <CameraOff className="h-4 w-4 text-white" />
                   <AlertTitle>Akses Kamera Ditolak</AlertTitle>
                   <AlertDescription className="text-xs opacity-80">
-                    Izin kamera diblokir browser. Silakan aktifkan izin kamera di pengaturan browser Anda (ikon gembok di sebelah alamat web).
+                    Izin kamera diblokir browser. Silakan aktifkan izin kamera di pengaturan browser Anda.
                   </AlertDescription>
                 </Alert>
               </div>
             )}
+            {hasCameraPermission === null && (
+               <div className="flex flex-col items-center gap-4 text-white opacity-40">
+                  <Loader2 className="h-10 w-10 animate-spin" />
+                  <p className="text-sm font-bold uppercase tracking-widest">Inisialisasi Kamera...</p>
+               </div>
+            )}
           </div>
-          <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20 z-50" onClick={stopScanner}><X /></Button>
+          <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20 z-50 rounded-full h-12 w-12" onClick={stopScanner}><X className="h-6 w-6" /></Button>
         </DialogContent>
       </Dialog>
       

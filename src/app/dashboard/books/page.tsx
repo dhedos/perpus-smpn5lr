@@ -368,7 +368,11 @@ function BooksContent() {
         try {
           await scanner.start(
             { facingMode: "environment" },
-            { fps: 20, qrbox: { width: 280, height: 160 }, formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.EAN_13] },
+            { 
+              fps: 20, 
+              qrbox: (vw, vh) => ({ width: Math.min(vw, vh) * 0.7, height: Math.min(vw, vh) * 0.7 }),
+              formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.CODE_128] 
+            },
             (text) => { setSearch(text); stopScanner(); },
             () => {}
           )
@@ -431,6 +435,7 @@ function BooksContent() {
             </thead>
             <tbody>${rowsHtml}</tbody>
           </table>
+          <p style="text-align: center; margin-top: 20px; font-size: 10px;">© 2026 Lantera Baca</p>
         </body>
       </html>
     `)
@@ -470,7 +475,13 @@ function BooksContent() {
             placeholder="Cari Judul, Kode, Rekening..." 
             className="pl-10 bg-white border-slate-300 h-11" 
             value={search ?? ""} 
-            onChange={e => setSearch(e.target.value)} 
+            onChange={e => setSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                 // Alat scanner biasanya mengirim Enter
+                 forceUnlockUI();
+              }
+            }}
           />
         </div>
         <div className="flex gap-2 lg:col-span-2">
@@ -492,7 +503,7 @@ function BooksContent() {
               {years.map(yr => <SelectItem key={yr} value={yr}>{yr}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button variant="secondary" className="h-11 px-4" onClick={startScanner}><ScanBarcode className="h-4 w-4" /></Button>
+          <Button variant="secondary" className="h-11 px-4" onClick={startScanner} title="Buka Kamera"><ScanBarcode className="h-4 w-4" /></Button>
         </div>
       </div>
 
@@ -662,7 +673,7 @@ function BooksContent() {
               <div className="space-y-2 relative">
                 <div className="flex items-center justify-between">
                   <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">Deskripsi / Ringkasan</Label>
-                  <Button variant="ghost" size="sm" className="h-6 text-[9px] gap-1 text-primary" onClick={handleAiGenerate} disabled={isGenerating}>
+                  <Button variant="ghost" type="button" size="sm" className="h-6 text-[9px] gap-1 text-primary" onClick={handleAiGenerate} disabled={isGenerating}>
                     {isGenerating ? <Loader2 className="h-2 w-2 animate-spin" /> : <Sparkles className="h-2 w-2" />} Deskripsi AI
                   </Button>
                 </div>
@@ -823,12 +834,12 @@ function BooksContent() {
 
       {/* SCANNER DIALOG */}
       <Dialog open={isScannerOpen} onOpenChange={(v) => { if(!v) stopScanner(); }}>
-        <DialogContent className="sm:max-w-xl p-0 h-[100dvh] sm:h-auto border-none bg-black overflow-hidden">
+        <DialogContent className="sm:max-w-xl p-0 h-[100dvh] sm:h-auto border-none bg-black overflow-hidden rounded-none sm:rounded-3xl">
            <DialogHeader>
              <DialogTitle className="sr-only">Pemindai Barcode</DialogTitle>
              <DialogDescription className="sr-only">Arahkan kamera ke QR Code atau Barcode buku.</DialogDescription>
            </DialogHeader>
-           <div id="scanner-view" className="w-full h-full bg-black min-h-[300px] flex items-center justify-center relative">
+           <div id="scanner-view" className="w-full h-full bg-black min-h-[400px] flex items-center justify-center relative">
              {hasCameraPermission === false && (
                <div className="p-6 w-full max-w-sm animate-in fade-in zoom-in-95 duration-300">
                  <Alert variant="destructive" className="bg-white/10 border-white/20 text-white">
@@ -840,8 +851,14 @@ function BooksContent() {
                  </Alert>
                </div>
              )}
+             {hasCameraPermission === null && !loading && (
+                <div className="flex flex-col items-center gap-4 text-white opacity-40">
+                   <Loader2 className="h-10 w-10 animate-spin" />
+                   <p className="text-sm font-bold uppercase tracking-widest">Inisialisasi Kamera...</p>
+                </div>
+             )}
            </div>
-           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20 z-50" onClick={stopScanner}><X /></Button>
+           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20 z-50 rounded-full h-12 w-12" onClick={stopScanner}><X className="h-6 w-6" /></Button>
         </DialogContent>
       </Dialog>
 
