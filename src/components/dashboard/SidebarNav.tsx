@@ -89,16 +89,19 @@ export function SidebarNav() {
           Menu Utama
         </div>
         {menuItems.map((item) => (
-          <Link key={item.href} href={item.href} passHref>
+          <Link key={item.href} href={item.href} passHref legacyBehavior>
             <Button
+              asChild
               variant="ghost"
               className={cn(
-                "w-full justify-start gap-3 rounded-lg px-3 py-2 transition-all duration-200 hover:bg-accent hover:text-accent-foreground",
+                "w-full justify-start gap-3 rounded-lg px-3 py-2 transition-all duration-200 hover:bg-accent hover:text-accent-foreground cursor-pointer",
                 pathname === item.href ? "bg-accent text-accent-foreground font-medium shadow-sm" : "text-muted-foreground"
               )}
             >
-              <item.icon className={cn("h-5 w-5", pathname === item.href ? "text-primary" : "")} />
-              <span className="text-sm">{item.label}</span>
+              <a>
+                <item.icon className={cn("h-5 w-5", pathname === item.href ? "text-primary" : "")} />
+                <span className="text-sm">{item.label}</span>
+              </a>
             </Button>
           </Link>
         ))}
@@ -109,16 +112,19 @@ export function SidebarNav() {
         {administrationItems.map((item) => {
           if (item.adminOnly && !isAdmin) return null;
           return (
-            <Link key={item.href} href={item.href} passHref>
+            <Link key={item.href} href={item.href} passHref legacyBehavior>
               <Button
+                asChild
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start gap-3 rounded-lg px-3 py-2 transition-all duration-200 hover:bg-accent hover:text-accent-foreground",
+                  "w-full justify-start gap-3 rounded-lg px-3 py-2 transition-all duration-200 hover:bg-accent hover:text-accent-foreground cursor-pointer",
                   pathname === item.href ? "bg-accent text-accent-foreground font-medium shadow-sm" : "text-muted-foreground"
                 )}
               >
-                <item.icon className={cn("h-5 w-5", pathname === item.href ? "text-primary" : "")} />
-                <span className="text-sm">{item.label}</span>
+                <a>
+                  <item.icon className={cn("h-5 w-5", pathname === item.href ? "text-primary" : "")} />
+                  <span className="text-sm">{item.label}</span>
+                </a>
               </Button>
             </Link>
           )

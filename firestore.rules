@@ -3,46 +3,41 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Fungsi pembantu untuk mengecek status login
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
     // 1. Pengaturan Sistem & Profil Pengguna
     // Diperlukan akses baca publik agar sistem bisa mendeteksi admin pertama saat setup
     match /settings/{allPaths=**} {
       allow read: if true;
-      allow write: if isSignedIn();
+      allow write: if request.auth != null;
     }
     
     match /users/{allPaths=**} {
       allow read: if true;
-      allow write: if isSignedIn();
+      allow write: if request.auth != null;
     }
 
     // 2. Koleksi Utama: Anggota, Buku, Transaksi, dan Log
     // Memberikan izin penuh (read/write/list) kepada petugas yang sudah login
-    // Menggunakan recursive wildcard {allPaths=**} untuk memastikan akses daftar koleksi (list) aman
+    // Menggunakan pola recursive wildcard yang sangat robust untuk menjamin akses list/query
     
     match /members/{allPaths=**} {
-      allow read, write: if isSignedIn();
+      allow read, write: if request.auth != null;
     }
     
     match /books/{allPaths=**} {
-      allow read, write: if isSignedIn();
+      allow read, write: if request.auth != null;
     }
     
     match /transactions/{allPaths=**} {
-      allow read, write: if isSignedIn();
+      allow read, write: if request.auth != null;
     }
     
     match /activity_logs/{allPaths=**} {
-      allow read, write: if isSignedIn();
+      allow read, write: if request.auth != null;
     }
 
-    // 3. Fallback Global
+    // 3. Fallback Global untuk keamanan tambahan
     match /{document=**} {
-      allow read, write: if isSignedIn();
+      allow read, write: if request.auth != null;
     }
   }
 }
