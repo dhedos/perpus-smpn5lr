@@ -602,10 +602,23 @@ function BooksContent() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">Sumber Anggaran</Label>
-                  <Select value={formData.budgetSource} onValueChange={v => setFormData({...formData, budgetSource: v})}>
-                    <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="BOSP">BOSP</SelectItem><SelectItem value="DAK">DAK</SelectItem><SelectItem value="Hibah">Hibah / Hadiah</SelectItem></SelectContent>
-                  </Select>
+                  {isAdmin ? (
+                    <Input 
+                      value={formData.budgetSource} 
+                      onChange={e => setFormData({...formData, budgetSource: e.target.value})} 
+                      className="bg-white border-slate-300 h-11" 
+                      placeholder="Cth: BOSP, DAK, dsb" 
+                    />
+                  ) : (
+                    <Select value={formData.budgetSource} onValueChange={v => setFormData({...formData, budgetSource: v})}>
+                      <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="BOSP">BOSP</SelectItem>
+                        <SelectItem value="DAK">DAK</SelectItem>
+                        <SelectItem value="Hibah">Hibah / Hadiah</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">Kode Rekening</Label>
@@ -681,7 +694,25 @@ function BooksContent() {
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Sumber</Label><Input value={formData.budgetSource} onChange={e => setFormData({...formData, budgetSource: e.target.value})} className="bg-white border-slate-300 h-11" /></div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Sumber</Label>
+                  {isAdmin ? (
+                    <Input 
+                      value={formData.budgetSource} 
+                      onChange={e => setFormData({...formData, budgetSource: e.target.value})} 
+                      className="bg-white border-slate-300 h-11" 
+                    />
+                  ) : (
+                    <Select value={formData.budgetSource} onValueChange={v => setFormData({...formData, budgetSource: v})}>
+                      <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="BOSP">BOSP</SelectItem>
+                        <SelectItem value="DAK">DAK</SelectItem>
+                        <SelectItem value="Hibah">Hibah / Hadiah</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
                 <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Rekening</Label><Input value={formData.accountCode} onChange={e => setFormData({...formData, accountCode: e.target.value})} className="bg-white border-slate-300 h-11" /></div>
               </div>
               <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Deskripsi</Label><Textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="bg-white border-slate-300 min-h-[100px]" /></div>
