@@ -2,18 +2,18 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Izinkan akses publik untuk pengaturan dan registrasi awal
-    match /settings/{allPaths=**} {
-      allow read, write: if true;
-    }
-    match /users/{allPaths=**} {
-      allow read, write: if true;
-    }
-    
-    // ATURAN GLOBAL: Izinkan baca/tulis di SEMUA koleksi bagi pengguna yang login
-    // Ini menjamin kueri 'list' pada /transactions tidak akan error lagi
+    // ATURAN ABSOLUT: Izinkan akses baca (get/list) dan tulis ke SEMUA koleksi
+    // bagi siapa pun yang sudah login ke sistem (Petugas/Admin).
     match /{allPaths=**} {
       allow read, write: if request.auth != null;
+    }
+    
+    // Pengecualian publik untuk proses registrasi admin pertama kali
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+    match /settings/{allPaths=**} {
+      allow read, write: if true;
     }
   }
 }
