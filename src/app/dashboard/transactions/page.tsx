@@ -363,7 +363,7 @@ function TransactionsContent() {
             @page { size: A4 landscape; margin: 0; }
             body { font-family: 'Inter', sans-serif; font-size: 11px; margin: 0; padding: 15mm; }
             .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
-            .school-name { font-size: 16px; font-weight: 900; text-transform: uppercase; }
+            .school-name { font-size: 18px; font-weight: 900; text-transform: uppercase; }
             .dept-name { font-size: 14px; font-weight: 700; }
             .address { font-size: 10px; font-style: italic; }
             .title { text-align: center; font-size: 12px; font-weight: 800; margin: 20px 0; text-transform: uppercase; }
@@ -402,7 +402,7 @@ function TransactionsContent() {
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
             NIP. ${settings?.principalNip || '198507272011011020'}
           </div>
-          <div class="print-footer">${settings?.libraryName || 'LANTERA BACA'} - © 2026 Lantera Baca</div>
+          <div class="print-footer">© 2026 Lantera Baca - Sistem Informasi Perpustakaan</div>
         </body>
       </html>
     `)
