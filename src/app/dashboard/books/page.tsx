@@ -50,7 +50,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Card } from "@/components/ui/card"
+import { Card, CardDescription } from "@/components/ui/card"
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -357,14 +357,19 @@ function BooksContent() {
   }
 
   const startScanner = async () => {
-    forceUnlockUI();
     setIsScannerOpen(true)
     setHasCameraPermission(null)
+    
     try {
       const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
+      // Delay kecil untuk memastikan modal sudah tampil dan elemen DOM tersedia
       setTimeout(async () => {
+        const scannerElement = document.getElementById("scanner-view")
+        if (!scannerElement) return
+
         const scanner = new Html5Qrcode("scanner-view")
         scannerInstanceRef.current = scanner
+        
         try {
           await scanner.start(
             { facingMode: "environment" },
@@ -373,7 +378,10 @@ function BooksContent() {
               qrbox: (vw, vh) => ({ width: Math.min(vw, vh) * 0.7, height: Math.min(vw, vh) * 0.7 }),
               formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.CODE_128] 
             },
-            (text) => { setSearch(text); stopScanner(); },
+            (text) => { 
+              setSearch(text); 
+              stopScanner(); 
+            },
             () => {}
           )
           setHasCameraPermission(true)
@@ -382,19 +390,26 @@ function BooksContent() {
           setHasCameraPermission(false)
           toast({ title: "Akses Kamera Ditolak", description: "Mohon aktifkan izin kamera di pengaturan browser.", variant: "destructive" })
         }
-      }, 500)
+      }, 200)
     } catch (e) { 
       setHasCameraPermission(false)
-      toast({ title: "Kamera Error", variant: "destructive" }) 
     }
   }
 
   const stopScanner = async () => {
     if (scannerInstanceRef.current) {
       try {
-        if (scannerInstanceRef.current.isScanning) await scannerInstanceRef.current.stop()
-        await scannerInstanceRef.current.clear()
-      } catch (e) {}
+        if (scannerInstanceRef.current.isScanning) {
+          await scannerInstanceRef.current.stop()
+        }
+        // Pastikan element masih ada sebelum clear untuk menghindari NotFoundError
+        const el = document.getElementById("scanner-view")
+        if (el) {
+          await scannerInstanceRef.current.clear()
+        }
+      } catch (e) {
+        console.warn("Scanner cleanup warning:", e)
+      }
       scannerInstanceRef.current = null
     }
     setIsScannerOpen(false)
@@ -980,12 +995,6 @@ function BooksContent() {
                    </AlertDescription>
                  </Alert>
                </div>
-             )}
-             {hasCameraPermission === null && !loading && (
-                <div className="flex flex-col items-center gap-4 text-white opacity-40">
-                   <Loader2 className="h-10 w-10 animate-spin" />
-                   <p className="text-sm font-bold uppercase tracking-widest">Inisialisasi Kamera...</p>
-                </div>
              )}
            </div>
            <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20 z-50 rounded-full h-12 w-12" onClick={stopScanner}><X className="h-6 w-6" /></Button>

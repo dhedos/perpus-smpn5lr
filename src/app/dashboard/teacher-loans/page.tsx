@@ -171,7 +171,7 @@ export default function TeacherLoansPage() {
         document.body.style.overflow = 'auto';
         const overlays = document.querySelectorAll('[data-radix-focus-guard]');
         overlays.forEach(el => (el as HTMLElement).remove());
-      }, 300);
+      }, 150);
     }
   }, []);
 
@@ -189,9 +189,13 @@ export default function TeacherLoansPage() {
     setScanMode(mode)
     setIsScannerOpen(true)
     setHasCameraPermission(null)
+    
     try {
       const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
       setTimeout(async () => {
+        const el = document.getElementById("teacher-scanner")
+        if (!el) return
+
         const sc = new Html5Qrcode("teacher-scanner")
         scannerInstanceRef.current = sc
         try {
@@ -220,16 +224,27 @@ export default function TeacherLoansPage() {
           setHasCameraPermission(false)
           toast({ title: "Akses Kamera Ditolak", description: "Mohon aktifkan izin kamera di pengaturan browser.", variant: "destructive" })
         }
-      }, 500)
+      }, 200)
     } catch (e) { 
       setHasCameraPermission(false)
-      setIsScannerOpen(false) 
     }
   }
 
   const stopScanner = async () => {
-    if (scannerInstanceRef.current?.isScanning) await scannerInstanceRef.current.stop()
-    if (scannerInstanceRef.current) await scannerInstanceRef.current.clear()
+    if (scannerInstanceRef.current) {
+      try {
+        if (scannerInstanceRef.current.isScanning) {
+          await scannerInstanceRef.current.stop()
+        }
+        const el = document.getElementById("teacher-scanner")
+        if (el) {
+          await scannerInstanceRef.current.clear()
+        }
+      } catch (e) {
+        console.warn("Teacher scanner cleanup warning:", e)
+      }
+      scannerInstanceRef.current = null
+    }
     setIsScannerOpen(false)
     forceUnlockUI()
   }
@@ -652,12 +667,6 @@ export default function TeacherLoansPage() {
                   </AlertDescription>
                 </Alert>
               </div>
-            )}
-            {hasCameraPermission === null && (
-               <div className="flex flex-col items-center gap-4 text-white opacity-40">
-                  <Loader2 className="h-10 w-10 animate-spin" />
-                  <p className="text-sm font-bold uppercase tracking-widest">Inisialisasi Kamera...</p>
-               </div>
             )}
           </div>
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20 z-50 rounded-full h-12 w-12" onClick={stopScanner}><X className="h-6 w-6" /></Button>
