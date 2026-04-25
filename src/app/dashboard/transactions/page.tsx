@@ -24,7 +24,8 @@ import {
   Plus,
   Home,
   Users as UsersIcon,
-  Printer
+  Printer,
+  History
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -139,7 +140,7 @@ function TransactionsContent() {
   }, [db])
 
   const { data: activeTrans, isLoading: loadingActive } = useCollection(activeTransQuery)
-  const { data: historyTrans } = useCollection(historyTransQuery)
+  const { data: historyTrans, isLoading: loadingHistory } = useCollection(historyTransQuery)
 
   const loanDays = useMemo(() => settings?.loanPeriod ? Number(settings.loanPeriod) : 7, [settings]);
 
@@ -337,7 +338,7 @@ function TransactionsContent() {
     const titleLabel = activeTab === "borrow" ? "RIWAYAT SIRKULASI SISWA (SUDAH KEMBALI)" : "DAFTAR PEMINJAMAN SISWA AKTIF"
     
     const rowsHtml = targetData.map((t, index) => {
-        const borrowDate = t.borrowDate ? parseISO(t.borrowDate) : new Date();
+        const borrowDateStr = t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yyyy') : '-';
         const returnDateStr = t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yyyy') : (t.status === 'active' ? 'PINJAM' : '-');
         const fineStr = t.fineAmount ? `Rp ${t.fineAmount.toLocaleString('id-ID')}` : '-';
 
@@ -347,7 +348,7 @@ function TransactionsContent() {
             <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold;">${t.memberName}</td>
             <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle} ${t.quantity > 1 ? `(${t.quantity} unit)` : ''}</td>
             <td style="border: 1px solid #ccc; padding: 8px; text-align: center; font-family: monospace;">${t.memberId}</td>
-            <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${format(borrowDate, 'dd/MM/yyyy')}</td>
+            <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${borrowDateStr}</td>
             <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${returnDateStr}</td>
             <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${fineStr}</td>
           </tr>
@@ -363,11 +364,10 @@ function TransactionsContent() {
             body { font-family: 'Inter', sans-serif; font-size: 11px; margin: 0; padding: 15mm; }
             .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
             .school-name { font-size: 16px; font-weight: 900; text-transform: uppercase; }
-            .title { text-align: center; font-size: 14px; font-weight: 800; margin: 20px 0; text-transform: uppercase; }
+            .title { text-align: center; font-size: 12px; font-weight: 800; margin: 20px 0; text-transform: uppercase; }
             table { width: 100%; border-collapse: collapse; }
             th { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; font-size: 10px; }
             .footer-sign { margin-top: 40px; float: right; text-align: center; width: 250px; }
-            .print-footer { position: fixed; bottom: 5mm; left: 15mm; right: 15mm; font-size: 8px; text-align: center; color: #999; border-top: 1px solid #eee; padding-top: 2mm; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
@@ -375,7 +375,6 @@ function TransactionsContent() {
             <div>${settings?.govtInstitution || 'PEMERINTAH KABUPATEN MANGGARAI'}</div>
             <div>${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
             <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
-            <div style="font-size: 9px;">${settings?.schoolAddress || 'Mando, Compang Carep'}</div>
           </div>
           <div class="title">${titleLabel}</div>
           <table>
@@ -398,7 +397,6 @@ function TransactionsContent() {
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
             NIP. ${settings?.principalNip || '198507272011011020'}
           </div>
-          <div class="print-footer">© 2026 Lantera Baca - Sistem Informasi Perpustakaan</div>
         </body>
       </html>
     `)
@@ -510,163 +508,204 @@ function TransactionsContent() {
               </CardContent>
             </Card>
 
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card className="border-none shadow-sm relative">
-                <CardHeader className="bg-slate-50/50 pb-4 border-b">
-                  <CardTitle className="text-sm flex items-center gap-2 text-primary uppercase tracking-wider font-bold"><User className="h-4 w-4" /> Data Siswa</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6 space-y-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      placeholder="Cari Nama Siswa / NIS..." 
-                      className="pl-10 h-12" 
-                      value={memberSearch} 
-                      onChange={e => {
-                        setMemberSearch(e.target.value);
-                        setShowMemberSuggestions(true);
-                      }}
-                      onFocus={() => setShowMemberSuggestions(true)}
-                    />
-                    {showMemberSuggestions && memberSuggestions.length > 0 && (
-                      <div className="absolute z-[100] left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 max-h-[250px] overflow-y-auto">
-                        {memberSuggestions.map(m => (
-                          <div 
-                            key={m.id} 
-                            className="p-3 hover:bg-slate-50 cursor-pointer flex items-center justify-between border-b last:border-0"
-                            onClick={() => {
-                              setSelectedMember(m);
-                              setMemberSearch("");
-                              setShowMemberSuggestions(false);
-                            }}
-                          >
-                            <div className="flex flex-col">
-                              <span className="font-bold text-sm">{m.name}</span>
-                              <span className="text-[10px] font-mono text-primary">{m.memberId} / {m.classOrSubject}</span>
-                            </div>
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {selectedMember && (
-                    <div className="p-4 bg-primary/5 rounded-xl border border-primary/20 flex flex-col gap-2 animate-in slide-in-from-left-2">
-                      <div className="flex justify-between items-center">
-                        <div className="flex-1">
-                          <div className="font-bold text-primary text-lg">{selectedMember.name}</div>
-                          <div className="text-xs font-mono text-muted-foreground">{selectedMember.memberId} / {selectedMember.classOrSubject}</div>
-                        </div>
-                        <Button variant="ghost" size="icon" onClick={() => setSelectedMember(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card className="border-none shadow-sm relative">
-                <CardHeader className="bg-slate-50/50 pb-4 border-b">
-                  <CardTitle className="text-sm flex items-center gap-2 text-secondary uppercase tracking-wider font-bold"><BookOpen className="h-4 w-4" /> Data Buku</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6 space-y-4">
-                  <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
-                    <Button variant={loanType === "personal" ? "default" : "ghost"} size="sm" className="gap-2 h-9" onClick={() => setLoanType("personal")}><Home className="h-3 w-3" /> Pribadi</Button>
-                    <Button variant={loanType === "class" ? "default" : "ghost"} size="sm" className="gap-2 h-9" onClick={() => setLoanType("class")}><UsersIcon className="h-3 w-3" /> Kolektif</Button>
-                  </div>
-
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      placeholder="Judul atau Kode Buku..." 
-                      className="pl-10 h-12" 
-                      value={bookSearch} 
-                      onChange={e => {
-                        setBookSearch(e.target.value);
-                        setShowBookSuggestions(true);
-                      }}
-                      onFocus={() => setShowBookSuggestions(true)}
-                    />
-                    {showBookSuggestions && bookSuggestions.length > 0 && (
-                      <div className="absolute z-[100] left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 max-h-[250px] overflow-y-auto">
-                        {bookSuggestions.map(b => (
-                          <div 
-                            key={b.id} 
-                            className="p-3 hover:bg-slate-50 cursor-pointer flex items-center justify-between border-b last:border-0"
-                            onClick={() => {
-                              setSelectedBook(b);
-                              setBookSearch("");
-                              setShowBookSuggestions(false);
-                            }}
-                          >
-                            <div className="flex flex-col">
-                              <span className="font-bold text-sm truncate max-w-[200px]">{b.title}</span>
-                              <span className="text-[10px] font-mono text-secondary-foreground">{b.code}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge variant={b.availableStock <= 0 ? "destructive" : "outline"} className="text-[8px] h-4">
-                                {b.availableStock} Unit
-                              </Badge>
+            <div className="grid lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-1 space-y-6">
+                <Card className="border-none shadow-sm relative">
+                  <CardHeader className="bg-slate-50/50 pb-4 border-b">
+                    <CardTitle className="text-sm flex items-center gap-2 text-primary uppercase tracking-wider font-bold"><User className="h-4 w-4" /> Data Siswa</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-6 space-y-4">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        placeholder="Cari Nama Siswa / NIS..." 
+                        className="pl-10 h-12" 
+                        value={memberSearch} 
+                        onChange={e => {
+                          setMemberSearch(e.target.value);
+                          setShowMemberSuggestions(true);
+                        }}
+                        onFocus={() => setShowMemberSuggestions(true)}
+                      />
+                      {showMemberSuggestions && memberSuggestions.length > 0 && (
+                        <div className="absolute z-[100] left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 max-h-[250px] overflow-y-auto">
+                          {memberSuggestions.map(m => (
+                            <div 
+                              key={m.id} 
+                              className="p-3 hover:bg-slate-50 cursor-pointer flex items-center justify-between border-b last:border-0"
+                              onClick={() => {
+                                setSelectedMember(m);
+                                setMemberSearch("");
+                                setShowMemberSuggestions(false);
+                              }}
+                            >
+                              <div className="flex flex-col">
+                                <span className="font-bold text-sm">{m.name}</span>
+                                <span className="text-[10px] font-mono text-primary">{m.memberId} / {m.classOrSubject}</span>
+                              </div>
                               <ChevronRight className="h-4 w-4 text-muted-foreground" />
                             </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {selectedMember && (
+                      <div className="p-4 bg-primary/5 rounded-xl border border-primary/20 flex flex-col gap-2 animate-in slide-in-from-left-2">
+                        <div className="flex justify-between items-center">
+                          <div className="flex-1">
+                            <div className="font-bold text-primary text-lg">{selectedMember.name}</div>
+                            <div className="text-xs font-mono text-muted-foreground">{selectedMember.memberId} / {selectedMember.classOrSubject}</div>
                           </div>
-                        ))}
+                          <Button variant="ghost" size="icon" onClick={() => setSelectedMember(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
+                        </div>
                       </div>
                     )}
-                  </div>
-                  {selectedBook && (
-                    <div className="p-4 bg-secondary/5 rounded-xl border border-secondary/20 space-y-4 animate-in slide-in-from-right-2">
-                      <div className="flex justify-between items-center">
-                        <div className="flex-1">
-                          <div className="font-bold text-secondary-foreground leading-tight">{selectedBook.title}</div>
-                          <div className="text-xs font-mono text-muted-foreground">{selectedBook.code}</div>
-                        </div>
-                        <Button variant="ghost" size="icon" onClick={() => setSelectedBook(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
-                      </div>
+                  </CardContent>
+                </Card>
 
-                      <div className="flex flex-col gap-2 pt-2 border-t border-secondary/10">
-                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Jumlah Pinjam</Label>
-                        <div className="flex items-center gap-4">
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="h-8 w-8 rounded-full"
-                            onClick={() => setBorrowQuantity(prev => Math.max(1, prev - 1))}
-                            disabled={borrowQuantity <= 1}
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <Input 
-                            type="number"
-                            className="w-20 text-center font-black text-xl h-10 border-primary/20 bg-white"
-                            value={borrowQuantity}
-                            onChange={(e) => {
-                              const val = parseInt(e.target.value);
-                              const max = selectedBook.availableStock || 1;
-                              if (!isNaN(val)) {
-                                setBorrowQuantity(Math.min(max, Math.max(1, val)));
-                              }
-                            }}
-                          />
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="h-8 w-8 rounded-full"
-                            onClick={() => setBorrowQuantity(prev => Math.min(selectedBook.availableStock || 1, prev + 1))}
-                            disabled={borrowQuantity >= (selectedBook.availableStock || 0)}
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
+                <Card className="border-none shadow-sm relative">
+                  <CardHeader className="bg-slate-50/50 pb-4 border-b">
+                    <CardTitle className="text-sm flex items-center gap-2 text-secondary uppercase tracking-wider font-bold"><BookOpen className="h-4 w-4" /> Data Buku</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-6 space-y-4">
+                    <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
+                      <Button variant={loanType === "personal" ? "default" : "ghost"} size="sm" className="gap-2 h-9" onClick={() => setLoanType("personal")}><Home className="h-3 w-3" /> Pribadi</Button>
+                      <Button variant={loanType === "class" ? "default" : "ghost"} size="sm" className="gap-2 h-9" onClick={() => setLoanType("class")}><UsersIcon className="h-3 w-3" /> Kolektif</Button>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
 
-            <Button className="w-full h-16 text-lg font-black shadow-lg shadow-primary/20 mt-4" disabled={!selectedMember || !selectedBook || isProcessing} onClick={handleProcessBorrow}>
-              {isProcessing ? <Loader2 className="animate-spin h-6 w-6" /> : "PROSES PEMINJAMAN SISWA"}
-            </Button>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        placeholder="Judul atau Kode Buku..." 
+                        className="pl-10 h-12" 
+                        value={bookSearch} 
+                        onChange={e => {
+                          setBookSearch(e.target.value);
+                          setShowBookSuggestions(true);
+                        }}
+                        onFocus={() => setShowBookSuggestions(true)}
+                      />
+                      {showBookSuggestions && bookSuggestions.length > 0 && (
+                        <div className="absolute z-[100] left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 max-h-[250px] overflow-y-auto">
+                          {bookSuggestions.map(b => (
+                            <div 
+                              key={b.id} 
+                              className="p-3 hover:bg-slate-50 cursor-pointer flex items-center justify-between border-b last:border-0"
+                              onClick={() => {
+                                setSelectedBook(b);
+                                setBookSearch("");
+                                setShowBookSuggestions(false);
+                              }}
+                            >
+                              <div className="flex flex-col">
+                                <span className="font-bold text-sm truncate max-w-[200px]">{b.title}</span>
+                                <span className="text-[10px] font-mono text-secondary-foreground">{b.code}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge variant={b.availableStock <= 0 ? "destructive" : "outline"} className="text-[8px] h-4">
+                                  {b.availableStock} Unit
+                                </Badge>
+                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {selectedBook && (
+                      <div className="p-4 bg-secondary/5 rounded-xl border border-secondary/20 space-y-4 animate-in slide-in-from-right-2">
+                        <div className="flex justify-between items-center">
+                          <div className="flex-1">
+                            <div className="font-bold text-secondary-foreground leading-tight">{selectedBook.title}</div>
+                            <div className="text-xs font-mono text-muted-foreground">{selectedBook.code}</div>
+                          </div>
+                          <Button variant="ghost" size="icon" onClick={() => setSelectedBook(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
+                        </div>
+
+                        <div className="flex flex-col gap-2 pt-2 border-t border-secondary/10">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Jumlah Pinjam</Label>
+                          <div className="flex items-center gap-4">
+                            <Button 
+                              variant="outline" 
+                              size="icon" 
+                              className="h-8 w-8 rounded-full"
+                              onClick={() => setBorrowQuantity(prev => Math.max(1, prev - 1))}
+                              disabled={borrowQuantity <= 1}
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            <Input 
+                              type="number"
+                              className="w-20 text-center font-black text-xl h-10 border-primary/20 bg-white"
+                              value={borrowQuantity}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value);
+                                const max = selectedBook.availableStock || 1;
+                                if (!isNaN(val)) {
+                                  setBorrowQuantity(Math.min(max, Math.max(1, val)));
+                                }
+                              }}
+                            />
+                            <Button 
+                              variant="outline" 
+                              size="icon" 
+                              className="h-8 w-8 rounded-full"
+                              onClick={() => setBorrowQuantity(prev => Math.min(selectedBook.availableStock || 1, prev + 1))}
+                              disabled={borrowQuantity >= (selectedBook.availableStock || 0)}
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Button className="w-full h-16 text-lg font-black shadow-lg shadow-primary/20" disabled={!selectedMember || !selectedBook || isProcessing} onClick={handleProcessBorrow}>
+                  {isProcessing ? <Loader2 className="animate-spin h-6 w-6" /> : "PROSES PEMINJAMAN"}
+                </Button>
+              </div>
+
+              <div className="lg:col-span-2">
+                <Card className="border-none shadow-sm overflow-hidden h-full">
+                  <CardHeader className="bg-slate-50/50 border-b">
+                    <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                      <History className="h-4 w-4 text-primary" /> Riwayat Selesai (Terbaru)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-12 text-center">No.</TableHead>
+                          <TableHead>Nama Siswa</TableHead>
+                          <TableHead>Buku</TableHead>
+                          <TableHead className="text-right">Tgl Kembali</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {loadingHistory ? (
+                          <TableRow><TableCell colSpan={4} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                        ) : historyTrans?.length === 0 ? (
+                          <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">Belum ada riwayat hari ini.</TableCell></TableRow>
+                        ) : historyTrans?.slice(0, 10).map((t, index) => (
+                          <TableRow key={t.id}>
+                            <TableCell className="text-center text-xs">{index + 1}</TableCell>
+                            <TableCell className="font-bold text-xs">{t.memberName}</TableCell>
+                            <TableCell className="text-xs truncate max-w-[150px]">{t.bookTitle}</TableCell>
+                            <TableCell className="text-right text-xs text-muted-foreground">
+                              {t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yyyy') : '-'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+            
             <div className="text-center py-6 opacity-30">
               <p className="text-[10px] font-black uppercase tracking-widest">© 2026 Lantera Baca</p>
             </div>
