@@ -31,6 +31,7 @@ import {
   DialogHeader, 
   DialogTitle,
   DialogFooter,
+  DialogDescription
 } from "@/components/ui/dialog"
 import {
   Table,
@@ -130,7 +131,6 @@ function TransactionsContent() {
   }, [allBooksData]);
 
   // RIWAYAT TRANSAKSI SISWA (MUTLAK)
-  // Memfilter agar riwayat guru tidak muncul di sini
   const activeTrans = useMemo(() => {
     if (!allTransactions) return [];
     return allTransactions.filter(t => 
@@ -466,6 +466,7 @@ function TransactionsContent() {
                 <Card className="border-none shadow-sm relative">
                   <CardHeader className="bg-slate-50/50 pb-4 border-b">
                     <CardTitle className="text-sm flex items-center gap-2 text-primary uppercase tracking-wider font-bold"><User className="h-4 w-4" /> Data Siswa</CardTitle>
+                    <DialogDescription>Gunakan NIS atau pencarian manual untuk memilih siswa.</DialogDescription>
                   </CardHeader>
                   <CardContent className="pt-6 space-y-4">
                     <div className="relative">
@@ -519,6 +520,7 @@ function TransactionsContent() {
                 <Card className="border-none shadow-sm relative">
                   <CardHeader className="bg-slate-50/50 pb-4 border-b">
                     <CardTitle className="text-sm flex items-center gap-2 text-secondary uppercase tracking-wider font-bold"><BookOpen className="h-4 w-4" /> Data Buku</CardTitle>
+                    <DialogDescription>Gunakan kode stiker buku atau judul untuk memilih buku.</DialogDescription>
                   </CardHeader>
                   <CardContent className="pt-6 space-y-4">
                     <div className="relative">
@@ -580,6 +582,7 @@ function TransactionsContent() {
                     <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
                       <History className="h-4 w-4 text-primary" /> Riwayat Siswa (Terakhir)
                     </CardTitle>
+                    <DialogDescription>Daftar aktivitas sirkulasi yang baru saja diselesaikan.</DialogDescription>
                   </CardHeader>
                   <CardContent className="p-0">
                     <Table>
@@ -627,6 +630,7 @@ function TransactionsContent() {
               <Card className="md:col-span-2 border-none shadow-sm overflow-hidden">
                 <CardHeader className="pb-3 border-b">
                   <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Peminjaman Siswa Aktif</CardTitle>
+                  <DialogDescription>Daftar buku yang saat ini masih dipinjam oleh siswa.</DialogDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="max-h-[500px] overflow-y-auto">
@@ -679,6 +683,7 @@ function TransactionsContent() {
             <DialogTitle className="flex items-center gap-2 text-primary font-bold">
               <CheckCircle className="h-5 w-5" /> Konfirmasi Pengembalian
             </DialogTitle>
+            <DialogDescription>Lengkapi data kondisi fisik buku saat pengembalian untuk menghitung denda otomatis.</DialogDescription>
           </DialogHeader>
           
           {pendingReturnTrans && (
@@ -746,6 +751,7 @@ function TransactionsContent() {
         <DialogContent className="p-0 border-none bg-black max-w-xl h-[400px] overflow-hidden">
           <DialogHeader className="sr-only">
             <DialogTitle>Pemindai</DialogTitle>
+            <DialogDescription>Arahkan kamera pada kode QR kartu siswa atau barcode buku.</DialogDescription>
           </DialogHeader>
           <div id="smart-scanner" className="w-full h-full bg-black"></div>
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>

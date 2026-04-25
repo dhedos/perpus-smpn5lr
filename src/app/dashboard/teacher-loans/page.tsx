@@ -31,7 +31,8 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle,
-  DialogFooter
+  DialogFooter,
+  DialogDescription
 } from "@/components/ui/dialog"
 import {
   Table,
@@ -320,7 +321,7 @@ export default function TeacherLoansPage() {
                 <th style="border: 1px solid #ccc; padding: 10px;">No</th>
                 <th style="border: 1px solid #ccc; padding: 10px;">Nama Guru</th>
                 <th style="border: 1px solid #ccc; padding: 10px;">Judul Buku</th>
-                <th style="border: 1px solid #ccc; padding: 10px;">Tgl Serah</th>
+                <th style="border: 1px solid #ccc; padding: 10px;">Tgl Pinjam</th>
                 <th style="border: 1px solid #ccc; padding: 10px;">Tgl Kembali</th>
               </tr>
             </thead>
@@ -364,6 +365,7 @@ export default function TeacherLoansPage() {
             <Card className="lg:col-span-1 border-none shadow-sm bg-blue-50/50">
               <CardHeader>
                 <CardTitle className="text-sm font-bold uppercase tracking-wider">Identitas Penyerahan</CardTitle>
+                <DialogDescription>Pilih nama guru dan judul buku yang akan diserahkan.</DialogDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -441,6 +443,7 @@ export default function TeacherLoansPage() {
                 <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
                   <History className="h-4 w-4 text-primary" /> Riwayat Guru (Terakhir)
                 </CardTitle>
+                <DialogDescription>Daftar 10 penyerahan buku terakhir kepada guru.</DialogDescription>
               </CardHeader>
               <CardContent className="p-0">
                 <Table>
@@ -487,6 +490,7 @@ export default function TeacherLoansPage() {
             <Card className="md:col-span-2 border-none shadow-sm overflow-hidden">
               <CardHeader className="pb-3 border-b">
                 <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Buku Guru Aktif</CardTitle>
+                <DialogDescription>Daftar buku yang saat ini masih dipegang oleh bapak/ibu guru.</DialogDescription>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="max-h-[500px] overflow-y-auto">
@@ -534,6 +538,7 @@ export default function TeacherLoansPage() {
             <DialogTitle className="flex items-center gap-2 text-primary font-bold">
               <CheckCircle className="h-5 w-5" /> Konfirmasi Guru
             </DialogTitle>
+            <DialogDescription>Verifikasi kondisi fisik buku saat pengembalian dilakukan.</DialogDescription>
           </DialogHeader>
           
           {pendingReturnTrans && (
@@ -591,6 +596,7 @@ export default function TeacherLoansPage() {
         <DialogContent className="p-0 border-none bg-black max-w-xl h-[400px] overflow-hidden">
           <DialogHeader className="sr-only">
              <DialogTitle>Pemindai</DialogTitle>
+             <DialogDescription>Arahkan kamera ke kode buku atau kartu guru.</DialogDescription>
           </DialogHeader>
           <div id="teacher-scanner" className="w-full h-full bg-black"></div>
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>

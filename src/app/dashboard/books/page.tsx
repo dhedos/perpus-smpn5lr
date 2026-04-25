@@ -36,7 +36,8 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogFooter
+  DialogFooter,
+  DialogDescription
 } from "@/components/ui/dialog"
 import {
   Select,
@@ -584,6 +585,7 @@ function BooksContent() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-50 border-none">
           <DialogHeader>
             <DialogTitle className="text-xl font-black text-primary uppercase">Registrasi Buku Baru</DialogTitle>
+            <DialogDescription>Lengkapi formulir di bawah untuk menambahkan buku ke dalam antrean pendaftaran.</DialogDescription>
           </DialogHeader>
           <div className="grid md:grid-cols-2 gap-6 py-4">
             <div className="space-y-4">
@@ -666,6 +668,7 @@ function BooksContent() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-50 border-none">
           <DialogHeader>
             <DialogTitle className="text-xl font-black text-primary uppercase">Ubah Data Koleksi</DialogTitle>
+            <DialogDescription>Perbarui rincian informasi buku ini untuk sinkronisasi ke database pusat.</DialogDescription>
           </DialogHeader>
           <div className="grid md:grid-cols-2 gap-6 py-4">
             <div className="space-y-4">
@@ -710,6 +713,10 @@ function BooksContent() {
       {/* DIALOG DETAIL BUKU */}
       <Dialog open={isDetailOpen} onOpenChange={(v) => { setIsDetailOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-2xl bg-white border-none rounded-3xl overflow-hidden p-0">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Detail Buku</DialogTitle>
+            <DialogDescription>Menampilkan informasi rinci dari buku yang dipilih.</DialogDescription>
+          </DialogHeader>
           {selectedBookDetail && (
             <div className="flex flex-col">
               <div className="p-8 bg-primary text-primary-foreground">
@@ -752,6 +759,7 @@ function BooksContent() {
         <DialogContent className="max-w-md text-center p-0 border-none rounded-3xl overflow-hidden">
           <DialogHeader className="p-6 border-b bg-white">
             <DialogTitle className="text-center font-bold text-primary">Label QR Inventaris</DialogTitle>
+            <DialogDescription className="text-center text-xs">Cetak label ini untuk ditempelkan pada fisik buku.</DialogDescription>
           </DialogHeader>
           <div className="p-8 space-y-6 bg-slate-50">
             <div className="bg-white p-8 rounded-3xl border-2 border-primary/20 inline-block shadow-xl">
@@ -777,6 +785,7 @@ function BooksContent() {
             <DialogTitle className="flex items-center gap-2 text-orange-600">
               <Database className="h-5 w-5" /> Antrean Sinkronisasi ({localQueue.length})
             </DialogTitle>
+            <DialogDescription>Buku yang terdaftar di bawah ini tersimpan sementara di memori browser.</DialogDescription>
           </DialogHeader>
           <div className="max-h-[300px] overflow-y-auto p-4 space-y-2">
             {localQueue.map(item => (
@@ -801,7 +810,10 @@ function BooksContent() {
       {/* SCANNER DIALOG */}
       <Dialog open={isScannerOpen} onOpenChange={(v) => { if(!v) stopScanner(); }}>
         <DialogContent className="sm:max-w-xl p-0 h-[100dvh] sm:h-auto border-none bg-black overflow-hidden">
-           <DialogHeader><DialogTitle className="sr-only">Pemindai Barcode</DialogTitle></DialogHeader>
+           <DialogHeader>
+             <DialogTitle className="sr-only">Pemindai Barcode</DialogTitle>
+             <DialogDescription className="sr-only">Arahkan kamera ke QR Code atau Barcode buku.</DialogDescription>
+           </DialogHeader>
            <div id="scanner-view" className="w-full h-full bg-black min-h-[300px]"></div>
            <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>
         </DialogContent>

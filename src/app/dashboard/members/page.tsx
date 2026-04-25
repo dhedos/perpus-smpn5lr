@@ -30,7 +30,8 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogFooter
+  DialogFooter,
+  DialogDescription
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { 
@@ -476,6 +477,7 @@ function MembersContent() {
         <DialogContent className="bg-slate-50 max-w-md border-none">
           <DialogHeader>
             <DialogTitle>Daftarkan Anggota Baru</DialogTitle>
+            <DialogDescription>Masukkan identitas siswa atau guru untuk akses layanan perpustakaan.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
@@ -505,6 +507,7 @@ function MembersContent() {
         <DialogContent className="max-w-md text-center border-none p-0 overflow-hidden rounded-3xl">
           <DialogHeader className="p-6 bg-white shrink-0 border-b">
             <DialogTitle className="text-center font-bold text-primary">Kartu Digital Anggota</DialogTitle>
+            <DialogDescription className="text-center">Label identitas digital untuk akses sirkulasi mandiri.</DialogDescription>
           </DialogHeader>
           <div className="p-6 space-y-6">
             <div className="bg-white p-8 rounded-3xl border-2 border-primary/20 space-y-4 shadow-xl flex flex-col items-center">
@@ -524,6 +527,7 @@ function MembersContent() {
         <DialogContent className="bg-slate-50 max-md border-none">
           <DialogHeader>
             <DialogTitle>Ubah Data Anggota</DialogTitle>
+            <DialogDescription>Perbarui informasi identitas anggota di bawah ini.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
