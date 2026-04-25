@@ -9,20 +9,20 @@ service cloud.firestore {
     }
 
     // 1. Pengaturan Sistem & Profil Pengguna
-    // Diperlukan akses baca publik agar sistem bisa mendeteksi admin pertama
-    match /settings/{docId} {
+    // Diperlukan akses baca publik agar sistem bisa mendeteksi admin pertama saat setup
+    match /settings/{allPaths=**} {
       allow read: if true;
       allow write: if isSignedIn();
     }
     
-    match /users/{userId} {
+    match /users/{allPaths=**} {
       allow read: if true;
       allow write: if isSignedIn();
     }
 
     // 2. Koleksi Utama: Anggota, Buku, Transaksi, dan Log
     // Memberikan izin penuh (read/write/list) kepada petugas yang sudah login
-    // Menggunakan recursive wildcard {allPaths=**} untuk memastikan akses daftar koleksi
+    // Menggunakan recursive wildcard {allPaths=**} untuk memastikan akses daftar koleksi (list) aman
     
     match /members/{allPaths=**} {
       allow read, write: if isSignedIn();

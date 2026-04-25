@@ -399,7 +399,7 @@ function TransactionsContent() {
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
             NIP. ${settings?.principalNip || '198507272011011020'}
           </div>
-          <div class="print-footer">LANTERA BACA - ${settings?.librarySubtitle || 'SMPN 5 LANGKE REMBONG'} | Laporan Sirkulasi Siswa</div>
+          <div class="print-footer">© 2026 Lantera Baca - Laporan Sirkulasi Siswa</div>
         </body>
       </html>
     `)

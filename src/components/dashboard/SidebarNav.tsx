@@ -89,7 +89,7 @@ export function SidebarNav() {
           Menu Utama
         </div>
         {menuItems.map((item) => (
-          <Link key={item.href} href={item.href}>
+          <Link key={item.href} href={item.href} passHref>
             <Button
               variant="ghost"
               className={cn(
@@ -109,7 +109,7 @@ export function SidebarNav() {
         {administrationItems.map((item) => {
           if (item.adminOnly && !isAdmin) return null;
           return (
-            <Link key={item.href} href={item.href}>
+            <Link key={item.href} href={item.href} passHref>
               <Button
                 variant="ghost"
                 className={cn(
