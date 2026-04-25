@@ -59,6 +59,7 @@ import { cn } from "@/lib/utils"
 
 function TransactionsContent() {
   const db = useFirestore()
+  const { user } = useUser()
   const { toast } = useToast()
   const searchParams = useSearchParams()
   
@@ -114,30 +115,30 @@ function TransactionsContent() {
   const { data: settings } = useDoc(settingsRef)
 
   const studentMembersRef = useMemoFirebase(() => 
-    db ? query(collection(db, 'members'), where('type', '==', 'Student')) : null, [db])
-  const booksRef = useMemoFirebase(() => db ? query(collection(db, 'books'), orderBy('title', 'asc')) : null, [db])
+    (db && user) ? query(collection(db, 'members'), where('type', '==', 'Student')) : null, [db, user])
+  const booksRef = useMemoFirebase(() => (db && user) ? query(collection(db, 'books'), orderBy('title', 'asc')) : null, [db, user])
 
   const { data: members } = useCollection(studentMembersRef)
   const { data: books } = useCollection(booksRef)
 
   const activeTransQuery = useMemoFirebase(() => {
-    if (!db) return null;
+    if (!db || !user) return null;
     return query(
       collection(db, 'transactions'), 
       where('status', '==', 'active'),
       where('type', '==', 'borrow')
     );
-  }, [db])
+  }, [db, user])
 
   const historyTransQuery = useMemoFirebase(() => {
-    if (!db) return null;
+    if (!db || !user) return null;
     return query(
       collection(db, 'transactions'),
       where('status', '==', 'returned'),
       orderBy('returnDate', 'desc'),
       limit(50)
     );
-  }, [db])
+  }, [db, user])
 
   const { data: activeTrans, isLoading: loadingActive } = useCollection(activeTransQuery)
   const { data: historyTrans, isLoading: loadingHistory } = useCollection(historyTransQuery)

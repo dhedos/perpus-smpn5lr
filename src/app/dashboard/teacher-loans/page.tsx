@@ -59,7 +59,7 @@ import { FirestorePermissionError } from "@/firebase/errors"
 
 export default function TeacherLoansPage() {
   const db = useFirestore()
-  const { isAdmin } = useUser()
+  const { user, isAdmin } = useUser()
   const { toast } = useToast()
   
   const [activeTab, setActiveTab] = useState("borrow")
@@ -89,17 +89,17 @@ export default function TeacherLoansPage() {
   const isLockedForUser = Boolean(settings?.isDataLocked && !isAdmin);
 
   const teachersRef = useMemoFirebase(() => 
-    db ? query(collection(db, 'members'), where('type', '==', 'Teacher')) : null, [db])
+    (db && user) ? query(collection(db, 'members'), where('type', '==', 'Teacher')) : null, [db, user])
   const booksRef = useMemoFirebase(() => 
-    db ? query(collection(db, 'books'), orderBy('title', 'asc')) : null, [db])
+    (db && user) ? query(collection(db, 'books'), orderBy('title', 'asc')) : null, [db, user])
   
   const teacherTransQuery = useMemoFirebase(() => {
-    if (!db) return null
+    if (!db || !user) return null
     return query(
       collection(db, 'transactions'), 
       where('type', '==', 'teacher_handbook')
     )
-  }, [db])
+  }, [db, user])
 
   const { data: teachers } = useCollection(teachersRef)
   const { data: books } = useCollection(booksRef)
@@ -331,17 +331,21 @@ export default function TeacherLoansPage() {
             body { font-family: 'Inter', sans-serif; font-size: 11px; margin: 0; padding: 15mm; }
             .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
             .school-name { font-size: 16px; font-weight: 900; }
+            .dept-name { font-size: 14px; font-weight: 700; }
+            .address { font-size: 10px; font-style: italic; }
             .title { text-align: center; font-size: 12px; font-weight: 800; margin: 20px 0; text-transform: uppercase; }
-            table { width: 100%; border-collapse: collapse; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
             th { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; }
             .footer-sign { margin-top: 40px; float: right; text-align: center; width: 250px; }
+            .print-footer { position: fixed; bottom: 5mm; left: 15mm; right: 15mm; font-size: 8px; text-align: center; color: #999; border-top: 1px solid #eee; padding-top: 2mm; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
           <div class="header">
-            <div>${settings?.govtInstitution || 'PEMERINTAH KABUPATEN MANGGARAI'}</div>
-            <div>${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
+            <div class="dept-name">${settings?.govtInstitution || 'PEMERINTAH KABUPATEN MANGGARAI'}</div>
+            <div class="dept-name">${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
             <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
+            <div class="address">Alamat: ${settings?.schoolAddress || 'Mando, Kelurahan Compang Carep'}</div>
           </div>
           <div class="title">${titleLabel}</div>
           <table>
@@ -363,6 +367,7 @@ export default function TeacherLoansPage() {
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
             NIP. ${settings?.principalNip || '198507272011011020'}
           </div>
+          <div class="print-footer">© 2026 Lantera Baca - Sistem Informasi Perpustakaan</div>
         </body>
       </html>
     `)
@@ -638,6 +643,9 @@ export default function TeacherLoansPage() {
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>
         </DialogContent>
       </Dialog>
+      <div className="text-center py-6 opacity-30">
+        <p className="text-[10px] font-black uppercase tracking-widest">© 2026 Lantera Baca</p>
+      </div>
     </div>
   )
 }
