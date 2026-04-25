@@ -415,11 +415,11 @@ function BooksContent() {
     const rowsHtml = sortedForPrint.map((book, index) => `
       <tr>
         <td style="border: 1px solid #000; padding: 10px; text-align: center;">${index + 1}</td>
-        <td style="border: 1px solid #000; padding: 10px; font-family: monospace; font-weight: bold;">${book.code}</td>
-        <td style="border: 1px solid #000; padding: 10px; font-weight: 800;">${book.title}</td>
+        <td style="border: 1px solid #000; padding: 10px; font-family: monospace;">${book.code}</td>
+        <td style="border: 1px solid #000; padding: 10px;">${book.title}</td>
         <td style="border: 1px solid #000; padding: 10px;">${book.publisher || '-'}</td>
         <td style="border: 1px solid #000; padding: 10px; text-align: center;">${book.publicationYear || '-'}</td>
-        <td style="border: 1px solid #000; padding: 10px; text-align: center; font-weight: bold;">${book.totalStock || 0}</td>
+        <td style="border: 1px solid #000; padding: 10px; text-align: center;">${book.totalStock || 0}</td>
       </tr>
     `).join('')
 
@@ -446,7 +446,7 @@ function BooksContent() {
               color: #000; 
               font-weight: 500; 
               position: absolute; 
-              top: 8mm; 
+              top: 5mm; 
               left: 15mm; 
             }
             .header { 
@@ -457,11 +457,11 @@ function BooksContent() {
               margin-top: 10px;
             }
             .header .instansi { font-size: 11pt; font-weight: 600; line-height: 1.2; text-transform: uppercase; }
-            .header .school-name { font-size: 16pt; font-weight: 900; text-transform: uppercase; margin-top: 2px; }
+            .header .school-name { font-size: 11pt; font-weight: 900; text-transform: uppercase; margin-top: 2px; }
             
             table { width: 100%; border-collapse: collapse; margin-top: 15px; border: 1.5px solid #000; }
             th { background: #f2f2f2; border: 1px solid #000; padding: 10px; text-align: center; font-weight: 900; font-size: 11pt; }
-            td { border: 1px solid #000; padding: 10px; font-size: 10.5pt; color: #000; }
+            td { border: 1px solid #000; padding: 10px; font-size: 10.5pt; color: #000; font-weight: normal; }
             
             .footer-sign { margin-top: 50px; float: right; text-align: center; width: 280px; font-size: 10.5pt; }
             .print-footer { 
