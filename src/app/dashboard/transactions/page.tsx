@@ -129,16 +129,24 @@ function TransactionsContent() {
     return [...allBooksData].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
   }, [allBooksData]);
 
-  // Transaksi aktif khusus peminjaman SISWA (Diorganisir berdasarkan memberType)
+  // RIWAYAT TRANSAKSI SISWA (MUTLAK)
+  // Memfilter agar riwayat guru tidak muncul di sini
   const activeTrans = useMemo(() => {
     if (!allTransactions) return [];
-    return allTransactions.filter(t => t.status === 'active' && t.memberType === 'Student');
+    return allTransactions.filter(t => 
+      t.status === 'active' && 
+      (t.memberType === 'Student' || t.type === 'borrow')
+    );
   }, [allTransactions]);
 
   const historyTrans = useMemo(() => {
     if (!allTransactions) return [];
     return allTransactions
-      .filter(t => t.status === 'returned' && t.memberType === 'Student')
+      .filter(t => 
+        t.status === 'returned' && 
+        (t.memberType === 'Student' || t.type === 'borrow' || t.type === 'return') &&
+        t.type !== 'teacher_handbook'
+      )
       .sort((a, b) => {
         const dateA = a.returnDate ? new Date(a.returnDate).getTime() : 0;
         const dateB = b.returnDate ? new Date(b.returnDate).getTime() : 0;
