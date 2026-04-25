@@ -406,7 +406,14 @@ function BooksContent() {
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
-    const rowsHtml = filteredBooks.map((book, index) => `
+    // URUTKAN BERDASARKAN TAHUN (Descending)
+    const sortedForPrint = [...filteredBooks].sort((a, b) => {
+      const yearA = Number(a.publicationYear) || 0;
+      const yearB = Number(b.publicationYear) || 0;
+      return yearB - yearA;
+    });
+
+    const rowsHtml = sortedForPrint.map((book, index) => `
       <tr>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
         <td style="border: 1px solid #ccc; padding: 8px; font-family: monospace;">${book.code}</td>
@@ -417,13 +424,31 @@ function BooksContent() {
       </tr>
     `).join('')
 
+    const now = new Date();
+    const formattedDateTime = now.toLocaleString('id-ID', { 
+      day: 'numeric', 
+      month: 'numeric', 
+      year: '2-digit', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    }).replace(/\./g, ':');
+
     printWindow.document.write(`
       <html>
         <head>
           <title>Daftar Koleksi Buku</title>
           <style>
-            @page { size: A4; margin: 15mm; }
-            body { font-family: 'Inter', sans-serif; font-size: 11px; margin: 0; padding: 0; }
+            @page { 
+              size: A4; 
+              margin: 0; /* Menghilangkan header browser bawaan agar about:blank hilang */
+            }
+            body { 
+              font-family: 'Inter', sans-serif; 
+              font-size: 11px; 
+              margin: 0; 
+              padding: 15mm; /* Margin dipindahkan ke body */
+            }
+            .top-meta { font-size: 8px; color: #666; margin-bottom: 8px; font-weight: bold; }
             .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
             .school-name { font-size: 18px; font-weight: 900; text-transform: uppercase; }
             table { width: 100%; border-collapse: collapse; margin-top: 10px; }
@@ -434,6 +459,7 @@ function BooksContent() {
           </style>
         </head>
         <body onload="window.print(); window.close();">
+          <div class="top-meta">Daftar Koleksi Buku - ${formattedDateTime}</div>
           <div class="header">
             <div>${settings?.govtInstitution || 'PEMERINTAH KABUPATEN MANGGARAI'}</div>
             <div>${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
@@ -454,12 +480,12 @@ function BooksContent() {
             <tbody>${rowsHtml}</tbody>
           </table>
           <div class="footer-sign">
-            ${settings?.reportCity || 'Mando'}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>
+            ${settings?.reportCity || 'Mando'}, ${now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>
             Kepala Sekolah,<br/><br/><br/><br/>
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
             NIP. ${settings?.principalNip || '198507272011011020'}
           </div>
-          <div class="print-footer">© 2026 Lantera Baca - SMPN 5 Langke Rembong</div>
+          <div class="print-footer">© 2026 Lantera Baca</div>
         </body>
       </html>
     `)
