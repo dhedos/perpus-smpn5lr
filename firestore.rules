@@ -2,37 +2,20 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // 1. Aturan Global: Berikan akses penuh kepada petugas yang sudah login
-    // Ini menjamin operasi 'list' (query) dan 'get' (dokumen tunggal) diizinkan
-    match /{allPaths=**} {
+    
+    // 1. Aturan Koleksi Utama: Izinkan akses penuh bagi petugas yang sudah login.
+    // Menggunakan recursive wildcard pada tingkat koleksi untuk menjamin operasi kueri (list) diizinkan.
+    match /{collection}/{document=**} {
       allow read, write: if request.auth != null;
     }
 
-    // 2. Akses Publik Terbatas: Diperlukan untuk proses inisialisasi aplikasi dan login
+    // 2. Akses Publik Khusus: Diperlukan untuk inisialisasi aplikasi dan pengaturan awal.
     match /settings/{docId} {
       allow read: if true;
     }
     
     match /users/{docId} {
       allow read: if true;
-    }
-
-    // 3. Izin Eksplisit Koleksi Utama: Memastikan tidak ada shadowing yang memblokir akses
-    match /transactions/{document=**} {
-      allow read, write: if request.auth != null;
-    }
-    
-    match /members/{document=**} {
-      allow read, write: if request.auth != null;
-    }
-    
-    match /books/{document=**} {
-      allow read, write: if request.auth != null;
-    }
-    
-    match /activity_logs/{document=**} {
-      allow read, write: if request.auth != null;
     }
   }
 }
