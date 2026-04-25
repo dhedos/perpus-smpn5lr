@@ -678,7 +678,7 @@ function TransactionsContent() {
                 <Card className="border-none shadow-sm overflow-hidden h-full">
                   <CardHeader className="bg-slate-50/50 border-b">
                     <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                      <History className="h-4 w-4 text-primary" /> Riwayat Sirkulasi Selesai
+                      <History className="h-4 w-4 text-primary" /> Riwayat Sirkulasi Terbaru
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
