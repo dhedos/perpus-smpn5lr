@@ -3,13 +3,13 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 1. Aturan Global untuk Pengguna Terotentikasi
-    // Petugas (Admin/Staff) yang sudah login memiliki akses penuh
+    // 1. Aturan Global: Berikan akses penuh kepada petugas yang sudah login
+    // Ini menjamin operasi 'list' (query) dan 'get' (dokumen tunggal) diizinkan
     match /{allPaths=**} {
       allow read, write: if request.auth != null;
     }
 
-    // 2. Akses Publik Terbatas (Untuk proses Inisialisasi/Login)
+    // 2. Akses Publik Terbatas: Diperlukan untuk proses inisialisasi aplikasi dan login
     match /settings/{docId} {
       allow read: if true;
     }
@@ -18,7 +18,7 @@ service cloud.firestore {
       allow read: if true;
     }
 
-    // 3. Izin Eksplisit Koleksi Utama (Mencegah Error List/Query)
+    // 3. Izin Eksplisit Koleksi Utama: Memastikan tidak ada shadowing yang memblokir akses
     match /transactions/{document=**} {
       allow read, write: if request.auth != null;
     }
