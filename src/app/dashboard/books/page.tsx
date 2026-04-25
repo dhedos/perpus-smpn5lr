@@ -29,7 +29,8 @@ import {
   Calendar as CalendarIcon,
   Filter,
   Database,
-  CloudUpload
+  CloudUpload,
+  CameraOff
 } from "lucide-react"
 import { 
   Dialog, 
@@ -69,6 +70,7 @@ import {
 import { generateBookDescription } from "@/ai/flows/generate-book-description-flow"
 import { useToast } from "@/hooks/use-toast"
 import { QRCodeSVG } from "qrcode.react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 // Firebase imports
 import { 
@@ -115,6 +117,7 @@ function BooksContent() {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null)
   const [isQrOpen, setIsQrOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isQueueOpen, setIsQueueOpen] = useState(false)
@@ -356,19 +359,30 @@ function BooksContent() {
   const startScanner = async () => {
     forceUnlockUI();
     setIsScannerOpen(true)
+    setHasCameraPermission(null)
     try {
       const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
       setTimeout(async () => {
         const scanner = new Html5Qrcode("scanner-view")
         scannerInstanceRef.current = scanner
-        await scanner.start(
-          { facingMode: "environment" },
-          { fps: 20, qrbox: { width: 280, height: 160 }, formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.EAN_13] },
-          (text) => { setSearch(text); stopScanner(); },
-          () => {}
-        )
+        try {
+          await scanner.start(
+            { facingMode: "environment" },
+            { fps: 20, qrbox: { width: 280, height: 160 }, formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.EAN_13] },
+            (text) => { setSearch(text); stopScanner(); },
+            () => {}
+          )
+          setHasCameraPermission(true)
+        } catch (e: any) {
+          console.error("Camera error:", e)
+          setHasCameraPermission(false)
+          toast({ title: "Akses Kamera Ditolak", description: "Mohon aktifkan izin kamera di pengaturan browser.", variant: "destructive" })
+        }
       }, 500)
-    } catch (e) { toast({ title: "Kamera Error", variant: "destructive" }) }
+    } catch (e) { 
+      setHasCameraPermission(false)
+      toast({ title: "Kamera Error", variant: "destructive" }) 
+    }
   }
 
   const stopScanner = async () => {
@@ -814,8 +828,20 @@ function BooksContent() {
              <DialogTitle className="sr-only">Pemindai Barcode</DialogTitle>
              <DialogDescription className="sr-only">Arahkan kamera ke QR Code atau Barcode buku.</DialogDescription>
            </DialogHeader>
-           <div id="scanner-view" className="w-full h-full bg-black min-h-[300px]"></div>
-           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>
+           <div id="scanner-view" className="w-full h-full bg-black min-h-[300px] flex items-center justify-center relative">
+             {hasCameraPermission === false && (
+               <div className="p-6 w-full max-w-sm animate-in fade-in zoom-in-95 duration-300">
+                 <Alert variant="destructive" className="bg-white/10 border-white/20 text-white">
+                   <CameraOff className="h-4 w-4 text-white" />
+                   <AlertTitle>Akses Kamera Ditolak</AlertTitle>
+                   <AlertDescription className="text-xs opacity-80">
+                     Izin kamera diblokir browser. Silakan aktifkan izin kamera di pengaturan browser Anda (ikon gembok di sebelah alamat web).
+                   </AlertDescription>
+                 </Alert>
+               </div>
+             )}
+           </div>
+           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20 z-50" onClick={stopScanner}><X /></Button>
         </DialogContent>
       </Dialog>
 

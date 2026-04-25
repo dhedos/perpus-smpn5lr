@@ -21,7 +21,8 @@ import {
   ChevronRight,
   Printer,
   History,
-  BookOpen
+  BookOpen,
+  CameraOff
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -41,6 +42,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 // Firebase
 import { 
@@ -65,6 +67,7 @@ function TransactionsContent() {
   const [returnSearch, setReturnSearch] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null)
   
   const scannerInstanceRef = useRef<any>(null)
   
@@ -365,18 +368,28 @@ function TransactionsContent() {
 
   const startScanner = async () => {
     setIsScannerOpen(true); 
+    setHasCameraPermission(null)
     try {
       const { Html5Qrcode } = await import("html5-qrcode")
       setTimeout(async () => {
         try {
           const scanner = new Html5Qrcode("smart-scanner")
           scannerInstanceRef.current = scanner
-          await scanner.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (text) => {
-            if (handleLookup(text)) {
-              stopScanner();
-            }
-          }, () => {})
-        } catch (err) {}
+          try {
+            await scanner.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (text) => {
+              if (handleLookup(text)) {
+                stopScanner();
+              }
+            }, () => {})
+            setHasCameraPermission(true)
+          } catch (e: any) {
+            console.error("Camera access error:", e)
+            setHasCameraPermission(false)
+            toast({ title: "Akses Kamera Ditolak", variant: "destructive" })
+          }
+        } catch (err) {
+          setHasCameraPermission(false)
+        }
       }, 500)
     } catch (e) { setIsScannerOpen(false) }
   }
@@ -753,8 +766,20 @@ function TransactionsContent() {
             <DialogTitle>Pemindai</DialogTitle>
             <DialogDescription>Arahkan kamera pada kode QR kartu siswa atau barcode buku.</DialogDescription>
           </DialogHeader>
-          <div id="smart-scanner" className="w-full h-full bg-black"></div>
-          <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>
+          <div id="smart-scanner" className="w-full h-full bg-black flex items-center justify-center relative">
+            {hasCameraPermission === false && (
+              <div className="p-6 w-full max-w-sm animate-in fade-in zoom-in-95 duration-300">
+                <Alert variant="destructive" className="bg-white/10 border-white/20 text-white">
+                  <CameraOff className="h-4 w-4 text-white" />
+                  <AlertTitle>Akses Kamera Ditolak</AlertTitle>
+                  <AlertDescription className="text-xs opacity-80">
+                    Izin kamera diblokir browser. Silakan aktifkan izin kamera di pengaturan browser Anda (ikon gembok di sebelah alamat web).
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+          </div>
+          <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20 z-50" onClick={stopScanner}><X /></Button>
         </DialogContent>
       </Dialog>
       
@@ -762,13 +787,5 @@ function TransactionsContent() {
         <p className="text-[10px] font-black uppercase tracking-widest">© 2026 Lantera Baca</p>
       </div>
     </div>
-  )
-}
-
-export default function TransactionsPage() {
-  return (
-    <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>}>
-      <TransactionsContent />
-    </Suspense>
   )
 }

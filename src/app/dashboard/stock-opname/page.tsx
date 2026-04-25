@@ -16,7 +16,8 @@ import {
   Plus,
   RefreshCcw,
   AlertTriangle,
-  Printer
+  Printer,
+  CameraOff
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -24,10 +25,12 @@ import {
   Dialog, 
   DialogContent, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogDescription
 } from "@/components/ui/dialog"
 import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from "@/firebase"
 import { collection, addDoc, query, orderBy, limit, doc, serverTimestamp } from "firebase/firestore"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function StockOpnamePage() {
   const { toast } = useToast()
@@ -36,6 +39,7 @@ export default function StockOpnamePage() {
   
   const [search, setSearch] = useState("")
   const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [selectedBook, setSelectedBook] = useState<any>(null)
   const [physicalCount, setPhysicalCount] = useState(0)
@@ -66,6 +70,7 @@ export default function StockOpnamePage() {
 
   const startScanner = async () => {
     setIsScannerOpen(true)
+    setHasCameraPermission(null)
     try {
       const { Html5Qrcode } = await import("html5-qrcode")
       setTimeout(async () => {
@@ -80,12 +85,16 @@ export default function StockOpnamePage() {
             (txt) => { handleLookup(txt); stopScanner(); }, 
             () => {}
           )
-        } catch (e) { 
-          toast({ title: "Kamera Gagal", variant: "destructive" })
-          setIsScannerOpen(false)
+          setHasCameraPermission(true)
+        } catch (e: any) { 
+          console.error("Camera error:", e)
+          setHasCameraPermission(false)
+          toast({ title: "Akses Kamera Ditolak", variant: "destructive" })
         }
       }, 500)
-    } catch (e) {}
+    } catch (e) {
+      setHasCameraPermission(false)
+    }
   }
 
   const stopScanner = async () => {
@@ -420,11 +429,24 @@ export default function StockOpnamePage() {
 
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
         <DialogContent className="sm:max-w-xl p-0 h-[100dvh] sm:h-auto border-none bg-black overflow-hidden">
-          <DialogHeader>
-            <DialogTitle className="sr-only">Pemindai Stok Opname</DialogTitle>
+          <DialogHeader className="sr-only">
+            <DialogTitle>Pemindai Stok Opname</DialogTitle>
+            <DialogDescription>Arahkan kamera ke kode QR buku untuk verifikasi fisik.</DialogDescription>
           </DialogHeader>
-          <div id="audit-scanner" className="w-full h-full bg-black min-h-[300px]"></div>
-          <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>
+          <div id="audit-scanner" className="w-full h-full bg-black min-h-[300px] flex items-center justify-center relative">
+            {hasCameraPermission === false && (
+              <div className="p-6 w-full max-w-sm animate-in fade-in zoom-in-95 duration-300">
+                <Alert variant="destructive" className="bg-white/10 border-white/20 text-white">
+                  <CameraOff className="h-4 w-4 text-white" />
+                  <AlertTitle>Akses Kamera Ditolak</AlertTitle>
+                  <AlertDescription className="text-xs opacity-80">
+                    Izin kamera diblokir browser. Silakan aktifkan izin kamera di pengaturan browser Anda (ikon gembok di sebelah alamat web).
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+          </div>
+          <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20 z-50" onClick={stopScanner}><X /></Button>
         </DialogContent>
       </Dialog>
       

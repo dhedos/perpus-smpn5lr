@@ -22,7 +22,8 @@ import {
   Minus,
   Plus,
   User,
-  BookOpen
+  BookOpen,
+  CameraOff
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -43,6 +44,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 // Firebase
 import { 
@@ -68,6 +70,7 @@ export default function TeacherLoansPage() {
   const [returnSearch, setReturnSearch] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null)
   
   const scannerInstanceRef = useRef<any>(null)
   
@@ -172,25 +175,36 @@ export default function TeacherLoansPage() {
 
   const startScanner = async (mode: "member" | "book" | "return") => {
     setIsScannerOpen(true)
+    setHasCameraPermission(null)
     try {
       const { Html5Qrcode } = await import("html5-qrcode")
       setTimeout(async () => {
         const sc = new Html5Qrcode("teacher-scanner")
         scannerInstanceRef.current = sc
-        await sc.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, (text) => {
-          if (mode === "member") {
-            const m = teachers?.find(t => t.memberId?.toLowerCase() === text.toLowerCase())
-            if (m) { setSelectedMember(m); stopScanner(); }
-          } else if (mode === "book") {
-            const b = books?.find(bk => bk.code?.toLowerCase() === text.toLowerCase() || bk.isbn === text)
-            if (b) { setSelectedBook(b); stopScanner(); }
-          } else if (mode === "return") {
-            const trans = activeTransactions?.find(t => t.memberId?.toLowerCase() === text.toLowerCase() || t.bookTitle?.toLowerCase().includes(text.toLowerCase()))
-            if (trans) { stopScanner(); setTimeout(() => prepareReturn(trans), 10); }
-          }
-        }, () => {})
+        try {
+          await sc.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, (text) => {
+            if (mode === "member") {
+              const m = teachers?.find(t => t.memberId?.toLowerCase() === text.toLowerCase())
+              if (m) { setSelectedMember(m); stopScanner(); }
+            } else if (mode === "book") {
+              const b = books?.find(bk => bk.code?.toLowerCase() === text.toLowerCase() || bk.isbn === text)
+              if (b) { setSelectedBook(b); stopScanner(); }
+            } else if (mode === "return") {
+              const trans = activeTransactions?.find(t => t.memberId?.toLowerCase() === text.toLowerCase() || t.bookTitle?.toLowerCase().includes(text.toLowerCase()))
+              if (trans) { stopScanner(); setTimeout(() => prepareReturn(trans), 10); }
+            }
+          }, () => {})
+          setHasCameraPermission(true)
+        } catch (e: any) {
+          console.error("Camera access error:", e)
+          setHasCameraPermission(false)
+          toast({ title: "Akses Kamera Ditolak", variant: "destructive" })
+        }
       }, 500)
-    } catch (e) { setIsScannerOpen(false) }
+    } catch (e) { 
+      setHasCameraPermission(false)
+      setIsScannerOpen(false) 
+    }
   }
 
   const stopScanner = async () => {
@@ -598,8 +612,20 @@ export default function TeacherLoansPage() {
              <DialogTitle>Pemindai</DialogTitle>
              <DialogDescription>Arahkan kamera ke kode buku atau kartu guru.</DialogDescription>
           </DialogHeader>
-          <div id="teacher-scanner" className="w-full h-full bg-black"></div>
-          <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={stopScanner}><X /></Button>
+          <div id="teacher-scanner" className="w-full h-full bg-black flex items-center justify-center relative">
+            {hasCameraPermission === false && (
+              <div className="p-6 w-full max-w-sm animate-in fade-in zoom-in-95 duration-300">
+                <Alert variant="destructive" className="bg-white/10 border-white/20 text-white">
+                  <CameraOff className="h-4 w-4 text-white" />
+                  <AlertTitle>Akses Kamera Ditolak</AlertTitle>
+                  <AlertDescription className="text-xs opacity-80">
+                    Izin kamera diblokir browser. Silakan aktifkan izin kamera di pengaturan browser Anda (ikon gembok di sebelah alamat web).
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+          </div>
+          <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20 z-50" onClick={stopScanner}><X /></Button>
         </DialogContent>
       </Dialog>
       <div className="text-center py-6 opacity-30">
