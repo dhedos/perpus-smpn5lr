@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Library, Bell, Shield, Save, Loader2, Coins, CalendarDays, AlertTriangle, FileText, MapPin, UserCheck, GraduationCap, LockKeyhole, Type } from "lucide-react"
+import { Library, Bell, Shield, Save, Loader2, Coins, CalendarDays, FileText, MapPin, UserCheck, GraduationCap, LockKeyhole, Type, Wallet } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 
@@ -48,7 +48,8 @@ export default function SettingsPage() {
     reportCity: "Mando",
     principalName: "Lodovikus Jangkar, S.Pd.Gr",
     principalNip: "198507272011011020",
-    isDataLocked: false
+    isDataLocked: false,
+    budgetSources: "BOSP, DAK, Hibah"
   })
 
   // Fetch settings from Firestore
@@ -69,7 +70,8 @@ export default function SettingsPage() {
         fineAmount: Number(remoteSettings.fineAmount ?? 500),
         damagedBookFine: Number(remoteSettings.damagedBookFine ?? 10000),
         lostBookFine: Number(remoteSettings.lostBookFine ?? 50000),
-        isDataLocked: remoteSettings.isDataLocked === true 
+        isDataLocked: remoteSettings.isDataLocked === true,
+        budgetSources: remoteSettings.budgetSources || "BOSP, DAK, Hibah"
       }))
     }
   }, [remoteSettings])
@@ -132,7 +134,7 @@ export default function SettingsPage() {
           <Card className="border-none shadow-sm overflow-hidden">
             <CardHeader className="bg-slate-50/50">
               <CardTitle>Kebijakan Sirkulasi Utama</CardTitle>
-              <CardDescription>Atur identitas judul perpustakaan, denda, dan tahun ajaran.</CardDescription>
+              <CardDescription>Atur identitas judul perpustakaan, denda, dan sumber anggaran.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
               <div className="grid md:grid-cols-2 gap-8">
@@ -164,16 +166,17 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="academic-year" className="font-bold text-xs uppercase text-muted-foreground flex items-center gap-2">
-                      <GraduationCap className="h-3 w-3" /> Tahun Ajaran Aktif
+                    <Label htmlFor="budget-sources" className="font-bold text-xs uppercase text-muted-foreground flex items-center gap-2">
+                      <Wallet className="h-3 w-3" /> Daftar Sumber Anggaran
                     </Label>
                     <Input 
-                      id="academic-year" 
-                      value={settings.academicYear} 
-                      onChange={(e) => setSettings({ ...settings, academicYear: e.target.value })}
+                      id="budget-sources" 
+                      value={settings.budgetSources} 
+                      onChange={(e) => setSettings({ ...settings, budgetSources: e.target.value })}
                       className="bg-slate-50 border-slate-200 h-11"
-                      placeholder="Contoh: 2024/2025"
+                      placeholder="Pisahkan dengan koma, cth: BOSP, DAK, Hibah"
                     />
+                    <p className="text-[10px] text-muted-foreground italic">Pisahkan pilihan dengan tanda koma.</p>
                   </div>
                 </div>
 

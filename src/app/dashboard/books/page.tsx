@@ -28,10 +28,8 @@ import {
   Eye,
   Calendar as CalendarIcon,
   Filter,
-  ChevronDown,
   Database,
-  CloudUpload,
-  CheckCircle2
+  CloudUpload
 } from "lucide-react"
 import { 
   Dialog, 
@@ -77,10 +75,8 @@ import {
   useCollection, 
   useMemoFirebase,
   useDoc,
-  useUser,
-  errorEmitter 
+  useUser
 } from '@/firebase'
-import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors'
 import { collection, addDoc, deleteDoc, doc, updateDoc, query, limit, orderBy, serverTimestamp } from 'firebase/firestore'
 
 const INITIAL_FORM_DATA = {
@@ -139,6 +135,11 @@ function BooksContent() {
   const { data: settings } = useDoc(settingsRef)
   
   const isLockedForUser = Boolean(settings?.isDataLocked === true && !isAdmin);
+
+  const budgetSourcesList = useMemo(() => {
+    const raw = settings?.budgetSources || "BOSP, DAK, Hibah";
+    return raw.split(',').map(s => s.trim()).filter(Boolean);
+  }, [settings?.budgetSources]);
 
   const forceUnlockUI = useCallback(() => {
     if (typeof document !== 'undefined') {
@@ -227,6 +228,7 @@ function BooksContent() {
     setFormData({
       ...INITIAL_FORM_DATA,
       mainHeader: settings?.libraryName || "LANTERA BACA",
+      budgetSource: budgetSourcesList[0] || "BOSP",
       publicationYear: isHydrated ? new Date().getFullYear().toString() : "",
       acquisitionDate: isHydrated ? new Date().toISOString().split('T')[0] : ""
     });
@@ -555,7 +557,7 @@ function BooksContent() {
                             availableStock: Number(book.availableStock || 0),
                             description: book.description || "",
                             mainHeader: book.mainHeader || settings?.libraryName || "LANTERA BACA",
-                            budgetSource: book.budgetSource || "BOSP"
+                            budgetSource: book.budgetSource || budgetSourcesList[0] || "BOSP"
                           }); 
                           setIsEditOpen(true);
                         }, 150);
@@ -602,23 +604,14 @@ function BooksContent() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">Sumber Anggaran</Label>
-                  {isAdmin ? (
-                    <Input 
-                      value={formData.budgetSource} 
-                      onChange={e => setFormData({...formData, budgetSource: e.target.value})} 
-                      className="bg-white border-slate-300 h-11" 
-                      placeholder="Cth: BOSP, DAK, dsb" 
-                    />
-                  ) : (
-                    <Select value={formData.budgetSource} onValueChange={v => setFormData({...formData, budgetSource: v})}>
-                      <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="BOSP">BOSP</SelectItem>
-                        <SelectItem value="DAK">DAK</SelectItem>
-                        <SelectItem value="Hibah">Hibah / Hadiah</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
+                  <Select value={formData.budgetSource} onValueChange={v => setFormData({...formData, budgetSource: v})}>
+                    <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {budgetSourcesList.map(source => (
+                        <SelectItem key={source} value={source}>{source}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">Kode Rekening</Label>
@@ -696,22 +689,14 @@ function BooksContent() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Sumber</Label>
-                  {isAdmin ? (
-                    <Input 
-                      value={formData.budgetSource} 
-                      onChange={e => setFormData({...formData, budgetSource: e.target.value})} 
-                      className="bg-white border-slate-300 h-11" 
-                    />
-                  ) : (
-                    <Select value={formData.budgetSource} onValueChange={v => setFormData({...formData, budgetSource: v})}>
-                      <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="BOSP">BOSP</SelectItem>
-                        <SelectItem value="DAK">DAK</SelectItem>
-                        <SelectItem value="Hibah">Hibah / Hadiah</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
+                  <Select value={formData.budgetSource} onValueChange={v => setFormData({...formData, budgetSource: v})}>
+                    <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {budgetSourcesList.map(source => (
+                        <SelectItem key={source} value={source}>{source}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Rekening</Label><Input value={formData.accountCode} onChange={e => setFormData({...formData, accountCode: e.target.value})} className="bg-white border-slate-300 h-11" /></div>
               </div>

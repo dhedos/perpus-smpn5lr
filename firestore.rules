@@ -3,7 +3,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // AKSES TOTAL: Solusi permanen untuk menghilangkan error "Missing or insufficient permissions".
-    // Ini menjamin siapa saja bisa melakukan kueri 'list' tanpa hambatan aturan keamanan.
+    // Ini menjamin siapa saja bisa melakukan kueri tanpa hambatan aturan keamanan.
     match /{allPaths=**} {
       allow read, write: if true;
     }
