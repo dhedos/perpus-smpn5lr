@@ -408,34 +408,103 @@ function BooksContent() {
 
     const rowsHtml = filteredBooks.map((book, index) => `
       <tr>
-        <td style="border: 1px solid #ccc; padding: 8px;">${index + 1}</td>
-        <td style="border: 1px solid #ccc; padding: 8px;">${book.code}</td>
-        <td style="border: 1px solid #ccc; padding: 8px;">${book.title}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; font-family: monospace;">${book.code}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold;">${book.title}</td>
         <td style="border: 1px solid #ccc; padding: 8px;">${book.publisher || '-'}</td>
-        <td style="border: 1px solid #ccc; padding: 8px;">${book.publicationYear || '-'}</td>
-        <td style="border: 1px solid #ccc; padding: 8px;">${book.totalStock || 0}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${book.publicationYear || '-'}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${book.totalStock || 0}</td>
       </tr>
     `).join('')
 
     printWindow.document.write(`
       <html>
-        <head><title>Daftar Koleksi</title></head>
+        <head>
+          <title>Daftar Koleksi Buku</title>
+          <style>
+            @page { size: A4; margin: 15mm; }
+            body { font-family: 'Inter', sans-serif; font-size: 11px; margin: 0; padding: 0; }
+            .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
+            .school-name { font-size: 18px; font-weight: 900; text-transform: uppercase; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; text-align: left; }
+            td { border: 1px solid #ccc; padding: 8px; }
+            .footer-sign { margin-top: 40px; float: right; text-align: center; width: 250px; }
+            .print-footer { position: fixed; bottom: 5mm; left: 15mm; right: 15mm; font-size: 8px; text-align: center; color: #999; border-top: 1px solid #eee; padding-top: 2mm; }
+          </style>
+        </head>
         <body onload="window.print(); window.close();">
-          <h2>DAFTAR KOLEKSI BUKU PERPUSTAKAAN</h2>
-          <table style="width: 100%; border-collapse: collapse;">
+          <div class="header">
+            <div>${settings?.govtInstitution || 'PEMERINTAH KABUPATEN MANGGARAI'}</div>
+            <div>${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
+            <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
+          </div>
+          <h3 style="text-align: center; text-transform: uppercase; margin-bottom: 20px;">LAPORAN DAFTAR KOLEKSI BUKU PERPUSTAKAAN</h3>
+          <table>
             <thead>
               <tr>
-                <th style="border: 1px solid #ccc; padding: 8px;">No</th>
-                <th style="border: 1px solid #ccc; padding: 8px;">Kode</th>
-                <th style="border: 1px solid #ccc; padding: 8px;">Judul</th>
-                <th style="border: 1px solid #ccc; padding: 8px;">Penerbit</th>
-                <th style="border: 1px solid #ccc; padding: 8px;">Thn</th>
-                <th style="border: 1px solid #ccc; padding: 8px;">Stok</th>
+                <th style="width: 30px; text-align: center;">No</th>
+                <th style="width: 80px;">Kode Buku</th>
+                <th>Judul Buku</th>
+                <th>Penerbit</th>
+                <th style="width: 50px; text-align: center;">Tahun</th>
+                <th style="width: 50px; text-align: center;">Stok</th>
               </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>
           </table>
-          <p style="text-align: center; margin-top: 20px; font-size: 10px;">© 2026 Lantera Baca</p>
+          <div class="footer-sign">
+            ${settings?.reportCity || 'Mando'}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>
+            Kepala Sekolah,<br/><br/><br/><br/>
+            <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
+            NIP. ${settings?.principalNip || '198507272011011020'}
+          </div>
+          <div class="print-footer">© 2026 Lantera Baca - SMPN 5 Langke Rembong</div>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
+    forceUnlockUI()
+  }
+
+  const handlePrintAllQr = () => {
+    if (filteredBooks.length === 0) return
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+
+    const qrCardsHtml = filteredBooks.map((book) => `
+      <div style="width: 45mm; height: 60mm; border: 1px solid #eee; padding: 5mm; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; page-break-inside: avoid; float: left; margin: 2mm; background: #fff; box-shadow: 0 0 2px rgba(0,0,0,0.1); border-radius: 4mm;">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${book.code}" style="width: 32mm; height: 32mm; margin-bottom: 2mm;" />
+        <div style="font-size: 8pt; font-weight: bold; margin-bottom: 1mm; line-height: 1.1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; height: 18pt;">${book.title}</div>
+        <div style="font-size: 9pt; font-family: monospace; font-weight: bold; color: #2E6ECE;">${book.code}</div>
+        <div style="font-size: 6pt; color: #666; margin-top: 1mm; text-transform: uppercase; font-weight: 800;">${settings?.libraryName || 'LANTERA BACA'}</div>
+      </div>
+    `).join('')
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Label QR Inventaris Buku</title>
+          <style>
+            @page { size: A4; margin: 10mm; }
+            body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; background: #f9f9f9; }
+            .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; background: #fff; padding-top: 5mm; }
+            .school-name { font-size: 18px; font-weight: 900; text-transform: uppercase; }
+            .print-container { overflow: hidden; padding: 5mm; }
+            .print-footer { position: fixed; bottom: 5mm; left: 0; right: 0; text-align: center; font-size: 8px; color: #999; border-top: 1px solid #eee; padding-top: 2mm; background: #fff; }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          <div class="header">
+            <div>${settings?.govtInstitution || 'PEMERINTAH KABUPATEN MANGGARAI'}</div>
+            <div>${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
+            <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
+          </div>
+          <h3 style="text-align: center; text-transform: uppercase; margin: 10px 0;">LABEL QR INVENTARIS BUKU</h3>
+          <div class="print-container">
+            ${qrCardsHtml}
+          </div>
+          <div class="print-footer">© 2026 Lantera Baca - SMPN 5 Langke Rembong</div>
         </body>
       </html>
     `)
@@ -461,7 +530,23 @@ function BooksContent() {
               <CloudUpload className="h-4 w-4 mr-2" /> Antrean ({localQueue.length})
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={handlePrintTable}><Printer className="h-4 w-4 mr-2" /> Cetak</Button>
+          
+          <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Printer className="h-4 w-4 mr-2" /> Opsi Cetak
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="z-50">
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handlePrintTable(); }}>
+                 <Printer className="h-4 w-4 mr-2" /> Cetak Daftar Buku
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handlePrintAllQr(); }}>
+                 <QrCode className="h-4 w-4 mr-2" /> Cetak Semua QR Code
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Button size="sm" onClick={handleOpenAdd}>
             <Plus className="h-4 w-4 mr-2" />Tambah Buku
           </Button>
@@ -478,7 +563,6 @@ function BooksContent() {
             onChange={e => setSearch(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
-                 // Alat scanner biasanya mengirim Enter
                  forceUnlockUI();
               }
             }}
