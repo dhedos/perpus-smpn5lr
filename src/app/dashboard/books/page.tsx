@@ -532,25 +532,26 @@ function BooksContent() {
     if (!printWindow) return
 
     const qrCardsHtml = filteredBooks.map((book) => `
-      <div style="width: 80mm; height: 35mm; border: 0.2pt solid #ccc; display: flex; align-items: center; page-break-inside: avoid; float: left; margin: 2mm; background: #fff; border-radius: 2mm; overflow: hidden; font-family: 'Inter', sans-serif; box-sizing: border-box;">
-        <div style="width: 32mm; height: 32mm; display: flex; align-items: center; justify-content: center; padding-left: 2mm;">
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${book.code}" style="width: 28mm; height: 28mm;" />
+      <div style="width: 80mm; height: 35mm; border: 0.2pt solid #ccc; display: flex; flex-direction: column; page-break-inside: avoid; float: left; margin: 2mm; background: #fff; border-radius: 2mm; overflow: hidden; font-family: 'Inter', sans-serif; box-sizing: border-box;">
+        <div style="flex: 1; display: flex; align-items: center; padding: 2mm;">
+          <div style="width: 28mm; height: 28mm; display: flex; align-items: center; justify-content: center;">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${book.code}" style="width: 26mm; height: 26mm;" />
+          </div>
+          <div style="flex: 1; padding-left: 3mm; display: flex; flex-direction: column; justify-content: center; min-width: 0;">
+            <div style="font-size: 8.5pt; font-weight: 900; line-height: 1.1; margin-bottom: 1mm; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-transform: uppercase;">${book.title}</div>
+            <div style="font-size: 11pt; font-family: monospace; font-weight: 900; color: #2E6ECE; margin-bottom: 1.5mm; letter-spacing: 0.5px;">${book.code}</div>
+            
+            <div style="display: grid; gap: 0.5mm;">
+              <div style="font-size: 6.5pt; color: #444; font-weight: 700; text-transform: uppercase;">SUMBER: ${book.budgetSource || '-'}</div>
+              <div style="font-size: 6.5pt; color: #444; font-weight: 700; text-transform: uppercase;">REK: ${book.accountCode || '-'}</div>
+              <div style="font-size: 6.5pt; color: #444; font-weight: 700; text-transform: uppercase;">KAT: ${book.category || '-'}</div>
+              <div style="font-size: 6.5pt; color: #444; font-weight: 700; text-transform: uppercase;">ISBN: ${book.isbn || '-'}</div>
+            </div>
+          </div>
         </div>
-        <div style="flex: 1; padding: 2mm 3mm 2mm 1mm; display: flex; flex-direction: column; justify-content: center; min-width: 0; position: relative; height: 100%;">
-          <div style="font-size: 8.5pt; font-weight: 900; line-height: 1.1; margin-bottom: 1mm; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-transform: uppercase;">${book.title}</div>
-          <div style="font-size: 11pt; font-family: monospace; font-weight: 900; color: #2E6ECE; margin-bottom: 1.5mm; letter-spacing: 0.5px;">${book.code}</div>
-          
-          <div style="display: grid; gap: 0.5mm;">
-            <div style="font-size: 6pt; color: #444; font-weight: 700; text-transform: uppercase;">SUMBER: ${book.budgetSource || '-'}</div>
-            <div style="font-size: 6pt; color: #444; font-weight: 700; text-transform: uppercase;">REK: ${book.accountCode || '-'}</div>
-            <div style="font-size: 6pt; color: #444; font-weight: 700; text-transform: uppercase;">CAT: ${book.category || '-'}</div>
-            <div style="font-size: 6pt; color: #444; font-weight: 700; text-transform: uppercase;">RAK: ${book.rackLocation || '-'}</div>
-            <div style="font-size: 6pt; color: #444; font-weight: 700; text-transform: uppercase;">ISBN: ${book.isbn || '-'}</div>
-          </div>
-          
-          <div style="margin-top: 1.5mm; pt: 1mm; border-top: 0.3pt solid #eee; font-size: 5.5pt; color: #999; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">
-            ${settings?.libraryName || 'LANTERA BACA'}
-          </div>
+        <div style="margin: 0 3mm; border-top: 0.5pt solid #eee; height: 6mm; display: flex; align-items: center; justify-content: space-between;">
+           <div style="font-size: 6pt; font-weight: 900; color: #444; text-transform: uppercase;">RAK: ${book.rackLocation || '-'}</div>
+           <div style="font-size: 5.5pt; color: #999; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${settings?.libraryName || 'LANTERA BACA'}</div>
         </div>
       </div>
     `).join('')
@@ -587,30 +588,35 @@ function BooksContent() {
           <title>Cetak Label QR</title>
           <style>
             @page { size: 80mm 35mm; margin: 0; }
-            body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; height: 35mm; width: 80mm; background: #fff; }
+            body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; height: 35mm; width: 80mm; background: #fff; overflow: hidden; }
             .sticker {
               width: 80mm;
               height: 35mm;
               display: flex;
-              align-items: center;
+              flex-direction: column;
               box-sizing: border-box;
-              overflow: hidden;
-              padding: 1mm;
+              padding: 1mm 2mm;
+            }
+            .top-section {
+              flex: 1;
+              display: flex;
+              align-items: center;
+              min-height: 0;
             }
             .qr-side {
-              width: 32mm;
-              height: 32mm;
+              width: 28mm;
+              height: 28mm;
               display: flex;
               align-items: center;
               justify-content: center;
             }
             .qr-side img {
-              width: 28mm;
-              height: 28mm;
+              width: 26mm;
+              height: 26mm;
             }
             .info-side {
               flex: 1;
-              padding: 1mm 2mm 1mm 1mm;
+              padding-left: 3mm;
               display: flex;
               flex-direction: column;
               justify-content: center;
@@ -640,39 +646,54 @@ function BooksContent() {
                gap: 0.3mm;
             }
             .meta {
-              font-size: 6pt;
+              font-size: 6.5pt;
               color: #444;
               font-weight: 700;
               text-transform: uppercase;
             }
-            .footer {
+            .footer-row {
+              height: 6mm;
+              border-top: 0.5pt solid #eee;
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding-top: 0.5mm;
+            }
+            .footer-rak {
+              font-size: 6pt;
+              font-weight: 900;
+              color: #444;
+              text-transform: uppercase;
+            }
+            .footer-name {
               font-size: 5.5pt;
               color: #999;
               text-transform: uppercase;
               font-weight: 800;
-              margin-top: 1.5mm;
-              padding-top: 0.8mm;
-              border-top: 0.3pt solid #eee;
               letter-spacing: 0.5px;
             }
           </style>
         </head>
         <body onload="window.print(); window.close();">
           <div class="sticker">
-            <div class="qr-side">
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${book.code}" />
-            </div>
-            <div class="info-side">
-              <div class="title">${book.title}</div>
-              <div class="code">${book.code}</div>
-              <div class="meta-grid">
-                <div class="meta">SUMBER: ${book.budgetSource || '-'}</div>
-                <div class="meta">REK: ${book.accountCode || '-'}</div>
-                <div class="meta">CAT: ${book.category || '-'}</div>
-                <div class="meta">RAK: ${book.rackLocation || '-'}</div>
-                <div class="meta">ISBN: ${book.isbn || '-'}</div>
+            <div class="top-section">
+              <div class="qr-side">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${book.code}" />
               </div>
-              <div class="footer">${settings?.libraryName || 'LANTERA BACA'}</div>
+              <div class="info-side">
+                <div class="title">${book.title}</div>
+                <div class="code">${book.code}</div>
+                <div class="meta-grid">
+                  <div class="meta">SUMBER: ${book.budgetSource || '-'}</div>
+                  <div class="meta">REK: ${book.accountCode || '-'}</div>
+                  <div class="meta">KAT: ${book.category || '-'}</div>
+                  <div class="meta">ISBN: ${book.isbn || '-'}</div>
+                </div>
+              </div>
+            </div>
+            <div class="footer-row">
+               <div class="footer-rak">RAK: ${book.rackLocation || '-'}</div>
+               <div class="footer-name">${settings?.libraryName || 'LANTERA BACA'}</div>
             </div>
           </div>
         </body>
@@ -1054,7 +1075,7 @@ function BooksContent() {
         </DialogContent>
       </Dialog>
 
-      {/* DIALOG QR CODE - LANDSCAPE DESIGN (MATCHING REFERENCE IMAGE) */}
+      {/* DIALOG QR CODE - LANDSCAPE DESIGN */}
       <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-xl text-center p-0 border-none rounded-3xl overflow-hidden">
           <DialogHeader className="p-6 border-b bg-white">
@@ -1063,23 +1084,26 @@ function BooksContent() {
           </DialogHeader>
           <div className="p-10 space-y-6 bg-slate-100 flex flex-col items-center">
             {selectedBookQr && (
-              <div className="bg-white w-full max-w-[420px] aspect-[8/3.5] rounded-xl border border-slate-200 shadow-2xl flex items-center p-4 ring-1 ring-black/5">
-                <div className="w-1/3 aspect-square flex items-center justify-center pr-4">
-                  <QRCodeSVG value={selectedBookQr.code} size={110} level="H" includeMargin />
-                </div>
-                <div className="flex-1 pl-4 text-left flex flex-col justify-center min-w-0 border-l border-slate-50">
-                  <div className="font-black text-[10pt] leading-none uppercase truncate mb-1.5">{selectedBookQr.title}</div>
-                  <div className="font-mono text-[#2E6ECE] font-black text-xl leading-none mb-3">{selectedBookQr.code}</div>
-                  
-                  <div className="space-y-0.5">
-                    <div className="text-[7.5px] font-bold text-muted-foreground uppercase">SUMBER: {selectedBookQr.budgetSource || '-'}</div>
-                    <div className="text-[7.5px] font-bold text-muted-foreground uppercase">REK: {selectedBookQr.accountCode || '-'}</div>
-                    <div className="text-[7.5px] font-bold text-muted-foreground uppercase">CAT: {selectedBookQr.category || '-'}</div>
-                    <div className="text-[7.5px] font-bold text-muted-foreground uppercase">RAK: {selectedBookQr.rackLocation || '-'}</div>
-                    <div className="text-[7.5px] font-bold text-muted-foreground uppercase">ISBN: {selectedBookQr.isbn || '-'}</div>
+              <div className="bg-white w-full max-w-[420px] aspect-[8/3.5] rounded-xl border border-slate-200 shadow-2xl flex flex-col p-2 ring-1 ring-black/5">
+                <div className="flex-1 flex items-center">
+                  <div className="w-[32%] aspect-square flex items-center justify-center p-1">
+                    <QRCodeSVG value={selectedBookQr.code} size={105} level="H" includeMargin />
                   </div>
-                  
-                  <div className="mt-3 pt-1.5 border-t border-slate-100 text-[7px] font-black text-slate-400 uppercase tracking-widest">
+                  <div className="flex-1 pl-4 text-left flex flex-col justify-center min-w-0">
+                    <div className="font-black text-[9.5pt] leading-tight uppercase truncate mb-1.5">{selectedBookQr.title}</div>
+                    <div className="font-mono text-[#2E6ECE] font-black text-xl leading-none mb-3">{selectedBookQr.code}</div>
+                    
+                    <div className="space-y-0.5">
+                      <div className="text-[7px] font-bold text-muted-foreground uppercase">SUMBER: {selectedBookQr.budgetSource || '-'}</div>
+                      <div className="text-[7px] font-bold text-muted-foreground uppercase">REK: {selectedBookQr.accountCode || '-'}</div>
+                      <div className="text-[7px] font-bold text-muted-foreground uppercase">KAT: {selectedBookQr.category || '-'}</div>
+                      <div className="text-[7px] font-bold text-muted-foreground uppercase">ISBN: {selectedBookQr.isbn || '-'}</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-1 pt-1.5 border-t border-slate-100 flex justify-between items-center px-1.5">
+                  <div className="text-[7px] font-black text-slate-700 uppercase">RAK: {selectedBookQr.rackLocation || '-'}</div>
+                  <div className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest">
                     {settings?.libraryName || 'LANTERA BACA'}
                   </div>
                 </div>
