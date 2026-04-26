@@ -1,14 +1,14 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Library, Bell, Shield, Save, Loader2, Coins, CalendarDays, FileText, MapPin, UserCheck, Type, Wallet, LockKeyhole, Image as ImageIcon } from "lucide-react"
+import { Library, Bell, Shield, Save, Loader2, Coins, CalendarDays, FileText, MapPin, UserCheck, Type, Wallet, LockKeyhole, Image as ImageIcon, Upload } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 
@@ -28,6 +28,7 @@ export default function SettingsPage() {
   const { user, isAdmin } = useUser()
   const { toast } = useToast()
   const [isSaving, setIsSaving] = useState(false)
+  const logoInputRef = useRef<HTMLInputElement>(null)
 
   // Settings State
   const [settings, setSettings] = useState({
@@ -77,6 +78,21 @@ export default function SettingsPage() {
       }))
     }
   }, [remoteSettings])
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast({ title: "File Terlalu Besar", description: "Maksimal ukuran logo adalah 2MB.", variant: "destructive" })
+        return
+      }
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setSettings(prev => ({ ...prev, libraryLogoUrl: reader.result as string }))
+      }
+      reader.readAsDataURL(file)
+    }
+  }
 
   const handleSaveSettings = () => {
     if (!db || !settingsDocRef) return
@@ -169,19 +185,44 @@ export default function SettingsPage() {
 
                   <div className="grid gap-2">
                     <Label htmlFor="lib-logo" className="font-bold text-xs uppercase text-muted-foreground flex items-center gap-2">
-                      <ImageIcon className="h-3 w-3" /> URL Logo Perpustakaan
+                      <ImageIcon className="h-3 w-3" /> Logo Perpustakaan
                     </Label>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex gap-2 items-center">
+                        <div className="w-16 h-16 rounded-xl border-2 border-primary/10 bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                          <img 
+                            src={settings.libraryLogoUrl} 
+                            alt="Logo" 
+                            className="w-12 h-12 object-contain" 
+                            onError={(e) => (e.currentTarget.src = 'https://picsum.photos/seed/error/50/50')} 
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1.5 flex-1">
+                          <input 
+                            type="file" 
+                            ref={logoInputRef} 
+                            className="hidden" 
+                            accept="image/*" 
+                            onChange={handleLogoUpload} 
+                          />
+                          <Button 
+                            variant="secondary" 
+                            size="sm" 
+                            className="w-full gap-2 h-9" 
+                            onClick={() => logoInputRef.current?.click()}
+                          >
+                            <Upload className="h-3.5 w-3.5" /> Pilih dari Perangkat
+                          </Button>
+                          <p className="text-[9px] text-muted-foreground px-1 italic">Ukuran ideal: 512x512 pixel (PNG/JPG).</p>
+                        </div>
+                      </div>
                       <Input 
                         id="lib-logo" 
-                        value={settings.libraryLogoUrl} 
+                        value={settings.libraryLogoUrl.startsWith('data:') ? 'Terunggah dari perangkat' : settings.libraryLogoUrl} 
                         onChange={(e) => setSettings({ ...settings, libraryLogoUrl: e.target.value })}
-                        className="bg-slate-50 border-slate-200 h-11"
-                        placeholder="https://..."
+                        className="bg-slate-50 border-slate-200 h-9 text-xs"
+                        placeholder="Atau masukkan URL: https://..."
                       />
-                      <div className="w-11 h-11 rounded-lg border bg-white flex items-center justify-center overflow-hidden shrink-0">
-                        <img src={settings.libraryLogoUrl} alt="Logo" className="w-8 h-8 object-contain" onError={(e) => (e.currentTarget.src = 'https://picsum.photos/seed/error/50/50')} />
-                      </div>
                     </div>
                   </div>
 
