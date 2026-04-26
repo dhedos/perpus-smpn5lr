@@ -1,6 +1,7 @@
+
 "use client"
 
-import { Bell, Search, User, Globe, Wifi, WifiOff, LogOut, Menu, UserCircle, Lock, Loader2, CheckCircle2, BookOpen, Users as UsersIcon, ArrowRight, X, Image as ImageIcon, Upload } from "lucide-react"
+import { Bell, Search, User, Globe, Globe as GlobeIcon, Wifi, WifiOff, LogOut, Menu, UserCircle, Lock, Loader2, CheckCircle2, BookOpen, Users as UsersIcon, ArrowRight, X, Image as ImageIcon, Upload } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { 
@@ -52,6 +53,7 @@ export function TopNav() {
   const [isOnline, setIsOnline] = useState(true)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false)
+  const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   
@@ -131,11 +133,11 @@ export function TopNav() {
   }, [])
 
   useEffect(() => {
-    if (!isProfileOpen && !isLogoutConfirmOpen) {
+    if (!isProfileOpen && !isLogoutConfirmOpen && !isSheetOpen) {
       const timer = setTimeout(forceUnlockUI, 300)
       return () => clearTimeout(timer)
     }
-  }, [isProfileOpen, isLogoutConfirmOpen, forceUnlockUI])
+  }, [isProfileOpen, isLogoutConfirmOpen, isSheetOpen, forceUnlockUI])
 
   const handleLogout = async () => {
     if (auth) {
@@ -165,7 +167,6 @@ export function TopNav() {
     setIsSaving(true)
 
     try {
-      // 1. Simpan Data ke Firestore (Nama & Foto)
       const userDocRef = doc(db, 'users', user.uid)
       await updateDoc(userDocRef, {
         name: profileData.name,
@@ -173,7 +174,6 @@ export function TopNav() {
         updatedAt: new Date().toISOString()
       })
 
-      // 2. Jika ada password baru, coba update
       if (profileData.newPassword) {
         if (profileData.newPassword.length < 6) {
           throw new Error("Password minimal 6 karakter.")
@@ -227,7 +227,10 @@ export function TopNav() {
     <header className="h-16 border-b bg-card/50 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between px-4 md:px-6">
       <div className="flex items-center gap-4 flex-1">
         <div className="md:hidden">
-          <Sheet onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
+          <Sheet open={isSheetOpen} onOpenChange={(open) => { 
+            setIsSheetOpen(open);
+            if(!open) forceUnlockUI(); 
+          }}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="h-10 w-10">
                 <Menu className="h-6 w-6" />
@@ -239,7 +242,7 @@ export function TopNav() {
                 <SheetTitle>Navigasi Menu</SheetTitle>
                 <SheetDescription>Akses cepat ke seluruh fitur perpustakaan.</SheetDescription>
               </SheetHeader>
-              <SidebarNav />
+              <SidebarNav onItemClick={() => setIsSheetOpen(false)} />
             </SheetContent>
           </Sheet>
         </div>

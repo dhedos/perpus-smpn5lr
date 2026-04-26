@@ -50,7 +50,11 @@ const administrationItems = [
   { icon: Settings, label: "Pengaturan Sistem", href: "/dashboard/settings" },
 ]
 
-export function SidebarNav() {
+interface SidebarNavProps {
+  onItemClick?: () => void;
+}
+
+export function SidebarNav({ onItemClick }: SidebarNavProps) {
   const pathname = usePathname()
   const auth = useAuth()
   const db = useFirestore()
@@ -103,7 +107,7 @@ export function SidebarNav() {
               pathname === item.href ? "bg-accent text-accent-foreground font-medium shadow-sm" : "text-muted-foreground"
             )}
           >
-            <Link href={item.href}>
+            <Link href={item.href} onClick={onItemClick}>
               <item.icon className={cn("h-5 w-5", pathname === item.href ? "text-primary" : "")} />
               <span className="text-sm">{item.label}</span>
             </Link>
@@ -125,7 +129,7 @@ export function SidebarNav() {
                 pathname === item.href ? "bg-accent text-accent-foreground font-medium shadow-sm" : "text-muted-foreground"
               )}
             >
-              <Link href={item.href}>
+              <Link href={item.href} onClick={onItemClick}>
                 <item.icon className={cn("h-5 w-5", pathname === item.href ? "text-primary" : "")} />
                 <span className="text-sm">{item.label}</span>
               </Link>
