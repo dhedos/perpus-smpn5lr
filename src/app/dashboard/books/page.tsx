@@ -537,27 +537,26 @@ function BooksContent() {
     );
 
     const qrCardsHtml = sortedByRack.map((book) => `
-      <div style="width: 80mm; height: 35mm; border: 0.2pt solid #ccc; display: flex; flex-direction: column; page-break-inside: avoid; float: left; margin: 2mm; background: #fff; border-radius: 2mm; overflow: hidden; font-family: 'Inter', sans-serif; box-sizing: border-box;">
-        <div style="flex: 1; display: flex; align-items: center; padding: 2mm;">
-          <div style="width: 28mm; height: 28mm; display: flex; align-items: center; justify-content: center;">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${book.code}" style="width: 26mm; height: 26mm;" />
+      <div class="sticker">
+        <div class="top-section">
+          <div class="qr-side">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${book.code}" />
           </div>
-          <div style="flex: 1; padding-left: 3mm; display: flex; flex-direction: column; justify-content: center; min-width: 0;">
-            <div style="font-size: 8.5pt; font-weight: 900; line-height: 1.1; margin-bottom: 1mm; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-transform: uppercase;">${book.title}</div>
-            <div style="font-size: 11pt; font-family: monospace; font-weight: 900; color: #2E6ECE; margin-bottom: 1.5mm; letter-spacing: 0.5px;">${book.code}</div>
-            
-            <div style="display: grid; gap: 0.5mm;">
-              <div style="font-size: 6.5pt; color: #444; font-weight: 700; text-transform: uppercase;">SUMBER: ${book.budgetSource || '-'}</div>
-              <div style="font-size: 6.5pt; color: #444; font-weight: 700; text-transform: uppercase;">REK: ${book.accountCode || '-'}</div>
-              <div style="font-size: 6.5pt; color: #444; font-weight: 700; text-transform: uppercase;">KAT: ${book.category || '-'}</div>
-              <div style="font-size: 6.5pt; color: #444; font-weight: 700; text-transform: uppercase;">ISBN: ${book.isbn || '-'}</div>
-              <div style="font-size: 7pt; font-weight: 900; color: #2E6ECE; text-transform: uppercase; border-top: 0.2pt solid #eee; margin-top: 0.5mm; padding-top: 0.5mm;">RAK: ${book.rackLocation || '-'}</div>
+          <div class="info-side">
+            <div class="title">${book.title}</div>
+            <div class="code">${book.code}</div>
+            <div class="meta-grid">
+              <div class="meta">SUMBER: ${book.budgetSource || '-'}</div>
+              <div class="meta">REK: ${book.accountCode || '-'}</div>
+              <div class="meta">KAT: ${book.category || '-'}</div>
+              <div class="meta">ISBN: ${book.isbn || '-'}</div>
+              <div class="meta" style="color: #2E6ECE; font-weight: 900; font-size: 7.5pt; border-top: 0.2pt solid #eee; margin-top: 0.5mm; padding-top: 0.5mm;">RAK: ${book.rackLocation || '-'}</div>
             </div>
           </div>
         </div>
-        <div style="margin: 0 3mm; border-top: 0.5pt solid #eee; height: 6mm; display: flex; align-items: center; justify-content: space-between;">
-           <div style="font-size: 6.5pt; font-weight: 900; color: #444; text-transform: uppercase;">1/1</div>
-           <div style="font-size: 5.5pt; color: #999; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${settings?.libraryName || 'LANTERA BACA'}</div>
+        <div class="footer-row">
+           <div class="footer-rak">1/1</div>
+           <div class="footer-name">${settings?.libraryName || 'LANTERA BACA'}</div>
         </div>
       </div>
     `).join('')
@@ -569,7 +568,34 @@ function BooksContent() {
           <style>
             @page { size: A4; margin: 10mm; }
             body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; background: #fff; }
-            .print-container { overflow: hidden; }
+            .print-container { 
+              display: grid; 
+              grid-template-columns: repeat(3, 1fr);
+              gap: 0;
+              width: 100%;
+            }
+            .sticker {
+              width: 63mm;
+              height: 38mm;
+              border: 0.1pt solid #ccc;
+              display: flex;
+              flex-direction: column;
+              box-sizing: border-box;
+              padding: 1.5mm;
+              background: #fff;
+              overflow: hidden;
+            }
+            .top-section { flex: 1; display: flex; align-items: center; min-height: 0; }
+            .qr-side { width: 22mm; height: 22mm; display: flex; align-items: center; justify-content: center; }
+            .qr-side img { width: 21mm; height: 21mm; }
+            .info-side { flex: 1; padding-left: 2mm; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+            .title { font-size: 6.5pt; font-weight: 900; line-height: 1.1; margin-bottom: 1mm; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-transform: uppercase; }
+            .code { font-size: 8.5pt; font-family: monospace; font-weight: 900; color: #2E6ECE; margin-bottom: 1mm; }
+            .meta-grid { display: grid; gap: 0.2mm; }
+            .meta { font-size: 5pt; color: #444; font-weight: 700; text-transform: uppercase; }
+            .footer-row { height: 4mm; border-top: 0.4pt solid #eee; display: flex; align-items: center; justify-content: space-between; padding-top: 0.5mm; margin-top: 1mm; }
+            .footer-rak { font-size: 6pt; font-weight: 900; color: #444; }
+            .footer-name { font-size: 5pt; color: #999; text-transform: uppercase; font-weight: 800; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
@@ -623,96 +649,42 @@ function BooksContent() {
         <head>
           <title>Cetak Label QR (${totalCopies} Copy)</title>
           <style>
-            @page { size: 80mm 35mm; margin: 0; }
+            @page { size: A4; margin: 10mm; }
             body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background: #fff; }
+            .print-container { 
+              display: grid; 
+              grid-template-columns: repeat(3, 1fr);
+              gap: 0;
+              width: 100%;
+            }
             .sticker {
-              width: 80mm;
-              height: 35mm;
+              width: 63mm;
+              height: 38mm;
+              border: 0.1pt solid #ccc;
               display: flex;
               flex-direction: column;
               box-sizing: border-box;
-              padding: 1mm 2mm;
-              page-break-after: always;
-            }
-            .top-section {
-              flex: 1;
-              display: flex;
-              align-items: center;
-              min-height: 0;
-            }
-            .qr-side {
-              width: 28mm;
-              height: 28mm;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-            }
-            .qr-side img {
-              width: 26mm;
-              height: 26mm;
-            }
-            .info-side {
-              flex: 1;
-              padding-left: 3mm;
-              display: flex;
-              flex-direction: column;
-              justify-content: center;
-              min-width: 0;
-            }
-            .title {
-              font-size: 8.5pt;
-              font-weight: 900;
-              line-height: 1.1;
-              margin-bottom: 1mm;
+              padding: 1.5mm;
+              background: #fff;
               overflow: hidden;
-              display: -webkit-box;
-              -webkit-line-clamp: 2;
-              -webkit-box-orient: vertical;
-              text-transform: uppercase;
             }
-            .code {
-              font-size: 11pt;
-              font-family: monospace;
-              font-weight: 900;
-              color: #2E6ECE;
-              margin-bottom: 1.5mm;
-              letter-spacing: 0.5px;
-            }
-            .meta-grid {
-               display: grid;
-               gap: 0.3mm;
-            }
-            .meta {
-              font-size: 6.5pt;
-              color: #444;
-              font-weight: 700;
-              text-transform: uppercase;
-            }
-            .footer-row {
-              height: 6mm;
-              border-top: 0.5pt solid #eee;
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-              padding-top: 0.5mm;
-            }
-            .footer-rak {
-              font-size: 6.5pt;
-              font-weight: 900;
-              color: #444;
-              text-transform: uppercase;
-            }
-            .footer-name {
-              font-size: 5.5pt;
-              color: #999;
-              text-transform: uppercase;
-              font-weight: 800;
-              letter-spacing: 0.5px;
-            }
+            .top-section { flex: 1; display: flex; align-items: center; min-height: 0; }
+            .qr-side { width: 22mm; height: 22mm; display: flex; align-items: center; justify-content: center; }
+            .qr-side img { width: 21mm; height: 21mm; }
+            .info-side { flex: 1; padding-left: 2mm; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+            .title { font-size: 6.5pt; font-weight: 900; line-height: 1.1; margin-bottom: 1mm; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-transform: uppercase; }
+            .code { font-size: 8.5pt; font-family: monospace; font-weight: 900; color: #2E6ECE; margin-bottom: 1mm; }
+            .meta-grid { display: grid; gap: 0.2mm; }
+            .meta { font-size: 5pt; color: #444; font-weight: 700; text-transform: uppercase; }
+            .footer-row { height: 4mm; border-top: 0.4pt solid #eee; display: flex; align-items: center; justify-content: space-between; padding-top: 0.5mm; margin-top: 1mm; }
+            .footer-rak { font-size: 6pt; font-weight: 900; color: #444; }
+            .footer-name { font-size: 5pt; color: #999; text-transform: uppercase; font-weight: 800; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
-          ${allStickersHtml}
+          <div class="print-container">
+            ${allStickersHtml}
+          </div>
         </body>
       </html>
     `)
