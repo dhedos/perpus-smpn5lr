@@ -360,7 +360,6 @@ function BooksContent() {
     setIsScannerOpen(true)
     setHasCameraPermission(null)
     
-    // Memberi waktu Dialog untuk mount sepenuhnya
     setTimeout(async () => {
       try {
         const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
@@ -374,7 +373,7 @@ function BooksContent() {
           await scanner.start(
             { facingMode: "environment" },
             { 
-              fps: 15, // Dioptimalkan untuk mobile
+              fps: 15,
               qrbox: { width: 250, height: 250 },
               aspectRatio: 1.0,
               formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.CODE_128] 
@@ -532,7 +531,6 @@ function BooksContent() {
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
-    // Sort by rack location as requested
     const sortedByRack = [...filteredBooks].sort((a, b) => 
       (a.rackLocation || "").localeCompare(b.rackLocation || "")
     );
