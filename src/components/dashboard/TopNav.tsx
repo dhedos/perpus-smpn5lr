@@ -1,4 +1,3 @@
-
 "use client"
 
 import { Bell, Search, User, Globe, Wifi, WifiOff, LogOut, Menu, UserCircle, Lock, Loader2, CheckCircle2, BookOpen, Users as UsersIcon, ArrowRight, X, Image as ImageIcon, Upload } from "lucide-react"
@@ -83,17 +82,17 @@ export function TopNav() {
   const searchResults = useMemo(() => {
     if (!searchQuery || searchQuery.length < 2) return { books: [], members: [] }
     
-    const query = searchQuery.toLowerCase()
+    const queryStr = searchQuery.toLowerCase()
     
     const books = (allBooks || []).filter(b => 
-      b.title?.toLowerCase().includes(query) || 
-      b.code?.toLowerCase().includes(query) ||
-      b.isbn?.toLowerCase().includes(query)
+      b.title?.toLowerCase().includes(queryStr) || 
+      b.code?.toLowerCase().includes(queryStr) ||
+      b.isbn?.toLowerCase().includes(queryStr)
     ).slice(0, 3)
 
     const members = (allMembers || []).filter(m => 
-      m.name?.toLowerCase().includes(query) || 
-      m.memberId?.toLowerCase().includes(query)
+      m.name?.toLowerCase().includes(queryStr) || 
+      m.memberId?.toLowerCase().includes(queryStr)
     ).slice(0, 3)
 
     return { books, members }
@@ -125,6 +124,9 @@ export function TopNav() {
     if (typeof document !== 'undefined') {
       document.body.style.pointerEvents = 'auto'
       document.body.style.overflow = 'auto'
+      
+      const focusGuards = document.querySelectorAll('[data-radix-focus-guard]');
+      focusGuards.forEach(el => (el as HTMLElement).remove());
     }
   }, [])
 
@@ -146,7 +148,6 @@ export function TopNav() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      // Limit 500KB for Base64 in Firestore to avoid document size limit (1MB)
       if (file.size > 500 * 1024) { 
         toast({ title: "File Terlalu Besar", description: "Maksimal ukuran foto adalah 500KB untuk profil.", variant: "destructive" })
         return
@@ -264,39 +265,41 @@ export function TopNav() {
               </div>
               
               <div className="max-h-[350px] overflow-y-auto">
-                {searchResults.books.length > 0 && (
-                  <div className="p-2">
-                    <p className="text-[10px] font-black text-primary uppercase px-2 mb-1">Buku</p>
-                    {searchResults.books.map(b => (
-                      <div key={b.id} onClick={() => handleResultClick(`/dashboard/books?q=${b.code}`)} className="p-3 hover:bg-slate-50 cursor-pointer rounded-lg flex items-center gap-3 group">
-                        <BookOpen className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold truncate">{b.title}</p>
-                          <p className="text-[10px] text-muted-foreground font-mono">{b.code}</p>
-                        </div>
-                        <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                {(searchResults.books.length > 0 || searchResults.members.length > 0) ? (
+                  <>
+                    {searchResults.books.length > 0 && (
+                      <div className="p-2">
+                        <p className="text-[10px] font-black text-primary uppercase px-2 mb-1">Buku</p>
+                        {searchResults.books.map(b => (
+                          <div key={b.id} onClick={() => handleResultClick(`/dashboard/books?q=${b.code}`)} className="p-3 hover:bg-slate-50 cursor-pointer rounded-lg flex items-center gap-3 group">
+                            <BookOpen className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold truncate">{b.title}</p>
+                              <p className="text-[10px] text-muted-foreground font-mono">{b.code}</p>
+                            </div>
+                            <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                )}
+                    )}
 
-                {searchResults.members.length > 0 && (
-                  <div className="p-2 border-t">
-                    <p className="text-[10px] font-black text-secondary-foreground uppercase px-2 mb-1">Anggota</p>
-                    {searchResults.members.map(m => (
-                      <div key={m.id} onClick={() => handleResultClick(`/dashboard/members?q=${m.memberId}`)} className="p-3 hover:bg-slate-50 cursor-pointer rounded-lg flex items-center gap-3 group">
-                        <UsersIcon className="h-4 w-4 text-muted-foreground group-hover:text-secondary" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold truncate">{m.name}</p>
-                          <p className="text-[10px] text-muted-foreground font-mono">{m.memberId}</p>
-                        </div>
-                        <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    {searchResults.members.length > 0 && (
+                      <div className="p-2 border-t">
+                        <p className="text-[10px] font-black text-secondary-foreground uppercase px-2 mb-1">Anggota</p>
+                        {searchResults.members.map(m => (
+                          <div key={m.id} onClick={() => handleResultClick(`/dashboard/members?q=${m.memberId}`)} className="p-3 hover:bg-slate-50 cursor-pointer rounded-lg flex items-center gap-3 group">
+                            <UsersIcon className="h-4 w-4 text-muted-foreground group-hover:text-secondary" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold truncate">{m.name}</p>
+                              <p className="text-[10px] text-muted-foreground font-mono">{m.memberId}</p>
+                            </div>
+                            <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                )}
-
-                {searchResults.books.length === 0 && searchResults.members.length === 0 && (
+                    )}
+                  </>
+                ) : (
                   <div className="p-8 text-center text-muted-foreground text-sm italic">
                     Data tidak ditemukan.
                   </div>
@@ -381,7 +384,7 @@ export function TopNav() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="flex flex-col items-center gap-4 mb-4">
-               <Avatar className="h-28 w-24 h-24 border-4 border-slate-50 shadow-lg">
+               <Avatar className="h-24 w-24 border-4 border-slate-50 shadow-lg">
                   <AvatarImage src={profileData.photoURL || `https://picsum.photos/seed/${user?.uid}/200/200`} />
                   <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">
                     {profileData.name?.[0] || "U"}
@@ -400,7 +403,7 @@ export function TopNav() {
                 className="gap-2" 
                 onClick={() => fileInputRef.current?.click()}
                >
-                 <Upload className="h-3 w-3" /> Unggah Foto Perangkat
+                 <Upload className="h-3 w-3" /> Pilih Foto
                </Button>
             </div>
             
@@ -420,7 +423,7 @@ export function TopNav() {
                 <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
                   id="profile-photo" 
-                  value={profileData.photoURL.startsWith('data:') ? 'Terunggah dari perangkat' : profileData.photoURL} 
+                  value={profileData.photoURL.startsWith('data:') ? 'Foto terunggah' : profileData.photoURL} 
                   onChange={(e) => setProfileData(prev => ({ ...prev, photoURL: e.target.value }))}
                   className="pl-10 h-11 bg-slate-50 border-slate-200"
                   placeholder="https://link-foto.com/gambar.jpg"

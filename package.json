@@ -1,6 +1,6 @@
 {
-  "name": "nextn",
-  "version": "0.1.5",
+  "name": "perpus-smpn5lr",
+  "version": "0.1.6",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack -p 9002",
@@ -10,7 +10,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "push": "git add .; git commit -m 'Fix: CSS syntax errors and version bump v0.1.5' || echo 'No changes'; git push origin main"
+    "push": "git add .; git commit -m 'Update: Project identity and profile upload stability v0.1.6' || echo 'No changes'; git push origin main"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.28.0",
