@@ -10,9 +10,10 @@ export async function generateMetadata(): Promise<Metadata> {
   let librarySubtitle = 'SMPN 5 LANGKE REMBONG';
 
   try {
-    // Fetch settings directly from Firestore via REST API
+    // Fetch settings directly from Firestore via REST API with timeout
     const res = await fetch('https://firestore.googleapis.com/v1/projects/studio-6126048245-d2203/databases/(default)/documents/settings/general', {
-      next: { revalidate: 60 }
+      next: { revalidate: 60 },
+      signal: AbortSignal.timeout(5000)
     });
     
     if (res.ok) {
@@ -25,14 +26,18 @@ export async function generateMetadata(): Promise<Metadata> {
       }
     }
   } catch (e) {
-    // Fallback to defaults
+    // Fallback to defaults quietly
   }
 
   return {
     title: `${libraryName} - ${librarySubtitle}`,
     description: `Sistem Informasi Perpustakaan Modern ${libraryName} ${librarySubtitle}.`,
     icons: {
-      icon: logoUrl,
+      icon: [
+        { url: logoUrl, sizes: '32x32' },
+        { url: logoUrl, sizes: '192x192' },
+        { url: logoUrl, sizes: '512x512' }
+      ],
       shortcut: logoUrl,
       apple: logoUrl,
     },
