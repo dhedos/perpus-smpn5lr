@@ -1,6 +1,7 @@
+
 "use client"
 
-import { useState, useRef, useMemo, useEffect } from "react"
+import { useState, useRef, useMemo, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -56,6 +57,13 @@ export default function StockOpnamePage() {
   [db])
   const { data: audits } = useCollection(auditLogsQuery)
 
+  const forceUnlockUI = useCallback(() => {
+    if (typeof document !== 'undefined') {
+      document.body.style.pointerEvents = 'auto';
+      document.body.style.overflow = 'auto';
+    }
+  }, []);
+
   const handleLookup = (code: string) => {
     if (!books) return;
     const b = books.find(bk => bk.code === code || bk.isbn === code)
@@ -71,9 +79,9 @@ export default function StockOpnamePage() {
     setIsScannerOpen(true)
     setHasCameraPermission(null)
     
-    try {
-      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
-      setTimeout(async () => {
+    setTimeout(async () => {
+      try {
+        const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
         const scannerElement = document.getElementById("audit-scanner")
         if (!scannerElement) return
 
@@ -83,8 +91,9 @@ export default function StockOpnamePage() {
           await sc.start(
             { facingMode: "environment" }, 
             { 
-              fps: 20, 
-              qrbox: (vw, vh) => ({ width: Math.min(vw, vh) * 0.7, height: Math.min(vw, vh) * 0.7 }),
+              fps: 15, 
+              qrbox: { width: 250, height: 250 },
+              aspectRatio: 1.0,
               formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.CODE_128]
             }, 
             (txt) => { 
@@ -97,12 +106,14 @@ export default function StockOpnamePage() {
         } catch (e: any) { 
           console.error("Camera error:", e)
           setHasCameraPermission(false)
-          toast({ title: "Akses Kamera Ditolak", description: "Mohon aktifkan izin kamera di pengaturan browser.", variant: "destructive" })
+          if (!e?.toString()?.includes("already being used")) {
+             toast({ title: "Akses Kamera Ditolak", description: "Mohon aktifkan izin kamera di pengaturan browser.", variant: "destructive" })
+          }
         }
-      }, 50)
-    } catch (e) {
-      setHasCameraPermission(false)
-    }
+      } catch (e) {
+        setHasCameraPermission(false)
+      }
+    }, 300)
   }
 
   const stopScanner = async () => {
@@ -111,16 +122,14 @@ export default function StockOpnamePage() {
         if (scannerInstanceRef.current.isScanning) {
           await scannerInstanceRef.current.stop() 
         }
-        const el = document.getElementById("audit-scanner")
-        if (el) {
-          await scannerInstanceRef.current.clear()
-        }
+        await scannerInstanceRef.current.clear()
       } catch (e) {
         console.warn("Audit scanner cleanup warning:", e)
       } 
       scannerInstanceRef.current = null
     }
     setIsScannerOpen(false)
+    forceUnlockUI()
   }
 
   const handleSaveAudit = () => {
@@ -422,7 +431,7 @@ export default function StockOpnamePage() {
             <DialogTitle>Pemindai Stok Opname</DialogTitle>
             <DialogDescription>Arahkan kamera ke kode QR buku untuk verifikasi fisik.</DialogDescription>
           </DialogHeader>
-          <div id="audit-scanner" className="w-full h-full bg-black min-h-[400px] flex items-center justify-center relative">
+          <div id="audit-scanner" className="w-full h-full bg-black min-h-[300px] flex items-center justify-center relative">
             {hasCameraPermission === false && (
               <div className="p-6 w-full max-w-sm animate-in fade-in zoom-in-95 duration-300">
                 <Alert variant="destructive" className="bg-white/10 border-white/20 text-white">

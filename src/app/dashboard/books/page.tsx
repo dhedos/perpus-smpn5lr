@@ -50,7 +50,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardDescription, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card"
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -360,9 +360,10 @@ function BooksContent() {
     setIsScannerOpen(true)
     setHasCameraPermission(null)
     
-    try {
-      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
-      setTimeout(async () => {
+    // Memberi waktu Dialog untuk mount sepenuhnya
+    setTimeout(async () => {
+      try {
+        const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
         const scannerElement = document.getElementById("scanner-view")
         if (!scannerElement) return
 
@@ -373,8 +374,9 @@ function BooksContent() {
           await scanner.start(
             { facingMode: "environment" },
             { 
-              fps: 20, 
-              qrbox: (vw, vh) => ({ width: Math.min(vw, vh) * 0.7, height: Math.min(vw, vh) * 0.7 }),
+              fps: 15, // Dioptimalkan untuk mobile
+              qrbox: { width: 250, height: 250 },
+              aspectRatio: 1.0,
               formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.CODE_128] 
             },
             (text) => { 
@@ -387,12 +389,14 @@ function BooksContent() {
         } catch (e: any) {
           console.error("Camera error:", e)
           setHasCameraPermission(false)
-          toast({ title: "Akses Kamera Ditolak", description: "Mohon aktifkan izin kamera di pengaturan browser.", variant: "destructive" })
+          if (!e?.toString()?.includes("is already being used")) {
+             toast({ title: "Akses Kamera Bermasalah", description: "Pastikan izin aktif dan gunakan koneksi aman (HTTPS).", variant: "destructive" })
+          }
         }
-      }, 50)
-    } catch (e) { 
-      setHasCameraPermission(false)
-    }
+      } catch (e) { 
+        setHasCameraPermission(false)
+      }
+    }, 300)
   }
 
   const stopScanner = async () => {
@@ -401,10 +405,7 @@ function BooksContent() {
         if (scannerInstanceRef.current.isScanning) {
           await scannerInstanceRef.current.stop()
         }
-        const el = document.getElementById("scanner-view")
-        if (el) {
-          await scannerInstanceRef.current.clear()
-        }
+        await scannerInstanceRef.current.clear()
       } catch (e) {
         console.warn("Scanner cleanup warning:", e)
       }
@@ -1139,11 +1140,11 @@ function BooksContent() {
       {/* SCANNER DIALOG */}
       <Dialog open={isScannerOpen} onOpenChange={(v) => { if(!v) stopScanner(); }}>
         <DialogContent className="sm:max-w-xl p-0 h-[100dvh] sm:h-auto border-none bg-black overflow-hidden rounded-none sm:rounded-3xl">
-           <DialogHeader>
-             <DialogTitle className="sr-only">Pemindai Barcode</DialogTitle>
-             <DialogDescription className="sr-only">Arahkan kamera ke QR Code atau Barcode buku.</DialogDescription>
+           <DialogHeader className="sr-only">
+             <DialogTitle>Pemindai Barcode</DialogTitle>
+             <DialogDescription>Arahkan kamera ke QR Code atau Barcode buku.</DialogDescription>
            </DialogHeader>
-           <div id="scanner-view" className="w-full h-full bg-black min-h-[400px] flex items-center justify-center relative">
+           <div id="scanner-view" className="w-full h-full bg-black min-h-[300px] flex items-center justify-center relative">
              {hasCameraPermission === false && (
                <div className="p-6 w-full max-w-sm animate-in fade-in zoom-in-95 duration-300">
                  <Alert variant="destructive" className="bg-white/10 border-white/20 text-white">

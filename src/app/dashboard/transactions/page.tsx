@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo, useRef, useEffect, Suspense, useCallback } from "react"
@@ -91,12 +92,6 @@ function TransactionsContent() {
     if (typeof document !== 'undefined') {
       document.body.style.pointerEvents = 'auto';
       document.body.style.overflow = 'auto';
-      setTimeout(() => {
-        document.body.style.pointerEvents = 'auto';
-        document.body.style.overflow = 'auto';
-        const focusGuards = document.querySelectorAll('[data-radix-focus-guard]');
-        focusGuards.forEach(el => (el as HTMLElement).remove());
-      }, 150);
     }
   }, []);
 
@@ -360,9 +355,9 @@ function TransactionsContent() {
     setIsScannerOpen(true); 
     setHasCameraPermission(null)
     
-    try {
-      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
-      setTimeout(async () => {
+    setTimeout(async () => {
+      try {
+        const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode")
         const el = document.getElementById("smart-scanner")
         if (!el) return
 
@@ -372,8 +367,9 @@ function TransactionsContent() {
           await scanner.start(
             { facingMode: "environment" }, 
             { 
-              fps: 20, 
-              qrbox: (vw, vh) => ({ width: Math.min(vw, vh) * 0.7, height: Math.min(vw, vh) * 0.7 }),
+              fps: 15, 
+              qrbox: { width: 250, height: 250 },
+              aspectRatio: 1.0,
               formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.CODE_128]
             }, 
             (text) => {
@@ -385,12 +381,14 @@ function TransactionsContent() {
         } catch (e: any) {
           console.error("Camera access error:", e)
           setHasCameraPermission(false)
-          toast({ title: "Akses Kamera Ditolak", description: "Mohon aktifkan izin kamera di pengaturan browser.", variant: "destructive" })
+          if (!e?.toString()?.includes("already being used")) {
+             toast({ title: "Akses Kamera Bermasalah", description: "Mohon aktifkan izin kamera di pengaturan browser.", variant: "destructive" })
+          }
         }
-      }, 50)
-    } catch (e) { 
-      setIsScannerOpen(false) 
-    }
+      } catch (e) { 
+        setIsScannerOpen(false) 
+      }
+    }, 300)
   }
 
   const stopScanner = async () => {
@@ -399,10 +397,7 @@ function TransactionsContent() {
         if (scannerInstanceRef.current.isScanning) {
           await scannerInstanceRef.current.stop()
         }
-        const el = document.getElementById("smart-scanner")
-        if (el) {
-          await scannerInstanceRef.current.clear()
-        }
+        await scannerInstanceRef.current.clear()
       } catch (e) {
         console.warn("Smart scanner cleanup warning:", e)
       }
@@ -776,7 +771,7 @@ function TransactionsContent() {
             <DialogTitle>Pemindai</DialogTitle>
             <DialogDescription>Arahkan kamera pada kode QR kartu siswa atau barcode buku.</DialogDescription>
           </DialogHeader>
-          <div id="smart-scanner" className="w-full h-full bg-black flex items-center justify-center relative">
+          <div id="smart-scanner" className="w-full h-full bg-black flex items-center justify-center relative min-h-[300px]">
             {hasCameraPermission === false && (
               <div className="p-6 w-full max-w-sm animate-in fade-in zoom-in-95 duration-300">
                 <Alert variant="destructive" className="bg-white/10 border-white/20 text-white">
