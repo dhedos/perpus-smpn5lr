@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo, useRef, useEffect, useCallback, Suspense } from "react"
@@ -531,11 +532,17 @@ function BooksContent() {
     if (!printWindow) return
 
     const qrCardsHtml = filteredBooks.map((book) => `
-      <div style="width: 45mm; height: 60mm; border: 1px solid #eee; padding: 5mm; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; page-break-inside: avoid; float: left; margin: 2mm; background: #fff; box-shadow: 0 0 2px rgba(0,0,0,0.1); border-radius: 4mm;">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${book.code}" style="width: 32mm; height: 32mm; margin-bottom: 2mm;" />
-        <div style="font-size: 8pt; font-weight: bold; margin-bottom: 1mm; line-height: 1.1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; height: 18pt;">${book.title}</div>
-        <div style="font-size: 9pt; font-family: monospace; font-weight: bold; color: #2E6ECE;">${book.code}</div>
-        <div style="font-size: 6pt; color: #666; margin-top: 1mm; text-transform: uppercase; font-weight: 800;">${settings?.libraryName || 'LANTERA BACA'}</div>
+      <div style="width: 80mm; height: 35mm; border: 0.5pt solid #ccc; display: flex; align-items: center; page-break-inside: avoid; float: left; margin: 2mm; background: #fff; border-radius: 2mm; overflow: hidden; font-family: 'Inter', sans-serif;">
+        <div style="width: 32mm; height: 32mm; display: flex; align-items: center; justify-content: center; padding-left: 2mm;">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${book.code}" style="width: 28mm; height: 28mm;" />
+        </div>
+        <div style="flex: 1; padding: 2mm 3mm 2mm 1mm; display: flex; flex-direction: column; justify-content: center; min-width: 0;">
+          <div style="font-size: 8.5pt; font-weight: 900; line-height: 1.1; margin-bottom: 1.5mm; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-transform: uppercase;">${book.title}</div>
+          <div style="font-size: 11pt; font-family: monospace; font-weight: 900; color: #2E6ECE; margin-bottom: 1mm; letter-spacing: 0.5px;">${book.code}</div>
+          <div style="font-size: 6pt; color: #555; font-weight: 700; margin-bottom: 0.5mm;">SUMBER: ${book.budgetSource || '-'}</div>
+          <div style="font-size: 6pt; color: #555; font-weight: 700; margin-bottom: 1.5mm;">REK: ${book.accountCode || '-'}</div>
+          <div style="font-size: 5pt; color: #999; text-transform: uppercase; font-weight: 800; border-top: 0.3pt solid #eee; pt: 1mm;">${settings?.libraryName || 'LANTERA BACA'}</div>
+        </div>
       </div>
     `).join('')
 
@@ -563,6 +570,103 @@ function BooksContent() {
             ${qrCardsHtml}
           </div>
           <div class="print-footer">© 2026 Lantera Baca - SMPN 5 Langke Rembong</div>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
+    forceUnlockUI()
+  }
+
+  const handlePrintSingleQr = (book: any) => {
+    if (!book) return
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Cetak Label QR</title>
+          <style>
+            @page { size: 80mm 35mm; margin: 0; }
+            body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; height: 35mm; width: 80mm; }
+            .sticker {
+              width: 80mm;
+              height: 35mm;
+              display: flex;
+              align-items: center;
+              background: #fff;
+              box-sizing: border-box;
+              overflow: hidden;
+            }
+            .qr-side {
+              width: 32mm;
+              height: 32mm;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              padding-left: 2mm;
+            }
+            .qr-side img {
+              width: 28mm;
+              height: 28mm;
+            }
+            .info-side {
+              flex: 1;
+              padding: 2mm 3mm 2mm 1mm;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              min-width: 0;
+            }
+            .title {
+              font-size: 8.5pt;
+              font-weight: 900;
+              line-height: 1.1;
+              margin-bottom: 1.5mm;
+              overflow: hidden;
+              display: -webkit-box;
+              -webkit-line-clamp: 2;
+              -webkit-box-orient: vertical;
+              text-transform: uppercase;
+            }
+            .code {
+              font-size: 11pt;
+              font-family: monospace;
+              font-weight: 900;
+              color: #2E6ECE;
+              margin-bottom: 1mm;
+              letter-spacing: 0.5px;
+            }
+            .meta {
+              font-size: 6pt;
+              color: #555;
+              font-weight: 700;
+              margin-bottom: 0.5mm;
+            }
+            .footer {
+              font-size: 5pt;
+              color: #999;
+              text-transform: uppercase;
+              font-weight: 800;
+              margin-top: 1mm;
+              padding-top: 1mm;
+              border-top: 0.3pt solid #eee;
+            }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          <div class="sticker">
+            <div class="qr-side">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${book.code}" />
+            </div>
+            <div class="info-side">
+              <div class="title">${book.title}</div>
+              <div class="code">${book.code}</div>
+              <div class="meta">SUMBER: ${book.budgetSource || '-'}</div>
+              <div class="meta">REK: ${book.accountCode || '-'}</div>
+              <div class="footer">${settings?.libraryName || 'LANTERA BACA'}</div>
+            </div>
+          </div>
         </body>
       </html>
     `)
@@ -801,7 +905,7 @@ function BooksContent() {
                <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">Tahun Terbit</Label>
-                  <Input value={formData.publicationYear} onChange={e => setFormData({...formData, publicationYear: e.target.value})} className="bg-white border-slate-300 h-11" />
+                  <Input value={formData.publicationYear} onChange={e => setFormData({...formData, budgetSource: formData.budgetSource, publicationYear: e.target.value})} className="bg-white border-slate-300 h-11" />
                 </div>
                 <div className="space-y-2">
                   <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">Kategori</Label>
@@ -938,26 +1042,34 @@ function BooksContent() {
         </DialogContent>
       </Dialog>
 
-      {/* DIALOG QR CODE */}
+      {/* DIALOG QR CODE - LANDSCAPE DESIGN */}
       <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="max-w-md text-center p-0 border-none rounded-3xl overflow-hidden">
+        <DialogContent className="max-w-xl text-center p-0 border-none rounded-3xl overflow-hidden">
           <DialogHeader className="p-6 border-b bg-white">
             <DialogTitle className="text-center font-bold text-primary">Label QR Inventaris</DialogTitle>
-            <DialogDescription className="text-center text-xs">Cetak label ini untuk ditempelkan pada fisik buku.</DialogDescription>
+            <DialogDescription className="text-center text-xs">Pratinjau stiker label buku format Landscape.</DialogDescription>
           </DialogHeader>
-          <div className="p-8 space-y-6 bg-slate-50">
-            <div className="bg-white p-8 rounded-3xl border-2 border-primary/20 inline-block shadow-xl">
-              {selectedBookQr && <QRCodeSVG value={selectedBookQr.code} size={180} level="H" includeMargin />}
-            </div>
-            <div className="space-y-1">
-              <h3 className="font-black text-xl leading-tight px-4 uppercase">{selectedBookQr?.title}</h3>
-              <p className="font-mono text-primary font-bold text-lg">{selectedBookQr?.code}</p>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{selectedBookQr?.mainHeader || settings?.libraryName}</p>
-            </div>
+          <div className="p-8 space-y-6 bg-slate-50 flex flex-col items-center">
+            {selectedBookQr && (
+              <div className="bg-white w-full max-w-[400px] aspect-[8/3.5] rounded-xl border-2 border-primary/20 shadow-xl flex items-center p-4">
+                <div className="w-1/3 aspect-square flex items-center justify-center border-r pr-4">
+                  <QRCodeSVG value={selectedBookQr.code} size={100} level="H" includeMargin />
+                </div>
+                <div className="flex-1 pl-6 text-left flex flex-col justify-center min-w-0">
+                  <div className="font-black text-xs leading-tight uppercase truncate">{selectedBookQr.title}</div>
+                  <div className="font-mono text-primary font-black text-lg mt-1">{selectedBookQr.code}</div>
+                  <div className="text-[8px] font-bold text-muted-foreground mt-1">SUMBER: {selectedBookQr.budgetSource || '-'}</div>
+                  <div className="text-[8px] font-bold text-muted-foreground">REK: {selectedBookQr.accountCode || '-'}</div>
+                  <div className="mt-2 pt-1 border-t text-[7px] font-black text-slate-400 uppercase tracking-widest">
+                    {settings?.libraryName || 'LANTERA BACA'}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter className="p-6 bg-white grid grid-cols-2 gap-3">
              <Button variant="outline" onClick={() => { setIsQrOpen(false); forceUnlockUI(); }}>Tutup</Button>
-             <Button className="gap-2" onClick={() => window.print()}><Printer className="h-4 w-4" /> Cetak Label</Button>
+             <Button className="gap-2" onClick={() => handlePrintSingleQr(selectedBookQr)}><Printer className="h-4 w-4" /> Cetak Label</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
