@@ -551,11 +551,12 @@ function BooksContent() {
               <div style="font-size: 6.5pt; color: #444; font-weight: 700; text-transform: uppercase;">REK: ${book.accountCode || '-'}</div>
               <div style="font-size: 6.5pt; color: #444; font-weight: 700; text-transform: uppercase;">KAT: ${book.category || '-'}</div>
               <div style="font-size: 6.5pt; color: #444; font-weight: 700; text-transform: uppercase;">ISBN: ${book.isbn || '-'}</div>
+              <div style="font-size: 7pt; font-weight: 900; color: #2E6ECE; text-transform: uppercase; border-top: 0.2pt solid #eee; margin-top: 0.5mm; padding-top: 0.5mm;">RAK: ${book.rackLocation || '-'}</div>
             </div>
           </div>
         </div>
         <div style="margin: 0 3mm; border-top: 0.5pt solid #eee; height: 6mm; display: flex; align-items: center; justify-content: space-between;">
-           <div style="font-size: 6pt; font-weight: 900; color: #444; text-transform: uppercase;">RAK: ${book.rackLocation || '-'}</div>
+           <div style="font-size: 6.5pt; font-weight: 900; color: #444; text-transform: uppercase;">1/1</div>
            <div style="font-size: 5.5pt; color: #999; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${settings?.libraryName || 'LANTERA BACA'}</div>
         </div>
       </div>
@@ -605,12 +606,12 @@ function BooksContent() {
                 <div class="meta">REK: ${book.accountCode || '-'}</div>
                 <div class="meta">KAT: ${book.category || '-'}</div>
                 <div class="meta">ISBN: ${book.isbn || '-'}</div>
-                <div class="meta" style="color: #2E6ECE; font-weight: 900; font-size: 7.5pt; border-top: 0.2pt solid #eee; margin-top: 0.5mm; padding-top: 0.5mm;">COPY: ${i}/${totalCopies}</div>
+                <div class="meta" style="color: #2E6ECE; font-weight: 900; font-size: 7.5pt; border-top: 0.2pt solid #eee; margin-top: 0.5mm; padding-top: 0.5mm;">RAK: ${book.rackLocation || '-'}</div>
               </div>
             </div>
           </div>
           <div class="footer-row">
-             <div class="footer-rak">RAK: ${book.rackLocation || '-'}</div>
+             <div class="footer-rak">${i}/${totalCopies}</div>
              <div class="footer-name">${settings?.libraryName || 'LANTERA BACA'}</div>
           </div>
         </div>
@@ -696,7 +697,7 @@ function BooksContent() {
               padding-top: 0.5mm;
             }
             .footer-rak {
-              font-size: 6pt;
+              font-size: 6.5pt;
               font-weight: 900;
               color: #444;
               text-transform: uppercase;
@@ -1114,12 +1115,12 @@ function BooksContent() {
                       <div className="text-[7px] font-bold text-muted-foreground uppercase">REK: {selectedBookQr.accountCode || '-'}</div>
                       <div className="text-[7px] font-bold text-muted-foreground uppercase">KAT: {selectedBookQr.category || '-'}</div>
                       <div className="text-[7px] font-bold text-muted-foreground uppercase">ISBN: {selectedBookQr.isbn || '-'}</div>
-                      <div className="text-[7px] font-black text-primary uppercase mt-1">COPY: 1 / ${selectedBookQr.totalStock || 1}</div>
+                      <div className="text-[7px] font-black text-primary uppercase mt-1 border-top border-slate-100 pt-1">RAK: {selectedBookQr.rackLocation || '-'}</div>
                     </div>
                   </div>
                 </div>
                 <div className="mt-1 pt-1.5 border-t border-slate-100 flex justify-between items-center px-1.5">
-                  <div className="text-[7px] font-black text-slate-700 uppercase">RAK: {selectedBookQr.rackLocation || '-'}</div>
+                  <div className="text-[7.5px] font-black text-slate-700 uppercase">1 / {selectedBookQr.totalStock || 1}</div>
                   <div className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest">
                     {settings?.libraryName || 'LANTERA BACA'}
                   </div>
