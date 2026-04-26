@@ -146,8 +146,9 @@ export function TopNav() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      if (file.size > 1024 * 1024) { // Limit 1MB for base64 prototype
-        toast({ title: "File Terlalu Besar", description: "Maksimal ukuran foto adalah 1MB.", variant: "destructive" })
+      // Limit 500KB for Base64 in Firestore to avoid document size limit (1MB)
+      if (file.size > 500 * 1024) { 
+        toast({ title: "File Terlalu Besar", description: "Maksimal ukuran foto adalah 500KB untuk profil.", variant: "destructive" })
         return
       }
       const reader = new FileReader()
@@ -163,6 +164,7 @@ export function TopNav() {
     setIsSaving(true)
 
     try {
+      // 1. Simpan Data ke Firestore (Nama & Foto)
       const userDocRef = doc(db, 'users', user.uid)
       await updateDoc(userDocRef, {
         name: profileData.name,
@@ -170,24 +172,43 @@ export function TopNav() {
         updatedAt: new Date().toISOString()
       })
 
+      // 2. Jika ada password baru, coba update
       if (profileData.newPassword) {
         if (profileData.newPassword.length < 6) {
           throw new Error("Password minimal 6 karakter.")
         }
-        await updatePassword(auth.currentUser, profileData.newPassword)
+        
+        try {
+          await updatePassword(auth.currentUser, profileData.newPassword)
+          toast({
+            title: "Profil & Password Diperbarui",
+            description: "Semua perubahan telah disimpan dengan aman."
+          })
+        } catch (authError: any) {
+          if (authError.code === 'auth/requires-recent-login') {
+            toast({
+              title: "Profil Disimpan, Tapi Password Gagal",
+              description: "Foto dan nama berhasil diubah. Untuk mengganti password, silakan Keluar lalu Masuk kembali (Login Ulang).",
+              variant: "destructive"
+            })
+          } else {
+            throw authError
+          }
+        }
+      } else {
+        toast({
+          title: "Profil Diperbarui",
+          description: "Nama dan foto profil Anda telah berhasil disimpan."
+        })
       }
 
-      toast({
-        title: "Profil Diperbarui",
-        description: "Nama dan pengaturan Anda telah berhasil disimpan."
-      })
       setIsProfileOpen(false)
       forceUnlockUI()
       setProfileData(prev => ({ ...prev, newPassword: "" }))
     } catch (error: any) {
       toast({
         title: "Gagal Memperbarui",
-        description: error.message || "Terjadi kesalahan.",
+        description: error.message || "Terjadi kesalahan koneksi.",
         variant: "destructive"
       })
     } finally {
@@ -420,7 +441,7 @@ export function TopNav() {
                   className="pl-10 h-11 bg-slate-50 border-slate-200"
                 />
               </div>
-              <p className="text-[10px] text-muted-foreground">Minimal 6 karakter untuk keamanan.</p>
+              <p className="text-[10px] text-muted-foreground">Minimal 6 karakter. Jika ingin ganti password, pastikan Anda baru saja Login.</p>
             </div>
           </div>
           <DialogFooter>
