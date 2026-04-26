@@ -531,7 +531,12 @@ function BooksContent() {
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
-    const qrCardsHtml = filteredBooks.map((book) => `
+    // Sort by rack location as requested
+    const sortedByRack = [...filteredBooks].sort((a, b) => 
+      (a.rackLocation || "").localeCompare(b.rackLocation || "")
+    );
+
+    const qrCardsHtml = sortedByRack.map((book) => `
       <div style="width: 80mm; height: 35mm; border: 0.2pt solid #ccc; display: flex; flex-direction: column; page-break-inside: avoid; float: left; margin: 2mm; background: #fff; border-radius: 2mm; overflow: hidden; font-family: 'Inter', sans-serif; box-sizing: border-box;">
         <div style="flex: 1; display: flex; align-items: center; padding: 2mm;">
           <div style="width: 28mm; height: 28mm; display: flex; align-items: center; justify-content: center;">
@@ -559,7 +564,7 @@ function BooksContent() {
     printWindow.document.write(`
       <html>
         <head>
-          <title>Label QR Inventaris Buku</title>
+          <title>Label QR Berdasarkan Lokasi RAK</title>
           <style>
             @page { size: A4; margin: 10mm; }
             body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; background: #fff; }
@@ -582,13 +587,43 @@ function BooksContent() {
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
+    const totalCopies = Number(book.totalStock || 1);
+    let allStickersHtml = '';
+
+    for (let i = 1; i <= totalCopies; i++) {
+      allStickersHtml += `
+        <div class="sticker">
+          <div class="top-section">
+            <div class="qr-side">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${book.code}" />
+            </div>
+            <div class="info-side">
+              <div class="title">${book.title}</div>
+              <div class="code">${book.code}</div>
+              <div class="meta-grid">
+                <div class="meta">SUMBER: ${book.budgetSource || '-'}</div>
+                <div class="meta">REK: ${book.accountCode || '-'}</div>
+                <div class="meta">KAT: ${book.category || '-'}</div>
+                <div class="meta">ISBN: ${book.isbn || '-'}</div>
+                <div class="meta" style="color: #2E6ECE; font-weight: 900; font-size: 7.5pt; border-top: 0.2pt solid #eee; margin-top: 0.5mm; padding-top: 0.5mm;">COPY: ${i}/${totalCopies}</div>
+              </div>
+            </div>
+          </div>
+          <div class="footer-row">
+             <div class="footer-rak">RAK: ${book.rackLocation || '-'}</div>
+             <div class="footer-name">${settings?.libraryName || 'LANTERA BACA'}</div>
+          </div>
+        </div>
+      `;
+    }
+
     printWindow.document.write(`
       <html>
         <head>
-          <title>Cetak Label QR</title>
+          <title>Cetak Label QR (${totalCopies} Copy)</title>
           <style>
             @page { size: 80mm 35mm; margin: 0; }
-            body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; height: 35mm; width: 80mm; background: #fff; overflow: hidden; }
+            body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background: #fff; }
             .sticker {
               width: 80mm;
               height: 35mm;
@@ -596,6 +631,7 @@ function BooksContent() {
               flex-direction: column;
               box-sizing: border-box;
               padding: 1mm 2mm;
+              page-break-after: always;
             }
             .top-section {
               flex: 1;
@@ -675,27 +711,7 @@ function BooksContent() {
           </style>
         </head>
         <body onload="window.print(); window.close();">
-          <div class="sticker">
-            <div class="top-section">
-              <div class="qr-side">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${book.code}" />
-              </div>
-              <div class="info-side">
-                <div class="title">${book.title}</div>
-                <div class="code">${book.code}</div>
-                <div class="meta-grid">
-                  <div class="meta">SUMBER: ${book.budgetSource || '-'}</div>
-                  <div class="meta">REK: ${book.accountCode || '-'}</div>
-                  <div class="meta">KAT: ${book.category || '-'}</div>
-                  <div class="meta">ISBN: ${book.isbn || '-'}</div>
-                </div>
-              </div>
-            </div>
-            <div class="footer-row">
-               <div class="footer-rak">RAK: ${book.rackLocation || '-'}</div>
-               <div class="footer-name">${settings?.libraryName || 'LANTERA BACA'}</div>
-            </div>
-          </div>
+          ${allStickersHtml}
         </body>
       </html>
     `)
@@ -733,7 +749,7 @@ function BooksContent() {
                  <Printer className="h-4 w-4 mr-2" /> Cetak Daftar Buku
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handlePrintAllQr(); }}>
-                 <QrCode className="h-4 w-4 mr-2" /> Cetak Semua Label Stiker
+                 <QrCode className="h-4 w-4 mr-2" /> Cetak Semua Label (Urut Rak)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -838,7 +854,7 @@ function BooksContent() {
                           setSelectedBookQr(book); 
                           setIsQrOpen(true);
                         }, 150);
-                      }}><QrCode className="h-4 w-4 mr-2" />Tampilkan QR</DropdownMenuItem>
+                      }}><QrCode className="h-4 w-4 mr-2" />Cetak Label</DropdownMenuItem>
                       <DropdownMenuItem onSelect={(e) => { 
                         e.preventDefault();
                         forceUnlockUI();
@@ -1075,12 +1091,12 @@ function BooksContent() {
         </DialogContent>
       </Dialog>
 
-      {/* DIALOG QR CODE - LANDSCAPE DESIGN */}
+      {/* DIALOG PRATINJAU CETAK LABEL */}
       <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-xl text-center p-0 border-none rounded-3xl overflow-hidden">
           <DialogHeader className="p-6 border-b bg-white">
             <DialogTitle className="text-center font-bold text-primary">Pratinjau Label Stiker</DialogTitle>
-            <DialogDescription className="text-center text-xs">Format Landscape sesuai standar sistem inventaris.</DialogDescription>
+            <DialogDescription className="text-center text-xs">Akan mencetak sebanyak <b>{selectedBookQr?.totalStock || 1} stiker</b> sesuai jumlah fisik buku.</DialogDescription>
           </DialogHeader>
           <div className="p-10 space-y-6 bg-slate-100 flex flex-col items-center">
             {selectedBookQr && (
@@ -1098,6 +1114,7 @@ function BooksContent() {
                       <div className="text-[7px] font-bold text-muted-foreground uppercase">REK: {selectedBookQr.accountCode || '-'}</div>
                       <div className="text-[7px] font-bold text-muted-foreground uppercase">KAT: {selectedBookQr.category || '-'}</div>
                       <div className="text-[7px] font-bold text-muted-foreground uppercase">ISBN: {selectedBookQr.isbn || '-'}</div>
+                      <div className="text-[7px] font-black text-primary uppercase mt-1">COPY: 1 / ${selectedBookQr.totalStock || 1}</div>
                     </div>
                   </div>
                 </div>
@@ -1112,7 +1129,7 @@ function BooksContent() {
           </div>
           <DialogFooter className="p-6 bg-white grid grid-cols-2 gap-3">
              <Button variant="outline" onClick={() => { setIsQrOpen(false); forceUnlockUI(); }}>Tutup</Button>
-             <Button className="gap-2 shadow-lg shadow-primary/20" onClick={() => handlePrintSingleQr(selectedBookQr)}><Printer className="h-4 w-4" /> Cetak Label</Button>
+             <Button className="gap-2 shadow-lg shadow-primary/20" onClick={() => handlePrintSingleQr(selectedBookQr)}><Printer className="h-4 w-4" /> Cetak Semua ({selectedBookQr?.totalStock || 1})</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
