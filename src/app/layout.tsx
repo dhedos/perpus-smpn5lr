@@ -1,18 +1,43 @@
 
-import type {Metadata} from 'next';
+import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 
-export const metadata: Metadata = {
-  title: 'LANTERA BACA - SMPN 5 LANGKE REMBONG',
-  description: 'Sistem Informasi Perpustakaan Modern LANTERA BACA SMPN 5 Langke Rembong.',
-  icons: {
-    icon: 'https://picsum.photos/seed/librarylogo/128/128',
-    shortcut: 'https://picsum.photos/seed/librarylogo/128/128',
-    apple: 'https://picsum.photos/seed/librarylogo/128/128',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  let logoUrl = 'https://picsum.photos/seed/librarylogo/128/128';
+  let libraryName = 'LANTERA BACA';
+  let librarySubtitle = 'SMPN 5 LANGKE REMBONG';
+
+  try {
+    // Fetch settings directly from Firestore via REST API
+    const res = await fetch('https://firestore.googleapis.com/v1/projects/studio-6126048245-d2203/databases/(default)/documents/settings/general', {
+      next: { revalidate: 60 }
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      const fields = data.fields;
+      if (fields) {
+        logoUrl = fields.libraryLogoUrl?.stringValue || logoUrl;
+        libraryName = fields.libraryName?.stringValue || libraryName;
+        librarySubtitle = fields.librarySubtitle?.stringValue || librarySubtitle;
+      }
+    }
+  } catch (e) {
+    // Fallback to defaults
+  }
+
+  return {
+    title: `${libraryName} - ${librarySubtitle}`,
+    description: `Sistem Informasi Perpustakaan Modern ${libraryName} ${librarySubtitle}.`,
+    icons: {
+      icon: logoUrl,
+      shortcut: logoUrl,
+      apple: logoUrl,
+    },
+  };
+}
 
 export default function RootLayout({
   children,
