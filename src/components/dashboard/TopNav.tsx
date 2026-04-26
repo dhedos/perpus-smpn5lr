@@ -1,7 +1,7 @@
 
 "use client"
 
-import { Bell, Search, User, Globe, Wifi, WifiOff, LogOut, Menu, UserCircle, Lock, Loader2, CheckCircle2, BookOpen, Users as UsersIcon, ArrowRight, X } from "lucide-react"
+import { Bell, Search, User, Globe, Wifi, WifiOff, LogOut, Menu, UserCircle, Lock, Loader2, CheckCircle2, BookOpen, Users as UsersIcon, ArrowRight, X, Image as ImageIcon } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { 
@@ -15,7 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { Badge } from "@/components/ui/badge"
-import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
+import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
 import { signOut, updatePassword } from "firebase/auth"
 import { doc, updateDoc, collection } from "firebase/firestore"
 import { useRouter } from "next/navigation"
@@ -68,6 +68,7 @@ export function TopNav() {
 
   const [profileData, setProfileData] = useState({
     name: "",
+    photoURL: "",
     newPassword: ""
   })
 
@@ -99,7 +100,11 @@ export function TopNav() {
 
   useEffect(() => {
     if (user) {
-      setProfileData(prev => ({ ...prev, name: user.displayNameCustom || "" }))
+      setProfileData(prev => ({ 
+        ...prev, 
+        name: user.displayNameCustom || "",
+        photoURL: user.photoURLCustom || ""
+      }))
     }
   }, [user])
 
@@ -145,6 +150,7 @@ export function TopNav() {
       const userDocRef = doc(db, 'users', user.uid)
       await updateDoc(userDocRef, {
         name: profileData.name,
+        photoURL: profileData.photoURL,
         updatedAt: new Date().toISOString()
       })
 
@@ -287,7 +293,7 @@ export function TopNav() {
                 </p>
               </div>
               <Avatar className="h-9 w-9">
-                <AvatarImage src={`https://picsum.photos/seed/${user?.uid}/200/200`} alt="User" />
+                <AvatarImage src={user?.photoURLCustom || `https://picsum.photos/seed/${user?.uid}/200/200`} alt="User" />
                 <AvatarFallback className="bg-primary/10 text-primary font-bold">{user?.displayNameCustom?.[0] || "U"}</AvatarFallback>
               </Avatar>
             </Button>
@@ -333,10 +339,19 @@ export function TopNav() {
               Pengaturan Profil
             </DialogTitle>
             <DialogDescription>
-              Perbarui nama tampilan dan kata sandi akun Anda.
+              Perbarui profil dan identitas akun Anda.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <div className="flex justify-center mb-4">
+               <Avatar className="h-24 w-24 border-4 border-slate-50 shadow-lg">
+                  <AvatarImage src={profileData.photoURL || `https://picsum.photos/seed/${user?.uid}/200/200`} />
+                  <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">
+                    {profileData.name?.[0] || "U"}
+                  </AvatarFallback>
+               </Avatar>
+            </div>
+            
             <div className="space-y-2">
               <Label htmlFor="profile-name" className="font-bold text-xs uppercase text-muted-foreground">Nama Lengkap</Label>
               <Input 
@@ -346,6 +361,21 @@ export function TopNav() {
                 className="h-11 bg-slate-50 border-slate-200"
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="profile-photo" className="font-bold text-xs uppercase text-muted-foreground">URL Foto Profil</Label>
+              <div className="relative">
+                <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  id="profile-photo" 
+                  value={profileData.photoURL} 
+                  onChange={(e) => setProfileData(prev => ({ ...prev, photoURL: e.target.value }))}
+                  className="pl-10 h-11 bg-slate-50 border-slate-200"
+                  placeholder="https://link-foto.com/gambar.jpg"
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="profile-pass" className="font-bold text-xs uppercase text-muted-foreground">Kata Sandi Baru (Opsional)</Label>
               <div className="relative">

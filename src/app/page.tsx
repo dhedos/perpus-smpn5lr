@@ -140,6 +140,7 @@ export default function LoginPage() {
 
   const displayTitle = (isMounted && settings?.libraryName) ? settings.libraryName : "LANTERA BACA";
   const displaySubtitle = (isMounted && settings?.librarySubtitle) ? settings.librarySubtitle : "SMPN 5 LANGKE REMBONG";
+  const displayLogo = (isMounted && settings?.libraryLogoUrl);
 
   const shouldShowLoading = !isMounted || (authLoading && !user) || (user && user.role && isRedirecting) || isRedirecting;
 
@@ -147,8 +148,12 @@ export default function LoginPage() {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-6 animate-in fade-in duration-500">
-          <div className="w-24 h-24 flex items-center justify-center rounded-[2rem] bg-primary/10 text-primary shadow-sm">
-            <Library className="h-12 w-12" />
+          <div className="w-24 h-24 flex items-center justify-center rounded-[2rem] bg-primary/10 text-primary shadow-sm overflow-hidden">
+            {displayLogo ? (
+              <img src={displayLogo} alt="Logo" className="w-16 h-16 object-contain" />
+            ) : (
+              <Library className="h-12 w-12" />
+            )}
           </div>
           <div className="flex flex-col items-center space-y-2 text-center">
             <div className="flex items-center gap-2">
@@ -170,8 +175,12 @@ export default function LoginPage() {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 space-y-4 animate-in fade-in duration-500">
       <Card className="w-full max-w-md shadow-2xl border-none p-2 bg-white rounded-3xl overflow-hidden">
         <CardHeader className="space-y-4 text-center pt-8">
-          <div className="mx-auto w-24 h-24 flex items-center justify-center rounded-[2rem] bg-primary/10 text-primary mb-2 shadow-sm">
-            <Library className="h-12 w-12" />
+          <div className="mx-auto w-24 h-24 flex items-center justify-center rounded-[2rem] bg-primary/10 text-primary mb-2 shadow-sm overflow-hidden">
+            {displayLogo ? (
+              <img src={displayLogo} alt="Logo" className="w-16 h-16 object-contain" />
+            ) : (
+              <Library className="h-12 w-12" />
+            )}
           </div>
           <div className="space-y-1">
             <CardTitle className="text-3xl font-black font-headline uppercase tracking-tighter text-primary leading-tight">

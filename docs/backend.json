@@ -10,6 +10,7 @@
         "email": { "type": "string", "format": "email" },
         "role": { "type": "string" },
         "name": { "type": "string" },
+        "photoURL": { "type": "string", "description": "URL foto profil pengguna." },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "email", "role"]
@@ -69,6 +70,7 @@
         "lostBookFine": { "type": "number", "description": "Denda flat jika buku hilang." },
         "libraryName": { "type": "string" },
         "librarySubtitle": { "type": "string", "description": "Teks sub-judul di bawah nama perpustakaan." },
+        "libraryLogoUrl": { "type": "string", "description": "URL logo utama aplikasi." },
         "govtInstitution": { "type": "string" },
         "eduDept": { "type": "string" },
         "schoolName": { "type": "string" },

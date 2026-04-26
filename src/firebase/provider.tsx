@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
@@ -9,6 +10,7 @@ import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 export interface UserWithRole extends User {
   role?: 'Admin' | 'Staff' | 'Teacher' | 'Student';
   displayNameCustom?: string;
+  photoURLCustom?: string;
 }
 
 interface FirebaseProviderProps {
@@ -77,7 +79,8 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
                 user: {
                   ...firebaseUser,
                   role: data.role,
-                  displayNameCustom: data.name || data.email?.split('@')[0]
+                  displayNameCustom: data.name || data.email?.split('@')[0],
+                  photoURLCustom: data.photoURL || firebaseUser.photoURL
                 } as UserWithRole,
                 isUserLoading: false,
                 userError: null

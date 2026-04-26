@@ -67,12 +67,17 @@ export function SidebarNav() {
   }
 
   const displayTitle = settings?.libraryName || "LANTERA BACA";
+  const displayLogo = settings?.libraryLogoUrl;
 
   return (
     <div className="flex h-full flex-col bg-card text-card-foreground border-r">
       <div className="flex h-20 items-center px-4 shrink-0 gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <Library className="h-8 w-8" />
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary overflow-hidden">
+          {displayLogo ? (
+            <img src={displayLogo} alt="Logo" className="w-9 h-9 object-contain" />
+          ) : (
+            <Library className="h-8 w-8" />
+          )}
         </div>
         <div className="flex flex-col overflow-hidden">
           <span className="text-sm font-black leading-tight text-primary tracking-tight uppercase truncate">

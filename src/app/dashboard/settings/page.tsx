@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -7,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Library, Bell, Shield, Save, Loader2, Coins, CalendarDays, FileText, MapPin, UserCheck, Type, Wallet, LockKeyhole } from "lucide-react"
+import { Library, Bell, Shield, Save, Loader2, Coins, CalendarDays, FileText, MapPin, UserCheck, Type, Wallet, LockKeyhole, Image as ImageIcon } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 
@@ -32,6 +33,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState({
     libraryName: "LANTERA BACA",
     librarySubtitle: "SMPN 5 LANGKE REMBONG",
+    libraryLogoUrl: "https://picsum.photos/seed/librarylogo/512/512",
     schoolName: "SMP NEGERI 5 LANGKE REMBONG",
     loanPeriod: 7,
     fineAmount: 500,
@@ -65,6 +67,7 @@ export default function SettingsPage() {
         ...remoteSettings,
         libraryName: remoteSettings.libraryName || "LANTERA BACA",
         librarySubtitle: remoteSettings.librarySubtitle || "SMPN 5 LANGKE REMBONG",
+        libraryLogoUrl: remoteSettings.libraryLogoUrl || "https://picsum.photos/seed/librarylogo/512/512",
         loanPeriod: Number(remoteSettings.loanPeriod ?? 7),
         fineAmount: Number(remoteSettings.fineAmount ?? 500),
         damagedBookFine: Number(remoteSettings.damagedBookFine ?? 10000),
@@ -133,7 +136,7 @@ export default function SettingsPage() {
           <Card className="border-none shadow-sm overflow-hidden">
             <CardHeader className="bg-slate-50/50">
               <CardTitle>Kebijakan Sirkulasi Utama</CardTitle>
-              <CardDescription>Atur identitas judul perpustakaan, denda, dan sumber anggaran.</CardDescription>
+              <CardDescription>Atur identitas judul perpustakaan, logo, denda, dan sumber anggaran.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
               <div className="grid md:grid-cols-2 gap-8">
@@ -162,6 +165,24 @@ export default function SettingsPage() {
                       className="bg-slate-50 border-slate-200 h-11"
                       placeholder="Cth: SMPN 5 LANGKE REMBONG"
                     />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="lib-logo" className="font-bold text-xs uppercase text-muted-foreground flex items-center gap-2">
+                      <ImageIcon className="h-3 w-3" /> URL Logo Perpustakaan
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input 
+                        id="lib-logo" 
+                        value={settings.libraryLogoUrl} 
+                        onChange={(e) => setSettings({ ...settings, libraryLogoUrl: e.target.value })}
+                        className="bg-slate-50 border-slate-200 h-11"
+                        placeholder="https://..."
+                      />
+                      <div className="w-11 h-11 rounded-lg border bg-white flex items-center justify-center overflow-hidden shrink-0">
+                        <img src={settings.libraryLogoUrl} alt="Logo" className="w-8 h-8 object-contain" onError={(e) => (e.currentTarget.src = 'https://picsum.photos/seed/error/50/50')} />
+                      </div>
+                    </div>
                   </div>
 
                   <div className="grid gap-2">
