@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Library, Bell, Shield, Save, Loader2, Coins, CalendarDays, FileText, MapPin, UserCheck, Type, Wallet, LockKeyhole, Image as ImageIcon, Upload, Fingerprint } from "lucide-react"
+import { Library, Bell, Shield, Save, Loader2, Coins, CalendarDays, FileText, MapPin, UserCheck, Type, Wallet, LockKeyhole, Image as ImageIcon, Upload, Fingerprint, Clock } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 
@@ -37,6 +37,7 @@ export default function SettingsPage() {
     libraryLogoUrl: "https://picsum.photos/seed/librarylogo/512/512",
     schoolName: "SMP NEGERI 5 LANGKE REMBONG",
     loanPeriod: 7,
+    collectiveLoanHours: 2,
     fineAmount: 500,
     damagedBookFine: 10000,
     lostBookFine: 50000,
@@ -70,6 +71,7 @@ export default function SettingsPage() {
         librarySubtitle: remoteSettings.librarySubtitle || "SMPN 5 LANGKE REMBONG",
         libraryLogoUrl: remoteSettings.libraryLogoUrl || "https://picsum.photos/seed/librarylogo/512/512",
         loanPeriod: Number(remoteSettings.loanPeriod ?? 7),
+        collectiveLoanHours: Number(remoteSettings.collectiveLoanHours ?? 2),
         fineAmount: Number(remoteSettings.fineAmount ?? 500),
         damagedBookFine: Number(remoteSettings.damagedBookFine ?? 10000),
         lostBookFine: Number(remoteSettings.lostBookFine ?? 50000),
@@ -103,6 +105,7 @@ export default function SettingsPage() {
     const dataToSave = {
       ...settings,
       loanPeriod: Math.max(1, Number(settings.loanPeriod)),
+      collectiveLoanHours: Math.max(1, Number(settings.collectiveLoanHours)),
       fineAmount: Math.max(0, Number(settings.fineAmount)),
       damagedBookFine: Math.max(0, Number(settings.damagedBookFine)),
       lostBookFine: Math.max(0, Number(settings.lostBookFine)),
@@ -246,7 +249,7 @@ export default function SettingsPage() {
                   <div className="grid gap-3">
                     <Label htmlFor="loan-period" className="flex items-center gap-2 font-bold text-sm text-primary">
                       <CalendarDays className="h-4 w-4" />
-                      Masa Peminjaman (Hari)
+                      Masa Peminjaman Pribadi (Hari)
                     </Label>
                     <div className="flex items-center gap-3">
                       <Input 
@@ -257,6 +260,23 @@ export default function SettingsPage() {
                         className="bg-white border-primary/20 h-12 text-xl font-black w-24 text-center"
                       />
                       <span className="text-sm font-semibold text-muted-foreground">Hari Kalender</span>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 pt-2">
+                    <Label htmlFor="collective-loan-hours" className="flex items-center gap-2 font-bold text-sm text-blue-600">
+                      <Clock className="h-4 w-4" />
+                      Durasi Pinjam Kolektif (Jam)
+                    </Label>
+                    <div className="flex items-center gap-3">
+                      <Input 
+                        id="collective-loan-hours" 
+                        type="number" 
+                        value={settings.collectiveLoanHours}
+                        onChange={(e) => setSettings({ ...settings, collectiveLoanHours: Number(e.target.value) })}
+                        className="bg-white border-blue-200 h-12 text-xl font-black w-24 text-center text-blue-600"
+                      />
+                      <span className="text-sm font-semibold text-muted-foreground">Jam Pelajaran</span>
                     </div>
                   </div>
 

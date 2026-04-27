@@ -57,7 +57,7 @@ import {
   useUser
 } from '@/firebase'
 import { collection, addDoc, updateDoc, doc, serverTimestamp, getDoc } from 'firebase/firestore'
-import { differenceInDays, parseISO, format, addDays, startOfDay } from "date-fns"
+import { differenceInDays, differenceInHours, parseISO, format, addDays, startOfDay } from "date-fns"
 
 function TransactionsContent() {
   const db = useFirestore()
@@ -120,6 +120,7 @@ function TransactionsContent() {
   const { data: allTransactions } = useCollection(allTransRef)
 
   const loanDays = useMemo(() => settings?.loanPeriod ? Number(settings.loanPeriod) : 7, [settings]);
+  const collHours = useMemo(() => settings?.collectiveLoanHours ? Number(settings.collectiveLoanHours) : 2, [settings]);
 
   // FILTER KHUSUS SISWA
   const members = useMemo(() => {
@@ -224,12 +225,19 @@ function TransactionsContent() {
   }
 
   const prepareReturn = (trans: any) => {
-    const today = startOfDay(new Date());
-    const borrowDate = startOfDay(parseISO(trans.borrowDate));
-    const dynamicDueDate = addDays(borrowDate, loanDays);
-    const diffDays = differenceInDays(today, dynamicDueDate);
+    const now = new Date();
+    const borrowDate = parseISO(trans.borrowDate);
     
-    setLateDays(diffDays > 0 ? diffDays : 0);
+    if (trans.borrowType === 'Kolektif') {
+      const diffHours = differenceInHours(now, borrowDate);
+      const isLate = diffHours > collHours;
+      setLateDays(isLate ? Math.ceil((diffHours - collHours) / 24) : 0);
+    } else {
+      const dynamicDueDate = startOfDay(addDays(borrowDate, loanDays));
+      const diffDays = differenceInDays(startOfDay(now), dynamicDueDate);
+      setLateDays(diffDays > 0 ? diffDays : 0);
+    }
+    
     setPendingReturnTrans(trans);
     
     const totalQty = Number(trans.quantity || 1);
@@ -433,7 +441,7 @@ function TransactionsContent() {
       return;
     }
 
-    const today = startOfDay(new Date());
+    const today = new Date();
     const finalDueDate = addDays(today, loanDays);
     setIsProcessing(true)
 
@@ -474,10 +482,14 @@ function TransactionsContent() {
            <Button variant="outline" size="sm" onClick={handlePrintReport}>
              <Printer className="h-4 w-4 mr-2" /> Cetak
            </Button>
-           <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold gap-2 py-1.5 px-3">
-            <CalendarDays className="h-4 w-4" />
-            Batas: {loanDays} Hari
-          </Badge>
+           <div className="flex flex-col gap-1">
+             <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold gap-2 py-1 px-3">
+              <CalendarDays className="h-3 w-3" /> Pribadi: {loanDays} Hari
+            </Badge>
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-bold gap-2 py-1 px-3">
+              <Clock className="h-3 w-3" /> Kolektif: {collHours} Jam
+            </Badge>
+           </div>
         </div>
       </div>
 
@@ -734,7 +746,7 @@ function TransactionsContent() {
                         <TableRow>
                           <TableHead className="w-12 text-center">No.</TableHead>
                           <TableHead>Peminjam & Buku</TableHead>
-                          <TableHead className="w-32">Batas Kembali</TableHead>
+                          <TableHead className="w-32">Status Waktu</TableHead>
                           <TableHead className="w-24 text-right">Aksi</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -742,7 +754,23 @@ function TransactionsContent() {
                         {filteredActiveTrans.length === 0 ? (
                           <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground italic">Tidak ada peminjaman siswa aktif.</TableCell></TableRow>
                         ) : filteredActiveTrans.map((t, index) => {
-                          const borrowedDays = differenceInDays(new Date(), parseISO(t.borrowDate));
+                          const now = new Date();
+                          const borrowDate = parseISO(t.borrowDate);
+                          
+                          let durationDisplay = "";
+                          let isUrgent = false;
+
+                          if (t.borrowType === 'Kolektif') {
+                            const diffHours = differenceInHours(now, borrowDate);
+                            durationDisplay = `${diffHours} JAM`;
+                            isUrgent = diffHours >= collHours;
+                          } else {
+                            const diffDays = differenceInDays(now, borrowDate);
+                            durationDisplay = `${diffDays} HARI`;
+                            const dueDate = parseISO(t.dueDate);
+                            isUrgent = isAfter(now, dueDate);
+                          }
+
                           return (
                             <TableRow key={t.id}>
                               <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
@@ -752,15 +780,17 @@ function TransactionsContent() {
                                     <div className="font-bold text-sm leading-tight">{t.bookTitle}</div>
                                     {t.borrowType === 'Kolektif' && (
                                       <Badge variant="outline" className="h-4 text-[7px] bg-blue-900 text-white border-none flex items-center gap-1 font-black">
-                                        <Clock className="h-2 w-2" /> {borrowedDays} HARI
+                                        KOLEKTIF
                                       </Badge>
                                     )}
                                   </div>
                                   <div className="text-xs font-semibold">{t.memberName} <span className="text-muted-foreground font-normal">/ {t.memberId}</span></div>
                                 </div>
                               </TableCell>
-                              <TableCell className="text-xs font-bold text-muted-foreground">
-                                {t.dueDate ? format(parseISO(t.dueDate), 'dd/MM/yyyy') : '-'}
+                              <TableCell>
+                                <Badge variant={isUrdue ? "destructive" : "secondary"} className="h-5 text-[9px] font-bold">
+                                  <Clock className="h-2.5 w-2.5 mr-1" /> {durationDisplay}
+                                </Badge>
                               </TableCell>
                               <TableCell className="text-right">
                                 <Button size="sm" variant="outline" className="h-8 text-xs font-bold" onClick={() => prepareReturn(t)}>
@@ -796,7 +826,11 @@ function TransactionsContent() {
                   <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Buku & Peminjam</div>
                   <div className="text-sm font-black">{pendingReturnTrans.bookTitle}</div>
                   <div className="text-xs font-bold text-primary mt-1">{pendingReturnTrans.memberName} / {pendingReturnTrans.memberId}</div>
-                  {pendingReturnTrans.borrowType === 'Kolektif' && <Badge className="mt-2 h-4 text-[7px] bg-blue-600 font-black uppercase">Durasi Pinjam: {differenceInDays(new Date(), parseISO(pendingReturnTrans.borrowDate))} Hari</Badge>}
+                  {pendingReturnTrans.borrowType === 'Kolektif' && (
+                    <Badge className="mt-2 h-4 text-[7px] bg-blue-600 font-black uppercase">
+                      Durasi Pinjam: {differenceInHours(new Date(), parseISO(pendingReturnTrans.borrowDate))} Jam
+                    </Badge>
+                  )}
                 </div>
               </div>
 

@@ -27,9 +27,9 @@ import {
   Tooltip, 
   ResponsiveContainer
 } from "recharts"
-import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
-import { collection, query, where, orderBy, limit } from "firebase/firestore"
-import { isAfter, parseISO, differenceInDays, startOfDay } from "date-fns"
+import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
+import { collection, query, where, orderBy, limit, doc } from "firebase/firestore"
+import { isAfter, parseISO, differenceInDays, differenceInHours, startOfDay, addHours } from "date-fns"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
@@ -42,6 +42,9 @@ export default function DashboardPage() {
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
+  const { data: settings } = useDoc(settingsRef)
 
   const booksRef = useMemoFirebase(() => db ? collection(db, 'books') : null, [db])
   const membersRef = useMemoFirebase(() => db ? collection(db, 'members') : null, [db])
@@ -77,25 +80,46 @@ export default function DashboardPage() {
     ).slice(0, 5)
   }, [latestTransactions, books, members])
 
-  // Hitung transaksi yang jatuh tempo (overdue) dengan rincian hari terlambat
+  // Hitung transaksi yang jatuh tempo (overdue) dengan rincian hari/jam terlambat
   const overdueTransactions = useMemo(() => {
-    if (!mounted || !filteredActiveTransactions) return []
-    const now = startOfDay(new Date())
+    if (!mounted || !filteredActiveTransactions || !settings) return []
+    const now = new Date()
+    const collHours = Number(settings.collectiveLoanHours || 2)
+
     return filteredActiveTransactions
       .filter(t => {
-        if (!t.dueDate) return false
-        try {
-          return isAfter(now, startOfDay(parseISO(t.dueDate)))
-        } catch (e) {
-          return false
+        if (t.borrowType === 'Kolektif') {
+          // Jatuh tempo kolektif berdasarkan jam
+          const dueDate = addHours(parseISO(t.borrowDate), collHours)
+          return isAfter(now, dueDate)
+        } else {
+          // Jatuh tempo pribadi berdasarkan hari
+          if (!t.dueDate) return false
+          return isAfter(now, parseISO(t.dueDate))
         }
       })
       .map(t => {
-        const diff = differenceInDays(now, parseISO(t.dueDate))
-        const duration = differenceInDays(now, parseISO(t.borrowDate))
-        return { ...t, lateDays: diff > 0 ? diff : 0, currentDuration: duration }
+        if (t.borrowType === 'Kolektif') {
+          const diffHours = differenceInHours(now, parseISO(t.borrowDate))
+          const isOverdueHours = diffHours > collHours
+          return { 
+            ...t, 
+            isOverdue: isOverdueHours,
+            lateLabel: `${diffHours} Jam Pinjam`,
+            currentDuration: `${diffHours} Jam`
+          }
+        } else {
+          const diff = differenceInDays(startOfDay(now), startOfDay(parseISO(t.dueDate)))
+          const duration = differenceInDays(now, parseISO(t.borrowDate))
+          return { 
+            ...t, 
+            isOverdue: diff > 0,
+            lateLabel: `Terlambat ${diff} Hari`,
+            currentDuration: `${duration} Hari`
+          }
+        }
       })
-  }, [filteredActiveTransactions, mounted])
+  }, [filteredActiveTransactions, mounted, settings])
 
   const stats = [
     { 
@@ -171,7 +195,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-destructive/80 mb-4">
-              Ditemukan <strong>{overdueTransactions.length} transaksi</strong> yang telah melewati batas waktu pengembalian. Segera hubungi anggota berikut:
+              Ditemukan <strong>{overdueTransactions.length} transaksi</strong> yang telah melewati batas waktu. Segera hubungi peminjam berikut:
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {overdueTransactions.slice(0, 6).map((t) => (
@@ -184,12 +208,12 @@ export default function DashboardPage() {
                   <div className="font-bold text-xs truncate text-destructive">{t.bookTitle}</div>
                   <div className="text-[10px] font-semibold text-muted-foreground truncate">{t.memberName} ({t.classOrSubject})</div>
                   <div className="flex items-center gap-1.5 mt-1">
-                    <Badge variant="destructive" className="h-4 text-[8px] w-fit border-none font-bold">
-                      Terlambat {t.lateDays} Hari
+                    <Badge variant="destructive" className="h-4 text-[8px] w-fit border-none font-bold uppercase">
+                      {t.lateLabel}
                     </Badge>
                     {t.borrowType === 'Kolektif' && (
                       <span className="text-[8px] font-bold text-blue-600 flex items-center gap-0.5">
-                        <Clock className="h-2 w-2" /> {t.currentDuration} Hari
+                        <Clock className="h-2 w-2" /> Durasi: {t.currentDuration}
                       </span>
                     )}
                   </div>
