@@ -127,7 +127,10 @@ export default function ReportsPage() {
   const isLoading = loadingTrans || loadingMembers || loadingBooks;
 
   const handlePrintTransactionBackup = (type: 'Student' | 'Teacher') => {
-    if (validTransactions.length === 0) return;
+    if (validTransactions.length === 0) {
+      alert("Belum ada data transaksi yang tersimpan di sistem.");
+      return;
+    }
     
     // Filter transaksi untuk bulan berjalan saja
     const start = startOfMonth(new Date());
@@ -379,7 +382,7 @@ export default function ReportsPage() {
                 onClick={() => handlePrintTransactionBackup('Teacher')}
                 disabled={isLoading}
               >
-                Riwayat Guru & Pegawai
+                Riwayat Pinjaman Guru & Pegawai
                 <Download className="h-4 w-4 ml-2" />
               </Button>
             </CardContent>
