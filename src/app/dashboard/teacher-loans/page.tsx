@@ -44,7 +44,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 // Firebase
@@ -56,6 +56,7 @@ import {
   useUser
 } from '@/firebase'
 import { collection, addDoc, updateDoc, doc, serverTimestamp, getDoc, query, orderBy } from 'firebase/firestore'
+import { startOfMonth, endOfMonth, isWithinInterval, parseISO, format } from "date-fns"
 
 export default function TeacherLoansPage() {
   const db = useFirestore()
@@ -112,7 +113,7 @@ export default function TeacherLoansPage() {
     return [...allBooksData].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
   }, [allBooksData]);
 
-  // Transaksi aktif khusus peminjaman GURU - Filter out deleted books/members
+  // Transaksi aktif
   const activeTransactions = useMemo(() => {
     if (!allTransactions || !allBooksData || !allMembersData) return []
     return allTransactions
@@ -129,10 +130,21 @@ export default function TeacherLoansPage() {
       })
   }, [allTransactions, allBooksData, allMembersData])
 
+  // RIWAYAT GURU BULAN INI
   const historyTransactions = useMemo(() => {
     if (!allTransactions) return []
+    const start = startOfMonth(new Date());
+    const end = endOfMonth(new Date());
+
     return allTransactions
-      .filter(t => t.status === 'returned' && t.memberType === 'Teacher')
+      .filter(t => {
+        const dateToUse = t.returnDate ? parseISO(t.returnDate) : (t.createdAt?.seconds ? new Date(t.createdAt.seconds * 1000) : new Date());
+        return (
+          t.status === 'returned' && 
+          t.memberType === 'Teacher' &&
+          isWithinInterval(dateToUse, { start, end })
+        )
+      })
       .sort((a, b) => {
         const dateA = a.returnDate ? new Date(a.returnDate).getTime() : 0;
         const dateB = b.returnDate ? new Date(b.returnDate).getTime() : 0;
@@ -387,7 +399,7 @@ export default function TeacherLoansPage() {
     printWindow.document.write(`
       <html>
         <head>
-          <title>Laporan Buku Pegangan Guru</title>
+          <title>Riwayat Buku Guru - ${format(new Date(), 'MMMM yyyy')}</title>
           <style>
             @page { size: A4; margin: 0; }
             body { font-family: 'Inter', sans-serif; font-size: 11pt; margin: 0; padding: 15mm; }
@@ -395,7 +407,7 @@ export default function TeacherLoansPage() {
           </style>
         </head>
         <body onload="window.print(); window.close();">
-          <h2 style="text-align: center;">DAFTAR PENYERAHAN BUKU PEGANGAN GURU</h2>
+          <h2 style="text-align: center;">RIWAYAT BUKU PEGANGAN GURU (BULAN BERJALAN)</h2>
           <table style="width: 100%; border-collapse: collapse;">
             <thead>
               <tr>
@@ -506,11 +518,6 @@ export default function TeacherLoansPage() {
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
-                    {selectedBook && (
-                      <p className="text-[10px] text-center text-muted-foreground">
-                        Stok tersedia: <b>{selectedBook.availableStock}</b> unit
-                      </p>
-                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -597,9 +604,9 @@ export default function TeacherLoansPage() {
             <Card className="lg:col-span-2 border-none shadow-sm overflow-hidden">
               <CardHeader className="bg-slate-50/50 border-b">
                 <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                  <History className="h-4 w-4 text-primary" /> Riwayat Guru (Terakhir)
+                  <History className="h-4 w-4 text-primary" /> Riwayat Bulan Ini
                 </CardTitle>
-                <CardDescription>Daftar 10 penyerahan buku terakhir kepada guru.</CardDescription>
+                <CardDescription className="text-[10px]">Daftar riwayat buku guru untuk bulan {format(new Date(), 'MMMM yyyy')}.</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
                 <Table>
@@ -613,8 +620,8 @@ export default function TeacherLoansPage() {
                   </TableHeader>
                   <TableBody>
                     {historyTransactions.length === 0 ? (
-                      <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">Belum ada riwayat guru.</TableCell></TableRow>
-                    ) : historyTransactions.slice(0, 10).map((t, index) => (
+                      <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">Belum ada riwayat di bulan ini.</TableCell></TableRow>
+                    ) : historyTransactions.slice(0, 50).map((t, index) => (
                       <TableRow key={t.id}>
                         <TableCell className="text-center text-xs">{index + 1}</TableCell>
                         <TableCell className="font-bold text-xs">{t.memberName}</TableCell>

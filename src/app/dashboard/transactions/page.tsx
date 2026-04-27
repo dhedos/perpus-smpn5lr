@@ -57,7 +57,7 @@ import {
   useUser
 } from '@/firebase'
 import { collection, addDoc, updateDoc, doc, serverTimestamp, getDoc } from 'firebase/firestore'
-import { differenceInDays, differenceInHours, parseISO, format, addDays, startOfDay } from "date-fns"
+import { differenceInDays, differenceInHours, parseISO, format, addDays, startOfDay, isWithinInterval, startOfMonth, endOfMonth } from "date-fns"
 
 function TransactionsContent() {
   const db = useFirestore()
@@ -133,7 +133,7 @@ function TransactionsContent() {
     return [...allBooksData].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
   }, [allBooksData]);
 
-  // RIWAYAT TRANSAKSI SISWA - Filter out transactions for deleted books/members
+  // RIWAYAT TRANSAKSI SISWA
   const activeTrans = useMemo(() => {
     if (!allTransactions || !allBooksData || !allMembersData) return [];
     return allTransactions.filter(t => 
@@ -144,14 +144,22 @@ function TransactionsContent() {
     );
   }, [allTransactions, allBooksData, allMembersData]);
 
+  // RIWAYAT TRANSAKSI BULAN INI
   const historyTrans = useMemo(() => {
     if (!allTransactions) return [];
+    const start = startOfMonth(new Date());
+    const end = endOfMonth(new Date());
+
     return allTransactions
-      .filter(t => 
-        t.status === 'returned' && 
-        (t.memberType === 'Student' || t.type === 'borrow' || t.type === 'return') &&
-        t.type !== 'teacher_handbook'
-      )
+      .filter(t => {
+        const dateToUse = t.returnDate ? parseISO(t.returnDate) : (t.createdAt?.seconds ? new Date(t.createdAt.seconds * 1000) : new Date());
+        return (
+          t.status === 'returned' && 
+          (t.memberType === 'Student' || t.type === 'borrow' || t.type === 'return') &&
+          t.type !== 'teacher_handbook' &&
+          isWithinInterval(dateToUse, { start, end })
+        )
+      })
       .sort((a, b) => {
         const dateA = a.returnDate ? new Date(a.returnDate).getTime() : 0;
         const dateB = b.returnDate ? new Date(b.returnDate).getTime() : 0;
@@ -346,7 +354,7 @@ function TransactionsContent() {
     printWindow.document.write(`
       <html>
         <head>
-          <title>Laporan Sirkulasi Siswa</title>
+          <title>Laporan Sirkulasi Siswa - ${format(new Date(), 'MMMM yyyy')}</title>
           <style>
             @page { size: A4; margin: 0; }
             body { font-family: 'Inter', sans-serif; font-size: 11pt; margin: 0; padding: 15mm; }
@@ -354,7 +362,7 @@ function TransactionsContent() {
           </style>
         </head>
         <body onload="window.print(); window.close();">
-          <h2 style="text-align: center;">DAFTAR TRANSAKSI SIRKULASI SISWA</h2>
+          <h2 style="text-align: center;">RIWAYAT SIRKULASI SISWA (BULAN BERJALAN)</h2>
           <table style="width: 100%; border-collapse: collapse;">
             <thead>
               <tr>
@@ -566,11 +574,6 @@ function TransactionsContent() {
                           <Plus className="h-4 w-4" />
                         </Button>
                       </div>
-                      {selectedBook && (
-                        <p className="text-[10px] text-center text-muted-foreground">
-                          Stok tersedia: <b>{selectedBook.availableStock}</b> unit
-                        </p>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -692,9 +695,9 @@ function TransactionsContent() {
                 <Card className="border-none shadow-sm overflow-hidden h-full">
                   <CardHeader className="bg-slate-50/50 border-b">
                     <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                      <History className="h-4 w-4 text-primary" /> Riwayat Siswa (Terakhir)
+                      <History className="h-4 w-4 text-primary" /> Riwayat Bulan Berjalan
                     </CardTitle>
-                    <CardDescription>Daftar aktivitas sirkulasi yang baru saja diselesaikan.</CardDescription>
+                    <CardDescription className="text-[10px]">Menampilkan aktivitas sirkulasi untuk bulan {format(new Date(), 'MMMM yyyy')}.</CardDescription>
                   </CardHeader>
                   <CardContent className="p-0">
                     <Table>
@@ -708,8 +711,8 @@ function TransactionsContent() {
                       </TableHeader>
                       <TableBody>
                         {historyTrans?.length === 0 ? (
-                          <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">Belum ada riwayat siswa.</TableCell></TableRow>
-                        ) : historyTrans?.slice(0, 10).map((t, index) => (
+                          <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">Belum ada riwayat di bulan ini.</TableCell></TableRow>
+                        ) : historyTrans?.slice(0, 50).map((t, index) => (
                           <TableRow key={t.id}>
                             <TableCell className="text-center text-xs">{index + 1}</TableCell>
                             <TableCell className="font-bold text-xs">{t.memberName}</TableCell>
@@ -829,11 +832,6 @@ function TransactionsContent() {
                   <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Buku & Peminjam</div>
                   <div className="text-sm font-black">{pendingReturnTrans.bookTitle}</div>
                   <div className="text-xs font-bold text-primary mt-1">{pendingReturnTrans.memberName} / {pendingReturnTrans.memberId}</div>
-                  {pendingReturnTrans.borrowType === 'Kolektif' && (
-                    <Badge className="mt-2 h-4 text-[7px] bg-blue-600 font-black uppercase">
-                      Durasi Pinjam: {differenceInHours(new Date(), parseISO(pendingReturnTrans.borrowDate))} Jam
-                    </Badge>
-                  )}
                 </div>
               </div>
 

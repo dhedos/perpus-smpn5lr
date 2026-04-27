@@ -16,7 +16,9 @@ import {
   TrendingUp,
   AlertTriangle,
   ChevronRight,
-  Layers
+  Layers,
+  DatabaseBackup,
+  Download
 } from "lucide-react"
 import { 
   BarChart, 
@@ -29,18 +31,27 @@ import {
 } from "recharts"
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
 import { collection, query, where, orderBy, limit, doc } from "firebase/firestore"
-import { isAfter, parseISO, differenceInDays, differenceInHours, startOfDay, addHours } from "date-fns"
+import { isAfter, parseISO, differenceInDays, differenceInHours, startOfDay, addHours, isToday } from "date-fns"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function DashboardPage() {
   const { user } = useUser()
   const db = useFirestore()
   const [mounted, setMounted] = useState(false)
+  const [showBackupReminder, setShowBackupReminder] = useState(false)
 
-  // Pastikan komponen sudah terpasang di client untuk menghindari perbedaan waktu (hydration mismatch)
   useEffect(() => {
     setMounted(true)
+    // Check for backup reminder (every 3 days)
+    const lastBackup = localStorage.getItem('perpus_last_backup')
+    if (lastBackup) {
+      const diff = differenceInDays(new Date(), new Date(lastBackup))
+      if (diff >= 3) setShowBackupReminder(true)
+    } else {
+      setShowBackupReminder(true)
+    }
   }, [])
 
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
@@ -54,7 +65,7 @@ export default function DashboardPage() {
   [db])
 
   const latestTransQuery = useMemoFirebase(() => 
-    db ? query(collection(db, 'transactions'), orderBy('createdAt', 'desc'), limit(10)) : null, 
+    db ? query(collection(db, 'transactions'), orderBy('createdAt', 'desc'), limit(50)) : null, 
   [db])
 
   const { data: books, isLoading: loadingBooks } = useCollection(booksRef)
@@ -71,16 +82,20 @@ export default function DashboardPage() {
     )
   }, [activeTransactions, books, members])
 
-  // Filter transaksi terbaru agar sinkron (tidak menampilkan data dari entitas yang sudah dihapus)
+  // Filter transaksi TERBARU HANYA HARI INI
   const filteredLatestTransactions = useMemo(() => {
     if (!latestTransactions || !books || !members) return []
-    return latestTransactions.filter(t => 
-      books.some(b => b.id === t.bookId) &&
-      members.some(m => m.memberId === t.memberId)
-    ).slice(0, 5)
+    return latestTransactions.filter(t => {
+      const transDate = t.createdAt ? new Date(t.createdAt.seconds * 1000) : new Date();
+      return (
+        isToday(transDate) &&
+        books.some(b => b.id === t.bookId) &&
+        members.some(m => m.memberId === t.memberId)
+      )
+    }).slice(0, 8)
   }, [latestTransactions, books, members])
 
-  // Hitung transaksi yang jatuh tempo (overdue) dengan rincian hari/jam terlambat
+  // Hitung transaksi yang jatuh tempo (overdue)
   const overdueTransactions = useMemo(() => {
     if (!mounted || !filteredActiveTransactions || !settings) return []
     const now = new Date()
@@ -89,11 +104,9 @@ export default function DashboardPage() {
     return filteredActiveTransactions
       .filter(t => {
         if (t.borrowType === 'Kolektif') {
-          // Jatuh tempo kolektif berdasarkan jam
           const dueDate = addHours(parseISO(t.borrowDate), collHours)
           return isAfter(now, dueDate)
         } else {
-          // Jatuh tempo pribadi berdasarkan hari
           if (!t.dueDate) return false
           return isAfter(now, parseISO(t.dueDate))
         }
@@ -101,10 +114,8 @@ export default function DashboardPage() {
       .map(t => {
         if (t.borrowType === 'Kolektif') {
           const diffHours = differenceInHours(now, parseISO(t.borrowDate))
-          const isOverdueHours = diffHours > collHours
           return { 
             ...t, 
-            isOverdue: isOverdueHours,
             lateLabel: `${diffHours} Jam Pinjam`,
             currentDuration: `${diffHours} Jam`
           }
@@ -113,7 +124,6 @@ export default function DashboardPage() {
           const duration = differenceInDays(now, parseISO(t.borrowDate))
           return { 
             ...t, 
-            isOverdue: diff > 0,
             lateLabel: `Terlambat ${diff} Hari`,
             currentDuration: `${duration} Hari`
           }
@@ -123,7 +133,7 @@ export default function DashboardPage() {
 
   const stats = [
     { 
-      title: "Total Jenis Buku", 
+      title: "Koleksi Buku", 
       value: loadingBooks ? "..." : (books?.length || 0), 
       desc: "Judul terdaftar", 
       icon: BookOpen, 
@@ -167,21 +177,38 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col gap-0.5">
-        <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest opacity-80">
-          Selamat Datang,
-        </p>
-        <h1 className="text-2xl font-bold tracking-tight text-primary leading-tight">
-          {user?.displayNameCustom || "Petugas Perpustakaan"}
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Pantau aktivitas sirkulasi dan koleksi perpustakaan hari ini.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col gap-0.5">
+          <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest opacity-80">
+            Selamat Datang,
+          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-primary leading-tight">
+            {user?.displayNameCustom || "Petugas Perpustakaan"}
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Pantau aktivitas sirkulasi dan koleksi perpustakaan hari ini.
+          </p>
+        </div>
+
+        {showBackupReminder && (
+          <Alert className="max-w-md bg-orange-50 border-orange-200 text-orange-800 animate-bounce">
+            <DatabaseBackup className="h-4 w-4 text-orange-600" />
+            <AlertTitle className="text-xs font-black uppercase">Segera Backup Data!</AlertTitle>
+            <AlertDescription className="text-[10px] leading-tight flex items-center justify-between gap-2 mt-1">
+              Sudah lebih dari 3 hari Anda tidak mencadangkan data. 
+              <Link href="/dashboard/sync">
+                <Button size="sm" variant="outline" className="h-7 text-[9px] font-bold border-orange-300 bg-white hover:bg-orange-100">
+                  Backup Sekarang <Download className="h-2 w-2 ml-1" />
+                </Button>
+              </Link>
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
 
-      {/* Overdue Alert Banner - HANYA muncul jika ada yang jatuh tempo */}
+      {/* Overdue Alert Banner */}
       {mounted && overdueTransactions.length > 0 && (
-        <Card className="border-none shadow-md bg-destructive/5 overflow-hidden ring-1 ring-destructive/20 animate-in slide-in-from-top duration-500">
+        <Card className="border-none shadow-md bg-destructive/5 overflow-hidden ring-1 ring-destructive/20">
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-destructive animate-pulse" />
@@ -194,9 +221,6 @@ export default function DashboardPage() {
             </Link>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-destructive/80 mb-4">
-              Ditemukan <strong>{overdueTransactions.length} transaksi</strong> yang telah melewati batas waktu. Segera hubungi peminjam berikut:
-            </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {overdueTransactions.slice(0, 6).map((t) => (
                 <div key={t.id} className="bg-white/70 p-3 rounded-lg border border-destructive/10 flex flex-col gap-1 shadow-sm relative overflow-hidden">
@@ -211,11 +235,6 @@ export default function DashboardPage() {
                     <Badge variant="destructive" className="h-4 text-[8px] w-fit border-none font-bold uppercase">
                       {t.lateLabel}
                     </Badge>
-                    {t.borrowType === 'Kolektif' && (
-                      <span className="text-[8px] font-bold text-blue-600 flex items-center gap-0.5">
-                        <Clock className="h-2 w-2" /> Durasi: {t.currentDuration}
-                      </span>
-                    )}
                   </div>
                 </div>
               ))}
@@ -244,8 +263,8 @@ export default function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="border-none shadow-sm">
           <CardHeader>
-            <CardTitle>Statistik Peminjaman</CardTitle>
-            <CardDescription>Aktivitas peminjaman real-time (Minggu ini).</CardDescription>
+            <CardTitle>Statistik Mingguan</CardTitle>
+            <CardDescription>Aktivitas peminjaman 7 hari terakhir.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full">
@@ -266,10 +285,10 @@ export default function DashboardPage() {
         </Card>
 
         <Card className="md:col-span-1 border-none shadow-sm overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-row items-center justify-between bg-muted/30">
             <div>
-              <CardTitle>Transaksi Terbaru</CardTitle>
-              <CardDescription>Aktivitas sirkulasi terakhir.</CardDescription>
+              <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Aktivitas Hari Ini</CardTitle>
+              <CardDescription className="text-[10px]">Menampilkan riwayat sirkulasi hanya untuk hari ini.</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -277,23 +296,26 @@ export default function DashboardPage() {
               {!latestTransactions ? (
                 <div className="p-10 text-center"><Loader2 className="animate-spin mx-auto h-6 w-6 text-muted-foreground" /></div>
               ) : filteredLatestTransactions.length === 0 ? (
-                <div className="p-10 text-center text-sm text-muted-foreground">Belum ada transaksi.</div>
+                <div className="p-10 text-center flex flex-col items-center gap-2">
+                   <Clock className="h-8 w-8 text-muted-foreground/20" />
+                   <p className="text-xs text-muted-foreground font-medium italic">Belum ada sirkulasi hari ini.</p>
+                </div>
               ) : filteredLatestTransactions.map((t) => (
                 <div key={t.id} className="flex items-center justify-between px-6 py-4 hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className={t.type === 'return' ? "bg-green-100 text-green-600 p-2 rounded-full" : "bg-blue-100 text-blue-600 p-2 rounded-full"}>
-                      {t.type === 'return' ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+                      {t.type === 'return' ? <ArrowDownLeft className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium">{t.bookTitle}</p>
-                        {t.borrowType === 'Kolektif' && <Badge className="h-3.5 text-[7px] bg-blue-600 hover:bg-blue-600 border-none font-black uppercase">Kolektif</Badge>}
+                        <p className="text-sm font-bold truncate max-w-[150px]">{t.bookTitle}</p>
+                        {t.borrowType === 'Kolektif' && <Badge className="h-3.5 text-[6px] bg-blue-600 border-none font-black uppercase">Kolektif</Badge>}
                       </div>
-                      <p className="text-xs text-muted-foreground">{t.memberName} • {t.createdAt ? new Date(t.createdAt.seconds * 1000).toLocaleDateString('id-ID') : 'Baru saja'}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{t.memberName} • {t.createdAt ? new Date(t.createdAt.seconds * 1000).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Baru saja'}</p>
                     </div>
                   </div>
-                  <Badge variant={t.type === 'return' ? "outline" : "secondary"}>
-                    {t.type === 'return' ? "Kembali" : "Pinjam"}
+                  <Badge variant={t.type === 'return' ? "outline" : "secondary"} className="text-[8px] font-bold">
+                    {t.type === 'return' ? "KEMBALI" : "PINJAM"}
                   </Badge>
                 </div>
               ))}
