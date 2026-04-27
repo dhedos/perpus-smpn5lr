@@ -61,7 +61,7 @@ export default function ReportsPage() {
   const { data: books, isLoading: loadingBooks } = useCollection(booksRef)
   const { data: settings } = useDoc(settingsRef)
 
-  // Validasi data: Hanya hitung data yang buku & anggotanya masih ada
+  // Validasi data: Hanya hitung data yang buku & anggotanya masih ada di sistem aktif
   const validTransactions = useMemo(() => {
     if (!allTrans || !books || !members) return []
     return allTrans.filter(t => 
@@ -132,13 +132,11 @@ export default function ReportsPage() {
       return;
     }
     
-    // Filter transaksi untuk bulan berjalan saja
     const start = startOfMonth(new Date());
     const end = endOfMonth(new Date());
 
     const targetTrans = validTransactions.filter(t => {
       const transDate = t.createdAt ? new Date(t.createdAt.seconds * 1000) : new Date();
-      // 'Teacher' now includes 'Staff' for report purposes
       const matchesType = type === 'Student' 
         ? t.memberType === 'Student' 
         : (t.memberType === 'Teacher' || t.memberType === 'Staff');
@@ -147,7 +145,7 @@ export default function ReportsPage() {
     });
 
     if (targetTrans.length === 0) {
-      alert(`Tidak ada riwayat pinjaman ${type === 'Student' ? 'Siswa' : 'Guru/Pegawai'} aktif di bulan ini.`);
+      alert(`Tidak ada riwayat pinjaman ${type === 'Student' ? 'Siswa' : 'Guru & Pegawai'} di bulan ini.`);
       return;
     }
 
@@ -158,7 +156,7 @@ export default function ReportsPage() {
     const rowsHtml = targetTrans.map((t, i) => `
       <tr>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${i+1}</td>
-        <td style="border: 1px solid #ccc; padding: 8px;">${t.memberName} (${t.memberType === 'Teacher' ? 'Guru' : t.memberType === 'Staff' ? 'Staf' : 'Siswa'})</td>
+        <td style="border: 1px solid #ccc; padding: 8px;">${t.memberName} (${t.memberType === 'Teacher' ? 'Guru' : t.memberType === 'Staff' ? 'Pegawai' : 'Siswa'})</td>
         <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle} (${t.quantity || 1} Unit)</td>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yy') : '-'}</td>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yy') : 'AKTIF'}</td>
@@ -182,7 +180,7 @@ export default function ReportsPage() {
         </head>
         <body onload="window.print(); window.close();">
           <div class="header">
-            <h3 style="margin-bottom: 5px;">ARSIP BULANAN RIWAYAT PINJAMAN ${label}</h3>
+            <h3 style="margin-bottom: 5px; text-transform: uppercase;">ARSIP BULANAN RIWAYAT PINJAMAN ${label}</h3>
             <div style="text-transform: uppercase; font-size: 11pt;">PERIODE: ${format(new Date(), 'MMMM yyyy')}</div>
           </div>
           <table>
@@ -199,7 +197,7 @@ export default function ReportsPage() {
             <tbody>${rowsHtml}</tbody>
           </table>
           <div class="footer-meta">Dicetak pada: ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
-          <div style="position: fixed; bottom: 5mm; left: 15mm; font-size: 8pt; color: #999;">© 2026 Lantera Baca - Sistem Informasi Perpustakaan</div>
+          <div style="position: fixed; bottom: 5mm; left: 15mm; font-size: 8pt; color: #999;">© 2026 Lantera Baca - Sistem Informasi Perpustakaan Modern</div>
         </body>
       </html>
     `);
@@ -238,7 +236,6 @@ export default function ReportsPage() {
             <div>${settings?.govtInstitution || 'PEMERINTAH KABUPATEN MANGGARAI'}</div>
             <div>${settings?.eduDept || 'DINAS PENDIDIKAN, PEMUDA DAN OLAHRAGA'}</div>
             <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
-            <div style="font-size: 10px;">${settings?.schoolAddress || 'Mando, Compang Carep'}</div>
           </div>
           <div class="report-title">LAPORAN AUDIT & STATISTIK PERPUSTAKAAN</div>
           <div style="margin-bottom: 20px;">Periode Laporan: ${format(new Date(), 'MMMM yyyy')}</div>
@@ -262,34 +259,6 @@ export default function ReportsPage() {
               <div class="stat-value">Rp ${statsData.fines.toLocaleString('id-ID')}</div>
             </div>
           </div>
-
-          <div class="section-title">Kondisi Fisik Koleksi (Berdasarkan Pengembalian)</div>
-          <table>
-            <thead>
-              <tr>
-                <th>Kategori Kondisi</th>
-                <th>Jumlah Unit</th>
-                <th>Persentase</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Normal / Baik</td>
-                <td>${conditionStats.normal}</td>
-                <td>${((conditionStats.normal / (conditionStats.normal + conditionStats.damaged + conditionStats.lost || 1)) * 100).toFixed(1)}%</td>
-              </tr>
-              <tr>
-                <td>Rusak</td>
-                <td>${conditionStats.damaged}</td>
-                <td>${((conditionStats.damaged / (conditionStats.normal + conditionStats.damaged + conditionStats.lost || 1)) * 100).toFixed(1)}%</td>
-              </tr>
-              <tr>
-                <td>Hilang / Tidak Ada</td>
-                <td>${conditionStats.lost}</td>
-                <td>${((conditionStats.lost / (conditionStats.normal + conditionStats.damaged + conditionStats.lost || 1)) * 100).toFixed(1)}%</td>
-              </tr>
-            </tbody>
-          </table>
 
           <div class="footer-sign">
             ${settings?.reportCity || 'Mando'}, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>
@@ -324,7 +293,7 @@ export default function ReportsPage() {
           <DatabaseBackup className="h-5 w-5 text-orange-600" />
           <AlertTitle className="font-bold">PENGINGAT BACKUP BULANAN!</AlertTitle>
           <AlertDescription className="text-sm">
-            Mohon segera unduh cadangan **Riwayat Pinjaman** Siswa dan Guru/Pegawai di bawah ini untuk arsip fisik/digital sekolah bulan ini.
+            Mohon segera unduh cadangan **Riwayat Pinjaman** di bawah ini untuk arsip fisik/digital sekolah bulan ini.
           </AlertDescription>
         </Alert>
       )}
@@ -390,7 +359,7 @@ export default function ReportsPage() {
 
           <Card className="border-none shadow-sm">
             <CardHeader>
-              <CardTitle>Rincian Inventaris Bermasalah</CardTitle>
+              <CardTitle>Inventaris Bermasalah</CardTitle>
               <CardDescription>Buku yang hilang atau perlu diganti.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -407,13 +376,6 @@ export default function ReportsPage() {
                    <span className="text-sm font-semibold">Total Unit Rusak</span>
                  </div>
                  <span className="text-xl font-bold text-orange-700">{conditionStats.damaged}</span>
-               </div>
-               <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100">
-                 <div className="flex items-center gap-3">
-                   <CheckCircle2 className="h-5 w-5 text-green-600" />
-                   <span className="text-sm font-semibold">Unit Kembali Baik</span>
-                 </div>
-                 <span className="text-xl font-bold text-green-700">{conditionStats.normal}</span>
                </div>
             </CardContent>
           </Card>

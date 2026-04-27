@@ -18,7 +18,8 @@ import {
   ExternalLink,
   Table as TableIcon,
   Users,
-  AlertCircle
+  AlertCircle,
+  ShieldAlert
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
@@ -44,7 +45,8 @@ export default function SyncPage() {
   
   const [isSyncingToSheets, setIsSyncingToSheets] = useState(false)
   const [lastSheetUrl, setLastSheetUrl] = useState<string | null>(null)
-  const [showPopupGuide, setShowPopupPopupGuide] = useState(false)
+  const [showPopupGuide, setShowPopupGuide] = useState(false)
+  const [showUnverifiedGuide, setShowUnverifiedGuide] = useState(false)
 
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
@@ -110,21 +112,25 @@ export default function SyncPage() {
     if (!auth || !books || !members) return;
     
     setIsSyncingToSheets(true);
-    setShowPopupPopupGuide(false);
+    setShowPopupGuide(false);
+    setShowUnverifiedGuide(false);
     
     try {
       const provider = new GoogleAuthProvider();
       provider.addScope('https://www.googleapis.com/auth/spreadsheets');
       provider.addScope('https://www.googleapis.com/auth/drive.file');
       
-      // Attempt login
       let result;
       try {
         result = await signInWithPopup(auth, provider);
       } catch (authError: any) {
         if (authError.code === 'auth/popup-blocked') {
-          setShowPopupPopupGuide(true);
-          throw new Error("Jendela Login diblokir oleh browser. Mohon izinkan popup untuk situs ini.");
+          setShowPopupGuide(true);
+          throw new Error("Popup diblokir browser. Izinkan popup untuk melanjutkan.");
+        }
+        if (authError.code === 'auth/popup-closed-by-user') {
+          setShowUnverifiedGuide(true);
+          throw new Error("Proses dibatalkan. Ikuti panduan keamanan di bawah untuk melanjutkan.");
         }
         throw authError;
       }
@@ -134,7 +140,7 @@ export default function SyncPage() {
 
       if (!token) throw new Error("Gagal mendapatkan akses Google.");
 
-      toast({ title: "Berhasil Terhubung", description: "Sedang memproses data ke Cloud..." });
+      toast({ title: "Terhubung", description: "Sedang mengirim data ke Google Drive..." });
 
       const spreadsheetTitle = `DATABASE PERPUSTAKAAN - ${settings?.schoolName || 'SMPN 5'}`;
       
@@ -150,7 +156,7 @@ export default function SyncPage() {
       });
 
       const spreadsheet = await createResponse.json();
-      if (!spreadsheet.spreadsheetId) throw new Error("Gagal membuat file spreadsheet baru.");
+      if (!spreadsheet.spreadsheetId) throw new Error("Gagal membuat file spreadsheet.");
 
       const spreadsheetId = spreadsheet.spreadsheetId;
 
@@ -195,19 +201,17 @@ export default function SyncPage() {
 
       setLastSheetUrl(`https://docs.google.com/spreadsheets/d/${spreadsheetId}`);
       toast({ 
-        title: "Sinkronisasi Sheets Berhasil", 
-        description: "Data Anda telah dikirim ke Google Drive.",
+        title: "Berhasil!", 
+        description: "Data master telah dikirim ke Google Drive Anda.",
       });
 
     } catch (error: any) {
       console.error("Sheets Sync Error:", error);
-      if (!error.message.includes("diblokir")) {
-        toast({ 
-          title: "Gagal Sinkronisasi", 
-          description: error.message || "Pastikan Anda memberikan izin akses Google Sheets.", 
-          variant: "destructive" 
-        });
-      }
+      toast({ 
+        title: "Gagal Sinkronisasi", 
+        description: error.message || "Gagal menghubungi Google Cloud.", 
+        variant: "destructive" 
+      });
     } finally {
       setIsSyncingToSheets(false);
     }
@@ -225,17 +229,35 @@ export default function SyncPage() {
         </Badge>
       </div>
 
-      {showPopupGuide && (
-        <Alert variant="destructive" className="bg-red-50 border-red-200">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Popup Diblokir!</AlertTitle>
-          <AlertDescription className="text-xs">
-            Browser Anda memblokir jendela login Google. Silakan klik ikon gembok/blokir di baris alamat browser Anda dan pilih <b>"Izinkan Popup"</b>, lalu coba lagi.
-          </AlertDescription>
-        </Alert>
-      )}
+      <div className="grid gap-6">
+        {showPopupGuide && (
+          <Alert variant="destructive" className="bg-red-50 border-red-200">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Popup Diblokir!</AlertTitle>
+            <AlertDescription className="text-xs">
+              Browser memblokir jendela login. Klik ikon gembok di baris alamat browser, pilih <b>"Izinkan Popup"</b>, lalu klik sinkronisasi lagi.
+            </AlertDescription>
+          </Alert>
+        )}
 
-      <div className="grid gap-8 md:grid-cols-2 mt-8">
+        {showUnverifiedGuide && (
+          <Alert className="bg-orange-50 border-orange-200 text-orange-800">
+            <ShieldAlert className="h-5 w-5 text-orange-600" />
+            <AlertTitle className="font-bold">Google Belum Memverifikasi Aplikasi Ini?</AlertTitle>
+            <AlertDescription className="text-xs space-y-2">
+              <p>Ini normal karena sistem masih dalam tahap pengembangan. Untuk melanjutkan:</p>
+              <ol className="list-decimal pl-4 space-y-1">
+                <li>Klik tombol <b>Mulai Sinkronisasi</b> lagi.</li>
+                <li>Jika muncul jendela peringatan Google, klik link <b>"Lanjutan" (Advanced)</b> di pojok kiri bawah.</li>
+                <li>Pilih <b>"Buka Pustaka Nusantara (tidak aman)"</b> atau <b>"Go to [App Name] (unsafe)"</b>.</li>
+                <li>Klik <b>Lanjutkan</b> untuk memberikan izin Google Sheets.</li>
+              </ol>
+            </AlertDescription>
+          </Alert>
+        )}
+      </div>
+
+      <div className="grid gap-8 md:grid-cols-2 mt-4">
         <Card className="border-none shadow-sm bg-[#F0F4F8] rounded-3xl p-4">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-3 text-xl font-black text-slate-800">
@@ -259,7 +281,7 @@ export default function SyncPage() {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-500 font-bold">Efisiensi Reload</span>
                 <span className="font-bold text-[#2E6ECE] flex items-center gap-1 cursor-default">
-                  <MousePointer2 className="h-3 w-3 rotate-90" /> Gratis (Tanpa Biaya)
+                  <MousePointer2 className="h-3 w-3 rotate-90" /> Bebas Reload (Gratis)
                 </span>
               </div>
             </div>
@@ -302,14 +324,14 @@ export default function SyncPage() {
                     <span className="text-[9px] font-black uppercase tracking-widest">Reads (Baca)</span>
                   </div>
                   <p className="text-sm font-black text-slate-800">Bebas Reload</p>
-                  <p className="text-[9px] text-slate-400 leading-tight">Data diambil dari memori HP/Laptop Anda. GRATIS.</p>
+                  <p className="text-[9px] text-slate-400 leading-tight">Data diambil dari memori browser. Rp 0,- Biaya.</p>
                </div>
             </div>
 
             <div className="p-5 rounded-2xl bg-blue-50/50 border border-blue-100 flex gap-4">
               <Info className="h-6 w-6 text-[#2E6ECE] shrink-0 mt-0.5" />
               <p className="text-[11px] text-blue-800 leading-relaxed font-medium italic">
-                Anda bebas membuka menu apapun berkali-kali. Sistem ini dirancang untuk kemandirian data sekolah dengan biaya operasional Rp 0,- (Gratis Selamanya).
+                Anda bebas membuka menu apapun berkali-kali tanpa khawatir biaya tambahan. Sistem dirancang untuk efisiensi penuh bagi sekolah.
               </p>
             </div>
           </CardContent>
@@ -324,7 +346,7 @@ export default function SyncPage() {
                   <FileSpreadsheet className="h-7 w-7" />
                   Google Sheets Cloud Sync
                 </CardTitle>
-                <CardDescription className="font-semibold text-slate-500">Kirim data master (Buku & Anggota) ke Spreadsheet Google Anda.</CardDescription>
+                <CardDescription className="font-semibold text-slate-500">Ekspor data master (Buku & Anggota) ke Spreadsheet Google Anda.</CardDescription>
               </div>
               <Badge className="bg-green-600 text-white border-none px-3 py-1 font-bold">EKSPOR CLOUD</Badge>
             </div>
@@ -363,18 +385,6 @@ export default function SyncPage() {
                     <ExternalLink className="h-4 w-4" /> Buka di Sheets
                   </Button>
                 )}
-              </div>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-amber-50 border border-amber-100 flex gap-4">
-              <Info className="h-6 w-6 text-amber-600 shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <p className="text-xs text-amber-900 font-bold uppercase tracking-tight">Cara Kerja Sinkronisasi:</p>
-                <ul className="text-[11px] text-amber-800 space-y-1 list-disc pl-4">
-                  <li>Sistem akan meminta login Google untuk membuat file di Drive Anda.</li>
-                  <li>Satu file baru akan dibuat berisi data Buku dan Anggota terbaru.</li>
-                  <li>Pastikan akun Google Anda memiliki ruang penyimpanan yang cukup.</li>
-                </ul>
               </div>
             </div>
           </CardContent>

@@ -82,7 +82,6 @@ export default function TeacherLoansPage() {
   const [showMemberSuggestions, setShowMemberSuggestions] = useState(false)
   const [showBookSuggestions, setShowBookSuggestions] = useState(false)
 
-  // State Pengembalian Detil
   const [isReturnConfirmOpen, setIsReturnConfirmOpen] = useState(false)
   const [pendingReturnTrans, setPendingReturnTrans] = useState<any>(null)
   const [returnNormalQty, setReturnNormalQty] = useState(0)
@@ -102,7 +101,6 @@ export default function TeacherLoansPage() {
   const { data: allBooksData } = useCollection(booksRef)
   const { data: allTransactions } = useCollection(allTransRef)
 
-  // FILTER KHUSUS GURU & PEGAWAI
   const staffMembers = useMemo(() => {
     if (!allMembersData) return [];
     return allMembersData.filter(m => m.type === 'Teacher' || m.type === 'Staff');
@@ -113,7 +111,6 @@ export default function TeacherLoansPage() {
     return [...allBooksData].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
   }, [allBooksData]);
 
-  // Transaksi aktif
   const activeTransactions = useMemo(() => {
     if (!allTransactions || !allBooksData || !allMembersData) return []
     return allTransactions
@@ -123,14 +120,8 @@ export default function TeacherLoansPage() {
         allBooksData.some(b => b.id === t.bookId) &&
         allMembersData.some(m => m.memberId === t.memberId)
       )
-      .sort((a, b) => {
-        const dateA = a.borrowDate ? new Date(a.borrowDate).getTime() : 0;
-        const dateB = b.borrowDate ? new Date(b.borrowDate).getTime() : 0;
-        return dateB - dateA;
-      })
   }, [allTransactions, allBooksData, allMembersData])
 
-  // RIWAYAT GURU & PEGAWAI BULAN INI
   const historyTransactions = useMemo(() => {
     if (!allTransactions || !allBooksData || !allMembersData) return []
     const start = startOfMonth(new Date());
@@ -368,10 +359,8 @@ export default function TeacherLoansPage() {
       if (bDoc.exists()) {
         const currentTotal = Number(bDoc.data().totalStock || 0)
         const currentAvail = Number(bDoc.data().availableStock || 0)
-        
         const backToShelf = returnNormalQty + returnDamagedQty;
         const permanentLoss = returnLostQty;
-
         updateDoc(bRef, { 
           totalStock: Math.max(0, currentTotal - permanentLoss),
           availableStock: currentAvail + backToShelf
@@ -379,55 +368,6 @@ export default function TeacherLoansPage() {
       }
       toast({ title: "Berhasil!", description: "Pengembalian buku telah dicatat." })
     }).finally(() => setIsProcessing(false))
-  }
-
-  const handlePrintBukti = () => {
-    const targetData = activeTab === "borrow" ? (historyTransactions || []) : filteredActive;
-    if (targetData.length === 0) return
-
-    const printWindow = window.open('', '_blank')
-    if (!printWindow) return
-
-    const rowsHtml = targetData.map((t, index) => `
-      <tr>
-        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
-        <td style="border: 1px solid #ccc; padding: 8px;">${t.memberName} (${t.memberType === 'Teacher' ? 'Guru' : 'Pegawai'})</td>
-        <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle} (${t.quantity || 1} Unit)</td>
-        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.borrowDate ? new Date(t.borrowDate).toLocaleDateString('id-ID') : '-'}</td>
-        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.returnDate ? new Date(t.returnDate).toLocaleDateString('id-ID') : 'DIPEGANG'}</td>
-      </tr>
-    `).join('')
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Riwayat Buku Guru & Pegawai - ${format(new Date(), 'MMMM yyyy')}</title>
-          <style>
-            @page { size: A4; margin: 0; }
-            body { font-family: 'Inter', sans-serif; font-size: 11pt; margin: 0; padding: 15mm; }
-            .print-footer { position: fixed; bottom: 8mm; left: 15mm; right: 15mm; font-size: 8pt; text-align: center; color: #999; border-top: 1px solid #eee; padding-top: 2mm; }
-          </style>
-        </head>
-        <body onload="window.print(); window.close();">
-          <h2 style="text-align: center;">RIWAYAT BUKU PEGANGAN GURU & PEGAWAI (BULAN BERJALAN)</h2>
-          <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-              <tr>
-                <th style="border: 1px solid #ccc; padding: 10px;">No</th>
-                <th style="border: 1px solid #ccc; padding: 10px;">Nama Member</th>
-                <th style="border: 1px solid #ccc; padding: 10px;">Judul Buku</th>
-                <th style="border: 1px solid #ccc; padding: 10px;">Tgl Pinjam</th>
-                <th style="border: 1px solid #ccc; padding: 10px;">Tgl Kembali</th>
-              </tr>
-            </thead>
-            <tbody>${rowsHtml}</tbody>
-          </table>
-          <div class="print-footer">© 2026 Lantera Baca - Sistem Informasi Perpustakaan Modern</div>
-        </body>
-      </html>
-    `)
-    printWindow.document.close()
-    forceUnlockUI()
   }
 
   return (
@@ -439,14 +379,9 @@ export default function TeacherLoansPage() {
           </h1>
           <p className="text-sm text-muted-foreground">Peminjaman khusus untuk kebutuhan mengajar dan operasional sekolah.</p>
         </div>
-        <div className="flex items-center gap-2">
-           <Button variant="outline" size="sm" onClick={handlePrintBukti}>
-             <Printer className="h-4 w-4 mr-2" /> Cetak
-           </Button>
-           <Badge variant="secondary" className="h-9 px-3 bg-blue-100 text-blue-700 border-none font-bold">
-            TA {settings?.academicYear || "2024/2025"}
-          </Badge>
-        </div>
+        <Badge variant="secondary" className="h-9 px-3 bg-blue-100 text-blue-700 border-none font-bold">
+          TA {settings?.academicYear || "2024/2025"}
+        </Badge>
       </div>
 
       <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); forceUnlockUI(); }} className="w-full">
@@ -467,7 +402,6 @@ export default function TeacherLoansPage() {
 
           <div className="grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-1 space-y-6">
-              {/* Pilihan Jenis & Jumlah */}
               <Card className="border-none shadow-sm">
                 <CardHeader className="bg-slate-50/50 pb-4 border-b">
                   <CardTitle className="text-sm flex items-center gap-2 text-primary uppercase tracking-wider font-bold">
@@ -478,70 +412,32 @@ export default function TeacherLoansPage() {
                   <div className="space-y-3">
                     <Label className="text-[10px] font-bold text-muted-foreground uppercase">Jenis Peminjaman</Label>
                     <div className="flex gap-2 p-1 bg-slate-100 rounded-lg">
-                      <Button 
-                        variant={borrowType === "Pribadi" ? "default" : "ghost"} 
-                        className="flex-1 h-9 text-xs font-bold"
-                        onClick={() => setBorrowType("Pribadi")}
-                      >
-                        <User className="h-3 w-3 mr-2" /> Pribadi
-                      </Button>
-                      <Button 
-                        variant={borrowType === "Kolektif" ? "default" : "ghost"} 
-                        className="flex-1 h-9 text-xs font-bold"
-                        onClick={() => setBorrowType("Kolektif")}
-                      >
-                        <Users className="h-3 w-3 mr-2" /> Kolektif
-                      </Button>
+                      <Button variant={borrowType === "Pribadi" ? "default" : "ghost"} className="flex-1 h-9 text-xs font-bold" onClick={() => setBorrowType("Pribadi")}><User className="h-3 w-3 mr-2" /> Pribadi</Button>
+                      <Button variant={borrowType === "Kolektif" ? "default" : "ghost"} className="flex-1 h-9 text-xs font-bold" onClick={() => setBorrowType("Kolektif")}><Users className="h-3 w-3 mr-2" /> Kolektif</Button>
                     </div>
                   </div>
-
                   <div className="space-y-3">
                     <Label className="text-[10px] font-bold text-muted-foreground uppercase">Jumlah Buku</Label>
                     <div className="flex items-center justify-between p-2 border rounded-xl bg-white">
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
-                        className="h-10 w-10 rounded-lg"
-                        onClick={() => setBorrowQuantity(q => Math.max(1, q - 1))}
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
+                      <Button variant="outline" size="icon" className="h-10 w-10 rounded-lg" onClick={() => setBorrowQuantity(q => Math.max(1, q - 1))}><Minus className="h-4 w-4" /></Button>
                       <div className="flex flex-col items-center">
                         <span className="text-2xl font-black">{borrowQuantity}</span>
                         <span className="text-[9px] font-bold text-muted-foreground uppercase">Unit</span>
                       </div>
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
-                        className="h-10 w-10 rounded-lg"
-                        onClick={() => setBorrowQuantity(q => q + 1)}
-                        disabled={selectedBook && borrowQuantity >= (selectedBook.availableStock || 0)}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
+                      <Button variant="outline" size="icon" className="h-10 w-10 rounded-lg" onClick={() => setBorrowQuantity(q => q + 1)} disabled={selectedBook && borrowQuantity >= (selectedBook.availableStock || 0)}><Plus className="h-4 w-4" /></Button>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="border-none shadow-sm bg-blue-50/50">
-                <CardHeader>
-                  <CardTitle className="text-sm font-bold uppercase tracking-wider">Identitas Penyerahan</CardTitle>
-                  <CardDescription>Gunakan Smart Scan di atas atau pilih secara manual.</CardDescription>
-                </CardHeader>
+                <CardHeader><CardTitle className="text-sm font-bold uppercase tracking-wider">Identitas Penyerahan</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold text-muted-foreground uppercase">Pilih Guru/Pegawai</Label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        placeholder="Nama atau NIP..." 
-                        className="pl-10 bg-white"
-                        value={memberSearch}
-                        onChange={e => { setMemberSearch(e.target.value); setShowMemberSuggestions(true); }}
-                        onFocus={() => setShowMemberSuggestions(true)}
-                        onKeyDown={e => e.key === 'Enter' && handleLookup(memberSearch)}
-                      />
+                      <Input placeholder="Nama atau NIP..." className="pl-10 bg-white" value={memberSearch} onChange={e => { setMemberSearch(e.target.value); setShowMemberSuggestions(true); }} onFocus={() => setShowMemberSuggestions(true)} />
                       {showMemberSuggestions && memberSuggestions.length > 0 && (
                         <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border rounded-lg shadow-xl overflow-hidden">
                           {memberSuggestions.map(m => (
@@ -566,19 +462,11 @@ export default function TeacherLoansPage() {
                       </div>
                     )}
                   </div>
-
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold text-muted-foreground uppercase">Pilih Buku Pegangan</Label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        placeholder="Judul atau Kode Buku..." 
-                        className="pl-10 bg-white"
-                        value={bookSearch}
-                        onChange={e => { setBookSearch(e.target.value); setShowBookSuggestions(true); }}
-                        onFocus={() => setShowBookSuggestions(true)}
-                        onKeyDown={e => e.key === 'Enter' && handleLookup(bookSearch)}
-                      />
+                      <Input placeholder="Judul atau Kode Buku..." className="pl-10 bg-white" value={bookSearch} onChange={e => { setBookSearch(e.target.value); setShowBookSuggestions(true); }} onFocus={() => setShowBookSuggestions(true)} />
                       {showBookSuggestions && bookSuggestions.length > 0 && (
                         <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border rounded-lg shadow-xl overflow-hidden">
                           {bookSuggestions.map(b => (
@@ -597,12 +485,7 @@ export default function TeacherLoansPage() {
                       </div>
                     )}
                   </div>
-
-                  <Button 
-                    className="w-full h-12 font-black shadow-lg" 
-                    disabled={!selectedMember || !selectedBook || isProcessing || isLockedForUser}
-                    onClick={handleProcessLoan}
-                  >
+                  <Button className="w-full h-12 font-black shadow-lg" disabled={!selectedMember || !selectedBook || isProcessing || isLockedForUser} onClick={handleProcessLoan}>
                     {isProcessing ? <Loader2 className="animate-spin" /> : "SERAHKAN BUKU"}
                   </Button>
                 </CardContent>
@@ -611,10 +494,7 @@ export default function TeacherLoansPage() {
 
             <Card className="lg:col-span-2 border-none shadow-sm overflow-hidden h-full">
               <CardHeader className="bg-slate-50/50 border-b">
-                <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                  <History className="h-4 w-4 text-primary" /> Riwayat Bulan Ini
-                </CardTitle>
-                <CardDescription className="text-[10px]">Daftar riwayat buku guru & pegawai untuk bulan {format(new Date(), 'MMMM yyyy')}.</CardDescription>
+                <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2"><History className="h-4 w-4 text-primary" /> Riwayat Bulan Ini</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <Table>
@@ -641,9 +521,7 @@ export default function TeacherLoansPage() {
                         <TableCell className="text-xs">{t.bookTitle} ({t.quantity || 1} Unit)</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yy') : '-'}</TableCell>
                         <TableCell className="text-xs font-semibold">{t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yy') : '-'}</TableCell>
-                        <TableCell className="text-right">
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-none text-[8px] font-bold">KEMBALI</Badge>
-                        </TableCell>
+                        <TableCell className="text-right"><Badge variant="outline" className="bg-green-50 text-green-700 border-none text-[8px] font-bold">KEMBALI</Badge></TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -662,22 +540,12 @@ export default function TeacherLoansPage() {
                 <Input placeholder="Cari Nama/NIP Guru/Staf..." className="h-12 bg-white" value={returnSearch} onChange={e => setReturnSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLookup(returnSearch)} />
               </div>
             </Card>
-
             <Card className="md:col-span-2 border-none shadow-sm overflow-hidden">
-              <CardHeader className="pb-3 border-b">
-                <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Buku Member Aktif</CardTitle>
-                <CardDescription>Daftar buku yang saat ini masih dipegang oleh guru atau pegawai.</CardDescription>
-              </CardHeader>
+              <CardHeader className="pb-3 border-b"><CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Buku Member Aktif</CardTitle></CardHeader>
               <CardContent className="p-0">
                 <div className="max-h-[500px] overflow-y-auto">
                   <Table>
-                    <TableHeader className="bg-slate-50/50 sticky top-0 z-10">
-                      <TableRow>
-                        <TableHead className="w-12 text-center">No.</TableHead>
-                        <TableHead>Peminjam & Buku</TableHead>
-                        <TableHead className="text-right">Aksi</TableHead>
-                      </TableRow>
-                    </TableHeader>
+                    <TableHeader className="bg-slate-50/50 sticky top-0 z-10"><TableRow><TableHead className="w-12 text-center">No.</TableHead><TableHead>Peminjam & Buku</TableHead><TableHead className="text-right">Aksi</TableHead></TableRow></TableHeader>
                     <TableBody>
                       {filteredActive.length === 0 ? (
                         <TableRow><TableCell colSpan={3} className="text-center py-12 text-muted-foreground italic">Tidak ada buku aktif.</TableCell></TableRow>
@@ -687,17 +555,10 @@ export default function TeacherLoansPage() {
                           <TableCell>
                             <div className="space-y-1">
                               <div className="font-bold text-sm leading-tight">{t.bookTitle} ({t.quantity || 1} Unit)</div>
-                              <div className="text-xs font-semibold">
-                                {t.memberName} <span className="text-muted-foreground font-normal">/ {t.memberId}</span>
-                                <Badge variant="outline" className="ml-2 text-[7px] h-3 px-1">{t.memberType === 'Teacher' ? 'Guru' : 'Staf'}</Badge>
-                              </div>
+                              <div className="text-xs font-semibold">{t.memberName} / {t.memberId} <Badge variant="outline" className="ml-2 text-[7px] h-3 px-1">{t.memberType === 'Teacher' ? 'Guru' : 'Staf'}</Badge></div>
                             </div>
                           </TableCell>
-                          <TableCell className="text-right">
-                            <Button size="sm" variant="outline" className="h-8 text-xs font-bold" onClick={() => prepareReturn(t)} disabled={isLockedForUser}>
-                              Kembali
-                            </Button>
-                          </TableCell>
+                          <TableCell className="text-right"><Button size="sm" variant="outline" className="h-8 text-xs font-bold" onClick={() => prepareReturn(t)} disabled={isLockedForUser}>Kembali</Button></TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -711,89 +572,41 @@ export default function TeacherLoansPage() {
 
       <Dialog open={isReturnConfirmOpen} onOpenChange={(v) => { setIsReturnConfirmOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-md bg-white border-none shadow-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-primary font-bold">
-              <CheckCircle className="h-5 w-5" /> Konfirmasi Member
-            </DialogTitle>
-            <DialogDescription>Verifikasi kondisi fisik buku saat pengembalian dilakukan.</DialogDescription>
-          </DialogHeader>
-          
+          <DialogHeader><DialogTitle className="flex items-center gap-2 text-primary font-bold"><CheckCircle className="h-5 w-5" /> Konfirmasi Member</DialogTitle></DialogHeader>
           {pendingReturnTrans && (
             <div className="space-y-6 py-4">
               <div className="p-4 bg-slate-50 rounded-xl border space-y-3">
-                <div className="flex-1">
-                  <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Buku & Member</div>
-                  <div className="text-sm font-black">{pendingReturnTrans.bookTitle}</div>
-                  <div className="text-xs font-bold text-primary mt-1">{pendingReturnTrans.memberName} / {pendingReturnTrans.memberId}</div>
-                </div>
+                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Buku & Member</div>
+                <div className="text-sm font-black">{pendingReturnTrans.bookTitle}</div>
+                <div className="text-xs font-bold text-primary mt-1">{pendingReturnTrans.memberName} / {pendingReturnTrans.memberId}</div>
               </div>
-
               <div className="space-y-4">
                 <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Kondisi Pengembalian</div>
                 <div className="grid gap-3">
-                  <div className="flex items-center justify-between p-3 rounded-xl border bg-green-50/50">
-                    <Label className="font-bold text-sm">Kembali Baik</Label>
-                    <div className="w-16 h-8 flex items-center justify-center font-bold bg-white rounded border">
-                      {returnNormalQty}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between p-3 rounded-xl border bg-orange-50/50">
-                    <Label className="font-bold text-sm">Rusak</Label>
-                    <Input 
-                      type="number" 
-                      className="w-16 h-8 text-center font-bold" 
-                      value={returnDamagedQty} 
-                      onChange={(e) => handleDamagedQtyChange(Number(e.target.value))} 
-                    />
-                  </div>
-                  <div className="flex items-center justify-between p-3 rounded-xl border bg-red-50/50">
-                    <Label className="font-bold text-sm">Hilang</Label>
-                    <Input 
-                      type="number" 
-                      className="w-16 h-8 text-center font-bold" 
-                      value={returnLostQty} 
-                      onChange={(e) => handleLostQtyChange(Number(e.target.value))} 
-                    />
-                  </div>
+                  <div className="flex items-center justify-between p-3 rounded-xl border bg-green-50/50"><Label className="font-bold text-sm">Kembali Baik</Label><div className="w-16 h-8 flex items-center justify-center font-bold bg-white rounded border">{returnNormalQty}</div></div>
+                  <div className="flex items-center justify-between p-3 rounded-xl border bg-orange-50/50"><Label className="font-bold text-sm">Rusak</Label><Input type="number" className="w-16 h-8 text-center font-bold" value={returnDamagedQty} onChange={(e) => handleDamagedQtyChange(Number(e.target.value))} /></div>
+                  <div className="flex items-center justify-between p-3 rounded-xl border bg-red-50/50"><Label className="font-bold text-sm">Hilang</Label><Input type="number" className="w-16 h-8 text-center font-bold" value={returnLostQty} onChange={(e) => handleLostQtyChange(Number(e.target.value))} /></div>
                 </div>
               </div>
             </div>
           )}
-
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setIsReturnConfirmOpen(false); forceUnlockUI(); }} disabled={isProcessing} className="flex-1">Batal</Button>
-            <Button onClick={handleConfirmReturn} disabled={isProcessing} className="flex-1 shadow-lg shadow-primary/20">
-              {isProcessing ? <Loader2 className="animate-spin" /> : "Simpan"}
-            </Button>
-          </DialogFooter>
+          <DialogFooter className="gap-2"><Button variant="outline" onClick={() => { setIsReturnConfirmOpen(false); forceUnlockUI(); }} disabled={isProcessing} className="flex-1">Batal</Button><Button onClick={handleConfirmReturn} disabled={isProcessing} className="flex-1 shadow-lg shadow-primary/20">{isProcessing ? <Loader2 className="animate-spin" /> : "Simpan"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isScannerOpen} onOpenChange={o => { if(!o) stopScanner(); }}>
         <DialogContent className="p-0 border-none bg-black max-w-xl h-[100dvh] sm:h-[450px] overflow-hidden rounded-none sm:rounded-3xl">
-          <DialogHeader className="sr-only">
-             <DialogTitle>Pemindai Cerdas Member</DialogTitle>
-             <DialogDescription>Arahkan kamera ke kode buku atau kartu identitas guru/staf.</DialogDescription>
-          </DialogHeader>
           <div id="teacher-smart-scanner" className="w-full h-full bg-black flex items-center justify-center relative min-h-[300px]">
             {hasCameraPermission === false && (
               <div className="p-6 w-full max-w-sm animate-in fade-in zoom-in-95 duration-300">
-                <Alert variant="destructive" className="bg-white/10 border-white/20 text-white">
-                  <CameraOff className="h-4 w-4 text-white" />
-                  <AlertTitle>Akses Kamera Ditolak</AlertTitle>
-                  <AlertDescription className="text-xs opacity-80">
-                    Izin kamera diblokir browser. Silakan aktifkan izin kamera di pengaturan browser Anda.
-                  </AlertDescription>
-                </Alert>
+                <Alert variant="destructive" className="bg-white/10 border-white/20 text-white"><CameraOff className="h-4 w-4 text-white" /><AlertTitle>Akses Kamera Ditolak</AlertTitle><AlertDescription className="text-xs opacity-80">Izin kamera diblokir browser. Silakan aktifkan izin kamera di pengaturan browser Anda.</AlertDescription></Alert>
               </div>
             )}
           </div>
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20 z-50 rounded-full h-12 w-12" onClick={stopScanner}><X className="h-6 w-6" /></Button>
         </DialogContent>
       </Dialog>
-      <div className="text-center py-6 opacity-30">
-        <p className="text-[10px] font-black uppercase tracking-widest">© 2026 Lantera Baca</p>
-      </div>
+      <div className="text-center py-6 opacity-30"><p className="text-[10px] font-black uppercase tracking-widest">© 2026 Lantera Baca</p></div>
     </div>
   )
 }
