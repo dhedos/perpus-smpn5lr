@@ -4,13 +4,13 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { RefreshCw, Zap, Layers, Info, ShieldCheck, AlertTriangle, CheckCircle2, Database, CloudUpload, HardDrive, MousePointer2, HelpCircle, Calculator, FileDown, DatabaseBackup } from "lucide-react"
+import { RefreshCw, Zap, Layers, Info, ShieldCheck, AlertTriangle, CheckCircle2, Database, CloudUpload, HardDrive, MousePointer2, HelpCircle, Calculator, FileDown, DatabaseBackup, Users } from "lucide-react"
 import { useState, useEffect, useMemo } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import { useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
 import { collection, doc } from "firebase/firestore"
-import { format } from "date-fns"
+import { format, parseISO } from "date-fns"
 
 const STORAGE_KEY = 'perpus_local_queue_v3'
 
@@ -99,17 +99,24 @@ export default function SyncPage() {
     const formattedDate = format(now, 'dd MMMM yyyy, HH:mm');
     const schoolName = settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG';
 
-    const booksRows = books.map((b, i) => `<tr><td>${i+1}</td><td>${b.code}</td><td>${b.title}</td><td>${b.totalStock}</td><td>${b.availableStock}</td></tr>`).join('')
-    const membersRows = members.map((m, i) => `<tr><td>${i+1}</td><td>${m.memberId}</td><td>${m.name}</td><td>${m.type}</td><td>${m.classOrSubject || '-'}</td></tr>`).join('')
-    const activeTransRows = transactions.filter(t => t.status === 'active').map((t, i) => `<tr><td>${i+1}</td><td>${t.memberName}</td><td>${t.bookTitle}</td><td>${t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yy') : '-'}</td><td>${t.borrowType}</td></tr>`).join('')
+    const booksRows = books.map((b, i) => `<tr><td style="text-align: center;">${i+1}</td><td>${b.code}</td><td>${b.title}</td><td style="text-align: center;">${b.totalStock}</td><td style="text-align: center;">${b.availableStock}</td></tr>`).join('')
+    const membersRows = members.map((m, i) => `<tr><td style="text-align: center;">${i+1}</td><td>${m.memberId}</td><td>${m.name}</td><td>${m.type}</td><td>${m.classOrSubject || '-'}</td></tr>`).join('')
+    const activeTransRows = transactions.filter(t => t.status === 'active').map((t, i) => `<tr><td style="text-align: center;">${i+1}</td><td>${t.memberName}</td><td>${t.bookTitle}</td><td style="text-align: center;">${t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yy') : '-'}</td><td>${t.borrowType}</td></tr>`).join('')
 
     printWindow.document.write(`
       <html>
         <head>
           <title>Backup Database - ${format(now, 'yyyyMMdd')}</title>
           <style>
-            @page { size: A4; margin: 15mm; }
-            body { font-family: 'Inter', sans-serif; font-size: 9pt; color: #333; line-height: 1.4; }
+            @page { size: A4; margin: 0; }
+            body { 
+              font-family: 'Inter', sans-serif; 
+              font-size: 9pt; 
+              color: #333; 
+              line-height: 1.4; 
+              margin: 0; 
+              padding: 15mm; 
+            }
             .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 5mm; margin-bottom: 10mm; }
             h1 { font-size: 16pt; margin: 0; text-transform: uppercase; }
             h2 { font-size: 11pt; margin-top: 8mm; margin-bottom: 3mm; background: #f0f0f0; padding: 2mm; border-left: 5px solid #1e4b8f; }
@@ -117,7 +124,7 @@ export default function SyncPage() {
             th, td { border: 1px solid #ccc; padding: 2mm; text-align: left; }
             th { background: #fafafa; font-weight: bold; }
             .meta { font-size: 8pt; color: #666; font-style: italic; }
-            .footer { position: fixed; bottom: 0; width: 100%; text-align: center; font-size: 7pt; border-top: 1px solid #eee; padding-top: 2mm; }
+            .footer { position: fixed; bottom: 8mm; left: 15mm; right: 15mm; text-align: center; font-size: 7pt; border-top: 1px solid #eee; padding-top: 2mm; color: #999; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
@@ -144,13 +151,12 @@ export default function SyncPage() {
             <tbody>${activeTransRows}</tbody>
           </table>
 
-          <div class="footer">Arsip Digital Perpustakaan Modern - Dicetak secara otomatis oleh sistem.</div>
+          <div class="footer">© 2026 Lantera Baca - Arsip Digital Otomatis</div>
         </body>
       </html>
     `)
     printWindow.document.close()
 
-    // Update last backup date
     const backupDate = new Date().toISOString()
     localStorage.setItem('perpus_last_backup', backupDate)
     setLastBackup(backupDate)
@@ -221,7 +227,7 @@ export default function SyncPage() {
             <div className="p-4 rounded-xl bg-blue-50 border border-blue-100 flex gap-3">
               <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
               <p className="text-[10px] text-blue-800 leading-relaxed font-medium italic">
-                Peringatan backup akan muncul setiap 3 hari di Beranda. Pastikan Anda mencetak PDF backup dan menyimpannya sebagai arsip digital di Google Drive atau Harddisk sebagai langkah jaga-jaga.
+                Peringatan backup akan muncul setiap 3 hari sebelum akhir bulan di menu Laporan. Pastikan Anda mencetak PDF backup dan menyimpannya sebagai arsip digital.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -234,7 +240,7 @@ export default function SyncPage() {
               </div>
               <div className="p-3 bg-slate-50 rounded-lg border">
                 <div className="flex items-center gap-2 mb-1">
-                  <UsersIcon className="h-3 w-3 text-secondary" />
+                  <Users className="h-3 w-3 text-secondary" />
                   <span className="text-[10px] font-bold uppercase text-muted-foreground">Anggota</span>
                 </div>
                 <div className="text-sm font-black">{members?.length || 0} Orang</div>
