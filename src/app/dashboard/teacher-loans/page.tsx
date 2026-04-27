@@ -618,7 +618,7 @@ export default function TeacherLoansPage() {
                       <TableRow key={t.id}>
                         <TableCell className="text-center text-xs">{index + 1}</TableCell>
                         <TableCell className="font-bold text-xs">{t.memberName}</TableCell>
-                        <TableCell className="text-xs">{t.bookTitle} (${t.quantity || 1} Unit)</TableCell>
+                        <TableCell className="text-xs">{t.bookTitle} ({t.quantity || 1} Unit)</TableCell>
                         <TableCell className="text-right">
                           <Badge variant="outline" className="bg-green-50 text-green-700 border-none text-[8px] font-bold">KEMBALI</Badge>
                         </TableCell>
@@ -664,7 +664,7 @@ export default function TeacherLoansPage() {
                           <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
                           <TableCell>
                             <div className="space-y-1">
-                              <div className="font-bold text-sm leading-tight">{t.bookTitle} (${t.quantity || 1} Unit)</div>
+                              <div className="font-bold text-sm leading-tight">{t.bookTitle} ({t.quantity || 1} Unit)</div>
                               <div className="text-xs font-semibold">{t.memberName} <span className="text-muted-foreground font-normal">/ {t.memberId}</span></div>
                             </div>
                           </TableCell>
@@ -698,7 +698,7 @@ export default function TeacherLoansPage() {
               <div className="p-4 bg-slate-50 rounded-xl border space-y-3">
                 <div className="flex-1">
                   <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Buku & Guru</div>
-                  <div className="text-sm font-black">{pendingReturnTrans.bookTitle} (${pendingReturnTrans.quantity || 1} Unit)</div>
+                  <div className="text-sm font-black">{pendingReturnTrans.bookTitle} ({pendingReturnTrans.quantity || 1} Unit)</div>
                   <div className="text-xs font-bold text-primary mt-1">{pendingReturnTrans.memberName} / {pendingReturnTrans.memberId}</div>
                 </div>
               </div>

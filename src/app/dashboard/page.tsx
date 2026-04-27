@@ -50,7 +50,7 @@ export default function DashboardPage() {
   [db])
 
   const latestTransQuery = useMemoFirebase(() => 
-    db ? query(collection(db, 'transactions'), orderBy('createdAt', 'desc'), limit(5)) : null, 
+    db ? query(collection(db, 'transactions'), orderBy('createdAt', 'desc'), limit(10)) : null, 
   [db])
 
   const { data: books, isLoading: loadingBooks } = useCollection(booksRef)
@@ -58,18 +58,33 @@ export default function DashboardPage() {
   const { data: activeTransactions, isLoading: loadingActive } = useCollection(activeTransQuery)
   const { data: latestTransactions } = useCollection(latestTransQuery)
 
+  // Filter transaksi aktif agar hanya menampilkan yang buku & anggotanya masih ada
+  const filteredActiveTransactions = useMemo(() => {
+    if (!activeTransactions || !books || !members) return []
+    return activeTransactions.filter(t => 
+      books.some(b => b.id === t.bookId) &&
+      members.some(m => m.memberId === t.memberId)
+    )
+  }, [activeTransactions, books, members])
+
+  // Filter transaksi terbaru agar sinkron (tidak menampilkan data dari entitas yang sudah dihapus)
+  const filteredLatestTransactions = useMemo(() => {
+    if (!latestTransactions || !books || !members) return []
+    return latestTransactions.filter(t => 
+      books.some(b => b.id === t.bookId) &&
+      members.some(m => m.memberId === t.memberId)
+    ).slice(0, 5)
+  }, [latestTransactions, books, members])
+
   // Hitung transaksi yang jatuh tempo (overdue) dengan rincian hari terlambat
-  // Filter out deleted books/members
   const overdueTransactions = useMemo(() => {
-    if (!mounted || !activeTransactions || !books || !members) return []
+    if (!mounted || !filteredActiveTransactions) return []
     const now = new Date()
-    return activeTransactions
+    return filteredActiveTransactions
       .filter(t => {
         if (!t.dueDate) return false
         try {
-          const bookExists = books.some(b => b.id === t.bookId);
-          const memberExists = members.some(m => m.memberId === t.memberId);
-          return bookExists && memberExists && isAfter(now, parseISO(t.dueDate))
+          return isAfter(now, parseISO(t.dueDate))
         } catch (e) {
           return false
         }
@@ -78,7 +93,7 @@ export default function DashboardPage() {
         const diff = differenceInDays(now, parseISO(t.dueDate))
         return { ...t, lateDays: diff > 0 ? diff : 0 }
       })
-  }, [activeTransactions, books, members, mounted])
+  }, [filteredActiveTransactions, mounted])
 
   const stats = [
     { 
@@ -99,7 +114,7 @@ export default function DashboardPage() {
     },
     { 
       title: "Peminjaman Aktif", 
-      value: activeTransactions?.length || 0, 
+      value: filteredActiveTransactions.length, 
       desc: "Buku di tangan siswa", 
       icon: Clock, 
       color: "text-blue-500",
@@ -223,9 +238,9 @@ export default function DashboardPage() {
             <div className="divide-y">
               {!latestTransactions ? (
                 <div className="p-10 text-center"><Loader2 className="animate-spin mx-auto h-6 w-6 text-muted-foreground" /></div>
-              ) : latestTransactions.length === 0 ? (
+              ) : filteredLatestTransactions.length === 0 ? (
                 <div className="p-10 text-center text-sm text-muted-foreground">Belum ada transaksi.</div>
-              ) : latestTransactions.map((t) => (
+              ) : filteredLatestTransactions.map((t) => (
                 <div key={t.id} className="flex items-center justify-between px-6 py-4 hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className={t.type === 'return' ? "bg-green-100 text-green-600 p-2 rounded-full" : "bg-blue-100 text-blue-600 p-2 rounded-full"}>
