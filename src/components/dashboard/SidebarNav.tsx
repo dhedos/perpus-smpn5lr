@@ -38,7 +38,7 @@ const menuItems = [
   { icon: LayoutDashboard, label: "Beranda", href: "/dashboard" },
   { icon: BookOpen, label: "Koleksi Buku", href: "/dashboard/books" },
   { icon: Users, label: "Daftar Anggota", href: "/dashboard/members" },
-  { icon: GraduationCap, label: "Buku Guru & Pegawai", href: "/dashboard/teacher-loans" },
+  { icon: GraduationCap, label: "Buku Pegangan Guru", href: "/dashboard/teacher-loans" },
   { icon: ArrowLeftRight, label: "Pinjam & Kembali Siswa", href: "/dashboard/transactions" },
   { icon: BarChart3, label: "Laporan", href: "/dashboard/reports" },
 ]

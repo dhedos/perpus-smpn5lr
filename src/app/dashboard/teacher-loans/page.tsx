@@ -435,7 +435,7 @@ export default function TeacherLoansPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
-            <GraduationCap className="h-7 w-7" /> Buku Guru & Pegawai
+            <GraduationCap className="h-7 w-7" /> Buku Pegangan Guru & Pinjaman Pegawai
           </h1>
           <p className="text-sm text-muted-foreground">Peminjaman khusus untuk kebutuhan mengajar dan operasional sekolah.</p>
         </div>
