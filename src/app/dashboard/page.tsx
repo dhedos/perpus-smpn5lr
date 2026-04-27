@@ -45,10 +45,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setMounted(true)
-    // Logika Pengingat Backup: 3 hari terakhir di setiap bulan
+    // Logika Pengingat Backup: 4 hari terakhir di setiap bulan (Contoh: 27, 28, 29, 30 jika bulan berakhir di 30)
     const now = new Date();
     const lastDay = lastDayOfMonth(now).getDate();
-    const reminderStartDay = lastDay - 2; // Misal 31-2 = 29, 30, 31 (3 hari terakhir)
+    const reminderStartDay = lastDay - 3; 
     if (now.getDate() >= reminderStartDay) {
       setShowMonthlyReminder(true);
     }

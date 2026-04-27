@@ -44,7 +44,7 @@ export default function ReportsPage() {
     setMounted(true)
     const now = new Date();
     const lastDay = lastDayOfMonth(now).getDate();
-    const reminderStartDay = lastDay - 2; 
+    const reminderStartDay = lastDay - 3; 
     
     if (now.getDate() >= reminderStartDay) {
       setShowMonthlyReminder(true);
