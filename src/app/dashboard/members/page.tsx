@@ -258,7 +258,6 @@ function MembersContent() {
 
     const cardsHtml = filteredMembers.map(member => {
       const detailLabel = member.type === 'Teacher' ? 'GURU' : member.type === 'Staff' ? 'PEGAWAI' : 'KELAS';
-      // Gunakan encodeURIComponent untuk memastikan QR Code terkirim dengan benar ke API
       const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=M&data=${encodeURIComponent(member.memberId)}`;
       
       return `
@@ -352,15 +351,15 @@ function MembersContent() {
             .qr-section { flex: 1; display: flex; justify-content: center; align-items: center; padding: 1mm 4mm; }
             .qr-section img { width: 34mm; height: 34mm; border: none; }
             
-            .info-section { padding-bottom: 16.5mm; }
-            .member-name { font-size: 8.2pt; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 0.5mm; padding: 0 1mm; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+            .info-section { padding-bottom: 15.5mm; }
+            .member-name { font-size: 7.8pt; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 0.5mm; padding: 0 1mm; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
             .member-id { font-size: 10pt; font-weight: 800; color: #1e4b8f; font-family: monospace; line-height: 1; }
             .member-detail { font-size: 6.5pt; font-weight: 800; color: #666; text-transform: uppercase; margin-top: 0.8mm; }
             
             .footer { 
               background: #1e4b8f !important; 
               color: #fff !important; 
-              height: 11mm;
+              height: 10mm;
               display: flex;
               flex-direction: column;
               align-items: center;
@@ -393,7 +392,27 @@ function MembersContent() {
             }
           </style>
         </head>
-        <body onload="setTimeout(() => { window.print(); window.close(); }, 1500);">
+        <body onload="
+          const imgs = document.getElementsByTagName('img');
+          let loaded = 0;
+          const checkLoad = () => {
+            loaded++;
+            if (loaded === imgs.length) {
+              setTimeout(() => { window.print(); window.close(); }, 500);
+            }
+          };
+          if (imgs.length === 0) {
+            window.print(); window.close();
+          } else {
+            Array.from(imgs).forEach(img => {
+              if (img.complete) checkLoad();
+              else {
+                img.onload = checkLoad;
+                img.onerror = checkLoad;
+              }
+            });
+          }
+        ">
           <div class="print-grid">
             ${cardsHtml}
           </div>
@@ -474,15 +493,15 @@ function MembersContent() {
             .qr-section { flex: 1; display: flex; justify-content: center; align-items: center; padding: 1mm 4mm; }
             .qr-section img { width: 34mm; height: 34mm; border: none; }
             
-            .info-section { padding-bottom: 16.5mm; }
-            .member-name { font-size: 8.2pt; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 0.5mm; padding: 0 1mm; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+            .info-section { padding-bottom: 15.5mm; }
+            .member-name { font-size: 7.8pt; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 0.5mm; padding: 0 1mm; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
             .member-id { font-size: 10pt; font-weight: 800; color: #1e4b8f; font-family: monospace; line-height: 1; }
             .member-detail { font-size: 6.5pt; font-weight: 800; color: #666; text-transform: uppercase; margin-top: 0.8mm; }
             
             .footer { 
               background: #1e4b8f !important; 
               color: #fff !important; 
-              height: 11mm;
+              height: 10mm;
               display: flex;
               flex-direction: column;
               align-items: center;
@@ -515,7 +534,12 @@ function MembersContent() {
             }
           </style>
         </head>
-        <body onload="setTimeout(() => { window.print(); window.close(); }, 1000);">
+        <body onload="
+          const img = document.querySelector('img');
+          if (!img) { window.print(); window.close(); }
+          else if (img.complete) { window.print(); window.close(); }
+          else { img.onload = () => { window.print(); window.close(); }; img.onerror = () => { window.print(); window.close(); }; }
+        ">
           <div class="card-container">
             <div class="header-box">
               <div class="school-name">${schoolName}</div>
