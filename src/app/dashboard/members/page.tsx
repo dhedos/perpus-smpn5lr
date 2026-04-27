@@ -24,7 +24,8 @@ import {
   Printer,
   ChevronDown,
   X,
-  Filter
+  Filter,
+  CreditCard
 } from "lucide-react"
 import { 
   Dialog, 
@@ -48,7 +49,8 @@ import {
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
 import {
   AlertDialog,
@@ -162,26 +164,26 @@ function MembersContent() {
     setIsOpen(true);
   }
 
-  const handlePrintTable = (type: 'Student' | 'Teacher' | 'Staff') => {
-    const targetData = filteredMembers.filter(m => m.type === type)
+  const handlePrintTable = (type: 'Student' | 'Teacher' | 'Staff' | 'all') => {
+    const targetData = type === 'all' ? filteredMembers : filteredMembers.filter(m => m.type === type)
     if (targetData.length === 0) {
-      toast({ title: "Data Kosong", description: `Tidak ada data ${type === 'Student' ? 'Siswa' : type === 'Teacher' ? 'Guru' : 'Pegawai'} untuk dicetak.` })
+      toast({ title: "Data Kosong", description: "Tidak ada data untuk dicetak." })
       return
     }
 
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
-    const labelType = type === 'Student' ? 'SISWA' : type === 'Teacher' ? 'GURU' : 'PEGAWAI'
-    const classLabel = type === 'Student' ? 'Kelas' : type === 'Teacher' ? 'Mengajar / Kelas' : 'Jabatan / Bagian'
+    const labelType = type === 'Student' ? 'SISWA' : type === 'Teacher' ? 'GURU' : type === 'Staff' ? 'PEGAWAI' : 'SELURUH'
+    const classLabel = "Keterangan / Kelas"
 
     const rowsHtml = targetData.map((m, index) => `
       <tr>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
         <td style="border: 1px solid #ccc; padding: 8px; font-family: monospace;">${m.memberId}</td>
         <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold;">${m.name}</td>
+        <td style="border: 1px solid #ccc; padding: 8px;">${m.type === 'Student' ? 'Siswa' : m.type === 'Teacher' ? 'Guru' : 'Pegawai'}</td>
         <td style="border: 1px solid #ccc; padding: 8px;">${m.classOrSubject || '-'}</td>
-        <td style="border: 1px solid #ccc; padding: 8px;">${m.phone || '-'}</td>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${m.joinDate || '-'}</td>
       </tr>
     `).join('')
@@ -215,8 +217,8 @@ function MembersContent() {
                 <th style="width: 30px; text-align: center;">No</th>
                 <th>ID Anggota</th>
                 <th>Nama Lengkap</th>
+                <th>Kategori</th>
                 <th>${classLabel}</th>
-                <th>No. Telepon</th>
                 <th>Tgl Terdaftar</th>
               </tr>
             </thead>
@@ -236,6 +238,169 @@ function MembersContent() {
     forceUnlockUI()
   }
 
+  const handlePrintAllCards = () => {
+    if (filteredMembers.length === 0) {
+      toast({ title: "Data Kosong", description: "Tidak ada data anggota untuk dicetak." })
+      return
+    }
+
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+
+    const rawAddress = settings?.schoolAddress || 'Mando, Kelurahan Compang Carep, Kec. Langke Rembong';
+    const shortAddress = rawAddress
+      .replace(/Kelurahan/gi, 'Kel.')
+      .replace(/Kecamatan/gi, 'Kec.')
+      .replace(/Kabupaten/gi, 'Kab.');
+
+    const libName = settings?.libraryName || 'PUSTAKA NUSANTARA';
+    const schoolName = settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG';
+
+    const cardsHtml = filteredMembers.map(member => {
+      const detailLabel = member.type === 'Teacher' ? 'GURU' : member.type === 'Staff' ? 'PEGAWAI' : 'KELAS';
+      return `
+        <div class="card-container">
+          <div class="header-box">
+            <div class="school-name">${schoolName}</div>
+            <div class="address">${shortAddress}</div>
+          </div>
+          
+          <div class="card-title-box">
+            <div class="card-title">KARTU ANGGOTA<br/>PERPUSTAKAAN</div>
+          </div>
+          
+          <div class="qr-section">
+             <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${member.memberId}" />
+          </div>
+          
+          <div class="info-section">
+            <div class="member-name">${member.name}</div>
+            <div class="member-id">${member.memberId}</div>
+            <div class="member-detail">${detailLabel}: ${member.classOrSubject || '-'}</div>
+          </div>
+          
+          <div class="footer">
+            <div class="footer-text">${libName}</div>
+            <div class="footer-subtext">Kartu ini digunakan untuk proses peminjaman & pengembalian koleksi buku sekolah</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title> </title>
+          <style>
+            @page { size: A4; margin: 10mm; }
+            body { margin: 0; padding: 0; background: #fff; font-family: 'Inter', sans-serif; }
+            .print-grid {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 5mm;
+              justify-items: center;
+            }
+            .card-container {
+              width: 54mm;
+              height: 86mm;
+              border: 0.1pt solid #eee;
+              box-sizing: border-box;
+              display: flex;
+              flex-direction: column;
+              background: #fff;
+              text-align: center;
+              position: relative;
+              overflow: hidden;
+              page-break-inside: avoid;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+              margin-bottom: 5mm;
+            }
+            .header-box { padding: 4mm 2mm 1mm 2mm; }
+            .school-name { 
+              font-size: 8.5pt; 
+              font-weight: 900; 
+              color: #1e4b8f; 
+              text-transform: uppercase; 
+              margin: 0; 
+              line-height: 1.1; 
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+            .address { 
+              font-size: 4.8pt; 
+              color: #444; 
+              margin-top: 1mm; 
+              font-weight: 500; 
+              line-height: 1.2; 
+              white-space: nowrap;
+              padding-bottom: 0.8mm;
+              border-bottom: 0.8pt solid #000;
+              margin-left: 1mm;
+              margin-right: 1mm;
+              text-transform: none;
+              overflow: hidden;
+            }
+            
+            .card-title-box { margin-top: 2.5mm; }
+            .card-title { font-size: 7.5pt; font-weight: 800; color: #000; text-transform: uppercase; line-height: 1.1; letter-spacing: 0.2px; }
+            
+            .qr-section { flex: 1; display: flex; justify-content: center; align-items: center; padding: 1mm 4mm; }
+            .qr-section img { width: 34mm; height: 34mm; border: none; }
+            
+            .info-section { padding-bottom: 15mm; }
+            .member-name { font-size: 9.5pt; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 0.5mm; padding: 0 1mm; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+            .member-id { font-size: 10.5pt; font-weight: 800; color: #1e4b8f; font-family: monospace; line-height: 1; }
+            .member-detail { font-size: 7pt; font-weight: 800; color: #666; text-transform: uppercase; margin-top: 0.8mm; }
+            
+            .footer { 
+              background: #1e4b8f !important; 
+              color: #fff !important; 
+              height: 14mm;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              width: 100%; 
+              position: absolute; 
+              bottom: 0; 
+              left: 0;
+              padding: 0 1.5mm;
+              box-sizing: border-box;
+            }
+            .footer-text { 
+              font-size: 10.5pt; 
+              font-weight: 900; 
+              text-transform: uppercase; 
+              letter-spacing: 1.5px; 
+              color: #fff !important; 
+              line-height: 1.1;
+            }
+            .footer-subtext {
+              font-size: 4pt;
+              font-weight: 500;
+              color: rgba(255, 255, 255, 0.9) !important;
+              text-transform: none;
+              letter-spacing: 0;
+              margin-top: 0.8mm;
+              line-height: 1.1;
+              max-width: 95%;
+              text-align: center;
+            }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          <div class="print-grid">
+            ${cardsHtml}
+          </div>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
+    forceUnlockUI()
+  }
+
   const handlePrintSingleCard = (member: any) => {
     if (!member) return
     const printWindow = window.open('', '_blank')
@@ -248,6 +413,7 @@ function MembersContent() {
       .replace(/Kabupaten/gi, 'Kab.');
 
     const libName = settings?.libraryName || 'PUSTAKA NUSANTARA';
+    const schoolName = settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG';
     const detailLabel = member.type === 'Teacher' ? 'GURU' : member.type === 'Staff' ? 'PEGAWAI' : 'KELAS';
 
     printWindow.document.write(`
@@ -348,7 +514,7 @@ function MembersContent() {
         <body onload="window.print(); window.close();">
           <div class="card-container">
             <div class="header-box">
-              <div class="school-name">${settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG'}</div>
+              <div class="school-name">${schoolName}</div>
               <div class="address">${shortAddress}</div>
             </div>
             
@@ -433,13 +599,26 @@ function MembersContent() {
           <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="gap-2">
-                <Printer className="h-4 w-4" /> Cetak Daftar Anggota
+                <Printer className="h-4 w-4" /> Opsi Cetak
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handlePrintTable('Student'); }}>Daftar Siswa</DropdownMenuItem>
-              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handlePrintTable('Teacher'); }}>Daftar Guru</DropdownMenuItem>
-              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handlePrintTable('Staff'); }}>Daftar Pegawai</DropdownMenuItem>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handlePrintTable('all'); }}>
+                Daftar Seluruh Anggota
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handlePrintTable('Student'); }}>
+                Daftar Siswa Saja
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handlePrintTable('Teacher'); }}>
+                Daftar Guru Saja
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handlePrintTable('Staff'); }}>
+                Daftar Pegawai Saja
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="font-bold text-primary" onSelect={(e) => { e.preventDefault(); handlePrintAllCards(); }}>
+                <CreditCard className="h-4 w-4 mr-2" /> Cetak Semua Kartu
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button onClick={handleOpenAdd} className="gap-2"><UserPlus className="h-4 w-4" /> Tambah Anggota</Button>
