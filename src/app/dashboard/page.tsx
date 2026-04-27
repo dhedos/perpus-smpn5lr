@@ -15,7 +15,8 @@ import {
   Library,
   TrendingUp,
   AlertTriangle,
-  ChevronRight
+  ChevronRight,
+  Layers
 } from "lucide-react"
 import { 
   BarChart, 
@@ -28,7 +29,7 @@ import {
 } from "recharts"
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, query, where, orderBy, limit } from "firebase/firestore"
-import { isAfter, parseISO, differenceInDays } from "date-fns"
+import { isAfter, parseISO, differenceInDays, startOfDay } from "date-fns"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
@@ -79,19 +80,20 @@ export default function DashboardPage() {
   // Hitung transaksi yang jatuh tempo (overdue) dengan rincian hari terlambat
   const overdueTransactions = useMemo(() => {
     if (!mounted || !filteredActiveTransactions) return []
-    const now = new Date()
+    const now = startOfDay(new Date())
     return filteredActiveTransactions
       .filter(t => {
         if (!t.dueDate) return false
         try {
-          return isAfter(now, parseISO(t.dueDate))
+          return isAfter(now, startOfDay(parseISO(t.dueDate)))
         } catch (e) {
           return false
         }
       })
       .map(t => {
         const diff = differenceInDays(now, parseISO(t.dueDate))
-        return { ...t, lateDays: diff > 0 ? diff : 0 }
+        const duration = differenceInDays(now, parseISO(t.borrowDate))
+        return { ...t, lateDays: diff > 0 ? diff : 0, currentDuration: duration }
       })
   }, [filteredActiveTransactions, mounted])
 
@@ -173,12 +175,24 @@ export default function DashboardPage() {
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {overdueTransactions.slice(0, 6).map((t) => (
-                <div key={t.id} className="bg-white/70 p-3 rounded-lg border border-destructive/10 flex flex-col gap-1 shadow-sm">
+                <div key={t.id} className="bg-white/70 p-3 rounded-lg border border-destructive/10 flex flex-col gap-1 shadow-sm relative overflow-hidden">
+                  {t.borrowType === 'Kolektif' && (
+                    <div className="absolute top-0 right-0 bg-blue-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded-bl-md uppercase">
+                      Kolektif
+                    </div>
+                  )}
                   <div className="font-bold text-xs truncate text-destructive">{t.bookTitle}</div>
                   <div className="text-[10px] font-semibold text-muted-foreground truncate">{t.memberName} ({t.classOrSubject})</div>
-                  <Badge variant="destructive" className="h-4 text-[8px] w-fit mt-1 border-none font-bold">
-                    Terlambat {t.lateDays} Hari
-                  </Badge>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <Badge variant="destructive" className="h-4 text-[8px] w-fit border-none font-bold">
+                      Terlambat {t.lateDays} Hari
+                    </Badge>
+                    {t.borrowType === 'Kolektif' && (
+                      <span className="text-[8px] font-bold text-blue-600 flex items-center gap-0.5">
+                        <Clock className="h-2 w-2" /> {t.currentDuration} Hari
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -244,10 +258,13 @@ export default function DashboardPage() {
                 <div key={t.id} className="flex items-center justify-between px-6 py-4 hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className={t.type === 'return' ? "bg-green-100 text-green-600 p-2 rounded-full" : "bg-blue-100 text-blue-600 p-2 rounded-full"}>
-                      {t.type === 'return' ? <AlertTriangle className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+                      {t.type === 'return' ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
                     </div>
                     <div>
-                      <p className="text-sm font-medium">{t.bookTitle}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium">{t.bookTitle}</p>
+                        {t.borrowType === 'Kolektif' && <Badge className="h-3.5 text-[7px] bg-blue-600 hover:bg-blue-600 border-none font-black uppercase">Kolektif</Badge>}
+                      </div>
                       <p className="text-xs text-muted-foreground">{t.memberName} • {t.createdAt ? new Date(t.createdAt.seconds * 1000).toLocaleDateString('id-ID') : 'Baru saja'}</p>
                     </div>
                   </div>

@@ -25,7 +25,8 @@ import {
   CameraOff,
   Minus,
   Plus,
-  Users
+  Users,
+  Clock
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -324,7 +325,7 @@ function TransactionsContent() {
       <tr>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
         <td style="border: 1px solid #ccc; padding: 8px;">${t.memberName}</td>
-        <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle}</td>
+        <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle} ${t.borrowType === 'Kolektif' ? '(KOLEKTIF)' : ''}</td>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yyyy') : '-'}</td>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yyyy') : 'PINJAM'}</td>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">${(t.fineAmount || 0).toLocaleString()}</td>
@@ -740,25 +741,35 @@ function TransactionsContent() {
                       <TableBody>
                         {filteredActiveTrans.length === 0 ? (
                           <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground italic">Tidak ada peminjaman siswa aktif.</TableCell></TableRow>
-                        ) : filteredActiveTrans.map((t, index) => (
-                          <TableRow key={t.id}>
-                            <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
-                            <TableCell>
-                              <div className="space-y-1">
-                                <div className="font-bold text-sm leading-tight">{t.bookTitle}</div>
-                                <div className="text-xs font-semibold">{t.memberName} <span className="text-muted-foreground font-normal">/ {t.memberId}</span></div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-xs font-bold text-muted-foreground">
-                              {t.dueDate ? format(parseISO(t.dueDate), 'dd/MM/yyyy') : '-'}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button size="sm" variant="outline" className="h-8 text-xs font-bold" onClick={() => prepareReturn(t)}>
-                                Terima
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        ) : filteredActiveTrans.map((t, index) => {
+                          const borrowedDays = differenceInDays(new Date(), parseISO(t.borrowDate));
+                          return (
+                            <TableRow key={t.id}>
+                              <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
+                              <TableCell>
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <div className="font-bold text-sm leading-tight">{t.bookTitle}</div>
+                                    {t.borrowType === 'Kolektif' && (
+                                      <Badge variant="outline" className="h-4 text-[7px] bg-blue-900 text-white border-none flex items-center gap-1 font-black">
+                                        <Clock className="h-2 w-2" /> {borrowedDays} HARI
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="text-xs font-semibold">{t.memberName} <span className="text-muted-foreground font-normal">/ {t.memberId}</span></div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-xs font-bold text-muted-foreground">
+                                {t.dueDate ? format(parseISO(t.dueDate), 'dd/MM/yyyy') : '-'}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button size="sm" variant="outline" className="h-8 text-xs font-bold" onClick={() => prepareReturn(t)}>
+                                  Terima
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
                       </TableBody>
                     </Table>
                   </div>
@@ -785,6 +796,7 @@ function TransactionsContent() {
                   <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Buku & Peminjam</div>
                   <div className="text-sm font-black">{pendingReturnTrans.bookTitle}</div>
                   <div className="text-xs font-bold text-primary mt-1">{pendingReturnTrans.memberName} / {pendingReturnTrans.memberId}</div>
+                  {pendingReturnTrans.borrowType === 'Kolektif' && <Badge className="mt-2 h-4 text-[7px] bg-blue-600 font-black uppercase">Durasi Pinjam: {differenceInDays(new Date(), parseISO(pendingReturnTrans.borrowDate))} Hari</Badge>}
                 </div>
               </div>
 
