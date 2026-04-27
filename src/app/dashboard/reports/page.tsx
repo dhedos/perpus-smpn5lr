@@ -13,7 +13,11 @@ import {
   Ghost,
   ShieldAlert,
   CheckCircle2,
-  Loader2
+  Loader2,
+  DatabaseBackup,
+  Download,
+  AlertCircle,
+  FileDown
 } from "lucide-react"
 import { 
   BarChart, 
@@ -27,14 +31,23 @@ import {
 } from "recharts"
 import { useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
 import { collection, doc } from "firebase/firestore"
-import { isAfter, parseISO, startOfMonth, isWithinInterval, endOfMonth, format } from "date-fns"
+import { isAfter, parseISO, startOfMonth, isWithinInterval, endOfMonth, format, lastDayOfMonth } from "date-fns"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function ReportsPage() {
   const db = useFirestore()
   const [mounted, setMounted] = useState(false)
+  const [showMonthlyReminder, setShowMonthlyReminder] = useState(false)
 
   useEffect(() => {
     setMounted(true)
+    const now = new Date();
+    const lastDay = lastDayOfMonth(now).getDate();
+    const reminderStartDay = lastDay - 3; // Misal 31-3 = 28
+    
+    if (now.getDate() >= reminderStartDay) {
+      setShowMonthlyReminder(true);
+    }
   }, [])
 
   const transRef = useMemoFirebase(() => db ? collection(db, 'transactions') : null, [db])
@@ -100,6 +113,52 @@ export default function ReportsPage() {
   ]
 
   const isLoading = loadingTrans || loadingMembers;
+
+  const handlePrintMemberType = (type: 'Student' | 'Teacher') => {
+    if (!members) return;
+    const targetMembers = members.filter(m => m.type === type);
+    if (targetMembers.length === 0) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const label = type === 'Student' ? 'SISWA' : 'GURU/STAF';
+    const rowsHtml = targetMembers.map((m, i) => `
+      <tr>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${i+1}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; font-family: monospace;">${m.memberId || '-'}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold;">${m.name}</td>
+        <td style="border: 1px solid #ccc; padding: 8px;">${m.classOrSubject || '-'}</td>
+      </tr>
+    `).join('');
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Data Anggota - ${label}</title>
+          <style>
+            @page { size: A4; margin: 0; }
+            body { font-family: 'Inter', sans-serif; font-size: 11pt; padding: 15mm; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+            th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+            th { background: #f9f9f9; }
+            .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 5mm; margin-bottom: 10mm; }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          <div class="header">
+            <h3>BACKUP DATA ANGGOTA PERPUSTAKAAN (${label})</h3>
+            <div style="font-size: 9pt;">Waktu Ekspor: ${format(new Date(), 'dd MMMM yyyy, HH:mm')}</div>
+          </div>
+          <table>
+            <thead><tr><th>No</th><th>ID Anggota</th><th>Nama Lengkap</th><th>Keterangan/Kelas</th></tr></thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   const handlePrintFullReport = () => {
     if (!statsData) return
@@ -209,10 +268,20 @@ export default function ReportsPage() {
         
         <div className="flex gap-2">
           <Button className="gap-2 shadow-lg" onClick={handlePrintFullReport} disabled={isLoading}>
-            <Printer className="h-4 w-4" /> Cetak Laporan Lengkap
+            <Printer className="h-4 w-4" /> Cetak Laporan Audit
           </Button>
         </div>
       </div>
+
+      {showMonthlyReminder && (
+        <Alert className="bg-orange-50 border-orange-200 text-orange-800 animate-in slide-in-from-top-4">
+          <DatabaseBackup className="h-5 w-5 text-orange-600" />
+          <AlertTitle className="font-bold">WAKTUNYA BACKUP BULANAN!</AlertTitle>
+          <AlertDescription className="text-sm">
+            Ini adalah 3 hari terakhir di bulan ini. Mohon segera unduh cadangan data Siswa dan Guru di bawah ini untuk arsip bulanan.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="md:col-span-2 border-none shadow-sm">
@@ -243,38 +312,66 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm">
-          <CardHeader>
-            <CardTitle>Rincian Inventaris Bermasalah</CardTitle>
-            <CardDescription>Buku yang hilang atau perlu diganti.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-             <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-100">
-               <div className="flex items-center gap-3">
-                 <Ghost className="h-5 w-5 text-red-600" />
-                 <span className="text-sm font-semibold">Total Unit Hilang</span>
+        <div className="space-y-6">
+          <Card className="border-none shadow-sm bg-primary/5 border-primary/10">
+            <CardHeader>
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <FileDown className="h-4 w-4 text-primary" /> Backup Data Terpisah
+              </CardTitle>
+              <CardDescription className="text-[10px]">Unduh arsip digital anggota secara spesifik.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3">
+              <Button 
+                variant="outline" 
+                className="w-full justify-between font-bold h-11 border-primary/20 hover:bg-primary/10"
+                onClick={() => handlePrintMemberType('Student')}
+                disabled={isLoading}
+              >
+                Data Seluruh Siswa
+                <Download className="h-4 w-4 ml-2" />
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full justify-between font-bold h-11 border-primary/20 hover:bg-primary/10"
+                onClick={() => handlePrintMemberType('Teacher')}
+                disabled={isLoading}
+              >
+                Data Guru & Staf
+                <Download className="h-4 w-4 ml-2" />
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-sm">
+            <CardHeader>
+              <CardTitle>Rincian Inventaris Bermasalah</CardTitle>
+              <CardDescription>Buku yang hilang atau perlu diganti.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+               <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-100">
+                 <div className="flex items-center gap-3">
+                   <Ghost className="h-5 w-5 text-red-600" />
+                   <span className="text-sm font-semibold">Total Unit Hilang</span>
+                 </div>
+                 <span className="text-xl font-bold text-red-700">{conditionStats.lost}</span>
                </div>
-               <span className="text-xl font-bold text-red-700">{conditionStats.lost}</span>
-             </div>
-             <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-100">
-               <div className="flex items-center gap-3">
-                 <ShieldAlert className="h-5 w-5 text-orange-600" />
-                 <span className="text-sm font-semibold">Total Unit Rusak</span>
+               <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-100">
+                 <div className="flex items-center gap-3">
+                   <ShieldAlert className="h-5 w-5 text-orange-600" />
+                   <span className="text-sm font-semibold">Total Unit Rusak</span>
+                 </div>
+                 <span className="text-xl font-bold text-orange-700">{conditionStats.damaged}</span>
                </div>
-               <span className="text-xl font-bold text-orange-700">{conditionStats.damaged}</span>
-             </div>
-             <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100">
-               <div className="flex items-center gap-3">
-                 <CheckCircle2 className="h-5 w-5 text-green-600" />
-                 <span className="text-sm font-semibold">Unit Kembali Baik</span>
+               <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100">
+                 <div className="flex items-center gap-3">
+                   <CheckCircle2 className="h-5 w-5 text-green-600" />
+                   <span className="text-sm font-semibold">Unit Kembali Baik</span>
+                 </div>
+                 <span className="text-xl font-bold text-green-700">{conditionStats.normal}</span>
                </div>
-               <span className="text-xl font-bold text-green-700">{conditionStats.normal}</span>
-             </div>
-             <p className="text-[10px] text-muted-foreground mt-4 italic text-center leading-relaxed">
-               Data dihitung berdasarkan rincian kondisi saat pengembalian buku dilakukan oleh petugas.
-             </p>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <div className="text-center py-6 opacity-30">

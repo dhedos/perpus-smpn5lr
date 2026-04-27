@@ -16,9 +16,7 @@ import {
   TrendingUp,
   AlertTriangle,
   ChevronRight,
-  Layers,
-  DatabaseBackup,
-  Download
+  Layers
 } from "lucide-react"
 import { 
   BarChart, 
@@ -34,24 +32,14 @@ import { collection, query, where, orderBy, limit, doc } from "firebase/firestor
 import { isAfter, parseISO, differenceInDays, differenceInHours, startOfDay, addHours, isToday } from "date-fns"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function DashboardPage() {
   const { user } = useUser()
   const db = useFirestore()
   const [mounted, setMounted] = useState(false)
-  const [showBackupReminder, setShowBackupReminder] = useState(false)
 
   useEffect(() => {
     setMounted(true)
-    // Check for backup reminder (every 3 days)
-    const lastBackup = localStorage.getItem('perpus_last_backup')
-    if (lastBackup) {
-      const diff = differenceInDays(new Date(), new Date(lastBackup))
-      if (diff >= 3) setShowBackupReminder(true)
-    } else {
-      setShowBackupReminder(true)
-    }
   }, [])
 
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
@@ -73,7 +61,6 @@ export default function DashboardPage() {
   const { data: activeTransactions, isLoading: loadingActive } = useCollection(activeTransQuery)
   const { data: latestTransactions } = useCollection(latestTransQuery)
 
-  // Filter transaksi aktif agar hanya menampilkan yang buku & anggotanya masih ada
   const filteredActiveTransactions = useMemo(() => {
     if (!activeTransactions || !books || !members) return []
     return activeTransactions.filter(t => 
@@ -82,7 +69,6 @@ export default function DashboardPage() {
     )
   }, [activeTransactions, books, members])
 
-  // Filter transaksi TERBARU HANYA HARI INI
   const filteredLatestTransactions = useMemo(() => {
     if (!latestTransactions || !books || !members) return []
     return latestTransactions.filter(t => {
@@ -95,7 +81,6 @@ export default function DashboardPage() {
     }).slice(0, 8)
   }, [latestTransactions, books, members])
 
-  // Hitung transaksi yang jatuh tempo (overdue)
   const overdueTransactions = useMemo(() => {
     if (!mounted || !filteredActiveTransactions || !settings) return []
     const now = new Date()
@@ -189,24 +174,8 @@ export default function DashboardPage() {
             Pantau aktivitas sirkulasi dan koleksi perpustakaan hari ini.
           </p>
         </div>
-
-        {showBackupReminder && (
-          <Alert className="max-w-md bg-orange-50 border-orange-200 text-orange-800 animate-bounce">
-            <DatabaseBackup className="h-4 w-4 text-orange-600" />
-            <AlertTitle className="text-xs font-black uppercase">Segera Backup Data!</AlertTitle>
-            <AlertDescription className="text-[10px] leading-tight flex items-center justify-between gap-2 mt-1">
-              Sudah lebih dari 3 hari Anda tidak mencadangkan data. 
-              <Link href="/dashboard/sync">
-                <Button size="sm" variant="outline" className="h-7 text-[9px] font-bold border-orange-300 bg-white hover:bg-orange-100">
-                  Backup Sekarang <Download className="h-2 w-2 ml-1" />
-                </Button>
-              </Link>
-            </AlertDescription>
-          </Alert>
-        )}
       </div>
 
-      {/* Overdue Alert Banner */}
       {mounted && overdueTransactions.length > 0 && (
         <Card className="border-none shadow-md bg-destructive/5 overflow-hidden ring-1 ring-destructive/20">
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
