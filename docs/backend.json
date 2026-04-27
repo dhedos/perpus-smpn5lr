@@ -34,11 +34,11 @@
     "LibraryMember": {
       "title": "LibraryMember",
       "type": "object",
-      "description": "Data anggota perpustakaan (Siswa/Guru).",
+      "description": "Data anggota perpustakaan (Siswa/Guru/Pegawai).",
       "properties": {
         "memberId": { "type": "string" },
         "name": { "type": "string" },
-        "type": { "type": "string", "enum": ["Student", "Teacher"] },
+        "type": { "type": "string", "enum": ["Student", "Teacher", "Staff"] },
         "classOrSubject": { "type": "string" },
         "phone": { "type": "string" },
         "joinDate": { "type": "string", "format": "date" }

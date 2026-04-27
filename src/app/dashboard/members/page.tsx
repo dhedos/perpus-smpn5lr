@@ -77,7 +77,7 @@ import { collection, addDoc, deleteDoc, doc, updateDoc, serverTimestamp, query, 
 const INITIAL_MEMBER_DATA = {
   memberId: "",
   name: "",
-  type: "Student" as "Student" | "Teacher",
+  type: "Student" as "Student" | "Teacher" | "Staff",
   classPart: "",
   phone: "",
   joinDate: ""
@@ -162,18 +162,18 @@ function MembersContent() {
     setIsOpen(true);
   }
 
-  const handlePrintTable = (type: 'Student' | 'Teacher') => {
+  const handlePrintTable = (type: 'Student' | 'Teacher' | 'Staff') => {
     const targetData = filteredMembers.filter(m => m.type === type)
     if (targetData.length === 0) {
-      toast({ title: "Data Kosong", description: `Tidak ada data ${type === 'Student' ? 'Siswa' : 'Guru'} untuk dicetak.` })
+      toast({ title: "Data Kosong", description: `Tidak ada data ${type === 'Student' ? 'Siswa' : type === 'Teacher' ? 'Guru' : 'Pegawai'} untuk dicetak.` })
       return
     }
 
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
-    const labelType = type === 'Student' ? 'SISWA' : 'GURU'
-    const classLabel = type === 'Student' ? 'Kelas' : 'Mengajar / Kelas'
+    const labelType = type === 'Student' ? 'SISWA' : type === 'Teacher' ? 'GURU' : 'PEGAWAI'
+    const classLabel = type === 'Student' ? 'Kelas' : type === 'Teacher' ? 'Mengajar / Kelas' : 'Jabatan / Bagian'
 
     const rowsHtml = targetData.map((m, index) => `
       <tr>
@@ -248,6 +248,7 @@ function MembersContent() {
       .replace(/Kabupaten/gi, 'Kab.');
 
     const libName = settings?.libraryName || 'PUSTAKA NUSANTARA';
+    const detailLabel = member.type === 'Teacher' ? 'GURU' : member.type === 'Staff' ? 'PEGAWAI' : 'KELAS';
 
     printWindow.document.write(`
       <html>
@@ -362,7 +363,7 @@ function MembersContent() {
             <div class="info-section">
               <div class="member-name">${member.name}</div>
               <div class="member-id">${member.memberId}</div>
-              <div class="member-detail">${member.type === 'Teacher' ? 'GURU' : 'KELAS'}: ${member.classOrSubject || '-'}</div>
+              <div class="member-detail">${detailLabel}: ${member.classOrSubject || '-'}</div>
             </div>
             
             <div class="footer">
@@ -426,7 +427,7 @@ function MembersContent() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold font-headline text-primary">Daftar Anggota</h1>
-          <p className="text-muted-foreground text-sm">Kelola data siswa dan guru yang terdaftar.</p>
+          <p className="text-muted-foreground text-sm">Kelola data siswa, guru, dan pegawai yang terdaftar.</p>
         </div>
         <div className="flex gap-2">
           <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
@@ -438,6 +439,7 @@ function MembersContent() {
             <DropdownMenuContent>
               <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handlePrintTable('Student'); }}>Daftar Siswa</DropdownMenuItem>
               <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handlePrintTable('Teacher'); }}>Daftar Guru</DropdownMenuItem>
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handlePrintTable('Staff'); }}>Daftar Pegawai</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button onClick={handleOpenAdd} className="gap-2"><UserPlus className="h-4 w-4" /> Tambah Anggota</Button>
@@ -461,6 +463,7 @@ function MembersContent() {
               <SelectItem value="all">Semua Kategori</SelectItem>
               <SelectItem value="Student">Siswa</SelectItem>
               <SelectItem value="Teacher">Guru</SelectItem>
+              <SelectItem value="Staff">Pegawai</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -474,7 +477,7 @@ function MembersContent() {
               <TableHead>Nama Anggota</TableHead>
               <TableHead>ID Anggota</TableHead>
               <TableHead>Kategori</TableHead>
-              <TableHead>Mengajar / Kelas</TableHead>
+              <TableHead>Keterangan / Kelas</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
@@ -488,7 +491,11 @@ function MembersContent() {
                 <TableCell className="text-center text-xs text-muted-foreground">{index + 1}</TableCell>
                 <TableCell className="font-semibold">{member.name ?? ""}</TableCell>
                 <TableCell className="font-mono text-xs text-primary font-bold">{member.memberId ?? ""}</TableCell>
-                <TableCell><Badge variant="outline" className="h-5 px-1.5 text-[10px] font-bold border-none">{member.type === 'Teacher' ? 'GURU' : 'SISWA'}</Badge></TableCell>
+                <TableCell>
+                  <Badge variant="outline" className="h-5 px-1.5 text-[10px] font-bold border-none uppercase">
+                    {member.type === 'Teacher' ? 'GURU' : member.type === 'Staff' ? 'PEGAWAI' : 'SISWA'}
+                  </Badge>
+                </TableCell>
                 <TableCell className="text-sm font-medium">{member.classOrSubject || '-'}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
@@ -516,7 +523,7 @@ function MembersContent() {
         <DialogContent className="bg-slate-50 max-w-md border-none">
           <DialogHeader>
             <DialogTitle>Daftarkan Anggota Baru</DialogTitle>
-            <DialogDescription>Masukkan identitas siswa atau guru untuk akses layanan perpustakaan.</DialogDescription>
+            <DialogDescription>Masukkan identitas siswa, guru, atau pegawai untuk akses layanan perpustakaan.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
@@ -526,7 +533,14 @@ function MembersContent() {
               </div>
               <div className="space-y-2">
                 <Label className="font-semibold text-xs uppercase text-muted-foreground">Kategori</Label>
-                <Select value={formData.type} onValueChange={v => setFormData({...formData, type: v as any})}><SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Student">Siswa</SelectItem><SelectItem value="Teacher">Guru</SelectItem></SelectContent></Select>
+                <Select value={formData.type} onValueChange={v => setFormData({...formData, type: v as any})}>
+                  <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Student">Siswa</SelectItem>
+                    <SelectItem value="Teacher">Guru</SelectItem>
+                    <SelectItem value="Staff">Pegawai</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="space-y-2">
@@ -534,8 +548,15 @@ function MembersContent() {
               <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Nama lengkap" />
             </div>
             <div className="space-y-2">
-              <Label className="font-semibold text-xs uppercase text-muted-foreground">{formData.type === 'Teacher' ? 'Mengajar / Kelas' : 'Kelas'}</Label>
-              <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder={formData.type === 'Teacher' ? "Cth: BAHASA INGGRIS/VII" : "Cth: VII A"} />
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">
+                {formData.type === 'Teacher' ? 'Mengajar / Kelas' : formData.type === 'Staff' ? 'Jabatan / Bagian' : 'Kelas'}
+              </Label>
+              <Input 
+                value={formData.classPart ?? ""} 
+                onChange={e => setFormData({...formData, classPart: e.target.value})} 
+                className="bg-white border-slate-300 h-11" 
+                placeholder={formData.type === 'Teacher' ? "Cth: BAHASA INGGRIS/VII" : formData.type === 'Staff' ? "Cth: Tata Usaha / Keamanan" : "Cth: VII A"} 
+              />
             </div>
           </div>
           <DialogFooter><Button onClick={handleSaveMember} className="w-full sm:w-auto h-11 px-8 shadow-lg shadow-primary/20">Simpan Anggota</Button></DialogFooter>
@@ -557,7 +578,14 @@ function MembersContent() {
               </div>
               <div className="space-y-2">
                 <Label className="font-semibold text-xs uppercase text-muted-foreground">Kategori</Label>
-                <Select value={formData.type} onValueChange={v => setFormData({...formData, type: v as any})}><SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Student">Siswa</SelectItem><SelectItem value="Teacher">Guru</SelectItem></SelectContent></Select>
+                <Select value={formData.type} onValueChange={v => setFormData({...formData, type: v as any})}>
+                  <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Student">Siswa</SelectItem>
+                    <SelectItem value="Teacher">Guru</SelectItem>
+                    <SelectItem value="Staff">Pegawai</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="space-y-2">
@@ -565,8 +593,15 @@ function MembersContent() {
               <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Nama lengkap" />
             </div>
             <div className="space-y-2">
-              <Label className="font-semibold text-xs uppercase text-muted-foreground">{formData.type === 'Teacher' ? 'Mengajar / Kelas' : 'Kelas'}</Label>
-              <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder={formData.type === 'Teacher' ? "Cth: BAHASA INGGRIS/VII" : "Cth: VII A"} />
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">
+                {formData.type === 'Teacher' ? 'Mengajar / Kelas' : formData.type === 'Staff' ? 'Jabatan / Bagian' : 'Kelas'}
+              </Label>
+              <Input 
+                value={formData.classPart ?? ""} 
+                onChange={e => setFormData({...formData, classPart: e.target.value})} 
+                className="bg-white border-slate-300 h-11" 
+                placeholder={formData.type === 'Teacher' ? "Cth: BAHASA INGGRIS/VII" : formData.type === 'Staff' ? "Cth: Tata Usaha / Keamanan" : "Cth: VII A"} 
+              />
             </div>
           </div>
           <DialogFooter><Button onClick={handleUpdateMember} className="w-full h-11">Simpan Perubahan</Button></DialogFooter>
@@ -585,7 +620,9 @@ function MembersContent() {
               <div className="space-y-1">
                 <div className="font-black text-2xl leading-tight uppercase tracking-tight">{selectedMemberQr?.name ?? ""}</div>
                 <div className="font-mono text-primary font-black text-xl">{selectedMemberQr?.memberId ?? ""}</div>
-                <div className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{selectedMemberQr?.type === 'Teacher' ? 'GURU' : 'KELAS'}: {selectedMemberQr?.classOrSubject || '-'}</div>
+                <div className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
+                  {selectedMemberQr?.type === 'Teacher' ? 'GURU' : selectedMemberQr?.type === 'Staff' ? 'PEGAWAI' : 'KELAS'}: {selectedMemberQr?.classOrSubject || '-'}
+                </div>
               </div>
             </div>
           </div>
