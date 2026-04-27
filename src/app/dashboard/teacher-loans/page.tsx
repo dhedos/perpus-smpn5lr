@@ -297,7 +297,7 @@ export default function TeacherLoansPage() {
     const newLoan = {
       memberId: selectedMember.memberId,
       memberName: selectedMember.name,
-      memberType: selectedMember.type, // Could be 'Teacher' or 'Staff'
+      memberType: selectedMember.type, 
       classOrSubject: selectedMember.classOrSubject || "-",
       bookId: selectedBook.id,
       bookTitle: selectedBook.title,

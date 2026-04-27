@@ -16,7 +16,9 @@ import {
   FileSpreadsheet, 
   Loader2,
   ExternalLink,
-  Table as TableIcon
+  Table as TableIcon,
+  Users,
+  AlertCircle
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
@@ -25,6 +27,7 @@ import { useFirestore, useCollection, useMemoFirebase, useAuth, useDoc } from "@
 import { collection, doc } from "firebase/firestore"
 import { useRouter } from "next/navigation"
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 const STORAGE_KEY = 'perpus_local_queue_v3'
 
@@ -41,6 +44,7 @@ export default function SyncPage() {
   
   const [isSyncingToSheets, setIsSyncingToSheets] = useState(false)
   const [lastSheetUrl, setLastSheetUrl] = useState<string | null>(null)
+  const [showPopupGuide, setShowPopupPopupGuide] = useState(false)
 
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
@@ -106,22 +110,32 @@ export default function SyncPage() {
     if (!auth || !books || !members) return;
     
     setIsSyncingToSheets(true);
+    setShowPopupPopupGuide(false);
     
     try {
-      // 1. Minta Izin Google Sheets via OAuth Scope
       const provider = new GoogleAuthProvider();
       provider.addScope('https://www.googleapis.com/auth/spreadsheets');
       provider.addScope('https://www.googleapis.com/auth/drive.file');
       
-      const result = await signInWithPopup(auth, provider);
+      // Attempt login
+      let result;
+      try {
+        result = await signInWithPopup(auth, provider);
+      } catch (authError: any) {
+        if (authError.code === 'auth/popup-blocked') {
+          setShowPopupPopupGuide(true);
+          throw new Error("Jendela Login diblokir oleh browser. Mohon izinkan popup untuk situs ini.");
+        }
+        throw authError;
+      }
+
       const credential = GoogleAuthProvider.credentialFromResult(result);
       const token = credential?.accessToken;
 
-      if (!token) throw new Error("Gagal mendapatkan token akses Google.");
+      if (!token) throw new Error("Gagal mendapatkan akses Google.");
 
-      toast({ title: "Menghubungkan Google...", description: "Sedang menyiapkan database di Cloud." });
+      toast({ title: "Berhasil Terhubung", description: "Sedang memproses data ke Cloud..." });
 
-      // 2. Buat Spreadsheet Baru (Sederhana via API)
       const spreadsheetTitle = `DATABASE PERPUSTAKAAN - ${settings?.schoolName || 'SMPN 5'}`;
       
       const createResponse = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
@@ -136,12 +150,12 @@ export default function SyncPage() {
       });
 
       const spreadsheet = await createResponse.json();
-      if (!spreadsheet.spreadsheetId) throw new Error("Gagal membuat file spreadsheet.");
+      if (!spreadsheet.spreadsheetId) throw new Error("Gagal membuat file spreadsheet baru.");
 
       const spreadsheetId = spreadsheet.spreadsheetId;
 
-      // 3. Siapkan Data (Header + Isi)
       const bookData = [
+        ["DATA KOLEKSI BUKU"],
         ["KODE BUKU", "JUDUL", "SUMBER", "REKENING", "PENERBIT", "TAHUN", "STOK TOTAL", "STOK TERSEDIA", "LOKASI RAK"],
         ...books.map(b => [
           b.code || "-", 
@@ -157,6 +171,7 @@ export default function SyncPage() {
       ];
 
       const memberData = [
+        ["DATA ANGGOTA"],
         ["ID ANGGOTA (NIS/NIP)", "NAMA LENGKAP", "KATEGORI", "KELAS / JABATAN", "TGL BERGABUNG"],
         ...members.map(m => [
           m.memberId || "-", 
@@ -167,21 +182,16 @@ export default function SyncPage() {
         ])
       ];
 
-      // 4. Kirim Data ke Sheets
-      const syncData = async (range: string, values: any[][]) => {
-        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=RAW`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ values })
-        });
-      };
+      const combinedValues = [...bookData, [], ...memberData];
 
-      // Tambahkan tab baru untuk Anggota (Opsional, di sini kita taruh di sheet yang sama di bawahnya atau Sheet2 jika mau kompleks)
-      // Untuk kesederhanaan prototipe, kita isi data buku saja atau timpa data utama.
-      await syncData('Sheet1!A1', [["DATA KOLEKSI BUKU"], ...bookData, [], ["DATA ANGGOTA"], ...memberData]);
+      await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Sheet1!A1?valueInputOption=RAW`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ values: combinedValues })
+      });
 
       setLastSheetUrl(`https://docs.google.com/spreadsheets/d/${spreadsheetId}`);
       toast({ 
@@ -191,11 +201,13 @@ export default function SyncPage() {
 
     } catch (error: any) {
       console.error("Sheets Sync Error:", error);
-      toast({ 
-        title: "Gagal Sinkronisasi", 
-        description: error.message || "Pastikan Anda memberikan izin akses Google Sheets.", 
-        variant: "destructive" 
-      });
+      if (!error.message.includes("diblokir")) {
+        toast({ 
+          title: "Gagal Sinkronisasi", 
+          description: error.message || "Pastikan Anda memberikan izin akses Google Sheets.", 
+          variant: "destructive" 
+        });
+      }
     } finally {
       setIsSyncingToSheets(false);
     }
@@ -213,8 +225,17 @@ export default function SyncPage() {
         </Badge>
       </div>
 
+      {showPopupGuide && (
+        <Alert variant="destructive" className="bg-red-50 border-red-200">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Popup Diblokir!</AlertTitle>
+          <AlertDescription className="text-xs">
+            Browser Anda memblokir jendela login Google. Silakan klik ikon gembok/blokir di baris alamat browser Anda dan pilih <b>"Izinkan Popup"</b>, lalu coba lagi.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid gap-8 md:grid-cols-2 mt-8">
-        {/* CARD KIRI: SISTEM CACHING */}
         <Card className="border-none shadow-sm bg-[#F0F4F8] rounded-3xl p-4">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-3 text-xl font-black text-slate-800">
@@ -253,11 +274,10 @@ export default function SyncPage() {
                 Lihat Antrean
               </Button>
             </div>
-            {syncing && <Progress value={progress} className="h-2 bg-slate-200" />}
+            {syncing && <Progress value={progress} className="h-2 bg-slate-200 mt-2" />}
           </CardContent>
         </Card>
 
-        {/* CARD KANAN: KEAMANAN KUOTA */}
         <Card className="border-none shadow-sm bg-white rounded-3xl p-4 ring-1 ring-slate-100">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-3 text-xl font-black text-[#1e4b8f]">
@@ -295,7 +315,6 @@ export default function SyncPage() {
           </CardContent>
         </Card>
 
-        {/* CARD BARU: GOOGLE SHEETS SYNC */}
         <Card className="md:col-span-2 border-none shadow-lg bg-white rounded-3xl p-6 ring-1 ring-slate-100 overflow-hidden relative">
           <div className="absolute top-0 right-0 w-32 h-32 bg-green-50 rounded-bl-full -mr-16 -mt-16 opacity-50" />
           <CardHeader className="pb-4 relative">
@@ -316,14 +335,14 @@ export default function SyncPage() {
                 <TableIcon className="h-8 w-8 text-blue-600 opacity-40" />
                 <div>
                   <p className="text-lg font-black text-slate-800">{books?.length || 0}</p>
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Data Koleksi Buku</p>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Koleksi Buku</p>
                 </div>
               </div>
               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col justify-center items-center text-center space-y-2">
-                <TableIcon className="h-8 w-8 text-secondary opacity-40" />
+                <Users className="h-8 w-8 text-secondary opacity-40" />
                 <div>
                   <p className="text-lg font-black text-slate-800">{members?.length || 0}</p>
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Data Anggota</p>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Anggota</p>
                 </div>
               </div>
               <div className="flex flex-col justify-center gap-3">
