@@ -61,7 +61,7 @@ export function SidebarNav({ onItemClick }: SidebarNavProps) {
   const { isAdmin } = useUser()
 
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
-  const { data: settings } = useDoc(settingsRef)
+  const { data: settings, isLoading } = useDoc(settingsRef)
 
   const handleLogout = async () => {
     if (auth) {
@@ -70,7 +70,8 @@ export function SidebarNav({ onItemClick }: SidebarNavProps) {
     }
   }
 
-  const displayTitle = settings?.libraryName || "LANTERA BACA";
+  const displayTitle = settings?.libraryName || (isLoading ? "" : "LANTERA BACA");
+  const displaySubtitle = settings?.librarySubtitle || (isLoading ? "" : "SMPN 5 LANGKE REMBONG");
   const displayLogo = settings?.libraryLogoUrl;
 
   return (
@@ -79,16 +80,18 @@ export function SidebarNav({ onItemClick }: SidebarNavProps) {
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary overflow-hidden">
           {displayLogo ? (
             <img src={displayLogo} alt="Logo" className="w-9 h-9 object-contain" />
-          ) : (
+          ) : !isLoading ? (
             <Library className="h-8 w-8" />
+          ) : (
+            <div className="w-6 h-6 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
           )}
         </div>
-        <div className="flex flex-col overflow-hidden">
+        <div className="flex flex-col overflow-hidden min-h-[32px] justify-center">
           <span className="text-sm font-black leading-tight text-primary tracking-tight uppercase truncate">
             {displayTitle}
           </span>
           <span className="text-[10px] font-bold leading-tight text-secondary uppercase tracking-widest truncate">
-            {settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG"}
+            {displaySubtitle}
           </span>
         </div>
       </div>
@@ -166,7 +169,7 @@ export function SidebarNav({ onItemClick }: SidebarNavProps) {
         </AlertDialog>
         <div className="text-center pt-2">
            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">
-             © 2026 Lantera Baca
+             © 2026 {displayTitle || "Lantera Baca"}
            </p>
         </div>
       </div>

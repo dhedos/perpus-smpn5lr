@@ -14,52 +14,60 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { user, loading } = useUser()
+  const { user, loading: userLoading } = useUser()
   const db = useFirestore()
   const router = useRouter()
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
 
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
-  const { data: settings } = useDoc(settingsRef)
+  const { data: settings, isLoading: settingsLoading } = useDoc(settingsRef)
 
   useEffect(() => {
     setIsMounted(true)
   }, [])
 
   useEffect(() => {
-    if (isMounted && !loading && !user && !isRedirecting) {
+    if (isMounted && !userLoading && !user && !isRedirecting) {
       setIsRedirecting(true)
       router.replace("/")
     }
-  }, [user, loading, router, isRedirecting, isMounted])
+  }, [user, userLoading, router, isRedirecting, isMounted])
 
-  const displayTitle = (isMounted && settings?.libraryName) ? settings.libraryName : "LANTERA BACA";
-  const displaySubtitle = (isMounted && settings?.librarySubtitle) ? settings.librarySubtitle : "SMPN 5 LANGKE REMBONG";
-  const displayLogo = (isMounted && settings?.libraryLogoUrl);
+  const displayTitle = settings?.libraryName || "LANTERA BACA";
+  const displaySubtitle = settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG";
+  const displayLogo = settings?.libraryLogoUrl;
 
-  // SYNCED LOADING UI (Identical to page.tsx)
-  if (!isMounted || loading || isRedirecting || !user) {
+  const isLoading = !isMounted || userLoading || isRedirecting || !user || settingsLoading;
+
+  // SYNCED LOADING UI (Identity Aware)
+  if (isLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-6 animate-in fade-in duration-500">
           <div className="w-24 h-24 flex items-center justify-center rounded-[2rem] bg-primary/10 text-primary shadow-sm overflow-hidden">
             {displayLogo ? (
               <img src={displayLogo} alt="Logo" className="w-16 h-16 object-contain" />
-            ) : (
+            ) : !settingsLoading ? (
               <Library className="h-12 w-12" />
-            )}
+            ) : null}
           </div>
-          <div className="flex flex-col items-center space-y-2 text-center">
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">
-                {displayTitle}
-              </p>
-            </div>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50 px-4">
-              {displaySubtitle}
-            </p>
+          <div className="flex flex-col items-center space-y-2 text-center h-12">
+            {!settingsLoading ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">
+                    {displayTitle}
+                  </p>
+                </div>
+                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50 px-4">
+                  {displaySubtitle}
+                </p>
+              </>
+            ) : (
+              <Loader2 className="h-6 w-6 animate-spin text-primary opacity-20" />
+            )}
           </div>
         </div>
       </div>
