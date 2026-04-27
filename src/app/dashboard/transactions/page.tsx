@@ -22,7 +22,10 @@ import {
   Printer,
   History,
   BookOpen,
-  CameraOff
+  CameraOff,
+  Minus,
+  Plus,
+  Users
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -74,6 +77,7 @@ function TransactionsContent() {
   const [selectedMember, setSelectedMember] = useState<any>(null)
   const [selectedBook, setSelectedBook] = useState<any>(null)
   const [borrowQuantity, setBorrowQuantity] = useState(1)
+  const [borrowType, setBorrowType] = useState<"Pribadi" | "Kolektif">("Pribadi")
 
   const [showMemberSuggestions, setShowMemberSuggestions] = useState(false)
   const [showBookSuggestions, setShowBookSuggestions] = useState(false)
@@ -431,6 +435,7 @@ function TransactionsContent() {
       bookId: selectedBook.id, 
       bookTitle: selectedBook.title, 
       quantity: borrowQuantity,
+      borrowType: borrowType,
       type: 'borrow', 
       status: 'active', 
       borrowDate: today.toISOString(), 
@@ -483,10 +488,71 @@ function TransactionsContent() {
 
             <div className="grid lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1 space-y-6">
+                {/* Pilihan Jenis Peminjaman */}
+                <Card className="border-none shadow-sm">
+                  <CardHeader className="bg-slate-50/50 pb-4 border-b">
+                    <CardTitle className="text-sm flex items-center gap-2 text-primary uppercase tracking-wider font-bold">
+                      Jenis & Jumlah
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-6 space-y-6">
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold text-muted-foreground uppercase">Jenis Peminjaman</Label>
+                      <div className="flex gap-2 p-1 bg-slate-100 rounded-lg">
+                        <Button 
+                          variant={borrowType === "Pribadi" ? "default" : "ghost"} 
+                          className="flex-1 h-9 text-xs font-bold"
+                          onClick={() => setBorrowType("Pribadi")}
+                        >
+                          <User className="h-3 w-3 mr-2" /> Pribadi
+                        </Button>
+                        <Button 
+                          variant={borrowType === "Kolektif" ? "default" : "ghost"} 
+                          className="flex-1 h-9 text-xs font-bold"
+                          onClick={() => setBorrowType("Kolektif")}
+                        >
+                          <Users className="h-3 w-3 mr-2" /> Kolektif
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold text-muted-foreground uppercase">Jumlah Buku</Label>
+                      <div className="flex items-center justify-between p-2 border rounded-xl bg-white">
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className="h-10 w-10 rounded-lg"
+                          onClick={() => setBorrowQuantity(q => Math.max(1, q - 1))}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <div className="flex flex-col items-center">
+                          <span className="text-2xl font-black">{borrowQuantity}</span>
+                          <span className="text-[9px] font-bold text-muted-foreground uppercase">Unit</span>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className="h-10 w-10 rounded-lg"
+                          onClick={() => setBorrowQuantity(q => q + 1)}
+                          disabled={selectedBook && borrowQuantity >= (selectedBook.availableStock || 0)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {selectedBook && (
+                        <p className="text-[10px] text-center text-muted-foreground">
+                          Stok tersedia: <b>{selectedBook.availableStock}</b> unit
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <Card className="border-none shadow-sm relative">
                   <CardHeader className="bg-slate-50/50 pb-4 border-b">
                     <CardTitle className="text-sm flex items-center gap-2 text-primary uppercase tracking-wider font-bold"><User className="h-4 w-4" /> Data Siswa</CardTitle>
-                    <CardDescription>Gunakan NIS atau pencarian manual untuk memilih siswa.</CardDescription>
                   </CardHeader>
                   <CardContent className="pt-6 space-y-4">
                     <div className="relative">
@@ -541,7 +607,6 @@ function TransactionsContent() {
                 <Card className="border-none shadow-sm relative">
                   <CardHeader className="bg-slate-50/50 pb-4 border-b">
                     <CardTitle className="text-sm flex items-center gap-2 text-secondary uppercase tracking-wider font-bold"><BookOpen className="h-4 w-4" /> Data Buku</CardTitle>
-                    <CardDescription>Gunakan kode stiker buku atau judul untuk memilih buku.</CardDescription>
                   </CardHeader>
                   <CardContent className="pt-6 space-y-4">
                     <div className="relative">
