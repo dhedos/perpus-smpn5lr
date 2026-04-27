@@ -327,7 +327,7 @@ export default function SettingsPage() {
                 <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border">
                   <div className="grid gap-2">
                     <Label className="font-bold text-xs uppercase text-muted-foreground flex items-center gap-2">
-                      <MapPin className="h-3 w-3" /> Kota Laporan
+                      <MapPin className="h-3 w-3" /> Alamat Laporan
                     </Label>
                     <Input 
                       value={settings.reportCity} 
