@@ -53,15 +53,26 @@ export default function ReportsPage() {
 
   const transRef = useMemoFirebase(() => db ? collection(db, 'transactions') : null, [db])
   const membersRef = useMemoFirebase(() => db ? collection(db, 'members') : null, [db])
+  const booksRef = useMemoFirebase(() => db ? collection(db, 'books') : null, [db])
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   
   const { data: allTrans, isLoading: loadingTrans } = useCollection(transRef)
   const { data: members, isLoading: loadingMembers } = useCollection(membersRef)
+  const { data: books, isLoading: loadingBooks } = useCollection(booksRef)
   const { data: settings } = useDoc(settingsRef)
 
+  // Validasi data: Hanya hitung data yang buku & anggotanya masih ada
+  const validTransactions = useMemo(() => {
+    if (!allTrans || !books || !members) return []
+    return allTrans.filter(t => 
+      books.some(b => b.id === t.bookId) &&
+      members.some(m => m.memberId === t.memberId)
+    )
+  }, [allTrans, books, members])
+
   const conditionStats = useMemo(() => {
-    if (!allTrans) return { lost: 0, damaged: 0, normal: 0 }
-    const returnedItems = allTrans.filter(t => t.status === 'returned')
+    if (validTransactions.length === 0) return { lost: 0, damaged: 0, normal: 0 }
+    const returnedItems = validTransactions.filter(t => t.status === 'returned')
     
     let lost = 0;
     let damaged = 0;
@@ -80,22 +91,22 @@ export default function ReportsPage() {
     });
 
     return { lost, damaged, normal }
-  }, [allTrans])
+  }, [validTransactions])
 
   const statsData = useMemo(() => {
-    if (!allTrans || !members || !mounted) return null;
+    if (validTransactions.length === 0 || !members || !mounted) return null;
 
-    const activeLoans = allTrans.filter(t => t.status === 'active');
+    const activeLoans = validTransactions.filter(t => t.status === 'active');
     const now = new Date();
     const overdueLoans = activeLoans.filter(t => t.dueDate && isAfter(now, parseISO(t.dueDate)));
 
     const startOfCurrentMonth = startOfMonth(now);
     const endOfCurrentMonth = endOfMonth(now);
-    const finesThisMonth = allTrans
+    const finesThisMonth = validTransactions
       .filter(t => t.status === 'returned' && t.returnDate && isWithinInterval(parseISO(t.returnDate), { start: startOfCurrentMonth, end: endOfCurrentMonth }))
       .reduce((acc, t) => acc + (t.fineAmount || 0), 0);
 
-    const totalBorrowings = allTrans.filter(t => t.type === 'borrow' || t.status === 'active').length;
+    const totalBorrowings = validTransactions.filter(t => t.type === 'borrow' || t.status === 'active').length;
     const avgBorrowing = (totalBorrowings / 30).toFixed(1);
 
     return {
@@ -105,7 +116,7 @@ export default function ReportsPage() {
       fines: finesThisMonth,
       totalMembers: members.length
     };
-  }, [allTrans, members, mounted]);
+  }, [validTransactions, members, mounted]);
 
   const chartData = [
     { name: 'Normal', value: conditionStats.normal, color: '#22c55e' },
@@ -113,22 +124,22 @@ export default function ReportsPage() {
     { name: 'Hilang', value: conditionStats.lost, color: '#ef4444' },
   ]
 
-  const isLoading = loadingTrans || loadingMembers;
+  const isLoading = loadingTrans || loadingMembers || loadingBooks;
 
   const handlePrintTransactionBackup = (type: 'Student' | 'Teacher') => {
-    if (!allTrans) return;
+    if (validTransactions.length === 0) return;
     
     // Filter transaksi untuk bulan berjalan saja
     const start = startOfMonth(new Date());
     const end = endOfMonth(new Date());
 
-    const targetTrans = allTrans.filter(t => {
+    const targetTrans = validTransactions.filter(t => {
       const transDate = t.createdAt ? new Date(t.createdAt.seconds * 1000) : new Date();
       return t.memberType === type && isWithinInterval(transDate, { start, end });
     });
 
     if (targetTrans.length === 0) {
-      alert(`Tidak ada riwayat pinjaman ${type === 'Student' ? 'Siswa' : 'Guru'} untuk bulan ini.`);
+      alert(`Tidak ada riwayat pinjaman ${type === 'Student' ? 'Siswa' : 'Guru'} aktif di bulan ini.`);
       return;
     }
 
@@ -163,23 +174,24 @@ export default function ReportsPage() {
         </head>
         <body onload="window.print(); window.close();">
           <div class="header">
-            <h3>ARSIP BULANAN RIWAYAT PINJAMAN ${label}</h3>
-            <div style="text-transform: uppercase;">PERIODE: ${format(new Date(), 'MMMM yyyy')}</div>
+            <h3 style="margin-bottom: 5px;">ARSIP BULANAN RIWAYAT PINJAMAN ${label}</h3>
+            <div style="text-transform: uppercase; font-size: 11pt;">PERIODE: ${format(new Date(), 'MMMM yyyy')}</div>
           </div>
           <table>
             <thead>
               <tr>
-                <th style="width: 30px;">No</th>
+                <th style="width: 30px; text-align: center;">No</th>
                 <th>Nama Peminjam</th>
                 <th>Judul Buku</th>
                 <th style="width: 80px; text-align: center;">Pinjam</th>
                 <th style="width: 80px; text-align: center;">Kembali</th>
-                <th style="width: 70px; text-align: center;">Denda</th>
+                <th style="width: 70px; text-align: right;">Denda</th>
               </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>
           </table>
           <div class="footer-meta">Dicetak pada: ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
+          <div style="position: fixed; bottom: 5mm; left: 15mm; font-size: 8pt; color: #999;">© 2026 Lantera Baca - Sistem Informasi Perpustakaan</div>
         </body>
       </html>
     `);
