@@ -23,7 +23,8 @@ import {
   QrCode,
   Printer,
   ChevronDown,
-  X
+  X,
+  Filter
 } from "lucide-react"
 import { 
   Dialog, 
@@ -88,6 +89,7 @@ function MembersContent() {
   const searchParams = useSearchParams()
   
   const [search, setSearch] = useState("")
+  const [filterType, setFilterType] = useState("all")
   const [displayLimit, setDisplayLimit] = useState(50)
   const [isOpen, setIsOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -139,12 +141,17 @@ function MembersContent() {
 
   const filteredMembers = useMemo(() => {
     if (!members) return []
-    return members.filter(m => 
-      (m.name?.toLowerCase() || "").includes(search.toLowerCase()) || 
-      (m.memberId?.toLowerCase() || "").includes(search.toLowerCase()) ||
-      (m.classOrSubject?.toLowerCase() || "").includes(search.toLowerCase())
-    )
-  }, [members, search])
+    return members.filter(m => {
+      const matchesSearch = 
+        (m.name?.toLowerCase() || "").includes(search.toLowerCase()) || 
+        (m.memberId?.toLowerCase() || "").includes(search.toLowerCase()) ||
+        (m.classOrSubject?.toLowerCase() || "").includes(search.toLowerCase());
+      
+      const matchesType = filterType === "all" || m.type === filterType;
+      
+      return matchesSearch && matchesType;
+    })
+  }, [members, search, filterType])
 
   const handleOpenAdd = () => {
     forceUnlockUI()
@@ -372,7 +379,15 @@ function MembersContent() {
 
   const handleSaveMember = () => {
     if (!db) return
-    const dataToSave = { memberId: formData.memberId, name: formData.name, type: formData.type, classOrSubject: formData.classPart || "", phone: formData.phone, joinDate: formData.joinDate, createdAt: serverTimestamp() }
+    const dataToSave = { 
+      memberId: formData.memberId, 
+      name: formData.name, 
+      type: formData.type, 
+      classOrSubject: formData.classPart || "", 
+      phone: formData.phone, 
+      joinDate: formData.joinDate, 
+      createdAt: serverTimestamp() 
+    }
     setIsOpen(false); forceUnlockUI();
     addDoc(collection(db, 'members'), dataToSave).catch(async (e) => errorEmitter.emit('permission-error', new FirestorePermissionError({path: 'members', operation: 'create', requestResourceData: dataToSave})));
     toast({ title: "Berhasil!", description: "Anggota baru telah didaftarkan." });
@@ -382,7 +397,15 @@ function MembersContent() {
   const handleUpdateMember = () => {
     if (!db || !editingMemberId) return
     const docRef = doc(db, 'members', editingMemberId)
-    const dataToUpdate = { memberId: formData.memberId, name: formData.name, type: formData.type, classOrSubject: formData.classPart || "", phone: formData.phone, joinDate: formData.joinDate, updatedAt: serverTimestamp() }
+    const dataToUpdate = { 
+      memberId: formData.memberId, 
+      name: formData.name, 
+      type: formData.type, 
+      classOrSubject: formData.classPart || "", 
+      phone: formData.phone, 
+      joinDate: formData.joinDate, 
+      updatedAt: serverTimestamp() 
+    }
     setIsEditOpen(false); forceUnlockUI();
     updateDoc(docRef, dataToUpdate).catch(async (e) => errorEmitter.emit('permission-error', new FirestorePermissionError({path: docRef.path, operation: 'update', requestResourceData: dataToUpdate})));
     toast({ title: "Berhasil!", description: "Data anggota telah diperbarui." });
@@ -422,9 +445,24 @@ function MembersContent() {
       </div>
 
       <Card className="p-4 rounded-xl shadow-sm border-none bg-white">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Cari anggota berdasarkan nama, ID, atau kelas..." className="pl-10 h-11 border-slate-200" value={search ?? ""} onChange={e => setSearch(e.target.value)} />
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Cari anggota berdasarkan nama, ID, atau kelas..." className="pl-10 h-11 border-slate-200" value={search ?? ""} onChange={e => setSearch(e.target.value)} />
+          </div>
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="w-full sm:w-[200px] h-11 border-slate-200 bg-white">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-primary" />
+                <SelectValue placeholder="Semua Kategori" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Kategori</SelectItem>
+              <SelectItem value="Student">Siswa</SelectItem>
+              <SelectItem value="Teacher">Guru</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </Card>
 
@@ -444,7 +482,7 @@ function MembersContent() {
             {loading ? (
               <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
             ) : filteredMembers.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Belum ada anggota terdaftar.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Belum ada anggota ditemukan.</TableCell></TableRow>
             ) : filteredMembers.map((member, index) => (
               <TableRow key={member.id}>
                 <TableCell className="text-center text-xs text-muted-foreground">{index + 1}</TableCell>
@@ -473,6 +511,7 @@ function MembersContent() {
         )}
       </Card>
 
+      {/* DIALOG TAMBAH ANGGOTA */}
       <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="bg-slate-50 max-w-md border-none">
           <DialogHeader>
@@ -503,6 +542,37 @@ function MembersContent() {
         </DialogContent>
       </Dialog>
 
+      {/* DIALOG UBAH ANGGOTA */}
+      <Dialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); if(!v) forceUnlockUI(); }}>
+        <DialogContent className="bg-slate-50 max-w-md border-none">
+          <DialogHeader>
+            <DialogTitle>Ubah Data Anggota</DialogTitle>
+            <DialogDescription>Perbarui informasi identitas anggota di bawah ini secara lengkap.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="font-semibold text-xs uppercase text-muted-foreground">ID Anggota (NIS/NIP)</Label>
+                <Input value={formData.memberId ?? ""} onChange={e => setFormData({...formData, memberId: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="NIS/NIP" />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold text-xs uppercase text-muted-foreground">Kategori</Label>
+                <Select value={formData.type} onValueChange={v => setFormData({...formData, type: v as any})}><SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Student">Siswa</SelectItem><SelectItem value="Teacher">Guru</SelectItem></SelectContent></Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label>
+              <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Nama lengkap" />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold text-xs uppercase text-muted-foreground">{formData.type === 'Teacher' ? 'Mengajar / Kelas' : 'Kelas'}</Label>
+              <Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder={formData.type === 'Teacher' ? "Cth: BAHASA INGGRIS/VII" : "Cth: VII A"} />
+            </div>
+          </div>
+          <DialogFooter><Button onClick={handleUpdateMember} className="w-full h-11">Simpan Perubahan</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) forceUnlockUI(); }}>
         <DialogContent className="max-w-md text-center border-none p-0 overflow-hidden rounded-3xl">
           <DialogHeader className="p-6 bg-white shrink-0 border-b">
@@ -520,24 +590,6 @@ function MembersContent() {
             </div>
           </div>
           <DialogFooter className="p-6 pt-0 grid grid-cols-2 gap-3"><Button variant="outline" onClick={() => { setIsQrOpen(false); forceUnlockUI(); }} className="h-12 rounded-xl font-bold">Tutup</Button><Button onClick={() => handlePrintSingleCard(selectedMemberQr)} className="h-12 gap-2 shadow-lg shadow-primary/20 rounded-xl font-bold"><Printer className="h-4 w-4" /> Cetak Kartu</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="bg-slate-50 max-md border-none">
-          <DialogHeader>
-            <DialogTitle>Ubah Data Anggota</DialogTitle>
-            <DialogDescription>Perbarui informasi identitas anggota di bawah ini.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label className="font-semibold text-xs uppercase text-muted-foreground">Kategori</Label>
-              <Select value={formData.type} onValueChange={v => setFormData({...formData, type: v as any})}><SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Student">Siswa</SelectItem><SelectItem value="Teacher">Guru</SelectItem></SelectContent></Select>
-            </div>
-            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label><Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" /></div>
-            <div className="space-y-2"><Label className="font-semibold text-xs uppercase text-muted-foreground">{formData.type === 'Teacher' ? 'Mengajar / Kelas' : 'Kelas'}</Label><Input value={formData.classPart ?? ""} onChange={e => setFormData({...formData, classPart: e.target.value})} className="bg-white border-slate-300 h-11" placeholder={formData.type === 'Teacher' ? "Cth: BAHASA INGGRIS/VII" : "Cth: VII A"} /></div>
-          </div>
-          <DialogFooter><Button onClick={handleUpdateMember} className="w-full h-11">Simpan Perubahan</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
