@@ -130,7 +130,7 @@ export default function SyncPage() {
         }
         if (authError.code === 'auth/popup-closed-by-user') {
           setShowUnverifiedGuide(true);
-          throw new Error("Izin akses dibatalkan. Mohon ikuti panduan keamanan (Advanced/Lanjutan) untuk melanjutkan.");
+          throw new Error("Proses dibatalkan. Ikuti panduan keamanan di bawah untuk melanjutkan.");
         }
         throw authError;
       }
