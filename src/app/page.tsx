@@ -138,8 +138,8 @@ export default function LoginPage() {
     }
   }
 
-  const displayTitle = settings?.libraryName || "LANTERA BACA";
-  const displaySubtitle = settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG";
+  const displayTitle = settings?.libraryName;
+  const displaySubtitle = settings?.librarySubtitle;
   const displayLogo = settings?.libraryLogoUrl;
 
   const shouldShowLoading = !isMounted || (authLoading && !user) || (user && user.role && isRedirecting) || isRedirecting || settingsLoading;
@@ -156,7 +156,7 @@ export default function LoginPage() {
             ) : null}
           </div>
           <div className="flex flex-col items-center space-y-2 text-center h-12">
-            {!settingsLoading ? (
+            {!settingsLoading && displayTitle ? (
               <>
                 <div className="flex items-center gap-2">
                   <Loader2 className="h-5 w-5 animate-spin text-primary" />
@@ -169,7 +169,10 @@ export default function LoginPage() {
                 </p>
               </>
             ) : (
-              <Loader2 className="h-6 w-6 animate-spin text-primary opacity-20" />
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="h-8 w-8 animate-spin text-primary/40" />
+                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-20">Memuat Sistem...</p>
+              </div>
             )}
           </div>
         </div>
@@ -190,10 +193,10 @@ export default function LoginPage() {
           </div>
           <div className="space-y-1">
             <CardTitle className="text-3xl font-black font-headline uppercase tracking-tighter text-primary leading-tight">
-              {displayTitle}
+              {displayTitle || "LANTERA BACA"}
             </CardTitle>
             <CardDescription className="font-bold text-secondary uppercase tracking-[0.15em] text-xs text-center px-4">
-              {isSetupMode ? "Inisialisasi Sistem Baru" : displaySubtitle}
+              {isSetupMode ? "Inisialisasi Sistem Baru" : (displaySubtitle || "SMPN 5 LANGKE REMBONG")}
             </CardDescription>
           </div>
         </CardHeader>

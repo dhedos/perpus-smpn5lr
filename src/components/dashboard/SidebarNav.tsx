@@ -70,8 +70,8 @@ export function SidebarNav({ onItemClick }: SidebarNavProps) {
     }
   }
 
-  const displayTitle = settings?.libraryName || (isLoading ? "" : "LANTERA BACA");
-  const displaySubtitle = settings?.librarySubtitle || (isLoading ? "" : "SMPN 5 LANGKE REMBONG");
+  const displayTitle = settings?.libraryName;
+  const displaySubtitle = settings?.librarySubtitle;
   const displayLogo = settings?.libraryLogoUrl;
 
   return (
@@ -87,12 +87,18 @@ export function SidebarNav({ onItemClick }: SidebarNavProps) {
           )}
         </div>
         <div className="flex flex-col overflow-hidden min-h-[32px] justify-center">
-          <span className="text-sm font-black leading-tight text-primary tracking-tight uppercase truncate">
-            {displayTitle}
-          </span>
-          <span className="text-[10px] font-bold leading-tight text-secondary uppercase tracking-widest truncate">
-            {displaySubtitle}
-          </span>
+          {displayTitle ? (
+             <>
+               <span className="text-sm font-black leading-tight text-primary tracking-tight uppercase truncate">
+                 {displayTitle}
+               </span>
+               <span className="text-[10px] font-bold leading-tight text-secondary uppercase tracking-widest truncate">
+                 {displaySubtitle}
+               </span>
+             </>
+          ) : (
+             <div className="w-32 h-4 bg-primary/5 animate-pulse rounded" />
+          )}
         </div>
       </div>
       
@@ -169,7 +175,7 @@ export function SidebarNav({ onItemClick }: SidebarNavProps) {
         </AlertDialog>
         <div className="text-center pt-2">
            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">
-             © 2026 {displayTitle || "Lantera Baca"}
+             © 2026 {displayTitle || "Sistem Perpustakaan"}
            </p>
         </div>
       </div>

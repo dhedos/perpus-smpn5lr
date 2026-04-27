@@ -34,8 +34,8 @@ export default function DashboardLayout({
     }
   }, [user, userLoading, router, isRedirecting, isMounted])
 
-  const displayTitle = settings?.libraryName || "LANTERA BACA";
-  const displaySubtitle = settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG";
+  const displayTitle = settings?.libraryName;
+  const displaySubtitle = settings?.librarySubtitle;
   const displayLogo = settings?.libraryLogoUrl;
 
   const isLoading = !isMounted || userLoading || isRedirecting || !user || settingsLoading;
@@ -53,7 +53,7 @@ export default function DashboardLayout({
             ) : null}
           </div>
           <div className="flex flex-col items-center space-y-2 text-center h-12">
-            {!settingsLoading ? (
+            {!settingsLoading && displayTitle ? (
               <>
                 <div className="flex items-center gap-2">
                   <Loader2 className="h-5 w-5 animate-spin text-primary" />
@@ -66,7 +66,10 @@ export default function DashboardLayout({
                 </p>
               </>
             ) : (
-              <Loader2 className="h-6 w-6 animate-spin text-primary opacity-20" />
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="h-8 w-8 animate-spin text-primary/40" />
+                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-20">Masuk ke Dashboard...</p>
+              </div>
             )}
           </div>
         </div>
