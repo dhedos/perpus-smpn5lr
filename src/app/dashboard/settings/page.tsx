@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Library, Bell, Shield, Save, Loader2, Coins, CalendarDays, FileText, MapPin, UserCheck, Type, Wallet, LockKeyhole, Image as ImageIcon, Upload } from "lucide-react"
+import { Library, Bell, Shield, Save, Loader2, Coins, CalendarDays, FileText, MapPin, UserCheck, Type, Wallet, LockKeyhole, Image as ImageIcon, Upload, Fingerprint } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 
@@ -74,7 +74,8 @@ export default function SettingsPage() {
         damagedBookFine: Number(remoteSettings.damagedBookFine ?? 10000),
         lostBookFine: Number(remoteSettings.lostBookFine ?? 50000),
         isDataLocked: remoteSettings.isDataLocked === true,
-        budgetSources: remoteSettings.budgetSources || "BOSP, DAK, Hibah"
+        budgetSources: remoteSettings.budgetSources || "BOSP, DAK, Hibah",
+        principalNip: remoteSettings.principalNip || "198507272011011020"
       }))
     }
   }, [remoteSettings])
@@ -342,6 +343,17 @@ export default function SettingsPage() {
                       value={settings.principalName} 
                       onChange={(e) => setSettings({ ...settings, principalName: e.target.value })}
                       className="bg-white border-slate-200 h-11"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label className="font-bold text-xs uppercase text-muted-foreground flex items-center gap-2">
+                      <Fingerprint className="h-3 w-3" /> NIP Kepala Sekolah
+                    </Label>
+                    <Input 
+                      value={settings.principalNip} 
+                      onChange={(e) => setSettings({ ...settings, principalNip: e.target.value })}
+                      className="bg-white border-slate-200 h-11 font-mono"
+                      placeholder="Masukkan NIP..."
                     />
                   </div>
                 </div>
