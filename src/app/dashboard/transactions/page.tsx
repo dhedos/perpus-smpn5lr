@@ -331,23 +331,30 @@ function TransactionsContent() {
 
     printWindow.document.write(`
       <html>
-        <head><title>Laporan</title></head>
+        <head>
+          <title>Laporan Sirkulasi Siswa</title>
+          <style>
+            @page { size: A4; margin: 0; }
+            body { font-family: 'Inter', sans-serif; font-size: 11pt; margin: 0; padding: 15mm; }
+            .print-footer { position: fixed; bottom: 8mm; left: 15mm; right: 15mm; font-size: 8pt; text-align: center; color: #999; border-top: 1px solid #eee; padding-top: 2mm; }
+          </style>
+        </head>
         <body onload="window.print(); window.close();">
-          <h2 style="text-align: center;">DAFTAR TRANSAKSI SISWA</h2>
+          <h2 style="text-align: center;">DAFTAR TRANSAKSI SIRKULASI SISWA</h2>
           <table style="width: 100%; border-collapse: collapse;">
             <thead>
               <tr>
-                <th>No</th>
-                <th>Nama Siswa</th>
-                <th>Judul Buku</th>
-                <th>Tgl Pinjam</th>
-                <th>Tgl Kembali</th>
-                <th>Denda (Rp)</th>
+                <th style="border: 1px solid #ccc; padding: 8px;">No</th>
+                <th style="border: 1px solid #ccc; padding: 8px;">Nama Siswa</th>
+                <th style="border: 1px solid #ccc; padding: 8px;">Judul Buku</th>
+                <th style="border: 1px solid #ccc; padding: 8px;">Tgl Pinjam</th>
+                <th style="border: 1px solid #ccc; padding: 8px;">Tgl Kembali</th>
+                <th style="border: 1px solid #ccc; padding: 8px;">Denda (Rp)</th>
               </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>
           </table>
-          <p style="text-align: center; margin-top: 30px; font-size: 10px;">© 2026 Lantera Baca</p>
+          <div class="print-footer">© 2026 Lantera Baca - Sistem Informasi Perpustakaan Modern</div>
         </body>
       </html>
     `)

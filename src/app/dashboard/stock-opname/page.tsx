@@ -237,25 +237,32 @@ export default function StockOpnamePage() {
 
     printWindow.document.write(`
       <html>
-        <head><title>Stock Opname</title></head>
+        <head>
+          <title>Laporan Stock Opname</title>
+          <style>
+            @page { size: A4; margin: 0; }
+            body { font-family: 'Inter', sans-serif; font-size: 11pt; margin: 0; padding: 15mm; }
+            .print-footer { position: fixed; bottom: 8mm; left: 15mm; right: 15mm; font-size: 8pt; text-align: center; color: #999; border-top: 1px solid #eee; padding-top: 2mm; }
+          </style>
+        </head>
         <body onload="window.print(); window.close();">
           <h2 style="text-align: center;">LAPORAN HASIL AUDIT STOK (STOCK OPNAME)</h2>
           <table style="width: 100%; border-collapse: collapse;">
             <thead>
               <tr>
-                <th>No</th>
-                <th>Waktu</th>
-                <th>Kode Buku</th>
-                <th>Judul Buku</th>
-                <th>Stok Sistem</th>
-                <th>Fisik</th>
-                <th>Selisih</th>
-                <th>Status</th>
+                <th style="border: 1px solid #ccc; padding: 8px;">No</th>
+                <th style="border: 1px solid #ccc; padding: 8px;">Waktu</th>
+                <th style="border: 1px solid #ccc; padding: 8px;">Kode Buku</th>
+                <th style="border: 1px solid #ccc; padding: 8px;">Judul Buku</th>
+                <th style="border: 1px solid #ccc; padding: 8px;">Stok Sistem</th>
+                <th style="border: 1px solid #ccc; padding: 8px;">Fisik</th>
+                <th style="border: 1px solid #ccc; padding: 8px;">Selisih</th>
+                <th style="border: 1px solid #ccc; padding: 8px;">Status</th>
               </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>
           </table>
-          <p style="text-align: center; margin-top: 30px; font-size: 10px;">© 2026 Lantera Baca</p>
+          <div class="print-footer">© 2026 Lantera Baca - Sistem Informasi Perpustakaan Modern</div>
         </body>
       </html>
     `)

@@ -191,7 +191,7 @@ function MembersContent() {
     printWindow.document.write(`
       <html>
         <head>
-          <title> </title>
+          <title>Daftar Anggota Perpustakaan</title>
           <style>
             @page { size: A4; margin: 0; }
             body { font-family: 'Inter', sans-serif; font-size: 12px; margin: 0; padding: 15mm; }
@@ -230,7 +230,7 @@ function MembersContent() {
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
             NIP. ${settings?.principalNip || '198507272011011020'}
           </div>
-          <div class="print-footer">© 2026 Lantera Baca</div>
+          <div class="print-footer">© 2026 Lantera Baca - Sistem Informasi Perpustakaan Modern</div>
         </body>
       </html>
     `)
@@ -294,10 +294,10 @@ function MembersContent() {
     printWindow.document.write(`
       <html>
         <head>
-          <title> </title>
+          <title>Cetak Kartu Anggota</title>
           <style>
-            @page { size: A4; margin: 10mm; }
-            body { margin: 0; padding: 0; background: #fff; font-family: 'Inter', sans-serif; }
+            @page { size: A4; margin: 0; }
+            body { margin: 0; padding: 10mm; background: #fff; font-family: 'Inter', sans-serif; }
             .print-grid {
               display: grid;
               grid-template-columns: repeat(3, 1fr);
@@ -446,7 +446,7 @@ function MembersContent() {
     printWindow.document.write(`
       <html>
         <head>
-          <title> </title>
+          <title>Cetak Kartu Anggota</title>
           <style>
             @page { size: 54mm 86mm; margin: 0; }
             body { margin: 0; padding: 0; background: #fff; font-family: 'Inter', sans-serif; display: flex; justify-content: center; }

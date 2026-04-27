@@ -565,8 +565,8 @@ function BooksContent() {
         <head>
           <title>Label QR Berdasarkan Lokasi RAK</title>
           <style>
-            @page { size: A4; margin: 10mm; }
-            body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; background: #fff; }
+            @page { size: A4; margin: 0; }
+            body { font-family: 'Inter', sans-serif; margin: 0; padding: 10mm; background: #fff; }
             .print-container { 
               display: grid; 
               grid-template-columns: repeat(3, 1fr);
@@ -646,10 +646,10 @@ function BooksContent() {
     printWindow.document.write(`
       <html>
         <head>
-          <title>Cetak Label QR (${totalCopies} Copy)</title>
+          <title>Cetak Label QR</title>
           <style>
-            @page { size: A4; margin: 10mm; }
-            body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background: #fff; }
+            @page { size: A4; margin: 0; }
+            body { margin: 0; padding: 10mm; font-family: 'Inter', sans-serif; background: #fff; }
             .print-container { 
               display: grid; 
               grid-template-columns: repeat(3, 1fr);

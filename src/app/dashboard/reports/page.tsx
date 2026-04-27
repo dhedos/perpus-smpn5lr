@@ -109,7 +109,7 @@ export default function ReportsPage() {
     printWindow.document.write(`
       <html>
         <head>
-          <title> </title>
+          <title>Audit Perpustakaan - ${format(new Date(), 'yyyy')}</title>
           <style>
             @page { size: A4; margin: 0; }
             body { font-family: 'Inter', sans-serif; font-size: 12px; line-height: 1.6; margin: 0; padding: 15mm; }
@@ -192,7 +192,7 @@ export default function ReportsPage() {
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
             NIP. ${settings?.principalNip || '198507272011011020'}
           </div>
-          <div class="print-footer">© 2026 Lantera Baca</div>
+          <div class="print-footer">© 2026 Lantera Baca - Sistem Informasi Perpustakaan Modern</div>
         </body>
       </html>
     `)
