@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, ShieldCheck, AlertCircle, Library, Chrome } from "lucide-react"
+import { Loader2, ShieldCheck, AlertCircle, Chrome } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth, useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from "@/firebase"
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from "firebase/auth"
@@ -148,14 +148,13 @@ export default function LoginPage() {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-6 animate-in fade-in duration-500">
-          <div className="w-24 h-24 flex items-center justify-center rounded-[2rem] bg-primary/10 text-primary shadow-sm overflow-hidden">
-            {displayLogo ? (
+          {displayLogo && !settingsLoading ? (
+            <div className="w-24 h-24 flex items-center justify-center rounded-[2rem] bg-primary/10 text-primary shadow-sm overflow-hidden">
               <img src={displayLogo} alt="Logo" className="w-16 h-16 object-contain" />
-            ) : !settingsLoading ? (
-              <Library className="h-12 w-12" />
-            ) : null}
-          </div>
-          <div className="flex flex-col items-center space-y-2 text-center h-12">
+            </div>
+          ) : null}
+
+          <div className="flex flex-col items-center space-y-2 text-center">
             {!settingsLoading && displayTitle ? (
               <>
                 <div className="flex items-center gap-2">
@@ -169,10 +168,7 @@ export default function LoginPage() {
                 </p>
               </>
             ) : (
-              <div className="flex flex-col items-center gap-2">
-                <Loader2 className="h-8 w-8 animate-spin text-primary/40" />
-                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-20">Memuat Sistem...</p>
-              </div>
+              <Loader2 className="h-8 w-8 animate-spin text-primary/40" />
             )}
           </div>
         </div>
@@ -188,7 +184,9 @@ export default function LoginPage() {
             {displayLogo ? (
               <img src={displayLogo} alt="Logo" className="w-16 h-16 object-contain" />
             ) : (
-              <Library className="h-12 w-12" />
+              <div className="w-full h-full bg-slate-100 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary/20" />
+              </div>
             )}
           </div>
           <div className="space-y-1">
