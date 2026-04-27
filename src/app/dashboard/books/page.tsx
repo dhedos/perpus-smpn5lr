@@ -567,11 +567,20 @@ function BooksContent() {
           <style>
             @page { size: A4; margin: 0; }
             body { font-family: 'Inter', sans-serif; margin: 0; padding: 10mm; background: #fff; }
+            .print-meta-info { 
+              font-size: 7pt; 
+              color: #444; 
+              position: absolute; 
+              top: 5mm; 
+              left: 10mm; 
+              font-weight: bold;
+            }
             .print-container { 
               display: grid; 
               grid-template-columns: repeat(3, 1fr);
               gap: 0;
               width: 100%;
+              margin-top: 5mm;
             }
             .sticker {
               width: 63mm;
@@ -595,12 +604,25 @@ function BooksContent() {
             .footer-row { height: 4mm; border-top: 0.4pt solid #eee; display: flex; align-items: center; justify-content: space-between; padding-top: 0.5mm; margin-top: 1mm; }
             .footer-rak { font-size: 6pt; font-weight: 900; color: #444; }
             .footer-name { font-size: 5pt; color: #999; text-transform: uppercase; font-weight: 800; }
+            .print-footer { 
+              position: fixed; 
+              bottom: 5mm; 
+              left: 10mm; 
+              right: 10mm; 
+              text-align: center; 
+              font-size: 7pt; 
+              color: #999; 
+              border-top: 0.5pt solid #eee; 
+              padding-top: 1mm; 
+            }
           </style>
         </head>
         <body onload="window.print(); window.close();">
+          <div class="print-meta-info">Laporan Label QR Buku (Urut Lokasi Rak) - ${formattedDateTime}</div>
           <div class="print-container">
             ${qrCardsHtml}
           </div>
+          <div class="print-footer">© 2026 Lantera Baca - Sistem Informasi Perpustakaan Modern</div>
         </body>
       </html>
     `)
@@ -650,11 +672,13 @@ function BooksContent() {
           <style>
             @page { size: A4; margin: 0; }
             body { margin: 0; padding: 10mm; font-family: 'Inter', sans-serif; background: #fff; }
+            .print-meta-info { font-size: 7pt; color: #444; position: absolute; top: 5mm; left: 10mm; font-weight: bold; }
             .print-container { 
               display: grid; 
               grid-template-columns: repeat(3, 1fr);
               gap: 0;
               width: 100%;
+              margin-top: 5mm;
             }
             .sticker {
               width: 63mm;
@@ -678,12 +702,15 @@ function BooksContent() {
             .footer-row { height: 4mm; border-top: 0.4pt solid #eee; display: flex; align-items: center; justify-content: space-between; padding-top: 0.5mm; margin-top: 1mm; }
             .footer-rak { font-size: 6pt; font-weight: 900; color: #444; }
             .footer-name { font-size: 5pt; color: #999; text-transform: uppercase; font-weight: 800; }
+            .print-footer { position: fixed; bottom: 5mm; left: 10mm; right: 10mm; text-align: center; font-size: 7pt; color: #999; border-top: 0.5pt solid #eee; padding-top: 1mm; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
+          <div class="print-meta-info">Label Stiker Buku: ${book.title} - ${new Date().toLocaleDateString('id-ID')}</div>
           <div class="print-container">
             ${allStickersHtml}
           </div>
+          <div class="print-footer">© 2026 Lantera Baca</div>
         </body>
       </html>
     `)

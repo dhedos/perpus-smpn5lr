@@ -51,6 +51,7 @@ import { useToast } from "@/hooks/use-toast"
 
 export function TopNav() {
   const [isOnline, setIsOnline] = useState(true)
+  const [connectionType, setConnectionType] = useState<string>("4g")
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
@@ -111,14 +112,29 @@ export function TopNav() {
   }, [user])
 
   useEffect(() => {
-    setIsOnline(navigator.onLine)
-    const handleOnline = () => setIsOnline(true)
-    const handleOffline = () => setIsOnline(false)
-    window.addEventListener('online', handleOnline)
-    window.addEventListener('offline', handleOffline)
+    const updateConnectionInfo = () => {
+      setIsOnline(navigator.onLine);
+      const conn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+      if (conn) {
+        setConnectionType(conn.effectiveType || "4g");
+      }
+    };
+
+    updateConnectionInfo();
+    window.addEventListener('online', updateConnectionInfo);
+    window.addEventListener('offline', updateConnectionInfo);
+    
+    const conn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+    if (conn) {
+      conn.addEventListener('change', updateConnectionInfo);
+    }
+
     return () => {
-      window.removeEventListener('online', handleOnline)
-      window.removeEventListener('offline', handleOffline)
+      window.removeEventListener('online', updateConnectionInfo);
+      window.removeEventListener('offline', updateConnectionInfo);
+      if (conn) {
+        conn.removeEventListener('change', updateConnectionInfo);
+      }
     }
   }, [])
 
@@ -223,6 +239,22 @@ export function TopNav() {
     router.push(path)
   }
 
+  const getWifiStatus = () => {
+    if (!isOnline) return { icon: <WifiOff className="h-4 w-4 text-destructive" />, label: "Offline" };
+    
+    switch (connectionType) {
+      case 'slow-2g':
+      case '2g':
+        return { icon: <Wifi className="h-4 w-4 text-orange-500 opacity-60" />, label: "Sinyal Lemah" };
+      case '3g':
+        return { icon: <Wifi className="h-4 w-4 text-yellow-500" />, label: "Sinyal Sedang" };
+      default:
+        return { icon: <Wifi className="h-4 w-4 text-green-500" />, label: "Sinyal Kuat" };
+    }
+  }
+
+  const wifiInfo = getWifiStatus();
+
   return (
     <header className="h-16 border-b bg-card/50 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between px-4 md:px-6">
       <div className="flex items-center gap-4 flex-1">
@@ -315,12 +347,8 @@ export function TopNav() {
 
       <div className="flex items-center gap-2 md:gap-4">
         <div className="flex items-center gap-2 mr-2">
-          <Badge variant={isOnline ? "outline" : "destructive"} className="gap-1.5 flex items-center px-2 py-0.5 border-none bg-transparent">
-            {isOnline ? (
-              <Wifi className="h-4 w-4 text-green-500" />
-            ) : (
-              <WifiOff className="h-4 w-4 text-destructive" />
-            )}
+          <Badge variant="outline" className="gap-1.5 flex items-center px-2 py-0.5 border-none bg-transparent" title={wifiInfo.label}>
+            {wifiInfo.icon}
           </Badge>
         </div>
 

@@ -230,7 +230,7 @@ function MembersContent() {
             <strong>${settings?.principalName || 'Lodovikus Jangkar, S.Pd.Gr'}</strong><br/>
             NIP. ${settings?.principalNip || '198507272011011020'}
           </div>
-          <div class="print-footer">© 2026 Lantera Baca - Sistem Informasi Perpustakaan Modern</div>
+          <div class="print-footer">© 2026 Lantera Baca</div>
         </body>
       </html>
     `)
@@ -258,7 +258,6 @@ function MembersContent() {
 
     const cardsHtml = filteredMembers.map(member => {
       const detailLabel = member.type === 'Teacher' ? 'GURU' : member.type === 'Staff' ? 'PEGAWAI' : 'KELAS';
-      // Fallback data jika memberId kosong agar QR tidak rusak
       const qrData = member.memberId || member.id || "NO_ID";
       const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=M&data=${encodeURIComponent(qrData)}`;
       
@@ -392,6 +391,7 @@ function MembersContent() {
               max-width: 95%;
               text-align: center;
             }
+            .print-footer-info { position: fixed; bottom: 5mm; left: 10mm; right: 10mm; text-align: center; font-size: 7pt; color: #999; }
           </style>
         </head>
         <body onload="
@@ -419,6 +419,7 @@ function MembersContent() {
           <div class="print-grid">
             ${cardsHtml}
           </div>
+          <div class="print-footer-info">© 2026 Lantera Baca - Sistem Informasi Perpustakaan</div>
         </body>
       </html>
     `)
