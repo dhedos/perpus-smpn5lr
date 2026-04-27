@@ -17,7 +17,8 @@ import {
   AlertTriangle,
   ChevronRight,
   Layers,
-  DatabaseBackup
+  DatabaseBackup,
+  BellRing
 } from "lucide-react"
 import { 
   BarChart, 
@@ -34,7 +35,6 @@ import { isAfter, parseISO, differenceInDays, differenceInHours, startOfDay, add
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function DashboardPage() {
   const { user } = useUser()
@@ -48,7 +48,7 @@ export default function DashboardPage() {
     // Logika Pengingat Backup: 3 hari terakhir di setiap bulan
     const now = new Date();
     const lastDay = lastDayOfMonth(now).getDate();
-    const reminderStartDay = lastDay - 3;
+    const reminderStartDay = lastDay - 2; // Misal 31-2 = 29, 30, 31 (3 hari terakhir)
     if (now.getDate() >= reminderStartDay) {
       setShowMonthlyReminder(true);
     }
@@ -173,7 +173,7 @@ export default function DashboardPage() {
   ]
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 relative">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col gap-0.5">
           <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest opacity-80">
@@ -186,26 +186,21 @@ export default function DashboardPage() {
             Pantau aktivitas sirkulasi dan koleksi perpustakaan hari ini.
           </p>
         </div>
-      </div>
 
-      {/* PENGINGAT BACKUP BULANAN */}
-      {mounted && showMonthlyReminder && (
-        <Alert 
-          className="bg-orange-50 border-orange-200 text-orange-800 cursor-pointer hover:bg-orange-100 transition-colors shadow-sm animate-in slide-in-from-top-4"
-          onClick={() => router.push('/dashboard/reports')}
-        >
-          <DatabaseBackup className="h-6 w-6 text-orange-600" />
-          <div className="flex-1 ml-4">
-            <AlertTitle className="font-black uppercase tracking-tight">WAKTUNYA BACKUP BULANAN!</AlertTitle>
-            <AlertDescription className="text-sm font-medium">
-              Segera amankan data Siswa dan Guru bulan ini sebelum pergantian periode. Klik di sini untuk mengunduh arsip digital.
-            </AlertDescription>
-          </div>
-          <div className="flex items-center gap-1 font-bold text-xs text-orange-600 ml-4">
-            Ke Laporan <ChevronRight className="h-4 w-4" />
-          </div>
-        </Alert>
-      )}
+        {/* INDIKATOR KEDIPAN WARNING BACKUP (POJOK KANAN ATAS HEADER) */}
+        {mounted && showMonthlyReminder && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => router.push('/dashboard/reports')}
+            className="bg-orange-50 border-orange-200 text-orange-700 font-black animate-pulse hover:bg-orange-100 shadow-sm border-2"
+          >
+            <DatabaseBackup className="h-4 w-4 mr-2" />
+            BACKUP DATA!
+            <ChevronRight className="h-3 w-3 ml-1" />
+          </Button>
+        )}
+      </div>
 
       {mounted && overdueTransactions.length > 0 && (
         <Card className="border-none shadow-md bg-destructive/5 overflow-hidden ring-1 ring-destructive/20">
@@ -322,6 +317,9 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
+      <div className="text-center py-6 opacity-30">
+        <p className="text-[10px] font-black uppercase tracking-widest">© 2026 Lantera Baca</p>
       </div>
     </div>
   )

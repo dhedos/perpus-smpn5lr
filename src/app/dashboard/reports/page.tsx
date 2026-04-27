@@ -17,7 +17,8 @@ import {
   DatabaseBackup,
   Download,
   AlertCircle,
-  FileDown
+  FileDown,
+  History
 } from "lucide-react"
 import { 
   BarChart, 
@@ -43,7 +44,7 @@ export default function ReportsPage() {
     setMounted(true)
     const now = new Date();
     const lastDay = lastDayOfMonth(now).getDate();
-    const reminderStartDay = lastDay - 3; // Misal 31-3 = 28
+    const reminderStartDay = lastDay - 2; 
     
     if (now.getDate() >= reminderStartDay) {
       setShowMonthlyReminder(true);
@@ -114,46 +115,71 @@ export default function ReportsPage() {
 
   const isLoading = loadingTrans || loadingMembers;
 
-  const handlePrintMemberType = (type: 'Student' | 'Teacher') => {
-    if (!members) return;
-    const targetMembers = members.filter(m => m.type === type);
-    if (targetMembers.length === 0) return;
+  const handlePrintTransactionBackup = (type: 'Student' | 'Teacher') => {
+    if (!allTrans) return;
+    
+    // Filter transaksi untuk bulan berjalan saja
+    const start = startOfMonth(new Date());
+    const end = endOfMonth(new Date());
+
+    const targetTrans = allTrans.filter(t => {
+      const transDate = t.createdAt ? new Date(t.createdAt.seconds * 1000) : new Date();
+      return t.memberType === type && isWithinInterval(transDate, { start, end });
+    });
+
+    if (targetTrans.length === 0) {
+      alert(`Tidak ada riwayat pinjaman ${type === 'Student' ? 'Siswa' : 'Guru'} untuk bulan ini.`);
+      return;
+    }
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
     const label = type === 'Student' ? 'SISWA' : 'GURU/STAF';
-    const rowsHtml = targetMembers.map((m, i) => `
+    const rowsHtml = targetTrans.map((t, i) => `
       <tr>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${i+1}</td>
-        <td style="border: 1px solid #ccc; padding: 8px; font-family: monospace;">${m.memberId || '-'}</td>
-        <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold;">${m.name}</td>
-        <td style="border: 1px solid #ccc; padding: 8px;">${m.classOrSubject || '-'}</td>
+        <td style="border: 1px solid #ccc; padding: 8px;">${t.memberName}</td>
+        <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle} (${t.quantity || 1} Unit)</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yy') : '-'}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yy') : 'AKTIF'}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">${(t.fineAmount || 0).toLocaleString()}</td>
       </tr>
     `).join('');
 
     printWindow.document.write(`
       <html>
         <head>
-          <title>Data Anggota - ${label}</title>
+          <title>Backup Riwayat - ${label}</title>
           <style>
             @page { size: A4; margin: 0; }
-            body { font-family: 'Inter', sans-serif; font-size: 11pt; padding: 15mm; }
+            body { font-family: 'Inter', sans-serif; font-size: 10pt; padding: 15mm; color: #000; }
             table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-            th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
-            th { background: #f9f9f9; }
+            th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+            th { background: #f2f2f2; font-weight: bold; }
             .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 5mm; margin-bottom: 10mm; }
+            .footer-meta { font-size: 8pt; color: #666; margin-top: 10px; text-align: right; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
           <div class="header">
-            <h3>BACKUP DATA ANGGOTA PERPUSTAKAAN (${label})</h3>
-            <div style="font-size: 9pt;">Waktu Ekspor: ${format(new Date(), 'dd MMMM yyyy, HH:mm')}</div>
+            <h3>ARSIP BULANAN RIWAYAT PINJAMAN ${label}</h3>
+            <div style="text-transform: uppercase;">PERIODE: ${format(new Date(), 'MMMM yyyy')}</div>
           </div>
           <table>
-            <thead><tr><th>No</th><th>ID Anggota</th><th>Nama Lengkap</th><th>Keterangan/Kelas</th></tr></thead>
+            <thead>
+              <tr>
+                <th style="width: 30px;">No</th>
+                <th>Nama Peminjam</th>
+                <th>Judul Buku</th>
+                <th style="width: 80px; text-align: center;">Pinjam</th>
+                <th style="width: 80px; text-align: center;">Kembali</th>
+                <th style="width: 70px; text-align: center;">Denda</th>
+              </tr>
+            </thead>
             <tbody>${rowsHtml}</tbody>
           </table>
+          <div class="footer-meta">Dicetak pada: ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
         </body>
       </html>
     `);
@@ -276,9 +302,9 @@ export default function ReportsPage() {
       {showMonthlyReminder && (
         <Alert className="bg-orange-50 border-orange-200 text-orange-800 animate-in slide-in-from-top-4">
           <DatabaseBackup className="h-5 w-5 text-orange-600" />
-          <AlertTitle className="font-bold">WAKTUNYA BACKUP BULANAN!</AlertTitle>
+          <AlertTitle className="font-bold">PENGINGAT BACKUP BULANAN!</AlertTitle>
           <AlertDescription className="text-sm">
-            Ini adalah 3 hari terakhir di bulan ini. Mohon segera unduh cadangan data Siswa dan Guru di bawah ini untuk arsip bulanan.
+            Mohon segera unduh cadangan **Riwayat Pinjaman** Siswa dan Guru di bawah ini untuk arsip fisik/digital sekolah bulan ini.
           </AlertDescription>
         </Alert>
       )}
@@ -316,27 +342,27 @@ export default function ReportsPage() {
           <Card className="border-none shadow-sm bg-primary/5 border-primary/10">
             <CardHeader>
               <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <FileDown className="h-4 w-4 text-primary" /> Backup Data Terpisah
+                <History className="h-4 w-4 text-primary" /> Backup Riwayat (Bulanan)
               </CardTitle>
-              <CardDescription className="text-[10px]">Unduh arsip digital anggota secara spesifik.</CardDescription>
+              <CardDescription className="text-[10px]">Unduh arsip transaksi pinjaman bulan ini.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3">
               <Button 
                 variant="outline" 
                 className="w-full justify-between font-bold h-11 border-primary/20 hover:bg-primary/10"
-                onClick={() => handlePrintMemberType('Student')}
+                onClick={() => handlePrintTransactionBackup('Student')}
                 disabled={isLoading}
               >
-                Data Seluruh Siswa
+                Riwayat Pinjaman Siswa
                 <Download className="h-4 w-4 ml-2" />
               </Button>
               <Button 
                 variant="outline" 
                 className="w-full justify-between font-bold h-11 border-primary/20 hover:bg-primary/10"
-                onClick={() => handlePrintMemberType('Teacher')}
+                onClick={() => handlePrintTransactionBackup('Teacher')}
                 disabled={isLoading}
               >
-                Data Guru & Staf
+                Riwayat Pinjaman Guru
                 <Download className="h-4 w-4 ml-2" />
               </Button>
             </CardContent>
