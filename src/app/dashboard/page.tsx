@@ -16,7 +16,8 @@ import {
   TrendingUp,
   AlertTriangle,
   ChevronRight,
-  Layers
+  Layers,
+  DatabaseBackup
 } from "lucide-react"
 import { 
   BarChart, 
@@ -29,17 +30,28 @@ import {
 } from "recharts"
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
 import { collection, query, where, orderBy, limit, doc } from "firebase/firestore"
-import { isAfter, parseISO, differenceInDays, differenceInHours, startOfDay, addHours, isToday } from "date-fns"
+import { isAfter, parseISO, differenceInDays, differenceInHours, startOfDay, addHours, isToday, lastDayOfMonth } from "date-fns"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function DashboardPage() {
   const { user } = useUser()
   const db = useFirestore()
+  const router = useRouter()
   const [mounted, setMounted] = useState(false)
+  const [showMonthlyReminder, setShowMonthlyReminder] = useState(false)
 
   useEffect(() => {
     setMounted(true)
+    // Logika Pengingat Backup: 3 hari terakhir di setiap bulan
+    const now = new Date();
+    const lastDay = lastDayOfMonth(now).getDate();
+    const reminderStartDay = lastDay - 3;
+    if (now.getDate() >= reminderStartDay) {
+      setShowMonthlyReminder(true);
+    }
   }, [])
 
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
@@ -175,6 +187,25 @@ export default function DashboardPage() {
           </p>
         </div>
       </div>
+
+      {/* PENGINGAT BACKUP BULANAN */}
+      {mounted && showMonthlyReminder && (
+        <Alert 
+          className="bg-orange-50 border-orange-200 text-orange-800 cursor-pointer hover:bg-orange-100 transition-colors shadow-sm animate-in slide-in-from-top-4"
+          onClick={() => router.push('/dashboard/reports')}
+        >
+          <DatabaseBackup className="h-6 w-6 text-orange-600" />
+          <div className="flex-1 ml-4">
+            <AlertTitle className="font-black uppercase tracking-tight">WAKTUNYA BACKUP BULANAN!</AlertTitle>
+            <AlertDescription className="text-sm font-medium">
+              Segera amankan data Siswa dan Guru bulan ini sebelum pergantian periode. Klik di sini untuk mengunduh arsip digital.
+            </AlertDescription>
+          </div>
+          <div className="flex items-center gap-1 font-bold text-xs text-orange-600 ml-4">
+            Ke Laporan <ChevronRight className="h-4 w-4" />
+          </div>
+        </Alert>
+      )}
 
       {mounted && overdueTransactions.length > 0 && (
         <Card className="border-none shadow-md bg-destructive/5 overflow-hidden ring-1 ring-destructive/20">
