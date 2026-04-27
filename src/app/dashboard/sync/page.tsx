@@ -130,7 +130,7 @@ export default function SyncPage() {
         }
         if (authError.code === 'auth/popup-closed-by-user') {
           setShowUnverifiedGuide(true);
-          throw new Error("Proses dibatalkan. Ikuti panduan keamanan di bawah untuk melanjutkan.");
+          throw new Error("Izin akses dibatalkan. Mohon ikuti panduan keamanan (Advanced/Lanjutan) untuk melanjutkan.");
         }
         throw authError;
       }
@@ -208,9 +208,9 @@ export default function SyncPage() {
     } catch (error: any) {
       console.error("Sheets Sync Error:", error);
       toast({ 
-        title: "Gagal Sinkronisasi", 
+        title: "Status Sinkronisasi", 
         description: error.message || "Gagal menghubungi Google Cloud.", 
-        variant: "destructive" 
+        variant: error.message.includes("izin") ? "default" : "destructive" 
       });
     } finally {
       setIsSyncingToSheets(false);

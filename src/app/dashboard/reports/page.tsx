@@ -34,9 +34,11 @@ import { useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase
 import { collection, doc } from "firebase/firestore"
 import { isAfter, parseISO, startOfMonth, isWithinInterval, endOfMonth, format, lastDayOfMonth } from "date-fns"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { useToast } from "@/hooks/use-toast"
 
 export default function ReportsPage() {
   const db = useFirestore()
+  const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
   const [showMonthlyReminder, setShowMonthlyReminder] = useState(false)
 
@@ -128,7 +130,7 @@ export default function ReportsPage() {
 
   const handlePrintTransactionBackup = (type: 'Student' | 'Teacher') => {
     if (validTransactions.length === 0) {
-      alert("Belum ada data transaksi yang tersimpan di sistem.");
+      toast({ title: "Arsip Kosong", description: "Belum ada riwayat transaksi aktif yang ditemukan.", variant: "destructive" });
       return;
     }
     
@@ -138,14 +140,18 @@ export default function ReportsPage() {
     const targetTrans = validTransactions.filter(t => {
       const transDate = t.createdAt ? new Date(t.createdAt.seconds * 1000) : new Date();
       const matchesType = type === 'Student' 
-        ? t.memberType === 'Student' 
-        : (t.memberType === 'Teacher' || t.memberType === 'Staff');
+        ? (t.memberType === 'Student' || t.type === 'borrow') 
+        : (t.memberType === 'Teacher' || t.memberType === 'Staff' || t.type === 'teacher_handbook');
       
       return matchesType && isWithinInterval(transDate, { start, end });
     });
 
     if (targetTrans.length === 0) {
-      alert(`Tidak ada riwayat pinjaman ${type === 'Student' ? 'Siswa' : 'Guru & Pegawai'} di bulan ini.`);
+      toast({ 
+        title: "Tidak Ada Data", 
+        description: `Tidak ada riwayat pinjaman ${type === 'Student' ? 'Siswa' : 'Guru & Pegawai'} untuk bulan ini.`,
+        variant: "destructive"
+      });
       return;
     }
 
@@ -157,7 +163,7 @@ export default function ReportsPage() {
       <tr>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${i+1}</td>
         <td style="border: 1px solid #ccc; padding: 8px;">${t.memberName} (${t.memberType === 'Teacher' ? 'Guru' : t.memberType === 'Staff' ? 'Pegawai' : 'Siswa'})</td>
-        <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle} (${t.quantity || 1} Unit)</td>
+        <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle} ${t.borrowType === 'Kolektif' ? '(KOL)' : ''}</td>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yy') : '-'}</td>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yy') : 'AKTIF'}</td>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: right;">${(t.fineAmount || 0).toLocaleString()}</td>

@@ -116,7 +116,7 @@ export default function TeacherLoansPage() {
     return allTransactions
       .filter(t => 
         t.status === 'active' && 
-        (t.memberType === 'Teacher' || t.memberType === 'Staff') &&
+        (t.memberType === 'Teacher' || t.memberType === 'Staff' || t.type === 'teacher_handbook') &&
         allBooksData.some(b => b.id === t.bookId) &&
         allMembersData.some(m => m.memberId === t.memberId)
       )
@@ -132,7 +132,7 @@ export default function TeacherLoansPage() {
         const dateToUse = t.returnDate ? parseISO(t.returnDate) : (t.createdAt?.seconds ? new Date(t.createdAt.seconds * 1000) : new Date());
         return (
           t.status === 'returned' && 
-          (t.memberType === 'Teacher' || t.memberType === 'Staff') &&
+          (t.memberType === 'Teacher' || t.memberType === 'Staff' || t.type === 'teacher_handbook') &&
           isWithinInterval(dateToUse, { start, end }) &&
           allBooksData.some(b => b.id === t.bookId) &&
           allMembersData.some(m => m.memberId === t.memberId)
@@ -501,7 +501,7 @@ export default function TeacherLoansPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-12 text-center">No.</TableHead>
-                      <TableHead>Nama Member</TableHead>
+                      <TableHead>Peminjam</TableHead>
                       <TableHead>Buku</TableHead>
                       <TableHead>Pinjam</TableHead>
                       <TableHead>Kembali</TableHead>
