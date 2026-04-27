@@ -539,7 +539,7 @@ function BooksContent() {
       <div class="sticker">
         <div class="top-section">
           <div class="qr-side">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${book.code}" />
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${book.code}" />
           </div>
           <div class="info-side">
             <div class="title">${book.title}</div>
@@ -621,7 +621,7 @@ function BooksContent() {
         <div class="sticker">
           <div class="top-section">
             <div class="qr-side">
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${book.code}" />
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${book.code}" />
             </div>
             <div class="info-side">
               <div class="title">${book.title}</div>
