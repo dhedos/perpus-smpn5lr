@@ -63,7 +63,6 @@ export default function ReportsPage() {
   const { data: books, isLoading: loadingBooks } = useCollection(booksRef)
   const { data: settings } = useDoc(settingsRef)
 
-  // Validasi data: Hanya hitung data yang buku & anggotanya masih ada di sistem aktif
   const validTransactions = useMemo(() => {
     if (!allTrans || !books || !members) return []
     return allTrans.filter(t => 
@@ -130,7 +129,7 @@ export default function ReportsPage() {
 
   const handlePrintTransactionBackup = (type: 'Student' | 'Teacher') => {
     if (validTransactions.length === 0) {
-      toast({ title: "Arsip Kosong", description: "Belum ada riwayat transaksi aktif yang ditemukan.", variant: "destructive" });
+      toast({ title: "Feedback: Data Kosong", description: "Belum ada riwayat transaksi aktif yang ditemukan di database.", variant: "destructive" });
       return;
     }
     
@@ -140,7 +139,7 @@ export default function ReportsPage() {
     const targetTrans = validTransactions.filter(t => {
       const transDate = t.createdAt ? new Date(t.createdAt.seconds * 1000) : new Date();
       const matchesType = type === 'Student' 
-        ? (t.memberType === 'Student' || t.type === 'borrow') 
+        ? (t.memberType === 'Student' || t.type === 'borrow' || t.type === 'return') 
         : (t.memberType === 'Teacher' || t.memberType === 'Staff' || t.type === 'teacher_handbook');
       
       return matchesType && isWithinInterval(transDate, { start, end });
@@ -148,8 +147,8 @@ export default function ReportsPage() {
 
     if (targetTrans.length === 0) {
       toast({ 
-        title: "Tidak Ada Data", 
-        description: `Tidak ada riwayat pinjaman ${type === 'Student' ? 'Siswa' : 'Guru & Pegawai'} untuk bulan ini.`,
+        title: "Riwayat Masih Kosong", 
+        description: `Tidak ada data sirkulasi ${type === 'Student' ? 'Siswa' : 'Guru & Pegawai'} untuk bulan ini.`,
         variant: "destructive"
       });
       return;

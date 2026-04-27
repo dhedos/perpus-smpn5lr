@@ -124,13 +124,21 @@ export default function SyncPage() {
       try {
         result = await signInWithPopup(auth, provider);
       } catch (authError: any) {
+        if (authError.code === 'auth/unauthorized-domain') {
+          toast({ 
+            title: "Domain Belum Diizinkan", 
+            description: "Domain Anda belum ditambahkan ke list 'Authorized Domains' di Firebase Console.",
+            variant: "destructive"
+          });
+          throw new Error("Domain tidak diizinkan. Cek Firebase Console.");
+        }
         if (authError.code === 'auth/popup-blocked') {
           setShowPopupGuide(true);
-          throw new Error("Popup diblokir browser. Izinkan popup untuk melanjutkan.");
+          throw new Error("Popup diblokir browser.");
         }
         if (authError.code === 'auth/popup-closed-by-user') {
           setShowUnverifiedGuide(true);
-          throw new Error("Proses dibatalkan. Ikuti panduan keamanan di bawah untuk melanjutkan.");
+          throw new Error("Proses login ditutup.");
         }
         throw authError;
       }
@@ -207,11 +215,13 @@ export default function SyncPage() {
 
     } catch (error: any) {
       console.error("Sheets Sync Error:", error);
-      toast({ 
-        title: "Status Sinkronisasi", 
-        description: error.message || "Gagal menghubungi Google Cloud.", 
-        variant: error.message.includes("izin") ? "default" : "destructive" 
-      });
+      if (error.message !== "Popup diblokir browser." && error.message !== "Proses login ditutup.") {
+        toast({ 
+          title: "Status Sinkronisasi", 
+          description: error.message || "Gagal menghubungi Google Cloud.", 
+          variant: "destructive" 
+        });
+      }
     } finally {
       setIsSyncingToSheets(false);
     }
@@ -243,14 +253,14 @@ export default function SyncPage() {
         {showUnverifiedGuide && (
           <Alert className="bg-orange-50 border-orange-200 text-orange-800">
             <ShieldAlert className="h-5 w-5 text-orange-600" />
-            <AlertTitle className="font-bold">Google Belum Memverifikasi Aplikasi Ini?</AlertTitle>
+            <AlertTitle className="font-bold">Aplikasi Belum Diverifikasi Google?</AlertTitle>
             <AlertDescription className="text-xs space-y-2">
-              <p>Ini normal karena sistem masih dalam tahap pengembangan. Untuk melanjutkan:</p>
+              <p>Ini normal karena sistem masih baru. Untuk melanjutkan:</p>
               <ol className="list-decimal pl-4 space-y-1">
                 <li>Klik tombol <b>Mulai Sinkronisasi</b> lagi.</li>
-                <li>Jika muncul jendela peringatan Google, klik link <b>"Lanjutan" (Advanced)</b> di pojok kiri bawah.</li>
-                <li>Pilih <b>"Buka Pustaka Nusantara (tidak aman)"</b> atau <b>"Go to [App Name] (unsafe)"</b>.</li>
-                <li>Klik <b>Lanjutkan</b> untuk memberikan izin Google Sheets.</li>
+                <li>Jika muncul peringatan Google, klik <b>"Lanjutan" (Advanced)</b>.</li>
+                <li>Pilih <b>"Buka Pustaka Nusantara (tidak aman)"</b>.</li>
+                <li>Klik <b>Lanjutkan</b> untuk mengirim data ke Google Sheets.</li>
               </ol>
             </AlertDescription>
           </Alert>
