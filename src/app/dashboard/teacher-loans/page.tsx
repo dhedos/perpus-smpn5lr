@@ -23,7 +23,8 @@ import {
   Plus,
   User,
   BookOpen,
-  CameraOff
+  CameraOff,
+  Users
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -74,6 +75,9 @@ export default function TeacherLoansPage() {
   
   const [selectedMember, setSelectedMember] = useState<any>(null)
   const [selectedBook, setSelectedBook] = useState<any>(null)
+  const [borrowQuantity, setBorrowQuantity] = useState(1)
+  const [borrowType, setBorrowType] = useState<"Pribadi" | "Kolektif">("Pribadi")
+
   const [showMemberSuggestions, setShowMemberSuggestions] = useState(false)
   const [showBookSuggestions, setShowBookSuggestions] = useState(false)
 
@@ -182,6 +186,7 @@ export default function TeacherLoansPage() {
         setSelectedBook(book)
         setBookSearch("")
         setShowBookSuggestions(false)
+        setBorrowQuantity(1)
         toast({ title: "Buku Terpilih" })
         return true
       }
@@ -259,6 +264,15 @@ export default function TeacherLoansPage() {
       return
     }
 
+    if (borrowQuantity > (selectedBook.availableStock || 0)) {
+      toast({ 
+        title: "Stok Tidak Cukup", 
+        description: `Stok tersedia hanya ${selectedBook.availableStock} unit.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsProcessing(true)
 
     const newLoan = {
@@ -268,7 +282,8 @@ export default function TeacherLoansPage() {
       classOrSubject: selectedMember.classOrSubject || "-",
       bookId: selectedBook.id,
       bookTitle: selectedBook.title,
-      quantity: 1,
+      quantity: borrowQuantity,
+      borrowType: borrowType,
       type: 'teacher_handbook',
       status: 'active',
       borrowDate: new Date().toISOString(),
@@ -277,10 +292,11 @@ export default function TeacherLoansPage() {
 
     addDoc(collection(db, 'transactions'), newLoan).then(() => {
       const avail = Number(selectedBook.availableStock ?? 1)
-      updateDoc(doc(db, 'books', selectedBook.id), { availableStock: Math.max(0, avail - 1) })
+      updateDoc(doc(db, 'books', selectedBook.id), { availableStock: Math.max(0, avail - borrowQuantity) })
       toast({ title: "Buku Pegangan Dicatat", description: `${selectedBook.title} telah diserahkan ke ${selectedMember.name}.` })
       setSelectedBook(null)
       setSelectedMember(null)
+      setBorrowQuantity(1)
     }).finally(() => setIsProcessing(false))
   }
 
@@ -357,7 +373,7 @@ export default function TeacherLoansPage() {
       <tr>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
         <td style="border: 1px solid #ccc; padding: 8px;">${t.memberName}</td>
-        <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle}</td>
+        <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle} (${t.quantity || 1} Unit)</td>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.borrowDate ? new Date(t.borrowDate).toLocaleDateString('id-ID') : '-'}</td>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.returnDate ? new Date(t.returnDate).toLocaleDateString('id-ID') : 'PEGANG'}</td>
       </tr>
@@ -424,83 +440,147 @@ export default function TeacherLoansPage() {
           </Card>
 
           <div className="grid lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-1 border-none shadow-sm bg-blue-50/50">
-              <CardHeader>
-                <CardTitle className="text-sm font-bold uppercase tracking-wider">Identitas Penyerahan</CardTitle>
-                <CardDescription>Gunakan Smart Scan di atas atau pilih secara manual.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase">Pilih Guru</Label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      placeholder="Nama atau NIP Guru..." 
-                      className="pl-10 bg-white"
-                      value={memberSearch}
-                      onChange={e => { setMemberSearch(e.target.value); setShowMemberSuggestions(true); }}
-                      onFocus={() => setShowMemberSuggestions(true)}
-                      onKeyDown={e => e.key === 'Enter' && handleLookup(memberSearch)}
-                    />
-                    {showMemberSuggestions && memberSuggestions.length > 0 && (
-                      <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border rounded-lg shadow-xl overflow-hidden">
-                        {memberSuggestions.map(m => (
-                          <div key={m.id} className="p-3 hover:bg-slate-50 cursor-pointer text-sm border-b last:border-0" onClick={() => { setSelectedMember(m); setMemberSearch(""); setShowMemberSuggestions(false); }}>
-                            <div className="font-bold">{m.name}</div>
-                            <div className="text-[10px] text-muted-foreground">{m.memberId}</div>
-                          </div>
-                        ))}
+            <div className="lg:col-span-1 space-y-6">
+              {/* Pilihan Jenis & Jumlah */}
+              <Card className="border-none shadow-sm">
+                <CardHeader className="bg-slate-50/50 pb-4 border-b">
+                  <CardTitle className="text-sm flex items-center gap-2 text-primary uppercase tracking-wider font-bold">
+                    Jenis & Jumlah
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-6">
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase">Jenis Peminjaman</Label>
+                    <div className="flex gap-2 p-1 bg-slate-100 rounded-lg">
+                      <Button 
+                        variant={borrowType === "Pribadi" ? "default" : "ghost"} 
+                        className="flex-1 h-9 text-xs font-bold"
+                        onClick={() => setBorrowType("Pribadi")}
+                      >
+                        <User className="h-3 w-3 mr-2" /> Pribadi
+                      </Button>
+                      <Button 
+                        variant={borrowType === "Kolektif" ? "default" : "ghost"} 
+                        className="flex-1 h-9 text-xs font-bold"
+                        onClick={() => setBorrowType("Kolektif")}
+                      >
+                        <Users className="h-3 w-3 mr-2" /> Kolektif
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase">Jumlah Buku</Label>
+                    <div className="flex items-center justify-between p-2 border rounded-xl bg-white">
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="h-10 w-10 rounded-lg"
+                        onClick={() => setBorrowQuantity(q => Math.max(1, q - 1))}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                      <div className="flex flex-col items-center">
+                        <span className="text-2xl font-black">{borrowQuantity}</span>
+                        <span className="text-[9px] font-bold text-muted-foreground uppercase">Unit</span>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="h-10 w-10 rounded-lg"
+                        onClick={() => setBorrowQuantity(q => q + 1)}
+                        disabled={selectedBook && borrowQuantity >= (selectedBook.availableStock || 0)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {selectedBook && (
+                      <p className="text-[10px] text-center text-muted-foreground">
+                        Stok tersedia: <b>{selectedBook.availableStock}</b> unit
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-none shadow-sm bg-blue-50/50">
+                <CardHeader>
+                  <CardTitle className="text-sm font-bold uppercase tracking-wider">Identitas Penyerahan</CardTitle>
+                  <CardDescription>Gunakan Smart Scan di atas atau pilih secara manual.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase">Pilih Guru</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        placeholder="Nama atau NIP Guru..." 
+                        className="pl-10 bg-white"
+                        value={memberSearch}
+                        onChange={e => { setMemberSearch(e.target.value); setShowMemberSuggestions(true); }}
+                        onFocus={() => setShowMemberSuggestions(true)}
+                        onKeyDown={e => e.key === 'Enter' && handleLookup(memberSearch)}
+                      />
+                      {showMemberSuggestions && memberSuggestions.length > 0 && (
+                        <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border rounded-lg shadow-xl overflow-hidden">
+                          {memberSuggestions.map(m => (
+                            <div key={m.id} className="p-3 hover:bg-slate-50 cursor-pointer text-sm border-b last:border-0" onClick={() => { setSelectedMember(m); setMemberSearch(""); setShowMemberSuggestions(false); }}>
+                              <div className="font-bold">{m.name}</div>
+                              <div className="text-[10px] text-muted-foreground">{m.memberId}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {selectedMember && (
+                      <div className="p-3 bg-white rounded-lg border flex justify-between items-center animate-in slide-in-from-left-2">
+                        <div className="text-xs font-bold text-primary">{selectedMember.name}</div>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedMember(null)}><X className="h-3 w-3" /></Button>
                       </div>
                     )}
                   </div>
-                  {selectedMember && (
-                    <div className="p-3 bg-white rounded-lg border flex justify-between items-center animate-in slide-in-from-left-2">
-                      <div className="text-xs font-bold text-primary">{selectedMember.name}</div>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedMember(null)}><X className="h-3 w-3" /></Button>
-                    </div>
-                  )}
-                </div>
 
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase">Pilih Buku Pegangan</Label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      placeholder="Judul atau Kode Buku..." 
-                      className="pl-10 bg-white"
-                      value={bookSearch}
-                      onChange={e => { setBookSearch(e.target.value); setShowBookSuggestions(true); }}
-                      onFocus={() => setShowBookSuggestions(true)}
-                      onKeyDown={e => e.key === 'Enter' && handleLookup(bookSearch)}
-                    />
-                    {showBookSuggestions && bookSuggestions.length > 0 && (
-                      <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border rounded-lg shadow-xl overflow-hidden">
-                        {bookSuggestions.map(b => (
-                          <div key={b.id} className="p-3 hover:bg-slate-50 cursor-pointer text-sm border-b last:border-0" onClick={() => { setSelectedBook(b); setBookSearch(""); setShowBookSuggestions(false); }}>
-                            <div className="font-bold">{b.title}</div>
-                            <div className="text-[10px] text-muted-foreground">{b.code} ({b.availableStock} Tersedia)</div>
-                          </div>
-                        ))}
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase">Pilih Buku Pegangan</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        placeholder="Judul atau Kode Buku..." 
+                        className="pl-10 bg-white"
+                        value={bookSearch}
+                        onChange={e => { setBookSearch(e.target.value); setShowBookSuggestions(true); }}
+                        onFocus={() => setShowBookSuggestions(true)}
+                        onKeyDown={e => e.key === 'Enter' && handleLookup(bookSearch)}
+                      />
+                      {showBookSuggestions && bookSuggestions.length > 0 && (
+                        <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border rounded-lg shadow-xl overflow-hidden">
+                          {bookSuggestions.map(b => (
+                            <div key={b.id} className="p-3 hover:bg-slate-50 cursor-pointer text-sm border-b last:border-0" onClick={() => { setSelectedBook(b); setBookSearch(""); setShowBookSuggestions(false); }}>
+                              <div className="font-bold">{b.title}</div>
+                              <div className="text-[10px] text-muted-foreground">{b.code} ({b.availableStock} Tersedia)</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {selectedBook && (
+                      <div className="p-3 bg-white rounded-lg border flex justify-between items-center animate-in slide-in-from-right-2">
+                        <div className="text-xs font-bold text-secondary-foreground">{selectedBook.title}</div>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedBook(null)}><X className="h-3 w-3" /></Button>
                       </div>
                     )}
                   </div>
-                  {selectedBook && (
-                    <div className="p-3 bg-white rounded-lg border flex justify-between items-center animate-in slide-in-from-right-2">
-                      <div className="text-xs font-bold text-secondary-foreground">{selectedBook.title}</div>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedBook(null)}><X className="h-3 w-3" /></Button>
-                    </div>
-                  )}
-                </div>
 
-                <Button 
-                  className="w-full h-12 font-black shadow-lg" 
-                  disabled={!selectedMember || !selectedBook || isProcessing || isLockedForUser}
-                  onClick={handleProcessLoan}
-                >
-                  {isProcessing ? <Loader2 className="animate-spin" /> : "SERAHKAN BUKU"}
-                </Button>
-              </CardContent>
-            </Card>
+                  <Button 
+                    className="w-full h-12 font-black shadow-lg" 
+                    disabled={!selectedMember || !selectedBook || isProcessing || isLockedForUser}
+                    onClick={handleProcessLoan}
+                  >
+                    {isProcessing ? <Loader2 className="animate-spin" /> : "SERAHKAN BUKU"}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
 
             <Card className="lg:col-span-2 border-none shadow-sm overflow-hidden">
               <CardHeader className="bg-slate-50/50 border-b">
@@ -526,7 +606,7 @@ export default function TeacherLoansPage() {
                       <TableRow key={t.id}>
                         <TableCell className="text-center text-xs">{index + 1}</TableCell>
                         <TableCell className="font-bold text-xs">{t.memberName}</TableCell>
-                        <TableCell className="text-xs">{t.bookTitle}</TableCell>
+                        <TableCell className="text-xs">{t.bookTitle} (${t.quantity || 1} Unit)</TableCell>
                         <TableCell className="text-right">
                           <Badge variant="outline" className="bg-green-50 text-green-700 border-none text-[8px] font-bold">KEMBALI</Badge>
                         </TableCell>
@@ -572,7 +652,7 @@ export default function TeacherLoansPage() {
                           <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
                           <TableCell>
                             <div className="space-y-1">
-                              <div className="font-bold text-sm leading-tight">{t.bookTitle}</div>
+                              <div className="font-bold text-sm leading-tight">{t.bookTitle} (${t.quantity || 1} Unit)</div>
                               <div className="text-xs font-semibold">{t.memberName} <span className="text-muted-foreground font-normal">/ {t.memberId}</span></div>
                             </div>
                           </TableCell>
@@ -606,7 +686,7 @@ export default function TeacherLoansPage() {
               <div className="p-4 bg-slate-50 rounded-xl border space-y-3">
                 <div className="flex-1">
                   <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Buku & Guru</div>
-                  <div className="text-sm font-black">{pendingReturnTrans.bookTitle}</div>
+                  <div className="text-sm font-black">{pendingReturnTrans.bookTitle} (${pendingReturnTrans.quantity || 1} Unit)</div>
                   <div className="text-xs font-bold text-primary mt-1">{pendingReturnTrans.memberName} / {pendingReturnTrans.memberId}</div>
                 </div>
               </div>
