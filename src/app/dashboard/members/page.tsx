@@ -180,7 +180,7 @@ function MembersContent() {
     const rowsHtml = targetData.map((m, index) => `
       <tr>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
-        <td style="border: 1px solid #ccc; padding: 8px; font-family: monospace;">${m.memberId}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; font-family: monospace;">${m.memberId || '-'}</td>
         <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold;">${m.name}</td>
         <td style="border: 1px solid #ccc; padding: 8px;">${m.type === 'Student' ? 'Siswa' : m.type === 'Teacher' ? 'Guru' : 'Pegawai'}</td>
         <td style="border: 1px solid #ccc; padding: 8px;">${m.classOrSubject || '-'}</td>
@@ -258,7 +258,9 @@ function MembersContent() {
 
     const cardsHtml = filteredMembers.map(member => {
       const detailLabel = member.type === 'Teacher' ? 'GURU' : member.type === 'Staff' ? 'PEGAWAI' : 'KELAS';
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=M&data=${encodeURIComponent(member.memberId)}`;
+      // Fallback data jika memberId kosong agar QR tidak rusak
+      const qrData = member.memberId || member.id || "NO_ID";
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=M&data=${encodeURIComponent(qrData)}`;
       
       return `
         <div class="card-container">
@@ -277,7 +279,7 @@ function MembersContent() {
           
           <div class="info-section">
             <div class="member-name">${member.name}</div>
-            <div class="member-id">${member.memberId}</div>
+            <div class="member-id">${member.memberId || ""}</div>
             <div class="member-detail">${detailLabel}: ${member.classOrSubject || '-'}</div>
           </div>
           
@@ -352,7 +354,7 @@ function MembersContent() {
             .qr-section img { width: 34mm; height: 34mm; border: none; }
             
             .info-section { padding-bottom: 15.5mm; }
-            .member-name { font-size: 7.8pt; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 0.5mm; padding: 0 1mm; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+            .member-name { font-size: 7.5pt; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 0.5mm; padding: 0 1mm; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
             .member-id { font-size: 10pt; font-weight: 800; color: #1e4b8f; font-family: monospace; line-height: 1; }
             .member-detail { font-size: 6.5pt; font-weight: 800; color: #666; text-transform: uppercase; margin-top: 0.8mm; }
             
@@ -398,7 +400,7 @@ function MembersContent() {
           const checkLoad = () => {
             loaded++;
             if (loaded === imgs.length) {
-              setTimeout(() => { window.print(); window.close(); }, 500);
+              setTimeout(() => { window.print(); window.close(); }, 800);
             }
           };
           if (imgs.length === 0) {
@@ -411,6 +413,7 @@ function MembersContent() {
                 img.onerror = checkLoad;
               }
             });
+            setTimeout(() => { if(loaded < imgs.length) { window.print(); window.close(); } }, 5000);
           }
         ">
           <div class="print-grid">
@@ -437,7 +440,8 @@ function MembersContent() {
     const libName = settings?.libraryName || 'PUSTAKA NUSANTARA';
     const schoolName = settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG';
     const detailLabel = member.type === 'Teacher' ? 'GURU' : member.type === 'Staff' ? 'PEGAWAI' : 'KELAS';
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=M&data=${encodeURIComponent(member.memberId)}`;
+    const qrData = member.memberId || member.id || "NO_ID";
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=M&data=${encodeURIComponent(qrData)}`;
 
     printWindow.document.write(`
       <html>
@@ -494,7 +498,7 @@ function MembersContent() {
             .qr-section img { width: 34mm; height: 34mm; border: none; }
             
             .info-section { padding-bottom: 15.5mm; }
-            .member-name { font-size: 7.8pt; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 0.5mm; padding: 0 1mm; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+            .member-name { font-size: 7.5pt; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 0.5mm; padding: 0 1mm; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
             .member-id { font-size: 10pt; font-weight: 800; color: #1e4b8f; font-family: monospace; line-height: 1; }
             .member-detail { font-size: 6.5pt; font-weight: 800; color: #666; text-transform: uppercase; margin-top: 0.8mm; }
             
@@ -556,7 +560,7 @@ function MembersContent() {
             
             <div class="info-section">
               <div class="member-name">${member.name}</div>
-              <div class="member-id">${member.memberId}</div>
+              <div class="member-id">${member.memberId || ""}</div>
               <div class="member-detail">${detailLabel}: ${member.classOrSubject || '-'}</div>
             </div>
             
@@ -697,7 +701,7 @@ function MembersContent() {
               <TableRow key={member.id}>
                 <TableCell className="text-center text-xs text-muted-foreground">{index + 1}</TableCell>
                 <TableCell className="font-semibold">{member.name ?? ""}</TableCell>
-                <TableCell className="font-mono text-xs text-primary font-bold">{member.memberId ?? ""}</TableCell>
+                <TableCell className="font-mono text-xs text-primary font-bold">{member.memberId || '-'}</TableCell>
                 <TableCell>
                   <Badge variant="outline" className="h-5 px-1.5 text-[10px] font-bold border-none uppercase">
                     {member.type === 'Teacher' ? 'GURU' : member.type === 'Staff' ? 'PEGAWAI' : 'SISWA'}
@@ -823,10 +827,19 @@ function MembersContent() {
           </DialogHeader>
           <div className="p-6 space-y-6">
             <div className="bg-white p-8 rounded-3xl border-2 border-primary/20 space-y-4 shadow-xl flex flex-col items-center">
-              <div className="p-4 bg-white rounded-2xl border shadow-inner">{selectedMemberQr && <QRCodeSVG value={selectedMemberQr.memberId} size={200} level="H" includeMargin />}</div>
+              <div className="p-4 bg-white rounded-2xl border shadow-inner">
+                {selectedMemberQr && (
+                  <QRCodeSVG 
+                    value={selectedMemberQr.memberId || selectedMemberQr.id} 
+                    size={200} 
+                    level="H" 
+                    includeMargin 
+                  />
+                )}
+              </div>
               <div className="space-y-1">
                 <div className="font-black text-2xl leading-tight uppercase tracking-tight">{selectedMemberQr?.name ?? ""}</div>
-                <div className="font-mono text-primary font-black text-xl">{selectedMemberQr?.memberId ?? ""}</div>
+                <div className="font-mono text-primary font-black text-xl">{selectedMemberQr?.memberId || "-"}</div>
                 <div className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
                   {selectedMemberQr?.type === 'Teacher' ? 'GURU' : selectedMemberQr?.type === 'Staff' ? 'PEGAWAI' : 'KELAS'}: {selectedMemberQr?.classOrSubject || '-'}
                 </div>
