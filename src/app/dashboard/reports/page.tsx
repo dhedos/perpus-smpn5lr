@@ -135,22 +135,27 @@ export default function ReportsPage() {
 
     const targetTrans = validTransactions.filter(t => {
       const transDate = t.createdAt ? new Date(t.createdAt.seconds * 1000) : new Date();
-      return t.memberType === type && isWithinInterval(transDate, { start, end });
+      // 'Teacher' now includes 'Staff' for report purposes
+      const matchesType = type === 'Student' 
+        ? t.memberType === 'Student' 
+        : (t.memberType === 'Teacher' || t.memberType === 'Staff');
+      
+      return matchesType && isWithinInterval(transDate, { start, end });
     });
 
     if (targetTrans.length === 0) {
-      alert(`Tidak ada riwayat pinjaman ${type === 'Student' ? 'Siswa' : 'Guru'} aktif di bulan ini.`);
+      alert(`Tidak ada riwayat pinjaman ${type === 'Student' ? 'Siswa' : 'Guru/Pegawai'} aktif di bulan ini.`);
       return;
     }
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    const label = type === 'Student' ? 'SISWA' : 'GURU/STAF';
+    const label = type === 'Student' ? 'SISWA' : 'GURU & PEGAWAI';
     const rowsHtml = targetTrans.map((t, i) => `
       <tr>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${i+1}</td>
-        <td style="border: 1px solid #ccc; padding: 8px;">${t.memberName}</td>
+        <td style="border: 1px solid #ccc; padding: 8px;">${t.memberName} (${t.memberType === 'Teacher' ? 'Guru' : t.memberType === 'Staff' ? 'Staf' : 'Siswa'})</td>
         <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle} (${t.quantity || 1} Unit)</td>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yy') : '-'}</td>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yy') : 'AKTIF'}</td>
@@ -316,7 +321,7 @@ export default function ReportsPage() {
           <DatabaseBackup className="h-5 w-5 text-orange-600" />
           <AlertTitle className="font-bold">PENGINGAT BACKUP BULANAN!</AlertTitle>
           <AlertDescription className="text-sm">
-            Mohon segera unduh cadangan **Riwayat Pinjaman** Siswa dan Guru di bawah ini untuk arsip fisik/digital sekolah bulan ini.
+            Mohon segera unduh cadangan **Riwayat Pinjaman** Siswa dan Guru/Pegawai di bawah ini untuk arsip fisik/digital sekolah bulan ini.
           </AlertDescription>
         </Alert>
       )}
@@ -374,7 +379,7 @@ export default function ReportsPage() {
                 onClick={() => handlePrintTransactionBackup('Teacher')}
                 disabled={isLoading}
               >
-                Riwayat Pinjaman Guru
+                Riwayat Guru & Pegawai
                 <Download className="h-4 w-4 ml-2" />
               </Button>
             </CardContent>

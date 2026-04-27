@@ -102,10 +102,10 @@ export default function TeacherLoansPage() {
   const { data: allBooksData } = useCollection(booksRef)
   const { data: allTransactions } = useCollection(allTransRef)
 
-  // FILTER KHUSUS GURU
-  const teachers = useMemo(() => {
+  // FILTER KHUSUS GURU & PEGAWAI
+  const staffMembers = useMemo(() => {
     if (!allMembersData) return [];
-    return allMembersData.filter(m => m.type === 'Teacher');
+    return allMembersData.filter(m => m.type === 'Teacher' || m.type === 'Staff');
   }, [allMembersData]);
 
   const books = useMemo(() => {
@@ -119,7 +119,7 @@ export default function TeacherLoansPage() {
     return allTransactions
       .filter(t => 
         t.status === 'active' && 
-        t.memberType === 'Teacher' &&
+        (t.memberType === 'Teacher' || t.memberType === 'Staff') &&
         allBooksData.some(b => b.id === t.bookId) &&
         allMembersData.some(m => m.memberId === t.memberId)
       )
@@ -130,7 +130,7 @@ export default function TeacherLoansPage() {
       })
   }, [allTransactions, allBooksData, allMembersData])
 
-  // RIWAYAT GURU BULAN INI
+  // RIWAYAT GURU & PEGAWAI BULAN INI
   const historyTransactions = useMemo(() => {
     if (!allTransactions || !allBooksData || !allMembersData) return []
     const start = startOfMonth(new Date());
@@ -141,7 +141,7 @@ export default function TeacherLoansPage() {
         const dateToUse = t.returnDate ? parseISO(t.returnDate) : (t.createdAt?.seconds ? new Date(t.createdAt.seconds * 1000) : new Date());
         return (
           t.status === 'returned' && 
-          t.memberType === 'Teacher' &&
+          (t.memberType === 'Teacher' || t.memberType === 'Staff') &&
           isWithinInterval(dateToUse, { start, end }) &&
           allBooksData.some(b => b.id === t.bookId) &&
           allMembersData.some(m => m.memberId === t.memberId)
@@ -155,12 +155,12 @@ export default function TeacherLoansPage() {
   }, [allTransactions, allBooksData, allMembersData])
 
   const memberSuggestions = useMemo(() => {
-    if (!memberSearch || memberSearch.length < 1 || !teachers) return []
-    return teachers.filter(m => 
+    if (!memberSearch || memberSearch.length < 1 || !staffMembers) return []
+    return staffMembers.filter(m => 
       m.name?.toLowerCase().includes(memberSearch.toLowerCase()) || 
       m.memberId?.toLowerCase().startsWith(memberSearch.toLowerCase())
     ).slice(0, 5)
-  }, [memberSearch, teachers])
+  }, [memberSearch, staffMembers])
 
   const bookSuggestions = useMemo(() => {
     if (!bookSearch || bookSearch.length < 1 || !books) return []
@@ -191,15 +191,15 @@ export default function TeacherLoansPage() {
 
   const handleLookup = (text: string): boolean => {
     if (!text) return false
-    const teacher = teachers?.find(t => t.memberId?.toLowerCase() === text.toLowerCase())
+    const member = staffMembers?.find(t => t.memberId?.toLowerCase() === text.toLowerCase())
     const book = books?.find(b => b.code?.toLowerCase() === text.toLowerCase() || b.isbn === text)
 
     if (scanMode === "smart") {
-      if (teacher) {
-        setSelectedMember(teacher)
+      if (member) {
+        setSelectedMember(member)
         setMemberSearch("")
         setShowMemberSuggestions(false)
-        toast({ title: "Guru Terpilih" })
+        toast({ title: member.type === 'Teacher' ? "Guru Terpilih" : "Pegawai Terpilih" })
         return true
       } else if (book) {
         setSelectedBook(book)
@@ -297,7 +297,7 @@ export default function TeacherLoansPage() {
     const newLoan = {
       memberId: selectedMember.memberId,
       memberName: selectedMember.name,
-      memberType: 'Teacher',
+      memberType: selectedMember.type, // Could be 'Teacher' or 'Staff'
       classOrSubject: selectedMember.classOrSubject || "-",
       bookId: selectedBook.id,
       bookTitle: selectedBook.title,
@@ -312,7 +312,7 @@ export default function TeacherLoansPage() {
     addDoc(collection(db, 'transactions'), newLoan).then(() => {
       const avail = Number(selectedBook.availableStock ?? 1)
       updateDoc(doc(db, 'books', selectedBook.id), { availableStock: Math.max(0, avail - borrowQuantity) })
-      toast({ title: "Buku Pegangan Dicatat", description: `${selectedBook.title} telah diserahkan ke ${selectedMember.name}.` })
+      toast({ title: "Peminjaman Dicatat", description: `${selectedBook.title} telah diserahkan ke ${selectedMember.name}.` })
       setSelectedBook(null)
       setSelectedMember(null)
       setBorrowQuantity(1)
@@ -377,7 +377,7 @@ export default function TeacherLoansPage() {
           availableStock: currentAvail + backToShelf
         })
       }
-      toast({ title: "Berhasil!", description: "Pengembalian buku pegangan telah dicatat." })
+      toast({ title: "Berhasil!", description: "Pengembalian buku telah dicatat." })
     }).finally(() => setIsProcessing(false))
   }
 
@@ -391,17 +391,17 @@ export default function TeacherLoansPage() {
     const rowsHtml = targetData.map((t, index) => `
       <tr>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
-        <td style="border: 1px solid #ccc; padding: 8px;">${t.memberName}</td>
+        <td style="border: 1px solid #ccc; padding: 8px;">${t.memberName} (${t.memberType === 'Teacher' ? 'Guru' : 'Pegawai'})</td>
         <td style="border: 1px solid #ccc; padding: 8px;">${t.bookTitle} (${t.quantity || 1} Unit)</td>
         <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.borrowDate ? new Date(t.borrowDate).toLocaleDateString('id-ID') : '-'}</td>
-        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.returnDate ? new Date(t.returnDate).toLocaleDateString('id-ID') : 'PEGANG'}</td>
+        <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${t.returnDate ? new Date(t.returnDate).toLocaleDateString('id-ID') : 'DIPEGANG'}</td>
       </tr>
     `).join('')
 
     printWindow.document.write(`
       <html>
         <head>
-          <title>Riwayat Buku Guru - ${format(new Date(), 'MMMM yyyy')}</title>
+          <title>Riwayat Buku Guru & Pegawai - ${format(new Date(), 'MMMM yyyy')}</title>
           <style>
             @page { size: A4; margin: 0; }
             body { font-family: 'Inter', sans-serif; font-size: 11pt; margin: 0; padding: 15mm; }
@@ -409,12 +409,12 @@ export default function TeacherLoansPage() {
           </style>
         </head>
         <body onload="window.print(); window.close();">
-          <h2 style="text-align: center;">RIWAYAT BUKU PEGANGAN GURU (BULAN BERJALAN)</h2>
+          <h2 style="text-align: center;">RIWAYAT BUKU PEGANGAN GURU & PEGAWAI (BULAN BERJALAN)</h2>
           <table style="width: 100%; border-collapse: collapse;">
             <thead>
               <tr>
                 <th style="border: 1px solid #ccc; padding: 10px;">No</th>
-                <th style="border: 1px solid #ccc; padding: 10px;">Nama Guru</th>
+                <th style="border: 1px solid #ccc; padding: 10px;">Nama Member</th>
                 <th style="border: 1px solid #ccc; padding: 10px;">Judul Buku</th>
                 <th style="border: 1px solid #ccc; padding: 10px;">Tgl Pinjam</th>
                 <th style="border: 1px solid #ccc; padding: 10px;">Tgl Kembali</th>
@@ -435,9 +435,9 @@ export default function TeacherLoansPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
-            <GraduationCap className="h-7 w-7" /> Buku Pegangan Guru
+            <GraduationCap className="h-7 w-7" /> Buku Guru & Pegawai
           </h1>
-          <p className="text-sm text-muted-foreground">Peminjaman khusus untuk kebutuhan mengajar bapak/ibu guru.</p>
+          <p className="text-sm text-muted-foreground">Peminjaman khusus untuk kebutuhan mengajar dan operasional sekolah.</p>
         </div>
         <div className="flex items-center gap-2">
            <Button variant="outline" size="sm" onClick={handlePrintBukti}>
@@ -461,7 +461,7 @@ export default function TeacherLoansPage() {
               <Button size="lg" className="h-16 px-12 gap-3 shadow-xl hover:shadow-2xl transition-all" onClick={() => startScanner("smart")}>
                 <ScanBarcode className="h-6 w-6" /> Smart Scan
               </Button>
-              <div className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Scan Kartu Guru atau Kode Buku</div>
+              <div className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Scan Kartu Guru/Pegawai atau Kode Buku</div>
             </CardContent>
           </Card>
 
@@ -531,11 +531,11 @@ export default function TeacherLoansPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase">Pilih Guru</Label>
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase">Pilih Guru/Pegawai</Label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input 
-                        placeholder="Nama atau NIP Guru..." 
+                        placeholder="Nama atau NIP..." 
                         className="pl-10 bg-white"
                         value={memberSearch}
                         onChange={e => { setMemberSearch(e.target.value); setShowMemberSuggestions(true); }}
@@ -546,7 +546,10 @@ export default function TeacherLoansPage() {
                         <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border rounded-lg shadow-xl overflow-hidden">
                           {memberSuggestions.map(m => (
                             <div key={m.id} className="p-3 hover:bg-slate-50 cursor-pointer text-sm border-b last:border-0" onClick={() => { setSelectedMember(m); setMemberSearch(""); setShowMemberSuggestions(false); }}>
-                              <div className="font-bold">{m.name}</div>
+                              <div className="flex items-center justify-between">
+                                <div className="font-bold">{m.name}</div>
+                                <Badge variant="outline" className="text-[8px] h-4 px-1">{m.type === 'Teacher' ? 'Guru' : 'Staf'}</Badge>
+                              </div>
                               <div className="text-[10px] text-muted-foreground">{m.memberId}</div>
                             </div>
                           ))}
@@ -555,7 +558,10 @@ export default function TeacherLoansPage() {
                     </div>
                     {selectedMember && (
                       <div className="p-3 bg-white rounded-lg border flex justify-between items-center animate-in slide-in-from-left-2">
-                        <div className="text-xs font-bold text-primary">{selectedMember.name}</div>
+                        <div className="space-y-0.5">
+                          <div className="text-xs font-bold text-primary">{selectedMember.name}</div>
+                          <div className="text-[10px] text-muted-foreground">{selectedMember.type === 'Teacher' ? 'Guru' : 'Pegawai'}</div>
+                        </div>
                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedMember(null)}><X className="h-3 w-3" /></Button>
                       </div>
                     )}
@@ -608,14 +614,14 @@ export default function TeacherLoansPage() {
                 <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
                   <History className="h-4 w-4 text-primary" /> Riwayat Bulan Ini
                 </CardTitle>
-                <CardDescription className="text-[10px]">Daftar riwayat buku guru untuk bulan {format(new Date(), 'MMMM yyyy')}.</CardDescription>
+                <CardDescription className="text-[10px]">Daftar riwayat buku guru & pegawai untuk bulan {format(new Date(), 'MMMM yyyy')}.</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-12 text-center">No.</TableHead>
-                      <TableHead>Nama Guru</TableHead>
+                      <TableHead>Nama Member</TableHead>
                       <TableHead>Buku</TableHead>
                       <TableHead>Pinjam</TableHead>
                       <TableHead>Kembali</TableHead>
@@ -628,7 +634,10 @@ export default function TeacherLoansPage() {
                     ) : historyTransactions.slice(0, 50).map((t, index) => (
                       <TableRow key={t.id}>
                         <TableCell className="text-center text-xs">{index + 1}</TableCell>
-                        <TableCell className="font-bold text-xs">{t.memberName}</TableCell>
+                        <TableCell className="text-xs">
+                          <div className="font-bold">{t.memberName}</div>
+                          <div className="text-[10px] text-muted-foreground">{t.memberType === 'Teacher' ? 'Guru' : 'Pegawai'}</div>
+                        </TableCell>
                         <TableCell className="text-xs">{t.bookTitle} ({t.quantity || 1} Unit)</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yy') : '-'}</TableCell>
                         <TableCell className="text-xs font-semibold">{t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yy') : '-'}</TableCell>
@@ -647,17 +656,17 @@ export default function TeacherLoansPage() {
         <TabsContent value="return" className="mt-8 space-y-6">
           <div className="grid md:grid-cols-3 gap-6">
             <Card className="md:col-span-1 border-none shadow-sm bg-accent/30 flex flex-col items-center justify-center p-8 gap-4">
-              <Button variant="secondary" className="h-20 w-full gap-3 shadow-md font-bold" onClick={() => startScanner("return")}><ScanBarcode className="h-8 w-8" /> Scan Buku Guru</Button>
+              <Button variant="secondary" className="h-20 w-full gap-3 shadow-md font-bold" onClick={() => startScanner("return")}><ScanBarcode className="h-8 w-8" /> Scan Buku Member</Button>
               <div className="w-full space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Pencarian Manual Guru</Label>
-                <Input placeholder="Cari Nama/NIP Guru..." className="h-12 bg-white" value={returnSearch} onChange={e => setReturnSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLookup(returnSearch)} />
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Pencarian Manual</Label>
+                <Input placeholder="Cari Nama/NIP Guru/Staf..." className="h-12 bg-white" value={returnSearch} onChange={e => setReturnSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLookup(returnSearch)} />
               </div>
             </Card>
 
             <Card className="md:col-span-2 border-none shadow-sm overflow-hidden">
               <CardHeader className="pb-3 border-b">
-                <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Buku Guru Aktif</CardTitle>
-                <CardDescription>Daftar buku yang saat ini masih dipegang oleh bapak/ibu guru.</CardDescription>
+                <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Buku Member Aktif</CardTitle>
+                <CardDescription>Daftar buku yang saat ini masih dipegang oleh guru atau pegawai.</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="max-h-[500px] overflow-y-auto">
@@ -671,14 +680,17 @@ export default function TeacherLoansPage() {
                     </TableHeader>
                     <TableBody>
                       {filteredActive.length === 0 ? (
-                        <TableRow><TableCell colSpan={3} className="text-center py-12 text-muted-foreground italic">Tidak ada buku guru aktif.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={3} className="text-center py-12 text-muted-foreground italic">Tidak ada buku aktif.</TableCell></TableRow>
                       ) : filteredActive.map((t, index) => (
                         <TableRow key={t.id}>
                           <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
                           <TableCell>
                             <div className="space-y-1">
                               <div className="font-bold text-sm leading-tight">{t.bookTitle} ({t.quantity || 1} Unit)</div>
-                              <div className="text-xs font-semibold">{t.memberName} <span className="text-muted-foreground font-normal">/ {t.memberId}</span></div>
+                              <div className="text-xs font-semibold">
+                                {t.memberName} <span className="text-muted-foreground font-normal">/ {t.memberId}</span>
+                                <Badge variant="outline" className="ml-2 text-[7px] h-3 px-1">{t.memberType === 'Teacher' ? 'Guru' : 'Staf'}</Badge>
+                              </div>
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
@@ -701,7 +713,7 @@ export default function TeacherLoansPage() {
         <DialogContent className="max-w-md bg-white border-none shadow-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-primary font-bold">
-              <CheckCircle className="h-5 w-5" /> Konfirmasi Guru
+              <CheckCircle className="h-5 w-5" /> Konfirmasi Member
             </DialogTitle>
             <DialogDescription>Verifikasi kondisi fisik buku saat pengembalian dilakukan.</DialogDescription>
           </DialogHeader>
@@ -710,7 +722,7 @@ export default function TeacherLoansPage() {
             <div className="space-y-6 py-4">
               <div className="p-4 bg-slate-50 rounded-xl border space-y-3">
                 <div className="flex-1">
-                  <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Buku & Guru</div>
+                  <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Buku & Member</div>
                   <div className="text-sm font-black">{pendingReturnTrans.bookTitle}</div>
                   <div className="text-xs font-bold text-primary mt-1">{pendingReturnTrans.memberName} / {pendingReturnTrans.memberId}</div>
                 </div>
@@ -760,8 +772,8 @@ export default function TeacherLoansPage() {
       <Dialog open={isScannerOpen} onOpenChange={o => { if(!o) stopScanner(); }}>
         <DialogContent className="p-0 border-none bg-black max-w-xl h-[100dvh] sm:h-[450px] overflow-hidden rounded-none sm:rounded-3xl">
           <DialogHeader className="sr-only">
-             <DialogTitle>Pemindai Cerdas Guru</DialogTitle>
-             <DialogDescription>Arahkan kamera ke kode buku atau kartu guru.</DialogDescription>
+             <DialogTitle>Pemindai Cerdas Member</DialogTitle>
+             <DialogDescription>Arahkan kamera ke kode buku atau kartu identitas guru/staf.</DialogDescription>
           </DialogHeader>
           <div id="teacher-smart-scanner" className="w-full h-full bg-black flex items-center justify-center relative min-h-[300px]">
             {hasCameraPermission === false && (
