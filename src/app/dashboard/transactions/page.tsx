@@ -272,9 +272,12 @@ function TransactionsContent() {
     const lostFineBase = Number(settings.lostBookFine || 50000);
     const damagedFineBase = Number(settings.damagedBookFine || 10000);
 
-    if (lateDays > 0) {
+    // Pinjaman Kolektif TIDAK kena denda keterlambatan
+    if (lateDays > 0 && pendingReturnTrans.borrowType !== 'Kolektif') {
       fine += lateDays * finePerDay * (returnNormalQty + returnDamagedQty);
     }
+
+    // Denda fisik (Rusak/Hilang) tetap kena untuk semua tipe peminjaman
     fine += returnDamagedQty * damagedFineBase;
     fine += returnLostQty * lostFineBase;
     setCalculatedFine(fine);
@@ -758,17 +761,17 @@ function TransactionsContent() {
                           const borrowDate = parseISO(t.borrowDate);
                           
                           let durationDisplay = "";
-                          let isUrgent = false;
+                          let isUrdue = false;
 
                           if (t.borrowType === 'Kolektif') {
                             const diffHours = differenceInHours(now, borrowDate);
                             durationDisplay = `${diffHours} JAM`;
-                            isUrgent = diffHours >= collHours;
+                            isUrdue = diffHours >= collHours;
                           } else {
                             const diffDays = differenceInDays(now, borrowDate);
                             durationDisplay = `${diffDays} HARI`;
                             const dueDate = parseISO(t.dueDate);
-                            isUrgent = isAfter(now, dueDate);
+                            isUrdue = now > dueDate;
                           }
 
                           return (

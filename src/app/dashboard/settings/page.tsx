@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Library, Bell, Shield, Save, Loader2, Coins, CalendarDays, FileText, MapPin, UserCheck, Type, Wallet, LockKeyhole, Image as ImageIcon, Upload, Fingerprint, Clock } from "lucide-react"
+import { Library, Bell, Shield, Save, Loader2, Coins, CalendarDays, FileText, MapPin, UserCheck, Type, Wallet, LockKeyhole, Image as ImageIcon, Upload, Fingerprint, Clock, ShieldAlert, Ghost } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 
@@ -293,6 +293,40 @@ export default function SettingsPage() {
                         value={settings.fineAmount}
                         onChange={(e) => setSettings({ ...settings, fineAmount: Number(e.target.value) })}
                         className="bg-white border-orange-200 h-12 text-xl font-black text-orange-600 rounded-l-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 pt-2">
+                    <Label htmlFor="damaged-fine" className="flex items-center gap-2 font-bold text-sm text-orange-600">
+                      <ShieldAlert className="h-4 w-4" />
+                      Denda Buku Rusak (Rp/Unit)
+                    </Label>
+                    <div className="flex items-center gap-3">
+                      <div className="bg-orange-100 px-3 h-12 flex items-center rounded-l-md font-bold text-orange-600 border border-orange-200 border-r-0">Rp</div>
+                      <Input 
+                        id="damaged-fine" 
+                        type="number" 
+                        value={settings.damagedBookFine}
+                        onChange={(e) => setSettings({ ...settings, damagedBookFine: Number(e.target.value) })}
+                        className="bg-white border-orange-200 h-12 text-xl font-black text-orange-600 rounded-l-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 pt-2">
+                    <Label htmlFor="lost-fine" className="flex items-center gap-2 font-bold text-sm text-destructive">
+                      <Ghost className="h-4 w-4" />
+                      Denda Buku Hilang (Rp/Unit)
+                    </Label>
+                    <div className="flex items-center gap-3">
+                      <div className="bg-red-100 px-3 h-12 flex items-center rounded-l-md font-bold text-red-600 border border-red-200 border-r-0">Rp</div>
+                      <Input 
+                        id="lost-fine" 
+                        type="number" 
+                        value={settings.lostBookFine}
+                        onChange={(e) => setSettings({ ...settings, lostBookFine: Number(e.target.value) })}
+                        className="bg-white border-red-200 h-12 text-xl font-black text-red-600 rounded-l-none"
                       />
                     </div>
                   </div>
