@@ -146,7 +146,7 @@ function TransactionsContent() {
 
   // RIWAYAT TRANSAKSI BULAN INI
   const historyTrans = useMemo(() => {
-    if (!allTransactions) return [];
+    if (!allTransactions || !allBooksData || !allMembersData) return [];
     const start = startOfMonth(new Date());
     const end = endOfMonth(new Date());
 
@@ -157,7 +157,9 @@ function TransactionsContent() {
           t.status === 'returned' && 
           (t.memberType === 'Student' || t.type === 'borrow' || t.type === 'return') &&
           t.type !== 'teacher_handbook' &&
-          isWithinInterval(dateToUse, { start, end })
+          isWithinInterval(dateToUse, { start, end }) &&
+          allBooksData.some(b => b.id === t.bookId) &&
+          allMembersData.some(m => m.memberId === t.memberId)
         )
       })
       .sort((a, b) => {
@@ -165,7 +167,7 @@ function TransactionsContent() {
         const dateB = b.returnDate ? new Date(b.returnDate).getTime() : 0;
         return dateB - dateA;
       });
-  }, [allTransactions]);
+  }, [allTransactions, allBooksData, allMembersData]);
 
   const memberSuggestions = useMemo(() => {
     if (!memberSearch || memberSearch.length < 1 || !members) return [];
@@ -483,7 +485,7 @@ function TransactionsContent() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500">
+    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-primary flex items-center gap-2"><ArrowRightLeft className="h-6 w-6" /> Sirkulasi Siswa</h1>
@@ -706,17 +708,21 @@ function TransactionsContent() {
                           <TableHead className="w-12 text-center">No.</TableHead>
                           <TableHead>Nama Siswa</TableHead>
                           <TableHead>Buku</TableHead>
+                          <TableHead>Pinjam</TableHead>
+                          <TableHead>Kembali</TableHead>
                           <TableHead className="text-right">Status</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {historyTrans?.length === 0 ? (
-                          <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">Belum ada riwayat di bulan ini.</TableCell></TableRow>
+                          <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground italic">Belum ada riwayat di bulan ini.</TableCell></TableRow>
                         ) : historyTrans?.slice(0, 50).map((t, index) => (
                           <TableRow key={t.id}>
                             <TableCell className="text-center text-xs">{index + 1}</TableCell>
                             <TableCell className="font-bold text-xs">{t.memberName}</TableCell>
                             <TableCell className="text-xs truncate max-w-[150px]">{t.bookTitle}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yy') : '-'}</TableCell>
+                            <TableCell className="text-xs font-semibold">{t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yy') : '-'}</TableCell>
                             <TableCell className="text-right text-xs">
                               <Badge variant="outline" className="text-[8px] bg-green-50 text-green-700">KEMBALI</Badge>
                             </TableCell>

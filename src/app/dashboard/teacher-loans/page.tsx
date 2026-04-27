@@ -132,7 +132,7 @@ export default function TeacherLoansPage() {
 
   // RIWAYAT GURU BULAN INI
   const historyTransactions = useMemo(() => {
-    if (!allTransactions) return []
+    if (!allTransactions || !allBooksData || !allMembersData) return []
     const start = startOfMonth(new Date());
     const end = endOfMonth(new Date());
 
@@ -142,7 +142,9 @@ export default function TeacherLoansPage() {
         return (
           t.status === 'returned' && 
           t.memberType === 'Teacher' &&
-          isWithinInterval(dateToUse, { start, end })
+          isWithinInterval(dateToUse, { start, end }) &&
+          allBooksData.some(b => b.id === t.bookId) &&
+          allMembersData.some(m => m.memberId === t.memberId)
         )
       })
       .sort((a, b) => {
@@ -150,7 +152,7 @@ export default function TeacherLoansPage() {
         const dateB = b.returnDate ? new Date(b.returnDate).getTime() : 0;
         return dateB - dateA;
       })
-  }, [allTransactions])
+  }, [allTransactions, allBooksData, allMembersData])
 
   const memberSuggestions = useMemo(() => {
     if (!memberSearch || memberSearch.length < 1 || !teachers) return []
@@ -429,7 +431,7 @@ export default function TeacherLoansPage() {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
@@ -601,7 +603,7 @@ export default function TeacherLoansPage() {
               </Card>
             </div>
 
-            <Card className="lg:col-span-2 border-none shadow-sm overflow-hidden">
+            <Card className="lg:col-span-2 border-none shadow-sm overflow-hidden h-full">
               <CardHeader className="bg-slate-50/50 border-b">
                 <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
                   <History className="h-4 w-4 text-primary" /> Riwayat Bulan Ini
@@ -614,18 +616,22 @@ export default function TeacherLoansPage() {
                     <TableRow>
                       <TableHead className="w-12 text-center">No.</TableHead>
                       <TableHead>Nama Guru</TableHead>
-                      <TableHead>Judul Buku</TableHead>
+                      <TableHead>Buku</TableHead>
+                      <TableHead>Pinjam</TableHead>
+                      <TableHead>Kembali</TableHead>
                       <TableHead className="text-right">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {historyTransactions.length === 0 ? (
-                      <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">Belum ada riwayat di bulan ini.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground italic">Belum ada riwayat di bulan ini.</TableCell></TableRow>
                     ) : historyTransactions.slice(0, 50).map((t, index) => (
                       <TableRow key={t.id}>
                         <TableCell className="text-center text-xs">{index + 1}</TableCell>
                         <TableCell className="font-bold text-xs">{t.memberName}</TableCell>
                         <TableCell className="text-xs">{t.bookTitle} ({t.quantity || 1} Unit)</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yy') : '-'}</TableCell>
+                        <TableCell className="text-xs font-semibold">{t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yy') : '-'}</TableCell>
                         <TableCell className="text-right">
                           <Badge variant="outline" className="bg-green-50 text-green-700 border-none text-[8px] font-bold">KEMBALI</Badge>
                         </TableCell>
@@ -659,7 +665,7 @@ export default function TeacherLoansPage() {
                     <TableHeader className="bg-slate-50/50 sticky top-0 z-10">
                       <TableRow>
                         <TableHead className="w-12 text-center">No.</TableHead>
-                        <TableHead>Nama Guru & Buku</TableHead>
+                        <TableHead>Peminjam & Buku</TableHead>
                         <TableHead className="text-right">Aksi</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -705,7 +711,7 @@ export default function TeacherLoansPage() {
               <div className="p-4 bg-slate-50 rounded-xl border space-y-3">
                 <div className="flex-1">
                   <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Buku & Guru</div>
-                  <div className="text-sm font-black">{pendingReturnTrans.bookTitle} ({pendingReturnTrans.quantity || 1} Unit)</div>
+                  <div className="text-sm font-black">{pendingReturnTrans.bookTitle}</div>
                   <div className="text-xs font-bold text-primary mt-1">{pendingReturnTrans.memberName} / {pendingReturnTrans.memberId}</div>
                 </div>
               </div>
