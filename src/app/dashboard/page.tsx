@@ -59,14 +59,17 @@ export default function DashboardPage() {
   const { data: latestTransactions } = useCollection(latestTransQuery)
 
   // Hitung transaksi yang jatuh tempo (overdue) dengan rincian hari terlambat
+  // Filter out deleted books/members
   const overdueTransactions = useMemo(() => {
-    if (!mounted || !activeTransactions) return []
+    if (!mounted || !activeTransactions || !books || !members) return []
     const now = new Date()
     return activeTransactions
       .filter(t => {
         if (!t.dueDate) return false
         try {
-          return isAfter(now, parseISO(t.dueDate))
+          const bookExists = books.some(b => b.id === t.bookId);
+          const memberExists = members.some(m => m.memberId === t.memberId);
+          return bookExists && memberExists && isAfter(now, parseISO(t.dueDate))
         } catch (e) {
           return false
         }
@@ -75,7 +78,7 @@ export default function DashboardPage() {
         const diff = differenceInDays(now, parseISO(t.dueDate))
         return { ...t, lateDays: diff > 0 ? diff : 0 }
       })
-  }, [activeTransactions, mounted])
+  }, [activeTransactions, books, members, mounted])
 
   const stats = [
     { 
@@ -226,7 +229,7 @@ export default function DashboardPage() {
                 <div key={t.id} className="flex items-center justify-between px-6 py-4 hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className={t.type === 'return' ? "bg-green-100 text-green-600 p-2 rounded-full" : "bg-blue-100 text-blue-600 p-2 rounded-full"}>
-                      {t.type === 'return' ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+                      {t.type === 'return' ? <AlertTriangle className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
                     </div>
                     <div>
                       <p className="text-sm font-medium">{t.bookTitle}</p>

@@ -57,6 +57,15 @@ export default function StockOpnamePage() {
   [db])
   const { data: audits } = useCollection(auditLogsQuery)
 
+  // Filter audits for existing books
+  const filteredAudits = useMemo(() => {
+    if (!audits || !books) return [];
+    return audits.filter(a => 
+      a.actionType === 'STOCK_AUDIT' && 
+      books.some(b => b.id === a.bookId)
+    );
+  }, [audits, books]);
+
   const forceUnlockUI = useCallback(() => {
     if (typeof document !== 'undefined') {
       document.body.style.pointerEvents = 'auto';
@@ -204,11 +213,7 @@ export default function StockOpnamePage() {
   }
 
   const handlePrintAudit = () => {
-    if (!audits || !books) return
-    const stockAudits = audits.filter(a => a.actionType === 'STOCK_AUDIT')
-    const validAuditsForPrint = stockAudits.filter(a => books.some(b => b.id === a.bookId))
-    
-    if (validAuditsForPrint.length === 0) {
+    if (filteredAudits.length === 0) {
       toast({ title: "Data Kosong", description: "Tidak ada data audit buku aktif untuk dicetak." })
       return
     }
@@ -216,8 +221,8 @@ export default function StockOpnamePage() {
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
-    const rowsHtml = validAuditsForPrint.map((a, index) => {
-      const masterBook = books.find(b => b.id === a.bookId);
+    const rowsHtml = filteredAudits.map((a, index) => {
+      const masterBook = books?.find(b => b.id === a.bookId);
       const displayCode = (a.bookCode && a.bookCode !== "-") ? a.bookCode : (masterBook?.code || "-");
       const displayTitle = masterBook?.title || a.bookTitle;
       
@@ -387,9 +392,9 @@ export default function StockOpnamePage() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y text-xs max-h-[500px] overflow-y-auto">
-              {!audits || audits.filter(a => a.actionType === 'STOCK_AUDIT').length === 0 ? (
+              {filteredAudits.length === 0 ? (
                 <div className="p-10 text-center text-muted-foreground italic">Belum ada audit hari ini.</div>
-              ) : audits.filter(a => a.actionType === 'STOCK_AUDIT').map(a => {
+              ) : filteredAudits.map(a => {
                 const masterBook = books?.find(b => b.id === a.bookId);
                 const displayCode = (a.bookCode && a.bookCode !== "-") ? a.bookCode : (masterBook?.code || "-");
                 const displayTitle = a.bookTitle || masterBook?.title || "[Buku Telah Dihapus]";

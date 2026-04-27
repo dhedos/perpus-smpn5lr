@@ -112,17 +112,22 @@ export default function TeacherLoansPage() {
     return [...allBooksData].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
   }, [allBooksData]);
 
-  // Transaksi aktif khusus peminjaman GURU
+  // Transaksi aktif khusus peminjaman GURU - Filter out deleted books/members
   const activeTransactions = useMemo(() => {
-    if (!allTransactions) return []
+    if (!allTransactions || !allBooksData || !allMembersData) return []
     return allTransactions
-      .filter(t => t.status === 'active' && t.memberType === 'Teacher')
+      .filter(t => 
+        t.status === 'active' && 
+        t.memberType === 'Teacher' &&
+        allBooksData.some(b => b.id === t.bookId) &&
+        allMembersData.some(m => m.memberId === t.memberId)
+      )
       .sort((a, b) => {
         const dateA = a.borrowDate ? new Date(a.borrowDate).getTime() : 0;
         const dateB = b.borrowDate ? new Date(b.borrowDate).getTime() : 0;
         return dateB - dateA;
       })
-  }, [allTransactions])
+  }, [allTransactions, allBooksData, allMembersData])
 
   const historyTransactions = useMemo(() => {
     if (!allTransactions) return []

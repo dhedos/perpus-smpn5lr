@@ -131,14 +131,16 @@ function TransactionsContent() {
     return [...allBooksData].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
   }, [allBooksData]);
 
-  // RIWAYAT TRANSAKSI SISWA
+  // RIWAYAT TRANSAKSI SISWA - Filter out transactions for deleted books/members
   const activeTrans = useMemo(() => {
-    if (!allTransactions) return [];
+    if (!allTransactions || !allBooksData || !allMembersData) return [];
     return allTransactions.filter(t => 
       t.status === 'active' && 
-      (t.memberType === 'Student' || t.type === 'borrow')
+      (t.memberType === 'Student' || t.type === 'borrow') &&
+      allBooksData.some(b => b.id === t.bookId) &&
+      allMembersData.some(m => m.memberId === t.memberId)
     );
-  }, [allTransactions]);
+  }, [allTransactions, allBooksData, allMembersData]);
 
   const historyTrans = useMemo(() => {
     if (!allTransactions) return [];

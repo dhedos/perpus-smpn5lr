@@ -34,40 +34,13 @@ export default function DashboardLayout({
     }
   }, [user, userLoading, router, isRedirecting, isMounted])
 
-  const displayTitle = settings?.libraryName;
-  const displaySubtitle = settings?.librarySubtitle;
-  const displayLogo = settings?.libraryLogoUrl;
-
   const isLoading = !isMounted || userLoading || isRedirecting || !user || settingsLoading;
 
-  // SYNCED LOADING UI (Identity Aware)
   if (isLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-6 animate-in fade-in duration-500">
-          {displayLogo && !settingsLoading ? (
-            <div className="w-24 h-24 flex items-center justify-center rounded-[2rem] bg-primary/10 text-primary shadow-sm overflow-hidden">
-              <img src={displayLogo} alt="Logo" className="w-16 h-16 object-contain" />
-            </div>
-          ) : null}
-          
-          <div className="flex flex-col items-center space-y-2 text-center">
-            {!settingsLoading && displayTitle ? (
-              <>
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">
-                    {displayTitle}
-                  </p>
-                </div>
-                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50 px-4">
-                  {displaySubtitle}
-                </p>
-              </>
-            ) : (
-              <Loader2 className="h-8 w-8 animate-spin text-primary/40" />
-            )}
-          </div>
+        <div className="flex flex-col items-center gap-4 animate-in fade-in duration-500">
+          <Loader2 className="h-10 w-10 animate-spin text-primary/40" />
         </div>
       </div>
     )
