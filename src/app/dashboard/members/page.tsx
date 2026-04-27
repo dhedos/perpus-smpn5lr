@@ -258,6 +258,9 @@ function MembersContent() {
 
     const cardsHtml = filteredMembers.map(member => {
       const detailLabel = member.type === 'Teacher' ? 'GURU' : member.type === 'Staff' ? 'PEGAWAI' : 'KELAS';
+      // Gunakan encodeURIComponent untuk memastikan QR Code terkirim dengan benar ke API
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=M&data=${encodeURIComponent(member.memberId)}`;
+      
       return `
         <div class="card-container">
           <div class="header-box">
@@ -270,7 +273,7 @@ function MembersContent() {
           </div>
           
           <div class="qr-section">
-             <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${member.memberId}" />
+             <img src="${qrUrl}" />
           </div>
           
           <div class="info-section">
@@ -349,15 +352,15 @@ function MembersContent() {
             .qr-section { flex: 1; display: flex; justify-content: center; align-items: center; padding: 1mm 4mm; }
             .qr-section img { width: 34mm; height: 34mm; border: none; }
             
-            .info-section { padding-bottom: 15mm; }
-            .member-name { font-size: 9.5pt; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 0.5mm; padding: 0 1mm; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-            .member-id { font-size: 10.5pt; font-weight: 800; color: #1e4b8f; font-family: monospace; line-height: 1; }
-            .member-detail { font-size: 7pt; font-weight: 800; color: #666; text-transform: uppercase; margin-top: 0.8mm; }
+            .info-section { padding-bottom: 16.5mm; }
+            .member-name { font-size: 8.2pt; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 0.5mm; padding: 0 1mm; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+            .member-id { font-size: 10pt; font-weight: 800; color: #1e4b8f; font-family: monospace; line-height: 1; }
+            .member-detail { font-size: 6.5pt; font-weight: 800; color: #666; text-transform: uppercase; margin-top: 0.8mm; }
             
             .footer { 
               background: #1e4b8f !important; 
               color: #fff !important; 
-              height: 14mm;
+              height: 11mm;
               display: flex;
               flex-direction: column;
               align-items: center;
@@ -370,7 +373,7 @@ function MembersContent() {
               box-sizing: border-box;
             }
             .footer-text { 
-              font-size: 10.5pt; 
+              font-size: 9.5pt; 
               font-weight: 900; 
               text-transform: uppercase; 
               letter-spacing: 1.5px; 
@@ -378,19 +381,19 @@ function MembersContent() {
               line-height: 1.1;
             }
             .footer-subtext {
-              font-size: 4pt;
+              font-size: 3.8pt;
               font-weight: 500;
               color: rgba(255, 255, 255, 0.9) !important;
               text-transform: none;
               letter-spacing: 0;
-              margin-top: 0.8mm;
-              line-height: 1.1;
+              margin-top: 0.5mm;
+              line-height: 1;
               max-width: 95%;
               text-align: center;
             }
           </style>
         </head>
-        <body onload="window.print(); window.close();">
+        <body onload="setTimeout(() => { window.print(); window.close(); }, 1500);">
           <div class="print-grid">
             ${cardsHtml}
           </div>
@@ -415,6 +418,7 @@ function MembersContent() {
     const libName = settings?.libraryName || 'PUSTAKA NUSANTARA';
     const schoolName = settings?.schoolName || 'SMP NEGERI 5 LANGKE REMBONG';
     const detailLabel = member.type === 'Teacher' ? 'GURU' : member.type === 'Staff' ? 'PEGAWAI' : 'KELAS';
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=M&data=${encodeURIComponent(member.memberId)}`;
 
     printWindow.document.write(`
       <html>
@@ -470,15 +474,15 @@ function MembersContent() {
             .qr-section { flex: 1; display: flex; justify-content: center; align-items: center; padding: 1mm 4mm; }
             .qr-section img { width: 34mm; height: 34mm; border: none; }
             
-            .info-section { padding-bottom: 15mm; }
-            .member-name { font-size: 9.5pt; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 0.5mm; padding: 0 1mm; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-            .member-id { font-size: 10.5pt; font-weight: 800; color: #1e4b8f; font-family: monospace; line-height: 1; }
-            .member-detail { font-size: 7pt; font-weight: 800; color: #666; text-transform: uppercase; margin-top: 0.8mm; }
+            .info-section { padding-bottom: 16.5mm; }
+            .member-name { font-size: 8.2pt; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 0.5mm; padding: 0 1mm; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+            .member-id { font-size: 10pt; font-weight: 800; color: #1e4b8f; font-family: monospace; line-height: 1; }
+            .member-detail { font-size: 6.5pt; font-weight: 800; color: #666; text-transform: uppercase; margin-top: 0.8mm; }
             
             .footer { 
               background: #1e4b8f !important; 
               color: #fff !important; 
-              height: 14mm;
+              height: 11mm;
               display: flex;
               flex-direction: column;
               align-items: center;
@@ -491,7 +495,7 @@ function MembersContent() {
               box-sizing: border-box;
             }
             .footer-text { 
-              font-size: 10.5pt; 
+              font-size: 9.5pt; 
               font-weight: 900; 
               text-transform: uppercase; 
               letter-spacing: 1.5px; 
@@ -499,19 +503,19 @@ function MembersContent() {
               line-height: 1.1;
             }
             .footer-subtext {
-              font-size: 4pt;
+              font-size: 3.8pt;
               font-weight: 500;
               color: rgba(255, 255, 255, 0.9) !important;
               text-transform: none;
               letter-spacing: 0;
-              margin-top: 0.8mm;
-              line-height: 1.1;
+              margin-top: 0.5mm;
+              line-height: 1;
               max-width: 95%;
               text-align: center;
             }
           </style>
         </head>
-        <body onload="window.print(); window.close();">
+        <body onload="setTimeout(() => { window.print(); window.close(); }, 1000);">
           <div class="card-container">
             <div class="header-box">
               <div class="school-name">${schoolName}</div>
@@ -523,7 +527,7 @@ function MembersContent() {
             </div>
             
             <div class="qr-section">
-               <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${member.memberId}" />
+               <img src="${qrUrl}" />
             </div>
             
             <div class="info-section">
