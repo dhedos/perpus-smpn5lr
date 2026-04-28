@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo, useRef, useEffect, useCallback, Suspense } from "react"
@@ -21,7 +20,6 @@ import {
   Sparkles, 
   ScanBarcode, 
   MoreVertical,
-  Loader2,
   QrCode,
   Printer,
   X,
@@ -811,7 +809,7 @@ function BooksContent() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center py-20"><p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] animate-pulse duration-[2000ms]">Memuat Data...</p></TableCell></TableRow>
             ) : filteredBooks.length === 0 ? (
               <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Tidak ada buku ditemukan.</TableCell></TableRow>
             ) : filteredBooks.map((book, index) => (
@@ -973,7 +971,7 @@ function BooksContent() {
                 <div className="flex items-center justify-between">
                   <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">Deskripsi / Ringkasan</Label>
                   <Button variant="ghost" type="button" size="sm" className="h-6 text-[9px] gap-1 text-primary" onClick={handleAiGenerate} disabled={isGenerating}>
-                    {isGenerating ? <Loader2 className="h-2 w-2 animate-spin" /> : <Sparkles className="h-2 w-2" />} Deskripsi AI
+                    {isGenerating ? <span className="animate-pulse">Memuat AI...</span> : <><Sparkles className="h-2 w-2" /> Deskripsi AI</>}
                   </Button>
                 </div>
                 <Textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="bg-white border-slate-300 min-h-[100px]" placeholder="Ringkasan cerita atau konten buku..." />
@@ -1156,7 +1154,7 @@ function BooksContent() {
           <DialogFooter className="p-6 bg-slate-50 flex gap-2">
             <Button variant="ghost" className="flex-1" onClick={() => { setIsQueueOpen(false); forceUnlockUI(); }}>Nanti Saja</Button>
             <Button className="flex-1 bg-orange-600 hover:bg-orange-700 gap-2" onClick={handleSyncToDatabase} disabled={isSyncing}>
-              {isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CloudUpload className="h-4 w-4" />} Kirim Semua
+              {isSyncing ? <span className="animate-pulse">Sinkronisasi...</span> : <><CloudUpload className="h-4 w-4" /> Kirim Semua</>}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1209,7 +1207,13 @@ function BooksContent() {
 
 export default function BooksPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>}>
+    <Suspense fallback={
+      <div className="h-full w-full flex flex-col items-center justify-center py-20 gap-4">
+        <p className="text-[10px] font-black text-primary uppercase tracking-[0.4em] animate-pulse duration-[2500ms]">
+          LANTERA BACA
+        </p>
+      </div>
+    }>
       <BooksContent />
     </Suspense>
   )

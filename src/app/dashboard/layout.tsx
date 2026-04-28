@@ -47,7 +47,7 @@ export default function DashboardLayout({
           </div>
 
           <div className="flex flex-col items-center space-y-3 text-center">
-            <p className="text-lg font-black text-[#2E6ECE] uppercase tracking-[0.4em] animate-pulse duration-[3000ms]">
+            <p className="text-lg font-black text-[#2E6ECE] uppercase tracking-[0.4em] animate-pulse duration-[2500ms]">
               {displayTitle}
             </p>
             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest opacity-80 px-4">
