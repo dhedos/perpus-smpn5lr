@@ -42,6 +42,7 @@ export default function SyncPage() {
   const [progress, setProgress] = useState(0)
   const [isOnline, setIsOnline] = useState(true)
   const [pendingCount, setPendingCount] = useState(0)
+  const [isMounted, setIsMounted] = useState(false)
   
   const [isSyncingToSheets, setIsSyncingToSheets] = useState(false)
   const [lastSheetUrl, setLastSheetUrl] = useState<string | null>(null)
@@ -58,33 +59,35 @@ export default function SyncPage() {
   const { data: members } = useCollection(membersRef)
 
   useEffect(() => {
-    setIsOnline(navigator.onLine)
-    const handleStatus = () => setIsOnline(navigator.onLine)
-    window.addEventListener('online', handleStatus)
-    window.addEventListener('offline', handleStatus)
+    setIsMounted(true)
+    if (typeof window !== 'undefined') {
+      setIsOnline(navigator.onLine)
+      const handleStatus = () => setIsOnline(navigator.onLine)
+      window.addEventListener('online', handleStatus)
+      window.addEventListener('offline', handleStatus)
 
-    const checkQueue = () => {
-      if (typeof window === 'undefined') return
-      const savedQueue = localStorage.getItem(STORAGE_KEY)
-      if (savedQueue) {
-        try {
-          const parsed = JSON.parse(savedQueue)
-          setPendingCount(Array.isArray(parsed) ? parsed.length : 0)
-        } catch (e) {
+      const checkQueue = () => {
+        const savedQueue = localStorage.getItem(STORAGE_KEY)
+        if (savedQueue) {
+          try {
+            const parsed = JSON.parse(savedQueue)
+            setPendingCount(Array.isArray(parsed) ? parsed.length : 0)
+          } catch (e) {
+            setPendingCount(0)
+          }
+        } else {
           setPendingCount(0)
         }
-      } else {
-        setPendingCount(0)
       }
-    }
 
-    checkQueue()
-    const interval = setInterval(checkQueue, 2000)
+      checkQueue()
+      const interval = setInterval(checkQueue, 2000)
 
-    return () => {
-      window.removeEventListener('online', handleStatus)
-      window.removeEventListener('offline', handleStatus)
-      clearInterval(interval)
+      return () => {
+        window.removeEventListener('online', handleStatus)
+        window.removeEventListener('offline', handleStatus)
+        clearInterval(interval)
+      }
     }
   }, [])
 
@@ -226,6 +229,8 @@ export default function SyncPage() {
       setIsSyncingToSheets(false);
     }
   }
+
+  if (!isMounted) return null;
 
   return (
     <div className="max-w-6xl space-y-6 animate-in fade-in duration-500">
