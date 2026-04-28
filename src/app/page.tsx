@@ -1,11 +1,10 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, ShieldCheck, AlertCircle, Chrome } from "lucide-react"
+import { ShieldCheck, AlertCircle, Chrome } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth, useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from "@/firebase"
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from "firebase/auth"
@@ -138,38 +137,27 @@ export default function LoginPage() {
     }
   }
 
-  const displayTitle = settings?.libraryName;
-  const displaySubtitle = settings?.librarySubtitle;
-  const displayLogo = settings?.libraryLogoUrl;
+  const displayTitle = settings?.libraryName || "LANTERA BACA";
+  const displaySubtitle = settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG";
+  const displayLogo = settings?.libraryLogoUrl || "https://picsum.photos/seed/librarylogo/512/512";
 
   const shouldShowLoading = !isMounted || (authLoading && !user) || (user && user.role && isRedirecting) || isRedirecting || settingsLoading;
 
   if (shouldShowLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-6 animate-in fade-in duration-500">
-          {displayLogo && !settingsLoading ? (
-            <div className="w-24 h-24 flex items-center justify-center rounded-[2rem] bg-primary/10 text-primary shadow-sm overflow-hidden">
-              <img src={displayLogo} alt="Logo" className="w-16 h-16 object-contain" />
-            </div>
-          ) : null}
+        <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
+          <div className="w-24 h-24 flex items-center justify-center rounded-[2rem] bg-white text-primary shadow-xl border border-primary/5 overflow-hidden">
+            <img src={displayLogo} alt="Logo" className="w-16 h-16 object-contain" />
+          </div>
 
           <div className="flex flex-col items-center space-y-2 text-center">
-            {!settingsLoading && displayTitle ? (
-              <>
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  <p className="text-sm font-black text-primary uppercase tracking-[0.2em]">
-                    {displayTitle}
-                  </p>
-                </div>
-                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50 px-4">
-                  {displaySubtitle}
-                </p>
-              </>
-            ) : (
-              <Loader2 className="h-8 w-8 animate-spin text-primary/40" />
-            )}
+            <p className="text-sm font-black text-primary uppercase tracking-[0.3em] animate-pulse duration-[2000ms]">
+              {displayTitle}
+            </p>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-40 px-4">
+              {displaySubtitle}
+            </p>
           </div>
         </div>
       </div>
@@ -181,20 +169,14 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl border-none p-2 bg-white rounded-3xl overflow-hidden">
         <CardHeader className="space-y-4 text-center pt-8">
           <div className="mx-auto w-24 h-24 flex items-center justify-center rounded-[2rem] bg-primary/10 text-primary mb-2 shadow-sm overflow-hidden">
-            {displayLogo ? (
-              <img src={displayLogo} alt="Logo" className="w-16 h-16 object-contain" />
-            ) : (
-              <div className="w-full h-full bg-slate-100 flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary/20" />
-              </div>
-            )}
+            <img src={displayLogo} alt="Logo" className="w-16 h-16 object-contain" />
           </div>
           <div className="space-y-1">
             <CardTitle className="text-3xl font-black font-headline uppercase tracking-tighter text-primary leading-tight">
-              {displayTitle || "LANTERA BACA"}
+              {displayTitle}
             </CardTitle>
             <CardDescription className="font-bold text-secondary uppercase tracking-[0.15em] text-xs text-center px-4">
-              {isSetupMode ? "Inisialisasi Sistem Baru" : (displaySubtitle || "SMPN 5 LANGKE REMBONG")}
+              {isSetupMode ? "Inisialisasi Sistem Baru" : displaySubtitle}
             </CardDescription>
           </div>
         </CardHeader>
@@ -229,7 +211,7 @@ export default function LoginPage() {
               <Input id="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-slate-200" />
             </div>
             <Button type="submit" className="w-full h-12 text-sm font-black shadow-lg shadow-primary/20 rounded-xl" disabled={loading || (isMounted && checkingUsers)}>
-              {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : isSetupMode ? "AKTIFKAN ADMIN UTAMA" : "MASUK KE SISTEM"}
+              {loading ? <span className="animate-pulse">MEMPROSES...</span> : isSetupMode ? "AKTIFKAN ADMIN UTAMA" : "MASUK KE SISTEM"}
             </Button>
           </form>
 
@@ -274,7 +256,7 @@ export default function LoginPage() {
             </div>
             <DialogFooter>
               <Button type="submit" disabled={isSendingReset} className="w-full h-11 font-bold rounded-xl">
-                {isSendingReset ? <Loader2 className="animate-spin h-4 w-4" /> : "Kirim Tautan"}
+                {isSendingReset ? "Mengirim..." : "Kirim Tautan"}
               </Button>
             </DialogFooter>
           </form>

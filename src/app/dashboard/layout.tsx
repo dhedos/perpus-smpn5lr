@@ -1,4 +1,3 @@
-
 "use client"
 
 import { SidebarNav } from "@/components/dashboard/SidebarNav"
@@ -6,7 +5,6 @@ import { TopNav } from "@/components/dashboard/TopNav"
 import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Loader2 } from "lucide-react"
 import { doc } from "firebase/firestore"
 
 export default function DashboardLayout({
@@ -37,10 +35,25 @@ export default function DashboardLayout({
   const isLoading = !isMounted || userLoading || isRedirecting || !user || settingsLoading;
 
   if (isLoading) {
+    const displayTitle = settings?.libraryName || "LANTERA BACA";
+    const displaySubtitle = settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG";
+    const displayLogo = settings?.libraryLogoUrl || "https://picsum.photos/seed/librarylogo/512/512";
+
     return (
       <div className="h-screen w-full flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4 animate-in fade-in duration-500">
-          <Loader2 className="h-10 w-10 animate-spin text-primary/40" />
+        <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
+          <div className="w-24 h-24 flex items-center justify-center rounded-[2rem] bg-white text-primary shadow-xl border border-primary/5 overflow-hidden">
+            <img src={displayLogo} alt="Logo" className="w-16 h-16 object-contain" />
+          </div>
+
+          <div className="flex flex-col items-center space-y-2 text-center">
+            <p className="text-sm font-black text-primary uppercase tracking-[0.3em] animate-pulse duration-[2000ms]">
+              {displayTitle}
+            </p>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-40 px-4">
+              {displaySubtitle}
+            </p>
+          </div>
         </div>
       </div>
     )
