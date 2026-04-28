@@ -145,17 +145,17 @@ export default function LoginPage() {
 
   if (shouldShowLoading) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
-          <div className="w-24 h-24 flex items-center justify-center rounded-[2rem] bg-white text-primary shadow-xl border border-primary/5 overflow-hidden">
-            <img src={displayLogo} alt="Logo" className="w-16 h-16 object-contain" />
+      <div className="h-screen w-full flex items-center justify-center bg-[#ECF0F7]">
+        <div className="flex flex-col items-center gap-8 animate-in fade-in duration-700">
+          <div className="w-32 h-32 flex items-center justify-center rounded-[2.5rem] bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden">
+            <img src={displayLogo} alt="Logo" className="w-20 h-20 object-contain" />
           </div>
 
-          <div className="flex flex-col items-center space-y-2 text-center">
-            <p className="text-sm font-black text-primary uppercase tracking-[0.3em] animate-pulse duration-[2000ms]">
+          <div className="flex flex-col items-center space-y-3 text-center">
+            <p className="text-lg font-black text-[#2E6ECE] uppercase tracking-[0.4em] animate-pulse duration-[3000ms]">
               {displayTitle}
             </p>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-40 px-4">
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest opacity-80 px-4">
               {displaySubtitle}
             </p>
           </div>
