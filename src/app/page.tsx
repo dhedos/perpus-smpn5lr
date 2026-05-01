@@ -43,12 +43,30 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState("")
   const [isSendingReset, setIsSendingReset] = useState(false)
 
+  // Pre-load branding from window object injected by layout.tsx
+  const [branding, setBranding] = useState<{logoUrl: string, libraryName: string, librarySubtitle: string} | null>(null)
+
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
 
   useEffect(() => {
     setIsMounted(true)
+    // Instant load from window object
+    if (typeof window !== 'undefined' && (window as any).__BRANDING__) {
+      setBranding((window as any).__BRANDING__)
+    }
   }, [])
+
+  // Sync settings when they arrive from Firestore
+  useEffect(() => {
+    if (settings) {
+      setBranding({
+        logoUrl: settings.libraryLogoUrl || branding?.logoUrl || '',
+        libraryName: settings.libraryName || branding?.libraryName || 'LANTERA BACA',
+        librarySubtitle: settings.librarySubtitle || branding?.librarySubtitle || 'SMPN 5 LANGKE REMBONG'
+      })
+    }
+  }, [settings])
 
   useEffect(() => {
     if (isMounted && !authLoading && user && user.role && !isRedirecting) {
@@ -139,11 +157,10 @@ export default function LoginPage() {
     }
   }
 
-  const displayTitle = settings?.libraryName || "LANTERA BACA";
-  const displaySubtitle = settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG";
-  const displayLogo = settings?.libraryLogoUrl;
+  const displayTitle = branding?.libraryName || "LANTERA BACA";
+  const displaySubtitle = branding?.librarySubtitle || "SMPN 5 LANGKE REMBONG";
+  const displayLogo = branding?.logoUrl;
 
-  // Optimasi: Jangan biarkan settingsLoading menghalangi tampilan jika auth sudah siap
   const shouldShowSplash = !isMounted || (authLoading && !user) || (user && user.role && isRedirecting) || isRedirecting;
 
   if (shouldShowSplash) {

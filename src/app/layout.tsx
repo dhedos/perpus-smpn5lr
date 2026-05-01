@@ -4,14 +4,12 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 
-export async function generateMetadata(): Promise<Metadata> {
-  let logoUrl = 'https://picsum.photos/seed/librarylogo/128/128';
-  let libraryName = 'LANTERA BACA';
-  let librarySubtitle = 'SMPN 5 LANGKE REMBONG';
+const FIREBASE_PROJECT_ID = "studio-6126048245-d2203";
+const SETTINGS_URL = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/settings/general`;
 
+async function getBranding() {
   try {
-    // Fetch settings directly from Firestore via REST API with timeout
-    const res = await fetch('https://firestore.googleapis.com/v1/projects/studio-6126048245-d2203/databases/(default)/documents/settings/general', {
+    const res = await fetch(SETTINGS_URL, {
       next: { revalidate: 60 },
       signal: AbortSignal.timeout(5000)
     });
@@ -20,35 +18,47 @@ export async function generateMetadata(): Promise<Metadata> {
       const data = await res.json();
       const fields = data.fields;
       if (fields) {
-        logoUrl = fields.libraryLogoUrl?.stringValue || logoUrl;
-        libraryName = fields.libraryName?.stringValue || libraryName;
-        librarySubtitle = fields.librarySubtitle?.stringValue || librarySubtitle;
+        return {
+          logoUrl: fields.libraryLogoUrl?.stringValue || 'https://picsum.photos/seed/librarylogo/128/128',
+          libraryName: fields.libraryName?.stringValue || 'LANTERA BACA',
+          librarySubtitle: fields.librarySubtitle?.stringValue || 'SMPN 5 LANGKE REMBONG'
+        };
       }
     }
   } catch (e) {
-    // Fallback to defaults quietly
+    console.warn('Branding fetch failed, using defaults');
   }
-
   return {
-    title: `${libraryName} - ${librarySubtitle}`,
-    description: `Sistem Informasi Perpustakaan Modern ${libraryName} ${librarySubtitle}.`,
+    logoUrl: 'https://picsum.photos/seed/librarylogo/128/128',
+    libraryName: 'LANTERA BACA',
+    librarySubtitle: 'SMPN 5 LANGKE REMBONG'
+  };
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const branding = await getBranding();
+  return {
+    title: `${branding.libraryName} - ${branding.librarySubtitle}`,
+    description: `Sistem Informasi Perpustakaan Modern ${branding.libraryName} ${branding.librarySubtitle}.`,
     icons: {
       icon: [
-        { url: logoUrl, sizes: '32x32' },
-        { url: logoUrl, sizes: '192x192' },
-        { url: logoUrl, sizes: '512x512' }
+        { url: branding.logoUrl, sizes: '32x32' },
+        { url: branding.logoUrl, sizes: '192x192' },
+        { url: branding.logoUrl, sizes: '512x512' }
       ],
-      shortcut: logoUrl,
-      apple: logoUrl,
+      shortcut: branding.logoUrl,
+      apple: branding.logoUrl,
     },
   };
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const branding = await getBranding();
+
   return (
     <html lang="id">
       <head>
@@ -56,6 +66,11 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
         <meta name="theme-color" content="#2E6ECE" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.__BRANDING__ = ${JSON.stringify(branding)};`,
+          }}
+        />
       </head>
       <body className="font-body antialiased">
         <FirebaseClientProvider>

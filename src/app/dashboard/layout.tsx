@@ -21,12 +21,28 @@ export default function DashboardLayout({
   const [isMounted, setIsMounted] = useState(false)
   const [logoLoaded, setLogoLoaded] = useState(false)
 
+  // Pre-load branding from window object
+  const [branding, setBranding] = useState<{logoUrl: string, libraryName: string, librarySubtitle: string} | null>(null)
+
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings } = useDoc(settingsRef)
 
   useEffect(() => {
     setIsMounted(true)
+    if (typeof window !== 'undefined' && (window as any).__BRANDING__) {
+      setBranding((window as any).__BRANDING__)
+    }
   }, [])
+
+  useEffect(() => {
+    if (settings) {
+      setBranding({
+        logoUrl: settings.libraryLogoUrl || branding?.logoUrl || '',
+        libraryName: settings.libraryName || branding?.libraryName || 'LANTERA BACA',
+        librarySubtitle: settings.librarySubtitle || branding?.librarySubtitle || 'SMPN 5 LANGKE REMBONG'
+      })
+    }
+  }, [settings])
 
   useEffect(() => {
     if (isMounted && !userLoading && !user && !isRedirecting) {
@@ -35,13 +51,12 @@ export default function DashboardLayout({
     }
   }, [user, userLoading, router, isRedirecting, isMounted])
 
-  // Optimasi: Jangan tunggu settingsLoading untuk melepas splash screen jika user sudah ada
   const isLoading = !isMounted || userLoading || isRedirecting || !user;
 
   if (isLoading) {
-    const displayTitle = settings?.libraryName || "LANTERA BACA";
-    const displaySubtitle = settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG";
-    const displayLogo = settings?.libraryLogoUrl;
+    const displayTitle = branding?.libraryName || "LANTERA BACA";
+    const displaySubtitle = branding?.librarySubtitle || "SMPN 5 LANGKE REMBONG";
+    const displayLogo = branding?.logoUrl;
 
     return (
       <div className="h-screen w-full flex items-center justify-center bg-[#ECF0F7]">
