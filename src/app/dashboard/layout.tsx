@@ -22,7 +22,7 @@ export default function DashboardLayout({
   const [logoLoaded, setLogoLoaded] = useState(false)
 
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
-  const { data: settings, isLoading: settingsLoading } = useDoc(settingsRef)
+  const { data: settings } = useDoc(settingsRef)
 
   useEffect(() => {
     setIsMounted(true)
@@ -35,7 +35,8 @@ export default function DashboardLayout({
     }
   }, [user, userLoading, router, isRedirecting, isMounted])
 
-  const isLoading = !isMounted || userLoading || isRedirecting || !user || settingsLoading;
+  // Optimasi: Jangan tunggu settingsLoading untuk melepas splash screen jika user sudah ada
+  const isLoading = !isMounted || userLoading || isRedirecting || !user;
 
   if (isLoading) {
     const displayTitle = settings?.libraryName || "LANTERA BACA";
@@ -44,21 +45,21 @@ export default function DashboardLayout({
 
     return (
       <div className="h-screen w-full flex items-center justify-center bg-[#ECF0F7]">
-        <div className="flex flex-col items-center gap-8 animate-in fade-in duration-700">
+        <div className="flex flex-col items-center gap-8 animate-in fade-in duration-500">
           <div className="w-32 h-32 flex items-center justify-center rounded-[2.5rem] bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden relative">
             <Library className={`w-16 h-16 text-primary/10 animate-pulse absolute transition-opacity duration-300 ${logoLoaded ? 'opacity-0' : 'opacity-100'}`} />
             {displayLogo && (
               <img 
                 src={displayLogo} 
                 alt="Logo" 
-                className={`w-20 h-20 object-contain relative z-10 transition-opacity duration-500 ${logoLoaded ? 'opacity-100' : 'opacity-0'}`} 
+                className={`w-20 h-20 object-contain relative z-10 transition-opacity duration-700 ${logoLoaded ? 'opacity-100' : 'opacity-0'}`} 
                 onLoad={() => setLogoLoaded(true)}
               />
             )}
           </div>
 
           <div className="flex flex-col items-center space-y-3 text-center">
-            <p className="text-lg font-black text-[#2E6ECE] uppercase tracking-[0.4em] animate-pulse duration-[2500ms]">
+            <p className="text-lg font-black text-[#2E6ECE] uppercase tracking-[0.4em] animate-pulse duration-[2000ms]">
               {displayTitle}
             </p>
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest opacity-80 px-4">
