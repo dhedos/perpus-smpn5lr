@@ -7,6 +7,7 @@ import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { doc } from "firebase/firestore"
+import { Library } from "lucide-react"
 
 export default function DashboardLayout({
   children,
@@ -47,7 +48,7 @@ export default function DashboardLayout({
             {displayLogo ? (
               <img src={displayLogo} alt="Logo" className="w-20 h-20 object-contain" />
             ) : (
-              <div className="w-16 h-16 bg-slate-50 animate-pulse rounded-2xl" />
+              <Library className="w-16 h-16 text-primary/10 animate-pulse" />
             )}
           </div>
 
@@ -55,7 +56,7 @@ export default function DashboardLayout({
             <p className="text-lg font-black text-[#2E6ECE] uppercase tracking-[0.4em] animate-pulse duration-[2500ms]">
               {displayTitle}
             </p>
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest opacity-80 px-4">
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest opacity-80 px-4">
               {displaySubtitle}
             </p>
           </div>

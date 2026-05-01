@@ -81,7 +81,7 @@ export function SidebarNav({ onItemClick }: SidebarNavProps) {
           {displayLogo ? (
             <img src={displayLogo} alt="Logo" className="w-9 h-9 object-contain" />
           ) : (
-            <div className="w-8 h-8 bg-primary/5 animate-pulse rounded-lg" />
+            <Library className="w-7 h-7 text-primary/20 animate-pulse" />
           )}
         </div>
         <div className="flex flex-col overflow-hidden min-h-[32px] justify-center">

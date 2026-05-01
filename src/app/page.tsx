@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ShieldCheck, AlertCircle, Chrome } from "lucide-react"
+import { ShieldCheck, AlertCircle, Chrome, Library } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth, useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from "@/firebase"
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from "firebase/auth"
@@ -152,7 +152,7 @@ export default function LoginPage() {
             {displayLogo ? (
               <img src={displayLogo} alt="Logo" className="w-20 h-20 object-contain" />
             ) : (
-              <div className="w-16 h-16 bg-slate-50 animate-pulse rounded-2xl" />
+              <Library className="w-16 h-16 text-primary/10 animate-pulse" />
             )}
           </div>
 
@@ -160,7 +160,7 @@ export default function LoginPage() {
             <p className="text-lg font-black text-[#2E6ECE] uppercase tracking-[0.4em] animate-pulse duration-[2500ms]">
               {displayTitle}
             </p>
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest opacity-80 px-4">
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest opacity-80 px-4">
               {displaySubtitle}
             </p>
           </div>
@@ -177,7 +177,7 @@ export default function LoginPage() {
             {displayLogo ? (
               <img src={displayLogo} alt="Logo" className="w-16 h-16 object-contain" />
             ) : (
-              <div className="w-12 h-12 bg-primary/5 animate-pulse rounded-xl" />
+              <Library className="w-12 h-12 text-primary/20 animate-pulse" />
             )}
           </div>
           <div className="space-y-1">
