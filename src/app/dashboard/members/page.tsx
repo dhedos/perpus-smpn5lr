@@ -19,7 +19,6 @@ import {
   Edit, 
   Trash2, 
   MoreVertical, 
-  Loader2, 
   QrCode,
   Printer,
   ChevronDown,
@@ -430,7 +429,7 @@ function MembersContent() {
   const handlePrintSingleCard = (member: any) => {
     if (!member) return
     const printWindow = window.open('', '_blank')
-    if (!printWindow) return
+    if (!member) return
 
     const rawAddress = settings?.schoolAddress || 'Mando, Kelurahan Compang Carep, Kec. Langke Rembong';
     const shortAddress = rawAddress
@@ -695,7 +694,11 @@ function MembersContent() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-20">
+                   <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] animate-pulse duration-[2000ms]">Memuat Data...</p>
+                </TableCell>
+              </TableRow>
             ) : filteredMembers.length === 0 ? (
               <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Belum ada anggota ditemukan.</TableCell></TableRow>
             ) : filteredMembers.map((member, index) => (
@@ -872,7 +875,11 @@ function MembersContent() {
 
 export default function MembersPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>}>
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center h-full py-20 gap-4">
+        <p className="text-[10px] font-black text-primary uppercase tracking-[0.4em] animate-pulse duration-[2500ms]">LANTERA BACA</p>
+      </div>
+    }>
       <MembersContent />
     </Suspense>
   )

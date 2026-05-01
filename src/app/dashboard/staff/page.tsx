@@ -23,7 +23,6 @@ import {
   Trash2,
   UserCheck,
   UserX,
-  Loader2,
   Lock,
   KeyRound,
   Send
@@ -262,7 +261,7 @@ export default function StaffPage() {
               <Button variant="outline" onClick={() => setIsOpen(false)}>Batal</Button>
               <Button onClick={handleRegisterStaff} disabled={isRegistering}>
                 {isRegistering ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Mendaftarkan...</>
+                  <span className="animate-pulse">MEMPROSES...</span>
                 ) : (
                   "Konfirmasi Pendaftaran"
                 )}
@@ -297,8 +296,8 @@ export default function StaffPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-10">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+                <TableCell colSpan={4} className="text-center py-20">
+                   <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] animate-pulse duration-[2000ms]">Memuat Data...</p>
                 </TableCell>
               </TableRow>
             ) : filteredStaff.length === 0 ? (
@@ -334,7 +333,7 @@ export default function StaffPage() {
                       disabled={isSendingReset === person.id}
                     >
                       {isSendingReset === person.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                         <span className="animate-pulse">Mengirim...</span>
                       ) : (
                         <KeyRound className="h-4 w-4" />
                       )}

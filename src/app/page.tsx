@@ -33,6 +33,7 @@ export default function LoginPage() {
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const [isSetupMode, setIsSetupMode] = useState(false)
+  const [logoLoaded, setLogoLoaded] = useState(false)
   
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -148,11 +149,15 @@ export default function LoginPage() {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-[#ECF0F7]">
         <div className="flex flex-col items-center gap-8 animate-in fade-in duration-700">
-          <div className="w-32 h-32 flex items-center justify-center rounded-[2.5rem] bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden">
-            {displayLogo ? (
-              <img src={displayLogo} alt="Logo" className="w-20 h-20 object-contain" />
-            ) : (
-              <Library className="w-16 h-16 text-primary/10 animate-pulse" />
+          <div className="w-32 h-32 flex items-center justify-center rounded-[2.5rem] bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden relative">
+            <Library className={`w-16 h-16 text-primary/10 animate-pulse absolute transition-opacity duration-300 ${logoLoaded ? 'opacity-0' : 'opacity-100'}`} />
+            {displayLogo && (
+              <img 
+                src={displayLogo} 
+                alt="Logo" 
+                className={`w-20 h-20 object-contain relative z-10 transition-opacity duration-500 ${logoLoaded ? 'opacity-100' : 'opacity-0'}`} 
+                onLoad={() => setLogoLoaded(true)}
+              />
             )}
           </div>
 
@@ -173,11 +178,15 @@ export default function LoginPage() {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 space-y-4 animate-in fade-in duration-500">
       <Card className="w-full max-w-md shadow-2xl border-none p-2 bg-white rounded-3xl overflow-hidden">
         <CardHeader className="space-y-4 text-center pt-8">
-          <div className="mx-auto w-24 h-24 flex items-center justify-center rounded-[2rem] bg-primary/10 text-primary mb-2 shadow-sm overflow-hidden">
-            {displayLogo ? (
-              <img src={displayLogo} alt="Logo" className="w-16 h-16 object-contain" />
-            ) : (
-              <Library className="w-12 h-12 text-primary/20 animate-pulse" />
+          <div className="mx-auto w-24 h-24 flex items-center justify-center rounded-[2rem] bg-primary/10 text-primary mb-2 shadow-sm overflow-hidden relative">
+            <Library className={`w-12 h-12 text-primary/20 animate-pulse absolute transition-opacity duration-300 ${logoLoaded ? 'opacity-0' : 'opacity-100'}`} />
+            {displayLogo && (
+              <img 
+                src={displayLogo} 
+                alt="Logo" 
+                className={`w-16 h-16 object-contain relative z-10 transition-opacity duration-500 ${logoLoaded ? 'opacity-100' : 'opacity-0'}`} 
+                onLoad={() => setLogoLoaded(true)}
+              />
             )}
           </div>
           <div className="space-y-1">

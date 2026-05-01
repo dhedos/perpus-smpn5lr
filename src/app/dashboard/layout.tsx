@@ -19,6 +19,7 @@ export default function DashboardLayout({
   const router = useRouter()
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+  const [logoLoaded, setLogoLoaded] = useState(false)
 
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
   const { data: settings, isLoading: settingsLoading } = useDoc(settingsRef)
@@ -44,11 +45,15 @@ export default function DashboardLayout({
     return (
       <div className="h-screen w-full flex items-center justify-center bg-[#ECF0F7]">
         <div className="flex flex-col items-center gap-8 animate-in fade-in duration-700">
-          <div className="w-32 h-32 flex items-center justify-center rounded-[2.5rem] bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden">
-            {displayLogo ? (
-              <img src={displayLogo} alt="Logo" className="w-20 h-20 object-contain" />
-            ) : (
-              <Library className="w-16 h-16 text-primary/10 animate-pulse" />
+          <div className="w-32 h-32 flex items-center justify-center rounded-[2.5rem] bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden relative">
+            <Library className={`w-16 h-16 text-primary/10 animate-pulse absolute transition-opacity duration-300 ${logoLoaded ? 'opacity-0' : 'opacity-100'}`} />
+            {displayLogo && (
+              <img 
+                src={displayLogo} 
+                alt="Logo" 
+                className={`w-20 h-20 object-contain relative z-10 transition-opacity duration-500 ${logoLoaded ? 'opacity-100' : 'opacity-0'}`} 
+                onLoad={() => setLogoLoaded(true)}
+              />
             )}
           </div>
 
