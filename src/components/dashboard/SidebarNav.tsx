@@ -80,10 +80,8 @@ export function SidebarNav({ onItemClick }: SidebarNavProps) {
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary overflow-hidden">
           {displayLogo ? (
             <img src={displayLogo} alt="Logo" className="w-9 h-9 object-contain" />
-          ) : !isLoading ? (
-            <Library className="h-8 w-8" />
           ) : (
-            <div className="w-6 h-6 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+            <div className="w-8 h-8 bg-primary/5 animate-pulse rounded-lg" />
           )}
         </div>
         <div className="flex flex-col overflow-hidden min-h-[32px] justify-center">

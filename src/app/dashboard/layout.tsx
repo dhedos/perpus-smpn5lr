@@ -1,3 +1,4 @@
+
 "use client"
 
 import { SidebarNav } from "@/components/dashboard/SidebarNav"
@@ -37,13 +38,17 @@ export default function DashboardLayout({
   if (isLoading) {
     const displayTitle = settings?.libraryName || "LANTERA BACA";
     const displaySubtitle = settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG";
-    const displayLogo = settings?.libraryLogoUrl || "https://picsum.photos/seed/librarylogo/512/512";
+    const displayLogo = settings?.libraryLogoUrl;
 
     return (
       <div className="h-screen w-full flex items-center justify-center bg-[#ECF0F7]">
         <div className="flex flex-col items-center gap-8 animate-in fade-in duration-700">
           <div className="w-32 h-32 flex items-center justify-center rounded-[2.5rem] bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden">
-            <img src={displayLogo} alt="Logo" className="w-20 h-20 object-contain" />
+            {displayLogo ? (
+              <img src={displayLogo} alt="Logo" className="w-20 h-20 object-contain" />
+            ) : (
+              <div className="w-16 h-16 bg-slate-50 animate-pulse rounded-2xl" />
+            )}
           </div>
 
           <div className="flex flex-col items-center space-y-3 text-center">

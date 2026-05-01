@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -139,7 +140,7 @@ export default function LoginPage() {
 
   const displayTitle = settings?.libraryName || "LANTERA BACA";
   const displaySubtitle = settings?.librarySubtitle || "SMPN 5 LANGKE REMBONG";
-  const displayLogo = settings?.libraryLogoUrl || "https://picsum.photos/seed/librarylogo/512/512";
+  const displayLogo = settings?.libraryLogoUrl;
 
   const shouldShowLoading = !isMounted || (authLoading && !user) || (user && user.role && isRedirecting) || isRedirecting || settingsLoading;
 
@@ -148,7 +149,11 @@ export default function LoginPage() {
       <div className="h-screen w-full flex items-center justify-center bg-[#ECF0F7]">
         <div className="flex flex-col items-center gap-8 animate-in fade-in duration-700">
           <div className="w-32 h-32 flex items-center justify-center rounded-[2.5rem] bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden">
-            <img src={displayLogo} alt="Logo" className="w-20 h-20 object-contain" />
+            {displayLogo ? (
+              <img src={displayLogo} alt="Logo" className="w-20 h-20 object-contain" />
+            ) : (
+              <div className="w-16 h-16 bg-slate-50 animate-pulse rounded-2xl" />
+            )}
           </div>
 
           <div className="flex flex-col items-center space-y-3 text-center">
@@ -169,7 +174,11 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl border-none p-2 bg-white rounded-3xl overflow-hidden">
         <CardHeader className="space-y-4 text-center pt-8">
           <div className="mx-auto w-24 h-24 flex items-center justify-center rounded-[2rem] bg-primary/10 text-primary mb-2 shadow-sm overflow-hidden">
-            <img src={displayLogo} alt="Logo" className="w-16 h-16 object-contain" />
+            {displayLogo ? (
+              <img src={displayLogo} alt="Logo" className="w-16 h-16 object-contain" />
+            ) : (
+              <div className="w-12 h-12 bg-primary/5 animate-pulse rounded-xl" />
+            )}
           </div>
           <div className="space-y-1">
             <CardTitle className="text-3xl font-black font-headline uppercase tracking-tighter text-primary leading-tight">
