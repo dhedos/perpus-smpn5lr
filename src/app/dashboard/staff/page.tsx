@@ -157,7 +157,7 @@ export default function StaffPage() {
     } catch (error: any) {
       let msg = error.message;
       if (error.code === 'auth/email-already-in-use') {
-        msg = "Email sudah digunakan. Jika akun Firestore hilang, hapus dulu email ini di Firebase Console.";
+        msg = "Firebase: Error (auth/email-already-in-use).";
       }
       toast({ 
         title: "Pendaftaran Gagal", 
