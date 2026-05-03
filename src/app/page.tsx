@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -161,9 +162,9 @@ export default function LoginPage() {
 
   if (shouldShowSplash) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-[#ECF0F7]">
+      <div className="fixed inset-0 z-[9999] w-full h-full flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-8 animate-in fade-in duration-500">
-          <div className="w-32 h-32 flex items-center justify-center rounded-[2.5rem] bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden relative">
+          <div className="w-32 h-32 flex items-center justify-center rounded-[2.5rem] bg-card shadow-2xl ring-1 ring-black/5 overflow-hidden relative">
             <Library className={`w-16 h-16 text-primary/10 animate-pulse absolute transition-opacity duration-300 ${logoLoaded ? 'opacity-0' : 'opacity-100'}`} />
             {displayLogo && (
               <img 
@@ -176,10 +177,10 @@ export default function LoginPage() {
           </div>
 
           <div className="flex flex-col items-center space-y-3 text-center">
-            <p className="text-lg font-black text-[#2E6ECE] uppercase tracking-[0.4em] animate-pulse duration-[2000ms]">
+            <p className="text-lg font-black text-primary uppercase tracking-[0.4em] animate-pulse duration-[2000ms]">
               {displayTitle}
             </p>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest opacity-80 px-4">
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-80 px-4">
               {displaySubtitle}
             </p>
           </div>
@@ -189,8 +190,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 space-y-4 animate-in fade-in duration-500">
-      <Card className="w-full max-w-md shadow-2xl border-none p-2 bg-white rounded-3xl overflow-hidden">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 space-y-4 animate-in fade-in duration-700">
+      <Card className="w-full max-w-md shadow-2xl border-none p-2 bg-card rounded-3xl overflow-hidden">
         <CardHeader className="space-y-4 text-center pt-8">
           <div className="mx-auto w-24 h-24 flex items-center justify-center rounded-[2rem] bg-primary/10 text-primary mb-2 shadow-sm overflow-hidden relative">
             <Library className={`w-12 h-12 text-primary/20 animate-pulse absolute transition-opacity duration-300 ${logoLoaded ? 'opacity-0' : 'opacity-100'}`} />
@@ -228,19 +229,19 @@ export default function LoginPage() {
             {isSetupMode && (
               <div className="space-y-2">
                 <Label htmlFor="name" className="font-bold text-[10px] uppercase text-muted-foreground ml-1">Nama Lengkap Admin</Label>
-                <Input id="name" placeholder="Nama Penanggung Jawab" required value={adminName} onChange={(e) => setAdminName(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-slate-200" />
+                <Input id="name" placeholder="Nama Penanggung Jawab" required value={adminName} onChange={(e) => setAdminName(e.target.value)} className="h-12 rounded-xl bg-background border-slate-200 dark:border-white/10" />
               </div>
             )}
             <div className="space-y-2">
               <Label htmlFor="email" className="font-bold text-[10px] uppercase text-muted-foreground ml-1">Alamat Email</Label>
-              <Input id="email" type="email" placeholder="email@sekolah.sch.id" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-slate-200" />
+              <Input id="email" type="email" placeholder="email@sekolah.sch.id" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 rounded-xl bg-background border-slate-200 dark:border-white/10" />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password" className="font-bold text-[10px] uppercase text-muted-foreground ml-1">Kata Sandi</Label>
                 {!isSetupMode && <button type="button" onClick={() => setIsResetOpen(true)} className="text-[10px] font-black text-primary hover:underline uppercase">Lupa Sandi?</button>}
               </div>
-              <Input id="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-slate-200" />
+              <Input id="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 rounded-xl bg-background border-slate-200 dark:border-white/10" />
             </div>
             <Button type="submit" className="w-full h-12 text-sm font-black shadow-lg shadow-primary/20 rounded-xl" disabled={loading || (isMounted && checkingUsers)}>
               {loading ? <span className="animate-pulse">MEMPROSES...</span> : isSetupMode ? "AKTIFKAN ADMIN UTAMA" : "MASUK KE SISTEM"}
@@ -250,21 +251,21 @@ export default function LoginPage() {
           {!isSetupMode && (
             <>
               <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-100"></span></div>
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-100 dark:border-white/5"></span></div>
                 <div className="relative flex justify-center text-[10px] uppercase font-black text-muted-foreground/40">
-                  <span className="bg-white px-3">Atau Akses Cepat</span>
+                  <span className="bg-card px-3">Atau Akses Cepat</span>
                 </div>
               </div>
-              <Button variant="outline" className="w-full h-12 gap-2 font-bold rounded-xl border-slate-200 hover:bg-slate-50" onClick={handleGoogleLogin} disabled={loading}>
+              <Button variant="outline" className="w-full h-12 gap-2 font-bold rounded-xl border-slate-200 dark:border-white/10 hover:bg-muted" onClick={handleGoogleLogin} disabled={loading}>
                 <Chrome className="h-5 w-5 text-red-500" /> Masuk dengan Google
               </Button>
             </>
           )}
         </CardContent>
 
-        <CardFooter className="flex flex-col gap-4 bg-slate-50/50 p-6 border-t border-slate-50">
+        <CardFooter className="flex flex-col gap-4 bg-muted/30 p-6 border-t dark:border-white/5">
           {!checkingUsers && noUsersExist && !isSetupMode && (
-            <Button variant="outline" className="w-full border-dashed border-primary/40 text-primary h-12 rounded-xl font-bold bg-white" onClick={() => setIsSetupMode(true)}>
+            <Button variant="outline" className="w-full border-dashed border-primary/40 text-primary h-12 rounded-xl font-bold bg-card" onClick={() => setIsSetupMode(true)}>
               <ShieldCheck className="mr-2 h-4 w-4" /> Inisialisasi Admin Pertama
             </Button>
           )}
@@ -274,7 +275,7 @@ export default function LoginPage() {
       </Card>
 
       <Dialog open={isResetOpen} onOpenChange={setIsResetOpen}>
-        <DialogContent className="bg-white rounded-3xl max-w-sm border-none shadow-2xl">
+        <DialogContent className="bg-card rounded-3xl max-w-sm border-none shadow-2xl">
           <form onSubmit={handleSendResetEmail}>
             <DialogHeader>
               <DialogTitle className="font-black uppercase tracking-tight text-primary">Reset Kata Sandi</DialogTitle>

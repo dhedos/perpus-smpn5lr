@@ -27,9 +27,9 @@
     --radius: 1rem;
   }
   .dark {
-    --background: 222 47% 4%; /* Lebih hitam pekat */
+    --background: 222 47% 4%; 
     --foreground: 210 40% 98%;
-    --card: 222 47% 8%; /* Kartu midnight blue gelap */
+    --card: 222 47% 8%; 
     --card-foreground: 210 40% 98%;
     --popover: 222 47% 8%;
     --popover-foreground: 210 40% 98%;
@@ -38,7 +38,7 @@
     --secondary: 193 92% 50%;
     --secondary-foreground: 222 47% 11%;
     --muted: 222 47% 12%;
-    --muted-foreground: 215 20% 85%; /* Teks muted dibuat jauh lebih terang */
+    --muted-foreground: 215 20% 85%; 
     --accent: 217 91% 15%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 84% 60%;
@@ -54,6 +54,11 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-300;
   }
+}
+
+/* Utilitas untuk transisi pemuatan yang halus */
+.loading-wrapper-fade {
+  @apply transition-opacity duration-500 ease-in-out;
 }
