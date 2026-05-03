@@ -1,7 +1,6 @@
-
 "use client"
 
-import { Bell, Search, User, Globe, Globe as GlobeIcon, Wifi, WifiOff, LogOut, Menu, UserCircle, Lock, Loader2, CheckCircle2, BookOpen, Users as UsersIcon, ArrowRight, X, Image as ImageIcon, Upload } from "lucide-react"
+import { Bell, Search, User, Globe, Globe as GlobeIcon, Wifi, WifiOff, LogOut, Menu, UserCircle, Lock, Loader2, CheckCircle2, BookOpen, Users as UsersIcon, ArrowRight, X, Image as ImageIcon, Upload, Sun, Moon } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { 
@@ -12,13 +11,14 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/avatar"
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { Badge } from "@/components/ui/badge"
 import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
 import { signOut, updatePassword } from "firebase/auth"
 import { doc, updateDoc, collection } from "firebase/firestore"
 import { useRouter } from "next/navigation"
+import { useTheme } from "next-themes"
 import { 
   Sheet, 
   SheetContent, 
@@ -57,6 +57,7 @@ export function TopNav() {
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [mounted, setMounted] = useState(false)
   
   // Search State
   const [searchQuery, setSearchQuery] = useState("")
@@ -66,6 +67,7 @@ export function TopNav() {
   const auth = useAuth()
   const db = useFirestore()
   const router = useRouter()
+  const { theme, setTheme } = useTheme()
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -102,6 +104,7 @@ export function TopNav() {
   }, [searchQuery, allBooks, allMembers])
 
   useEffect(() => {
+    setMounted(true)
     if (user) {
       setProfileData(prev => ({ 
         ...prev, 
@@ -293,8 +296,8 @@ export function TopNav() {
           />
           
           {showResults && searchQuery.length >= 2 && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white border rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 z-50">
-              <div className="p-2 border-b bg-slate-50 flex justify-between items-center">
+            <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 z-50">
+              <div className="p-2 border-b bg-slate-50 dark:bg-slate-800 flex justify-between items-center">
                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-2">Hasil Pencarian</span>
                 <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setShowResults(false)}><X className="h-3 w-3" /></Button>
               </div>
@@ -306,7 +309,7 @@ export function TopNav() {
                       <div className="p-2">
                         <p className="text-[10px] font-black text-primary uppercase px-2 mb-1">Buku</p>
                         {searchResults.books.map(b => (
-                          <div key={b.id} onClick={() => handleResultClick(`/dashboard/books?q=${b.code}`)} className="p-3 hover:bg-slate-50 cursor-pointer rounded-lg flex items-center gap-3 group">
+                          <div key={b.id} onClick={() => handleResultClick(`/dashboard/books?q=${b.code}`)} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer rounded-lg flex items-center gap-3 group">
                             <BookOpen className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-bold truncate">{b.title}</p>
@@ -322,7 +325,7 @@ export function TopNav() {
                       <div className="p-2 border-t">
                         <p className="text-[10px] font-black text-secondary-foreground uppercase px-2 mb-1">Anggota</p>
                         {searchResults.members.map(m => (
-                          <div key={m.id} onClick={() => handleResultClick(`/dashboard/members?q=${m.memberId}`)} className="p-3 hover:bg-slate-50 cursor-pointer rounded-lg flex items-center gap-3 group">
+                          <div key={m.id} onClick={() => handleResultClick(`/dashboard/members?q=${m.memberId}`)} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer rounded-lg flex items-center gap-3 group">
                             <UsersIcon className="h-4 w-4 text-muted-foreground group-hover:text-secondary" />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-bold truncate">{m.name}</p>
@@ -345,11 +348,26 @@ export function TopNav() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 md:gap-4">
-        <div className="flex items-center gap-2 mr-2">
+      <div className="flex items-center gap-1 md:gap-2">
+        <div className="flex items-center gap-1">
           <Badge variant="outline" className="gap-1.5 flex items-center px-2 py-0.5 border-none bg-transparent" title={wifiInfo.label}>
             {wifiInfo.icon}
           </Badge>
+          
+          {mounted && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4 text-yellow-400" />
+              ) : (
+                <Moon className="h-4 w-4 text-slate-700" />
+              )}
+            </Button>
+          )}
         </div>
 
         <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
@@ -403,7 +421,7 @@ export function TopNav() {
       </div>
 
       <Dialog open={isProfileOpen} onOpenChange={(v) => { setIsProfileOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="max-w-md bg-white">
+        <DialogContent className="max-w-md bg-background">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-primary">
               <UserCircle className="h-5 w-5" />
@@ -415,7 +433,7 @@ export function TopNav() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="flex flex-col items-center gap-4 mb-4">
-               <Avatar className="h-24 w-24 border-4 border-slate-50 shadow-lg">
+               <Avatar className="h-24 w-24 border-4 border-slate-50 dark:border-slate-800 shadow-lg">
                   <AvatarImage src={profileData.photoURL || `https://picsum.photos/seed/${user?.uid}/200/200`} />
                   <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">
                     {profileData.name?.[0] || "U"}
@@ -444,7 +462,7 @@ export function TopNav() {
                 id="profile-name" 
                 value={profileData.name} 
                 onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
-                className="h-11 bg-slate-50 border-slate-200"
+                className="h-11 bg-muted/50 border-slate-200 dark:border-slate-800"
               />
             </div>
 
@@ -456,7 +474,7 @@ export function TopNav() {
                   id="profile-photo" 
                   value={profileData.photoURL.startsWith('data:') ? 'Foto terunggah' : profileData.photoURL} 
                   onChange={(e) => setProfileData(prev => ({ ...prev, photoURL: e.target.value }))}
-                  className="pl-10 h-11 bg-slate-50 border-slate-200"
+                  className="pl-10 h-11 bg-muted/50 border-slate-200 dark:border-slate-800"
                   placeholder="https://link-foto.com/gambar.jpg"
                 />
               </div>
@@ -472,7 +490,7 @@ export function TopNav() {
                   placeholder="Kosongkan jika tidak ingin ganti"
                   value={profileData.newPassword}
                   onChange={(e) => setProfileData(prev => ({ ...prev, newPassword: e.target.value }))}
-                  className="pl-10 h-11 bg-slate-50 border-slate-200"
+                  className="pl-10 h-11 bg-muted/50 border-slate-200 dark:border-slate-800"
                 />
               </div>
               <p className="text-[10px] text-muted-foreground">Minimal 6 karakter. Jika ingin ganti password, pastikan Anda baru saja Login.</p>
