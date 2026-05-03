@@ -89,7 +89,7 @@ export default function LoginPage() {
     } catch (error: any) {
       toast({ 
         title: "Gagal Masuk", 
-        description: "Email atau kata sandi salah. Silakan hubungi Administrator untuk mendaftarkan akun.", 
+        description: "Email atau kata sandi salah. Jika akun baru dihapus dari Console, silakan lakukan Inisialisasi ulang.", 
         variant: "destructive" 
       })
       setLoading(false)
@@ -103,12 +103,10 @@ export default function LoginPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
       
-      // Update profile di Firebase Auth
       await updateProfile(userCredential.user, {
         displayName: adminName
       })
 
-      // Simpan di Firestore
       await setDoc(doc(db, "users", userCredential.user.uid), {
         id: userCredential.user.uid,
         name: adminName,
@@ -118,9 +116,13 @@ export default function LoginPage() {
         updatedAt: new Date().toISOString()
       })
       
-      toast({ title: "Admin Siap!", description: "Akun Admin Utama telah terdaftar." })
+      toast({ title: "Admin Siap!", description: "Akun Admin Utama telah terdaftar di database." })
     } catch (error: any) {
-      toast({ title: "Setup Gagal", description: error.message, variant: "destructive" })
+      let msg = error.message;
+      if (error.code === 'auth/email-already-in-use') {
+        msg = "Email sudah terdaftar di sistem pusat. Jika data Firestore kosong, silakan hapus dulu email ini di Firebase Console lalu ulangi pendaftaran.";
+      }
+      toast({ title: "Setup Gagal", description: msg, variant: "destructive" })
       setLoading(false)
     }
   }
@@ -177,7 +179,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 space-y-4 animate-in fade-in duration-700">
-      <Card className="w-full max-w-md shadow-2xl border-none p-2 bg-card rounded-3xl overflow-hidden">
+      <Card className="w-full max-w-md shadow-2xl border-none p-2 bg-card rounded-[2.5rem] overflow-hidden">
         <CardHeader className="space-y-4 text-center pt-8">
           <div className="mx-auto w-24 h-24 flex items-center justify-center rounded-[2rem] bg-primary/10 text-primary mb-2 shadow-sm overflow-hidden relative">
             <Library className={`w-12 h-12 text-primary/20 animate-pulse absolute transition-opacity duration-300 ${logoLoaded ? 'opacity-0' : 'opacity-100'}`} />
@@ -214,22 +216,22 @@ export default function LoginPage() {
 
             {isSetupMode && (
               <div className="space-y-2">
-                <Label htmlFor="name" className="font-bold text-[10px] uppercase text-muted-foreground ml-1">Nama Lengkap Admin</Label>
-                <Input id="name" placeholder="Nama Penanggung Jawab" required value={adminName} onChange={(e) => setAdminName(e.target.value)} className="h-12 rounded-xl bg-background border-slate-200 dark:border-white/10" />
+                <Label htmlFor="name" className="font-bold text-[10px] uppercase text-muted-foreground ml-1 tracking-widest">Nama Lengkap Admin</Label>
+                <Input id="name" placeholder="Nama Penanggung Jawab" required value={adminName} onChange={(e) => setAdminName(e.target.value)} className="h-12 rounded-xl bg-background border-slate-200 dark:border-white/10 font-bold" />
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email" className="font-bold text-[10px] uppercase text-muted-foreground ml-1">Alamat Email</Label>
+              <Label htmlFor="email" className="font-bold text-[10px] uppercase text-muted-foreground ml-1 tracking-widest">Alamat Email</Label>
               <Input id="email" type="email" placeholder="email@sekolah.sch.id" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 rounded-xl bg-background border-slate-200 dark:border-white/10" />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="font-bold text-[10px] uppercase text-muted-foreground ml-1">Kata Sandi</Label>
-                {!isSetupMode && <button type="button" onClick={() => setIsResetOpen(true)} className="text-[10px] font-black text-primary hover:underline uppercase">Lupa Sandi?</button>}
+                <Label htmlFor="password" className="font-bold text-[10px] uppercase text-muted-foreground ml-1 tracking-widest">Kata Sandi</Label>
+                {!isSetupMode && <button type="button" onClick={() => setIsResetOpen(true)} className="text-[10px] font-black text-primary hover:underline uppercase tracking-tighter">Lupa Sandi?</button>}
               </div>
               <Input id="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 rounded-xl bg-background border-slate-200 dark:border-white/10" />
             </div>
-            <Button type="submit" className="w-full h-12 text-sm font-black shadow-lg shadow-primary/20 rounded-xl" disabled={loading || (isMounted && checkingUsers)}>
+            <Button type="submit" className="w-full h-14 text-sm font-black shadow-lg shadow-primary/20 rounded-2xl tracking-tight" disabled={loading || (isMounted && checkingUsers)}>
               {loading ? <span className="animate-pulse">MEMPROSES...</span> : isSetupMode ? "AKTIFKAN ADMIN UTAMA" : "MASUK KE SISTEM"}
             </Button>
           </form>
@@ -247,7 +249,7 @@ export default function LoginPage() {
       </Card>
 
       <Dialog open={isResetOpen} onOpenChange={setIsResetOpen}>
-        <DialogContent className="bg-card rounded-3xl max-w-sm border-none shadow-2xl">
+        <DialogContent className="bg-card rounded-[2.5rem] max-w-sm border-none shadow-2xl">
           <form onSubmit={handleSendResetEmail}>
             <DialogHeader>
               <DialogTitle className="font-black uppercase tracking-tight text-primary">Reset Kata Sandi</DialogTitle>
@@ -255,12 +257,12 @@ export default function LoginPage() {
             </DialogHeader>
             <div className="py-6 space-y-4">
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase text-muted-foreground">Email Terdaftar</Label>
+                <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Email Terdaftar</Label>
                 <Input type="email" required className="h-12 rounded-xl" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} placeholder="nama@email.com" />
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit" disabled={isSendingReset} className="w-full h-11 font-bold rounded-xl">
+              <Button type="submit" disabled={isSendingReset} className="w-full h-12 font-black rounded-2xl shadow-lg">
                 {isSendingReset ? "Mengirim..." : "Kirim Tautan Pemulihan"}
               </Button>
             </DialogFooter>

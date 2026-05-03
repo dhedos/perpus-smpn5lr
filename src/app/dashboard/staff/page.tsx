@@ -123,7 +123,6 @@ export default function StaffPage() {
     const secondaryAuth = getAuth(secondaryApp)
 
     try {
-      // 1. Buat Akun di Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
         secondaryAuth, 
         formData.email, 
@@ -131,12 +130,10 @@ export default function StaffPage() {
       )
       const uid = userCredential.user.uid
 
-      // 2. Set Profile Display Name di Auth
       await updateProfile(userCredential.user, {
         displayName: formData.name
       })
 
-      // 3. Simpan Detail Lengkap ke Database Firestore
       const userDocRef = doc(db, 'users', uid)
       await setDoc(userDocRef, {
         id: uid,
@@ -152,16 +149,19 @@ export default function StaffPage() {
         description: `Petugas ${formData.name} telah terdaftar permanen di database.` 
       })
       
-      // Kirim email instruksi pemulihan jika diperlukan
       await sendPasswordResetEmail(auth, formData.email)
       
       setIsOpen(false)
       setFormData({ name: "", email: "", password: "", role: "Staff" })
       forceUnlockUI()
     } catch (error: any) {
+      let msg = error.message;
+      if (error.code === 'auth/email-already-in-use') {
+        msg = "Email sudah digunakan. Jika akun Firestore hilang, hapus dulu email ini di Firebase Console.";
+      }
       toast({ 
         title: "Pendaftaran Gagal", 
-        description: error.message || "Pastikan email belum terdaftar.", 
+        description: msg, 
         variant: "destructive" 
       })
     } finally {
@@ -232,7 +232,7 @@ export default function StaffPage() {
                   placeholder="Nama Lengkap..." 
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="h-11 rounded-xl bg-muted/20 border-slate-200 dark:border-white/10"
+                  className="h-11 rounded-xl bg-muted/20 border-slate-300 dark:border-white/10 font-bold"
                 />
               </div>
               <div className="space-y-2">
@@ -241,7 +241,7 @@ export default function StaffPage() {
                   value={formData.role} 
                   onValueChange={(v: any) => setFormData({ ...formData, role: v })}
                 >
-                  <SelectTrigger className="h-11 rounded-xl bg-muted/20 border-slate-200 dark:border-white/10">
+                  <SelectTrigger className="h-11 rounded-xl bg-muted/20 border-slate-300 dark:border-white/10 font-bold">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -257,7 +257,7 @@ export default function StaffPage() {
                   <Input 
                     type="email"
                     placeholder="nama@email.com" 
-                    className="pl-10 h-11 rounded-xl bg-muted/20 border-slate-200 dark:border-white/10"
+                    className="pl-10 h-11 rounded-xl bg-muted/20 border-slate-300 dark:border-white/10"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   />
@@ -270,7 +270,7 @@ export default function StaffPage() {
                   <Input 
                     type="password"
                     placeholder="Minimal 6 karakter" 
-                    className="pl-10 h-11 rounded-xl bg-muted/20 border-slate-200 dark:border-white/10"
+                    className="pl-10 h-11 rounded-xl bg-muted/20 border-slate-300 dark:border-white/10"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   />
@@ -279,7 +279,7 @@ export default function StaffPage() {
             </div>
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={() => { setIsOpen(false); forceUnlockUI(); }} className="rounded-xl">Batal</Button>
-              <Button onClick={handleRegisterStaff} disabled={isRegistering} className="rounded-xl px-8 shadow-lg shadow-primary/20">
+              <Button onClick={handleRegisterStaff} disabled={isRegistering} className="rounded-xl px-8 shadow-lg shadow-primary/20 font-black">
                 {isRegistering ? <span className="animate-pulse">MENDAFTARKAN...</span> : "Konfirmasi Daftar"}
               </Button>
             </DialogFooter>
@@ -287,12 +287,12 @@ export default function StaffPage() {
         </Dialog>
       </div>
 
-      <div className="bg-transparent p-4 rounded-[2rem] border border-slate-200 dark:border-white/20">
+      <div className="grid grid-cols-1 bg-transparent p-4 rounded-[2rem] border border-slate-200 dark:border-white/20">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input 
             placeholder="Cari berdasarkan nama atau email..." 
-            className="pl-11 h-12 bg-background dark:bg-muted/20 border-slate-200 dark:border-white/10 rounded-full text-foreground font-medium" 
+            className="pl-11 h-12 bg-background dark:bg-muted/20 border-slate-300 dark:border-white/10 rounded-full text-foreground font-medium" 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -313,7 +313,7 @@ export default function StaffPage() {
             {loading ? (
               <TableRow>
                 <TableCell colSpan={4} className="text-center py-20">
-                   <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] animate-pulse duration-[2000ms]">Memuat Database...</p>
+                   <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] animate-pulse duration-[2000ms]">LANTERA BACA</p>
                 </TableCell>
               </TableRow>
             ) : filteredStaff.length === 0 ? (
@@ -332,7 +332,7 @@ export default function StaffPage() {
                     "h-5 px-2 text-[9px] font-black border-none uppercase",
                     person.role === 'Admin' ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
                   )}>
-                    {person.role.toUpperCase()}
+                    {person.role?.toUpperCase()}
                   </Badge>
                 </TableCell>
                 <TableCell>
