@@ -1,4 +1,3 @@
-
 import { MetadataRoute } from 'next'
 
 export const dynamic = 'force-dynamic'
@@ -37,8 +36,8 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     description: `Sistem Informasi Perpustakaan ${libraryName} - Modern, AI, dan Sinkronisasi Cloud.`,
     start_url: '/',
     display: 'standalone',
-    background_color: '#ECF0F7',
-    theme_color: '#2E6ECE',
+    background_color: '#ffffff',
+    theme_color: '#ffffff',
     icons: [
       {
         src: logoUrl,
