@@ -122,7 +122,6 @@ function TransactionsContent() {
   const loanDays = useMemo(() => settings?.loanPeriod ? Number(settings.loanPeriod) : 7, [settings]);
   const collHours = useMemo(() => settings?.collectiveLoanHours ? Number(settings.collectiveLoanHours) : 2, [settings]);
 
-  // FILTER KHUSUS SISWA
   const members = useMemo(() => {
     if (!allMembersData) return [];
     return allMembersData.filter(m => m.type === 'Student');
@@ -133,7 +132,6 @@ function TransactionsContent() {
     return [...allBooksData].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
   }, [allBooksData]);
 
-  // RIWAYAT TRANSAKSI SISWA
   const activeTrans = useMemo(() => {
     if (!allTransactions || !allBooksData || !allMembersData) return [];
     return allTransactions.filter(t => 
@@ -144,7 +142,6 @@ function TransactionsContent() {
     );
   }, [allTransactions, allBooksData, allMembersData]);
 
-  // RIWAYAT TRANSAKSI BULAN INI
   const historyTrans = useMemo(() => {
     if (!allTransactions || !allBooksData || !allMembersData) return [];
     const start = startOfMonth(new Date());
@@ -282,12 +279,10 @@ function TransactionsContent() {
     const lostFineBase = Number(settings.lostBookFine || 50000);
     const damagedFineBase = Number(settings.damagedBookFine || 10000);
 
-    // Pinjaman Kolektif TIDAK kena denda keterlambatan
     if (lateDays > 0 && pendingReturnTrans.borrowType !== 'Kolektif') {
       fine += lateDays * finePerDay * (returnNormalQty + returnDamagedQty);
     }
 
-    // Denda fisik (Rusak/Hilang) tetap kena untuk semua tipe peminjaman
     fine += returnDamagedQty * damagedFineBase;
     fine += returnLostQty * lostFineBase;
     setCalculatedFine(fine);
@@ -321,10 +316,8 @@ function TransactionsContent() {
       if (bDoc.exists()) {
         const currentTotal = Number(bDoc.data().totalStock || 0)
         const currentAvail = Number(bDoc.data().availableStock || 0)
-        
         const backToShelf = returnNormalQty + returnDamagedQty;
         const permanentLoss = returnLostQty;
-
         updateDoc(bRef, { 
           totalStock: Math.max(0, currentTotal - permanentLoss),
           availableStock: currentAvail + backToShelf
@@ -444,13 +437,8 @@ function TransactionsContent() {
 
   const handleProcessBorrow = () => {
     if (!db || !selectedMember || !selectedBook) return
-    
     if (borrowQuantity > (selectedBook.availableStock || 0)) {
-      toast({ 
-        title: "Stok Tidak Cukup", 
-        description: `Stok tersedia hanya ${selectedBook.availableStock} unit.`,
-        variant: "destructive"
-      });
+      toast({ title: "Stok Tidak Cukup", description: `Stok tersedia hanya ${selectedBook.availableStock} unit.`, variant: "destructive" });
       return;
     }
 
@@ -499,7 +487,7 @@ function TransactionsContent() {
              <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold gap-2 py-1 px-3">
               <CalendarDays className="h-3 w-3" /> Pribadi: {loanDays} Hari
             </Badge>
-            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-bold gap-2 py-1 px-3">
+            <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 font-bold gap-2 py-1 px-3">
               <Clock className="h-3 w-3" /> Kolektif: {collHours} Jam
             </Badge>
            </div>
@@ -507,9 +495,9 @@ function TransactionsContent() {
       </div>
 
       <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); forceUnlockUI(); }} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 h-14 p-1 bg-muted/50">
-          <TabsTrigger value="borrow" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Peminjaman</TabsTrigger>
-          <TabsTrigger value="return" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Pengembalian</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 h-14 p-1 bg-muted/80 backdrop-blur-sm">
+          <TabsTrigger value="borrow" className="text-base font-bold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Peminjaman</TabsTrigger>
+          <TabsTrigger value="return" className="text-base font-bold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Pengembalian</TabsTrigger>
         </TabsList>
         
         <div className="mt-8">
@@ -523,9 +511,8 @@ function TransactionsContent() {
 
             <div className="grid lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1 space-y-6">
-                {/* Pilihan Jenis Peminjaman */}
                 <Card className="border-none shadow-sm">
-                  <CardHeader className="bg-slate-50/50 pb-4 border-b">
+                  <CardHeader className="bg-accent/5 pb-4 border-b">
                     <CardTitle className="text-sm flex items-center gap-2 text-primary uppercase tracking-wider font-bold">
                       Jenis & Jumlah
                     </CardTitle>
@@ -533,7 +520,7 @@ function TransactionsContent() {
                   <CardContent className="pt-6 space-y-6">
                     <div className="space-y-3">
                       <Label className="text-[10px] font-bold text-muted-foreground uppercase">Jenis Peminjaman</Label>
-                      <div className="flex gap-2 p-1 bg-slate-100 rounded-lg">
+                      <div className="flex gap-2 p-1 bg-muted rounded-lg">
                         <Button 
                           variant={borrowType === "Pribadi" ? "default" : "ghost"} 
                           className="flex-1 h-9 text-xs font-bold"
@@ -553,7 +540,7 @@ function TransactionsContent() {
 
                     <div className="space-y-3">
                       <Label className="text-[10px] font-bold text-muted-foreground uppercase">Jumlah Buku</Label>
-                      <div className="flex items-center justify-between p-2 border rounded-xl bg-white">
+                      <div className="flex items-center justify-between p-2 border rounded-xl bg-background">
                         <Button 
                           variant="outline" 
                           size="icon" 
@@ -581,7 +568,7 @@ function TransactionsContent() {
                 </Card>
 
                 <Card className="border-none shadow-sm relative">
-                  <CardHeader className="bg-slate-50/50 pb-4 border-b">
+                  <CardHeader className="bg-accent/5 pb-4 border-b">
                     <CardTitle className="text-sm flex items-center gap-2 text-primary uppercase tracking-wider font-bold"><User className="h-4 w-4" /> Data Siswa</CardTitle>
                   </CardHeader>
                   <CardContent className="pt-6 space-y-4">
@@ -599,11 +586,11 @@ function TransactionsContent() {
                         onKeyDown={e => e.key === 'Enter' && handleLookup(memberSearch)}
                       />
                       {showMemberSuggestions && memberSuggestions.length > 0 && (
-                        <div className="absolute z-[100] left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 max-h-[250px] overflow-y-auto">
+                        <div className="absolute z-[100] left-0 right-0 top-full mt-1 bg-card border rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 max-h-[250px] overflow-y-auto">
                           {memberSuggestions.map(m => (
                             <div 
                               key={m.id} 
-                              className="p-3 hover:bg-slate-50 cursor-pointer flex items-center justify-between border-b last:border-0"
+                              className="p-3 hover:bg-accent/10 cursor-pointer flex items-center justify-between border-b last:border-0"
                               onClick={() => {
                                 setSelectedMember(m);
                                 setMemberSearch("");
@@ -635,7 +622,7 @@ function TransactionsContent() {
                 </Card>
 
                 <Card className="border-none shadow-sm relative">
-                  <CardHeader className="bg-slate-50/50 pb-4 border-b">
+                  <CardHeader className="bg-accent/5 pb-4 border-b">
                     <CardTitle className="text-sm flex items-center gap-2 text-secondary uppercase tracking-wider font-bold"><BookOpen className="h-4 w-4" /> Data Buku</CardTitle>
                   </CardHeader>
                   <CardContent className="pt-6 space-y-4">
@@ -653,11 +640,11 @@ function TransactionsContent() {
                         onKeyDown={e => e.key === 'Enter' && handleLookup(bookSearch)}
                       />
                       {showBookSuggestions && bookSuggestions.length > 0 && (
-                        <div className="absolute z-[100] left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 max-h-[250px] overflow-y-auto">
+                        <div className="absolute z-[100] left-0 right-0 top-full mt-1 bg-card border rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 max-h-[250px] overflow-y-auto">
                           {bookSuggestions.map(b => (
                             <div 
                               key={b.id} 
-                              className="p-3 hover:bg-slate-50 cursor-pointer flex items-center justify-between border-b last:border-0"
+                              className="p-3 hover:bg-accent/10 cursor-pointer flex items-center justify-between border-b last:border-0"
                               onClick={() => {
                                 setSelectedBook(b);
                                 setBookSearch("");
@@ -695,7 +682,7 @@ function TransactionsContent() {
 
               <div className="lg:col-span-2">
                 <Card className="border-none shadow-sm overflow-hidden h-full">
-                  <CardHeader className="bg-slate-50/50 border-b">
+                  <CardHeader className="bg-accent/5 border-b">
                     <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
                       <History className="h-4 w-4 text-primary" /> Riwayat Bulan Berjalan
                     </CardTitle>
@@ -724,7 +711,7 @@ function TransactionsContent() {
                             <TableCell className="text-xs text-muted-foreground">{t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yy') : '-'}</TableCell>
                             <TableCell className="text-xs font-semibold">{t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yy') : '-'}</TableCell>
                             <TableCell className="text-right text-xs">
-                              <Badge variant="outline" className="text-[8px] bg-green-50 text-green-700">KEMBALI</Badge>
+                              <Badge variant="outline" className="text-[8px] bg-green-500/10 text-green-500 border-none uppercase font-black">KEMBALI</Badge>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -738,11 +725,11 @@ function TransactionsContent() {
 
           <TabsContent value="return" className="space-y-6">
             <div className="grid md:grid-cols-3 gap-6">
-              <Card className="md:col-span-1 border-none shadow-sm bg-accent/30 flex flex-col items-center justify-center p-8 gap-4">
+              <Card className="md:col-span-1 border-none shadow-sm bg-accent/10 flex flex-col items-center justify-center p-8 gap-4">
                 <Button variant="secondary" className="h-20 w-full gap-3 shadow-md font-bold" onClick={startScanner}><ScanBarcode className="h-8 w-8" /> Scan Buku/Kartu</Button>
                 <div className="w-full space-y-2">
                   <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Pencarian Manual Siswa</Label>
-                  <Input placeholder="Cari Nama/NIS..." className="h-12 bg-white" value={returnSearch} onChange={e => setReturnSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLookup(returnSearch)} />
+                  <Input placeholder="Cari Nama/NIS..." className="h-12 bg-background" value={returnSearch} onChange={e => setReturnSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLookup(returnSearch)} />
                 </div>
               </Card>
 
@@ -754,7 +741,7 @@ function TransactionsContent() {
                 <CardContent className="p-0">
                   <div className="max-h-[500px] overflow-y-auto">
                     <Table>
-                      <TableHeader className="bg-slate-50/50 sticky top-0 z-10">
+                      <TableHeader className="bg-accent/5 sticky top-0 z-10">
                         <TableRow>
                           <TableHead className="w-12 text-center">No.</TableHead>
                           <TableHead>Peminjam & Buku</TableHead>
@@ -768,10 +755,8 @@ function TransactionsContent() {
                         ) : filteredActiveTrans.map((t, index) => {
                           const now = new Date();
                           const borrowDate = parseISO(t.borrowDate);
-                          
                           let durationDisplay = "";
                           let isUrdue = false;
-
                           if (t.borrowType === 'Kolektif') {
                             const diffHours = differenceInHours(now, borrowDate);
                             durationDisplay = `${diffHours} JAM`;
@@ -782,7 +767,6 @@ function TransactionsContent() {
                             const dueDate = parseISO(t.dueDate);
                             isUrdue = now > dueDate;
                           }
-
                           return (
                             <TableRow key={t.id}>
                               <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
@@ -823,66 +807,52 @@ function TransactionsContent() {
       </Tabs>
 
       <Dialog open={isReturnConfirmOpen} onOpenChange={(v) => { setIsReturnConfirmOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="max-w-md bg-white border-none shadow-2xl">
+        <DialogContent className="max-w-md bg-card border-none shadow-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-primary font-bold">
               <CheckCircle className="h-5 w-5" /> Konfirmasi Pengembalian
             </DialogTitle>
             <DialogDescription>Lengkapi data kondisi fisik buku saat pengembalian untuk menghitung denda otomatis.</DialogDescription>
           </DialogHeader>
-          
           {pendingReturnTrans && (
             <div className="space-y-6 py-4">
-              <div className="p-4 bg-slate-50 rounded-xl border space-y-3">
+              <div className="p-4 bg-accent/10 rounded-xl border space-y-3">
                 <div className="flex-1">
                   <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Buku & Peminjam</div>
                   <div className="text-sm font-black">{pendingReturnTrans.bookTitle}</div>
                   <div className="text-xs font-bold text-primary mt-1">{pendingReturnTrans.memberName} / {pendingReturnTrans.memberId}</div>
                 </div>
               </div>
-
               <div className="space-y-4">
                 <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Kondisi Pengembalian</div>
                 <div className="grid gap-3">
-                  <div className="flex items-center justify-between p-3 rounded-xl border bg-green-50/50">
+                  <div className="flex items-center justify-between p-3 rounded-xl border bg-green-500/10">
                     <Label className="font-bold text-sm">Kembali Baik</Label>
-                    <div className="w-16 h-8 flex items-center justify-center font-bold bg-white rounded border">
+                    <div className="w-16 h-8 flex items-center justify-center font-bold bg-background rounded border">
                       {returnNormalQty}
                     </div>
                   </div>
-                  <div className="flex items-center justify-between p-3 rounded-xl border bg-orange-50/50">
+                  <div className="flex items-center justify-between p-3 rounded-xl border bg-orange-500/10">
                     <Label className="font-bold text-sm">Rusak</Label>
-                    <Input 
-                      type="number" 
-                      className="w-16 h-8 text-center font-bold" 
-                      value={returnDamagedQty} 
-                      onChange={(e) => handleDamagedQtyChange(Number(e.target.value))} 
-                    />
+                    <Input type="number" className="w-16 h-8 text-center font-bold" value={returnDamagedQty} onChange={(e) => handleDamagedQtyChange(Number(e.target.value))} />
                   </div>
-                  <div className="flex items-center justify-between p-3 rounded-xl border bg-red-50/50">
+                  <div className="flex items-center justify-between p-3 rounded-xl border bg-red-500/10">
                     <Label className="font-bold text-sm">Hilang</Label>
-                    <Input 
-                      type="number" 
-                      className="w-16 h-8 text-center font-bold" 
-                      value={returnLostQty} 
-                      onChange={(e) => handleLostQtyChange(Number(e.target.value))} 
-                    />
+                    <Input type="number" className="w-16 h-8 text-center font-bold" value={returnLostQty} onChange={(e) => handleLostQtyChange(Number(e.target.value))} />
                   </div>
                 </div>
               </div>
-
               {calculatedFine > 0 && (
-                <div className="p-4 bg-orange-50 rounded-xl border border-orange-200 flex items-center justify-between animate-in fade-in zoom-in-95">
+                <div className="p-4 bg-orange-500/10 rounded-xl border border-orange-500/20 flex items-center justify-between animate-in fade-in zoom-in-95">
                   <div className="flex items-center gap-3">
-                    <Coins className="h-5 w-5 text-orange-700" />
-                    <div className="text-xl font-black text-orange-700">Rp {calculatedFine.toLocaleString()}</div>
+                    <Coins className="h-5 w-5 text-orange-600" />
+                    <div className="text-xl font-black text-orange-600">Rp {calculatedFine.toLocaleString()}</div>
                   </div>
-                  <Badge variant="outline" className="border-orange-300 text-orange-700 text-[8px] font-bold">DENDA</Badge>
+                  <Badge variant="outline" className="border-orange-500/30 text-orange-600 text-[8px] font-bold">DENDA</Badge>
                 </div>
               )}
             </div>
           )}
-
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => { setIsReturnConfirmOpen(false); forceUnlockUI(); }} disabled={isProcessing} className="flex-1">Batal</Button>
             <Button onClick={handleConfirmReturn} disabled={isProcessing} className="flex-1 shadow-lg shadow-primary/20">
@@ -914,7 +884,6 @@ function TransactionsContent() {
           <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20 z-50 rounded-full h-12 w-12" onClick={stopScanner}><X className="h-6 w-6" /></Button>
         </DialogContent>
       </Dialog>
-      
       <div className="text-center py-6 opacity-30">
         <p className="text-[10px] font-black uppercase tracking-widest">© 2026 Lantera Baca</p>
       </div>
@@ -924,7 +893,7 @@ function TransactionsContent() {
 
 export default function TransactionsPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center h-full"><p className="text-xs font-black animate-pulse uppercase tracking-[0.3em]">Memuat Modul...</p></div>}>
       <TransactionsContent />
     </Suspense>
   )

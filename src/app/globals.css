@@ -27,24 +27,24 @@
     --radius: 1rem;
   }
   .dark {
-    --background: 222 47% 6%; /* Latar belakang lebih gelap & dalam */
+    --background: 222 47% 4%; /* Lebih hitam pekat */
     --foreground: 210 40% 98%;
-    --card: 222 47% 10%; /* Kartu sedikit lebih terang dari bg */
+    --card: 222 47% 8%; /* Kartu midnight blue gelap */
     --card-foreground: 210 40% 98%;
-    --popover: 222 47% 10%;
+    --popover: 222 47% 8%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217 91% 60%; /* Biru primer lebih cerah di mode gelap */
+    --primary: 217 91% 60%; 
     --primary-foreground: 222 47% 11%;
     --secondary: 193 92% 50%;
     --secondary-foreground: 222 47% 11%;
-    --muted: 222 47% 15%;
-    --muted-foreground: 215 20% 75%; /* Teksmuted lebih terang agar terbaca */
-    --accent: 217 91% 20%;
+    --muted: 222 47% 12%;
+    --muted-foreground: 215 20% 85%; /* Teks muted dibuat jauh lebih terang */
+    --accent: 217 91% 15%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    --border: 222 47% 18%;
-    --input: 222 47% 18%;
+    --border: 222 47% 15%;
+    --input: 222 47% 15%;
     --ring: 217 91% 60%;
   }
 }
