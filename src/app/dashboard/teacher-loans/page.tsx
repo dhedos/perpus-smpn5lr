@@ -379,15 +379,15 @@ export default function TeacherLoansPage() {
           </h1>
           <p className="text-sm text-muted-foreground">Peminjaman khusus untuk kebutuhan mengajar dan operasional sekolah.</p>
         </div>
-        <Badge variant="secondary" className="h-9 px-3 bg-blue-100 text-blue-700 border-none font-bold">
+        <Badge variant="secondary" className="h-9 px-3 bg-primary/10 text-primary border-none font-bold">
           TA {settings?.academicYear || "2024/2025"}
         </Badge>
       </div>
 
       <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); forceUnlockUI(); }} className="w-full">
         <TabsList className="grid w-full grid-cols-2 h-14 p-1 bg-muted/50">
-          <TabsTrigger value="borrow" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Penyerahan</TabsTrigger>
-          <TabsTrigger value="return" className="text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Pengembalian</TabsTrigger>
+          <TabsTrigger value="borrow" className="text-base font-bold data-[state=active]:bg-card data-[state=active]:shadow-sm">Penyerahan</TabsTrigger>
+          <TabsTrigger value="return" className="text-base font-bold data-[state=active]:bg-card data-[state=active]:shadow-sm">Pengembalian</TabsTrigger>
         </TabsList>
 
         <TabsContent value="borrow" className="mt-8 space-y-6">
@@ -396,29 +396,29 @@ export default function TeacherLoansPage() {
               <Button size="lg" className="h-16 px-12 gap-3 shadow-xl hover:shadow-2xl transition-all" onClick={() => startScanner("smart")}>
                 <ScanBarcode className="h-6 w-6" /> Smart Scan
               </Button>
-              <div className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Scan Kartu Guru/Pegawai atau Kode Buku</div>
+              <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">Scan Kartu Guru/Pegawai atau Kode Buku</div>
             </CardContent>
           </Card>
 
           <div className="grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-1 space-y-6">
               <Card className="border-none shadow-sm">
-                <CardHeader className="bg-slate-50/50 pb-4 border-b">
+                <CardHeader className="bg-muted/50 pb-4 border-b">
                   <CardTitle className="text-sm flex items-center gap-2 text-primary uppercase tracking-wider font-bold">
                     Jenis & Jumlah
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6 space-y-6">
                   <div className="space-y-3">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase">Jenis Peminjaman</Label>
-                    <div className="flex gap-2 p-1 bg-slate-100 rounded-lg">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Jenis Peminjaman</Label>
+                    <div className="flex gap-2 p-1 bg-muted rounded-lg">
                       <Button variant={borrowType === "Pribadi" ? "default" : "ghost"} className="flex-1 h-9 text-xs font-bold" onClick={() => setBorrowType("Pribadi")}><User className="h-3 w-3 mr-2" /> Pribadi</Button>
                       <Button variant={borrowType === "Kolektif" ? "default" : "ghost"} className="flex-1 h-9 text-xs font-bold" onClick={() => setBorrowType("Kolektif")}><Users className="h-3 w-3 mr-2" /> Kolektif</Button>
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase">Jumlah Buku</Label>
-                    <div className="flex items-center justify-between p-2 border rounded-xl bg-white">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Jumlah Buku</Label>
+                    <div className="flex items-center justify-between p-2 border rounded-xl bg-card">
                       <Button variant="outline" size="icon" className="h-10 w-10 rounded-lg" onClick={() => setBorrowQuantity(q => Math.max(1, q - 1))}><Minus className="h-4 w-4" /></Button>
                       <div className="flex flex-col items-center">
                         <span className="text-2xl font-black">{borrowQuantity}</span>
@@ -430,76 +430,76 @@ export default function TeacherLoansPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border-none shadow-sm bg-blue-50/50">
+              <Card className="border-none shadow-sm bg-muted/30">
                 <CardHeader><CardTitle className="text-sm font-bold uppercase tracking-wider">Identitas Penyerahan</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase">Pilih Guru/Pegawai</Label>
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Pilih Guru/Pegawai</Label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input placeholder="Nama atau NIP..." className="pl-10 bg-white" value={memberSearch} onChange={e => { setMemberSearch(e.target.value); setShowMemberSuggestions(true); }} onFocus={() => setShowMemberSuggestions(true)} />
+                      <Input placeholder="Nama atau NIP..." className="pl-10 h-11 bg-card border-none ring-1 ring-border" value={memberSearch} onChange={e => { setMemberSearch(e.target.value); setShowMemberSuggestions(true); }} onFocus={() => setShowMemberSuggestions(true)} />
                       {showMemberSuggestions && memberSuggestions.length > 0 && (
-                        <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border rounded-lg shadow-xl overflow-hidden">
+                        <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-card border rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95">
                           {memberSuggestions.map(m => (
-                            <div key={m.id} className="p-3 hover:bg-slate-50 cursor-pointer text-sm border-b last:border-0" onClick={() => { setSelectedMember(m); setMemberSearch(""); setShowMemberSuggestions(false); }}>
+                            <div key={m.id} className="p-3 hover:bg-muted cursor-pointer text-sm border-b last:border-0" onClick={() => { setSelectedMember(m); setMemberSearch(""); setShowMemberSuggestions(false); }}>
                               <div className="flex items-center justify-between">
                                 <div className="font-bold">{m.name}</div>
-                                <Badge variant="outline" className="text-[8px] h-4 px-1">{m.type === 'Teacher' ? 'Guru' : 'Staf'}</Badge>
+                                <Badge variant="outline" className="text-[8px] h-4 px-1 border-primary/20">{m.type === 'Teacher' ? 'Guru' : 'Staf'}</Badge>
                               </div>
-                              <div className="text-[10px] text-muted-foreground">{m.memberId}</div>
+                              <div className="text-[10px] text-muted-foreground font-mono">{m.memberId}</div>
                             </div>
                           ))}
                         </div>
                       )}
                     </div>
                     {selectedMember && (
-                      <div className="p-3 bg-white rounded-lg border flex justify-between items-center animate-in slide-in-from-left-2">
+                      <div className="p-3 bg-primary/5 rounded-lg border border-primary/20 flex justify-between items-center animate-in slide-in-from-left-2">
                         <div className="space-y-0.5">
                           <div className="text-xs font-bold text-primary">{selectedMember.name}</div>
-                          <div className="text-[10px] text-muted-foreground">{selectedMember.type === 'Teacher' ? 'Guru' : 'Pegawai'}</div>
+                          <div className="text-[10px] text-muted-foreground font-bold">{selectedMember.type === 'Teacher' ? 'Guru' : 'Pegawai'}</div>
                         </div>
                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedMember(null)}><X className="h-3 w-3" /></Button>
                       </div>
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase">Pilih Buku Pegangan</Label>
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Pilih Buku Pegangan</Label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input placeholder="Judul atau Kode Buku..." className="pl-10 bg-white" value={bookSearch} onChange={e => { setBookSearch(e.target.value); setShowBookSuggestions(true); }} onFocus={() => setShowBookSuggestions(true)} />
+                      <Input placeholder="Judul atau Kode Buku..." className="pl-10 h-11 bg-card border-none ring-1 ring-border" value={bookSearch} onChange={e => { setBookSearch(e.target.value); setShowBookSuggestions(true); }} onFocus={() => setShowBookSuggestions(true)} />
                       {showBookSuggestions && bookSuggestions.length > 0 && (
-                        <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border rounded-lg shadow-xl overflow-hidden">
+                        <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-card border rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95">
                           {bookSuggestions.map(b => (
-                            <div key={b.id} className="p-3 hover:bg-slate-50 cursor-pointer text-sm border-b last:border-0" onClick={() => { setSelectedBook(b); setBookSearch(""); setShowBookSuggestions(false); }}>
+                            <div key={b.id} className="p-3 hover:bg-muted cursor-pointer text-sm border-b last:border-0" onClick={() => { setSelectedBook(b); setBookSearch(""); setShowBookSuggestions(false); }}>
                               <div className="font-bold">{b.title}</div>
-                              <div className="text-[10px] text-muted-foreground">{b.code} ({b.availableStock} Tersedia)</div>
+                              <div className="text-[10px] text-muted-foreground font-mono">{b.code} ({b.availableStock} Tersedia)</div>
                             </div>
                           ))}
                         </div>
                       )}
                     </div>
                     {selectedBook && (
-                      <div className="p-3 bg-white rounded-lg border flex justify-between items-center animate-in slide-in-from-right-2">
+                      <div className="p-3 bg-secondary/5 rounded-lg border border-secondary/20 flex justify-between items-center animate-in slide-in-from-right-2">
                         <div className="text-xs font-bold text-secondary-foreground">{selectedBook.title}</div>
                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedBook(null)}><X className="h-3 w-3" /></Button>
                       </div>
                     )}
                   </div>
-                  <Button className="w-full h-12 font-black shadow-lg" disabled={!selectedMember || !selectedBook || isProcessing || isLockedForUser} onClick={handleProcessLoan}>
-                    {isProcessing ? <Loader2 className="animate-spin" /> : "SERAHKAN BUKU"}
+                  <Button className="w-full h-12 font-black shadow-lg shadow-primary/20" disabled={!selectedMember || !selectedBook || isProcessing || isLockedForUser} onClick={handleProcessLoan}>
+                    {isProcessing ? <Loader2 className="animate-spin" /> : "SERAHKAN BUKU SEKARANG"}
                   </Button>
                 </CardContent>
               </Card>
             </div>
 
             <Card className="lg:col-span-2 border-none shadow-sm overflow-hidden h-full">
-              <CardHeader className="bg-slate-50/50 border-b">
-                <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2"><History className="h-4 w-4 text-primary" /> Riwayat Bulan Ini</CardTitle>
+              <CardHeader className="bg-muted/50 border-b">
+                <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2"><History className="h-4 w-4 text-primary" /> Riwayat Bulan Berjalan</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
-                    <TableRow>
+                    <TableRow className="bg-muted/30">
                       <TableHead className="w-12 text-center">No.</TableHead>
                       <TableHead>Peminjam</TableHead>
                       <TableHead>Buku</TableHead>
@@ -516,12 +516,12 @@ export default function TeacherLoansPage() {
                         <TableCell className="text-center text-xs">{index + 1}</TableCell>
                         <TableCell className="text-xs">
                           <div className="font-bold">{t.memberName}</div>
-                          <div className="text-[10px] text-muted-foreground">{t.memberType === 'Teacher' ? 'Guru' : 'Pegawai'}</div>
+                          <div className="text-[10px] text-muted-foreground font-bold">{t.memberType === 'Teacher' ? 'Guru' : 'Pegawai'}</div>
                         </TableCell>
-                        <TableCell className="text-xs">{t.bookTitle} ({t.quantity || 1} Unit)</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yy') : '-'}</TableCell>
-                        <TableCell className="text-xs font-semibold">{t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yy') : '-'}</TableCell>
-                        <TableCell className="text-right"><Badge variant="outline" className="bg-green-50 text-green-700 border-none text-[8px] font-bold">KEMBALI</Badge></TableCell>
+                        <TableCell className="text-xs font-medium">{t.bookTitle} ({t.quantity || 1} Unit)</TableCell>
+                        <TableCell className="text-xs text-muted-foreground font-mono">{t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yy') : '-'}</TableCell>
+                        <TableCell className="text-xs font-black">{t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yy') : '-'}</TableCell>
+                        <TableCell className="text-right"><Badge variant="outline" className="bg-green-500/10 text-green-500 border-none text-[8px] font-black">KEMBALI</Badge></TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -533,11 +533,11 @@ export default function TeacherLoansPage() {
 
         <TabsContent value="return" className="mt-8 space-y-6">
           <div className="grid md:grid-cols-3 gap-6">
-            <Card className="md:col-span-1 border-none shadow-sm bg-accent/30 flex flex-col items-center justify-center p-8 gap-4">
+            <Card className="md:col-span-1 border-none shadow-sm bg-muted/30 flex flex-col items-center justify-center p-8 gap-4">
               <Button variant="secondary" className="h-20 w-full gap-3 shadow-md font-bold" onClick={() => startScanner("return")}><ScanBarcode className="h-8 w-8" /> Scan Buku Member</Button>
               <div className="w-full space-y-2">
                 <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Pencarian Manual</Label>
-                <Input placeholder="Cari Nama/NIP Guru/Staf..." className="h-12 bg-white" value={returnSearch} onChange={e => setReturnSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLookup(returnSearch)} />
+                <Input placeholder="Cari Nama/NIP Guru/Staf..." className="h-12 bg-card border-none ring-1 ring-border" value={returnSearch} onChange={e => setReturnSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLookup(returnSearch)} />
               </div>
             </Card>
             <Card className="md:col-span-2 border-none shadow-sm overflow-hidden">
@@ -545,7 +545,9 @@ export default function TeacherLoansPage() {
               <CardContent className="p-0">
                 <div className="max-h-[500px] overflow-y-auto">
                   <Table>
-                    <TableHeader className="bg-slate-50/50 sticky top-0 z-10"><TableRow><TableHead className="w-12 text-center">No.</TableHead><TableHead>Peminjam & Buku</TableHead><TableHead className="text-right">Aksi</TableHead></TableRow></TableHeader>
+                    <TableHeader className="bg-muted/50 sticky top-0 z-10">
+                      <TableRow><TableHead className="w-12 text-center">No.</TableHead><TableHead>Peminjam & Buku</TableHead><TableHead className="text-right">Aksi</TableHead></TableRow>
+                    </TableHeader>
                     <TableBody>
                       {filteredActive.length === 0 ? (
                         <TableRow><TableCell colSpan={3} className="text-center py-12 text-muted-foreground italic">Tidak ada buku aktif.</TableCell></TableRow>
@@ -555,10 +557,10 @@ export default function TeacherLoansPage() {
                           <TableCell>
                             <div className="space-y-1">
                               <div className="font-bold text-sm leading-tight">{t.bookTitle} ({t.quantity || 1} Unit)</div>
-                              <div className="text-xs font-semibold">{t.memberName} / {t.memberId} <Badge variant="outline" className="ml-2 text-[7px] h-3 px-1">{t.memberType === 'Teacher' ? 'Guru' : 'Staf'}</Badge></div>
+                              <div className="text-xs font-semibold">{t.memberName} / {t.memberId} <Badge variant="outline" className="ml-2 text-[7px] h-3 px-1 border-primary/20">{t.memberType === 'Teacher' ? 'Guru' : 'Staf'}</Badge></div>
                             </div>
                           </TableCell>
-                          <TableCell className="text-right"><Button size="sm" variant="outline" className="h-8 text-xs font-bold" onClick={() => prepareReturn(t)} disabled={isLockedForUser}>Kembali</Button></TableCell>
+                          <TableCell className="text-right"><Button size="sm" variant="outline" className="h-8 text-xs font-bold rounded-lg" onClick={() => prepareReturn(t)} disabled={isLockedForUser}>KEMBALIKAN</Button></TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -571,11 +573,11 @@ export default function TeacherLoansPage() {
       </Tabs>
 
       <Dialog open={isReturnConfirmOpen} onOpenChange={(v) => { setIsReturnConfirmOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="max-w-md bg-white border-none shadow-2xl">
-          <DialogHeader><DialogTitle className="flex items-center gap-2 text-primary font-bold"><CheckCircle className="h-5 w-5" /> Konfirmasi Member</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-md bg-card border-none shadow-2xl">
+          <DialogHeader><DialogTitle className="flex items-center gap-2 text-primary font-bold"><CheckCircle className="h-5 w-5" /> Konfirmasi Pengembalian</DialogTitle></DialogHeader>
           {pendingReturnTrans && (
             <div className="space-y-6 py-4">
-              <div className="p-4 bg-slate-50 rounded-xl border space-y-3">
+              <div className="p-4 bg-muted/30 rounded-xl border space-y-3">
                 <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Buku & Member</div>
                 <div className="text-sm font-black">{pendingReturnTrans.bookTitle}</div>
                 <div className="text-xs font-bold text-primary mt-1">{pendingReturnTrans.memberName} / {pendingReturnTrans.memberId}</div>
@@ -583,9 +585,9 @@ export default function TeacherLoansPage() {
               <div className="space-y-4">
                 <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Kondisi Pengembalian</div>
                 <div className="grid gap-3">
-                  <div className="flex items-center justify-between p-3 rounded-xl border bg-green-50/50"><Label className="font-bold text-sm">Kembali Baik</Label><div className="w-16 h-8 flex items-center justify-center font-bold bg-white rounded border">{returnNormalQty}</div></div>
-                  <div className="flex items-center justify-between p-3 rounded-xl border bg-orange-50/50"><Label className="font-bold text-sm">Rusak</Label><Input type="number" className="w-16 h-8 text-center font-bold" value={returnDamagedQty} onChange={(e) => handleDamagedQtyChange(Number(e.target.value))} /></div>
-                  <div className="flex items-center justify-between p-3 rounded-xl border bg-red-50/50"><Label className="font-bold text-sm">Hilang</Label><Input type="number" className="w-16 h-8 text-center font-bold" value={returnLostQty} onChange={(e) => handleLostQtyChange(Number(e.target.value))} /></div>
+                  <div className="flex items-center justify-between p-3 rounded-xl border bg-green-500/5"><Label className="font-bold text-sm">Kembali Baik</Label><div className="w-16 h-8 flex items-center justify-center font-bold bg-card rounded border">{returnNormalQty}</div></div>
+                  <div className="flex items-center justify-between p-3 rounded-xl border bg-orange-500/5"><Label className="font-bold text-sm">Rusak</Label><Input type="number" className="w-16 h-8 text-center font-bold" value={returnDamagedQty} onChange={(e) => handleDamagedQtyChange(Number(e.target.value))} /></div>
+                  <div className="flex items-center justify-between p-3 rounded-xl border bg-red-500/5"><Label className="font-bold text-sm">Hilang</Label><Input type="number" className="w-16 h-8 text-center font-bold" value={returnLostQty} onChange={(e) => handleLostQtyChange(Number(e.target.value))} /></div>
                 </div>
               </div>
             </div>

@@ -117,10 +117,12 @@ export function TopNav() {
 
   useEffect(() => {
     const updateConnectionInfo = () => {
-      setIsOnline(navigator.onLine);
-      const conn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
-      if (conn) {
-        setConnectionType(conn.effectiveType || "4g");
+      if (typeof navigator !== 'undefined') {
+        setIsOnline(navigator.onLine);
+        const conn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+        if (conn) {
+          setConnectionType(conn.effectiveType || "4g");
+        }
       }
     };
 
