@@ -33,7 +33,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState({
     libraryName: "LANTERA BACA",
     librarySubtitle: "SMPN 5 LANGKE REMBONG",
-    libraryLogoUrl: "https://picsum.photos/seed/librarylogo/512/512",
+    libraryLogoUrl: "",
     schoolName: "SMP NEGERI 5 LANGKE REMBONG",
     loanPeriod: 7,
     collectiveLoanHours: 2,
@@ -182,7 +182,7 @@ export default function SettingsPage() {
                   <div className="grid gap-2">
                     <Label className="font-black text-[10px] uppercase text-muted-foreground tracking-widest flex items-center gap-2">Logo Perpustakaan</Label>
                     <div className="flex gap-4 items-center">
-                      <div className="w-20 h-20 rounded-2xl border-2 border-primary/20 bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-xl">
+                      <div className="w-20 h-20 rounded-2xl border-2 border-primary/20 bg-white dark:bg-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-xl">
                         {settings.libraryLogoUrl ? (
                           <img src={settings.libraryLogoUrl} alt="Logo" className="w-14 h-14 object-contain" />
                         ) : (
@@ -315,7 +315,7 @@ export default function SettingsPage() {
                       Kunci Modifikasi Data Koleksi
                     </div>
                     <p className="text-[11px] text-orange-700/80 leading-relaxed max-w-md font-medium">
-                      Aktifkan fitur ini untuk mencegah petugas (Staff) mengubah atau menghapus data Koleksi Buku dan Buku Pegangan Guru. Hanya Administrator yang dapat membuka kunci ini.
+                      Aktifkan fitur ini untuk mencegah petugas (Staff) mengubah atau menghapus data Koleksi Buku. Hanya Administrator yang dapat membuka kunci ini.
                     </p>
                   </div>
                   <Switch 
@@ -326,7 +326,7 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              <div className="p-6 border-2 border-dashed border-slate-200 dark:border-white/10 rounded-[2rem] flex items-center justify-between bg-background">
+              <div className="p-6 border-2 border-dashed border-slate-200 dark:border-white/10 rounded-[2rem] flex items-center justify-between bg-background/50">
                 <div className="space-y-1">
                   <p className="font-black uppercase tracking-tight">Kata Sandi Utama Administrator</p>
                   <p className="text-xs text-muted-foreground font-medium">Lakukan pembaruan rutin pada kata sandi akses sistem untuk keamanan database.</p>

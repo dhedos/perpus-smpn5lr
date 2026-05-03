@@ -26,14 +26,15 @@ import {
   Lock,
   KeyRound,
   Send,
-  X
+  X,
+  Loader2
 } from "lucide-react"
 import { 
   Dialog, 
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogFooter,
+  DialogFooter, 
   DialogDescription,
   DialogTrigger
 } from "@/components/ui/dialog"

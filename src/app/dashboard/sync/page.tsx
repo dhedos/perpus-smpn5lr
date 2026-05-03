@@ -29,6 +29,7 @@ import { collection, doc } from "firebase/firestore"
 import { useRouter } from "next/navigation"
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { cn } from "@/lib/utils"
 
 const STORAGE_KEY = 'perpus_local_queue_v3'
 
