@@ -630,7 +630,7 @@ function MembersContent() {
         <div className="flex gap-2">
           <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
+              <Button variant="outline" className="gap-2 rounded-xl border-slate-300 dark:border-white/20">
                 <Printer className="h-4 w-4" /> Opsi Cetak
               </Button>
             </DropdownMenuTrigger>
@@ -653,43 +653,46 @@ function MembersContent() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button onClick={handleOpenAdd} className="gap-2"><UserPlus className="h-4 w-4" /> Tambah Anggota</Button>
+          <Button onClick={handleOpenAdd} className="gap-2 rounded-xl px-6 shadow-lg shadow-primary/20"><UserPlus className="h-4 w-4" /> Tambah Anggota</Button>
         </div>
       </div>
 
-      <Card className="p-4 rounded-xl shadow-sm border-none bg-white">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Cari anggota berdasarkan nama, ID, atau kelas..." className="pl-10 h-11 border-slate-200" value={search ?? ""} onChange={e => setSearch(e.target.value)} />
-          </div>
-          <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-full sm:w-[200px] h-11 border-slate-200 bg-white">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-primary" />
-                <SelectValue placeholder="Semua Kategori" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Kategori</SelectItem>
-              <SelectItem value="Student">Siswa</SelectItem>
-              <SelectItem value="Teacher">Guru</SelectItem>
-              <SelectItem value="Staff">Pegawai</SelectItem>
-            </SelectContent>
-          </Select>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-transparent p-4 rounded-[2rem] border border-slate-200 dark:border-white/20">
+        <div className="md:col-span-3 relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input 
+            placeholder="Cari anggota berdasarkan nama, ID, atau kelas..." 
+            className="pl-11 h-12 bg-white dark:bg-white border-none rounded-full text-slate-900 font-medium placeholder:text-slate-400" 
+            value={search ?? ""} 
+            onChange={e => setSearch(e.target.value)} 
+          />
         </div>
-      </Card>
+        <Select value={filterType} onValueChange={setFilterType}>
+          <SelectTrigger className="w-full h-12 bg-white dark:bg-white border-none rounded-full text-slate-900 font-medium">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-slate-400" />
+              <SelectValue placeholder="Semua Kategori" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Semua Kategori</SelectItem>
+            <SelectItem value="Student">Siswa</SelectItem>
+            <SelectItem value="Teacher">Guru</SelectItem>
+            <SelectItem value="Staff">Pegawai</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-      <Card className="border-none shadow-sm overflow-hidden">
+      <Card className="border-none shadow-sm overflow-hidden bg-transparent">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="w-12 text-center">No.</TableHead>
-              <TableHead>Nama Anggota</TableHead>
-              <TableHead>ID Anggota</TableHead>
-              <TableHead>Kategori</TableHead>
-              <TableHead>Keterangan / Kelas</TableHead>
-              <TableHead className="text-right">Aksi</TableHead>
+            <TableRow className="bg-muted/50 border-b dark:border-white/10">
+              <TableHead className="w-12 text-center text-[10px] font-black uppercase tracking-widest">No.</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest">Nama Anggota</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest">ID Anggota</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest">Kategori</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest">Keterangan / Kelas</TableHead>
+              <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -702,19 +705,19 @@ function MembersContent() {
             ) : filteredMembers.length === 0 ? (
               <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Belum ada anggota ditemukan.</TableCell></TableRow>
             ) : filteredMembers.map((member, index) => (
-              <TableRow key={member.id}>
-                <TableCell className="text-center text-xs text-muted-foreground">{index + 1}</TableCell>
+              <TableRow key={member.id} className="hover:bg-muted/30 border-b dark:border-white/5">
+                <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
                 <TableCell className="font-semibold">{member.name ?? ""}</TableCell>
                 <TableCell className="font-mono text-xs text-primary font-bold">{member.memberId || '-'}</TableCell>
                 <TableCell>
-                  <Badge variant="outline" className="h-5 px-1.5 text-[10px] font-bold border-none uppercase">
+                  <Badge variant="outline" className="h-5 px-2 text-[10px] font-black border-none uppercase bg-primary/10 text-primary">
                     {member.type === 'Teacher' ? 'GURU' : member.type === 'Staff' ? 'PEGAWAI' : 'SISWA'}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-sm font-medium">{member.classOrSubject || '-'}</TableCell>
+                <TableCell className="text-sm font-medium opacity-80">{member.classOrSubject || '-'}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
-                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/10"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="z-50">
                       <DropdownMenuItem onSelect={(e) => { e.preventDefault(); forceUnlockUI(); setTimeout(() => { setSelectedMemberQr(member); setIsQrOpen(true); }, 150); }}><QrCode className="h-4 w-4 mr-2" /> Kartu Anggota</DropdownMenuItem>
                       <DropdownMenuItem onSelect={(e) => { e.preventDefault(); forceUnlockUI(); setTimeout(() => { setEditingMemberId(member.id); setFormData({ memberId: member.memberId || "", name: member.name || "", type: (member.type as any) || "Student", classPart: member.classOrSubject || "", phone: member.phone || "", joinDate: member.joinDate || new Date().toISOString().split('T')[0] }); setIsEditOpen(true); }, 150); }}><Edit className="h-4 w-4 mr-2" /> Ubah</DropdownMenuItem>
@@ -727,15 +730,15 @@ function MembersContent() {
           </TableBody>
         </Table>
         {members && members.length >= displayLimit && (
-          <div className="p-4 text-center border-t bg-slate-50">
-            <Button variant="ghost" size="sm" onClick={() => setDisplayLimit(prev => prev + 50)} className="text-primary font-bold"><ChevronDown className="h-4 w-4 mr-2" /> Muat Lebih Banyak</Button>
+          <div className="p-6 text-center border-t dark:border-white/10 bg-muted/20">
+            <Button variant="ghost" size="sm" onClick={() => setDisplayLimit(prev => prev + 50)} className="text-primary font-black uppercase text-[10px] tracking-widest"><ChevronDown className="h-4 w-4 mr-2" /> Muat Lebih Banyak</Button>
           </div>
         )}
       </Card>
 
       {/* DIALOG TAMBAH ANGGOTA */}
       <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="bg-slate-50 max-w-md border-none">
+        <DialogContent className="bg-slate-50 dark:bg-slate-900 max-w-md border-none rounded-[2rem]">
           <DialogHeader>
             <DialogTitle>Daftarkan Anggota Baru</DialogTitle>
             <DialogDescription>Masukkan identitas siswa, guru, atau pegawai untuk akses layanan perpustakaan.</DialogDescription>
@@ -744,12 +747,12 @@ function MembersContent() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="font-semibold text-xs uppercase text-muted-foreground">ID Anggota (NIS/NIP)</Label>
-                <Input value={formData.memberId ?? ""} onChange={e => setFormData({...formData, memberId: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="NIS/NIP" />
+                <Input value={formData.memberId ?? ""} onChange={e => setFormData({...formData, memberId: e.target.value})} className="bg-white dark:bg-white h-11 border-slate-300 dark:border-white/10 text-slate-900 rounded-xl" placeholder="NIS/NIP" />
               </div>
               <div className="space-y-2">
                 <Label className="font-semibold text-xs uppercase text-muted-foreground">Kategori</Label>
                 <Select value={formData.type} onValueChange={v => setFormData({...formData, type: v as any})}>
-                  <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="bg-white dark:bg-white h-11 border-slate-300 dark:border-white/10 text-slate-900 rounded-xl"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Student">Siswa</SelectItem>
                     <SelectItem value="Teacher">Guru</SelectItem>
@@ -760,7 +763,7 @@ function MembersContent() {
             </div>
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label>
-              <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Nama lengkap" />
+              <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white dark:bg-white h-11 border-slate-300 dark:border-white/10 text-slate-900 rounded-xl" placeholder="Nama lengkap" />
             </div>
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">
@@ -769,18 +772,18 @@ function MembersContent() {
               <Input 
                 value={formData.classPart ?? ""} 
                 onChange={e => setFormData({...formData, classPart: e.target.value})} 
-                className="bg-white border-slate-300 h-11" 
+                className="bg-white dark:bg-white h-11 border-slate-300 dark:border-white/10 text-slate-900 rounded-xl" 
                 placeholder={formData.type === 'Teacher' ? "Cth: BAHASA INGGRIS/VII" : formData.type === 'Staff' ? "Cth: Tata Usaha / Keamanan" : "Cth: VII A"} 
               />
             </div>
           </div>
-          <DialogFooter><Button onClick={handleSaveMember} className="w-full sm:w-auto h-11 px-8 shadow-lg shadow-primary/20">Simpan Anggota</Button></DialogFooter>
+          <DialogFooter><Button onClick={handleSaveMember} className="w-full h-12 px-8 shadow-lg shadow-primary/20 rounded-xl font-bold">Simpan Anggota</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* DIALOG UBAH ANGGOTA */}
       <Dialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="bg-slate-50 max-w-md border-none">
+        <DialogContent className="bg-slate-50 dark:bg-slate-900 max-w-md border-none rounded-[2rem]">
           <DialogHeader>
             <DialogTitle>Ubah Data Anggota</DialogTitle>
             <DialogDescription>Perbarui informasi identitas anggota di bawah ini secara lengkap.</DialogDescription>
@@ -789,12 +792,12 @@ function MembersContent() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="font-semibold text-xs uppercase text-muted-foreground">ID Anggota (NIS/NIP)</Label>
-                <Input value={formData.memberId ?? ""} onChange={e => setFormData({...formData, memberId: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="NIS/NIP" />
+                <Input value={formData.memberId ?? ""} onChange={e => setFormData({...formData, memberId: e.target.value})} className="bg-white dark:bg-white h-11 border-slate-300 dark:border-white/10 text-slate-900 rounded-xl" placeholder="NIS/NIP" />
               </div>
               <div className="space-y-2">
                 <Label className="font-semibold text-xs uppercase text-muted-foreground">Kategori</Label>
                 <Select value={formData.type} onValueChange={v => setFormData({...formData, type: v as any})}>
-                  <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="bg-white dark:bg-white h-11 border-slate-300 dark:border-white/10 text-slate-900 rounded-xl"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Student">Siswa</SelectItem>
                     <SelectItem value="Teacher">Guru</SelectItem>
@@ -805,7 +808,7 @@ function MembersContent() {
             </div>
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">Nama Lengkap</Label>
-              <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Nama lengkap" />
+              <Input value={formData.name ?? ""} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white dark:bg-white h-11 border-slate-300 dark:border-white/10 text-slate-900 rounded-xl" placeholder="Nama lengkap" />
             </div>
             <div className="space-y-2">
               <Label className="font-semibold text-xs uppercase text-muted-foreground">
@@ -814,23 +817,23 @@ function MembersContent() {
               <Input 
                 value={formData.classPart ?? ""} 
                 onChange={e => setFormData({...formData, classPart: e.target.value})} 
-                className="bg-white border-slate-300 h-11" 
+                className="bg-white dark:bg-white h-11 border-slate-300 dark:border-white/10 text-slate-900 rounded-xl" 
                 placeholder={formData.type === 'Teacher' ? "Cth: BAHASA INGGRIS/VII" : formData.type === 'Staff' ? "Cth: Tata Usaha / Keamanan" : "Cth: VII A"} 
               />
             </div>
           </div>
-          <DialogFooter><Button onClick={handleUpdateMember} className="w-full h-11">Simpan Perubahan</Button></DialogFooter>
+          <DialogFooter><Button onClick={handleUpdateMember} className="w-full h-12 rounded-xl font-bold">Simpan Perubahan</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="max-w-md text-center border-none p-0 overflow-hidden rounded-3xl">
-          <DialogHeader className="p-6 bg-white shrink-0 border-b">
+        <DialogContent className="max-w-md text-center border-none p-0 overflow-hidden rounded-[2.5rem]">
+          <DialogHeader className="p-6 bg-white dark:bg-slate-900 shrink-0 border-b dark:border-white/10">
             <DialogTitle className="text-center font-bold text-primary">Kartu Digital Anggota</DialogTitle>
             <DialogDescription className="text-center">Label identitas digital untuk akses sirkulasi mandiri.</DialogDescription>
           </DialogHeader>
-          <div className="p-6 space-y-6">
-            <div className="bg-white p-8 rounded-3xl border-2 border-primary/20 space-y-4 shadow-xl flex flex-col items-center">
+          <div className="p-6 space-y-6 dark:bg-black/20">
+            <div className="bg-white p-8 rounded-[2.5rem] border-2 border-primary/20 space-y-4 shadow-xl flex flex-col items-center">
               <div className="p-4 bg-white rounded-2xl border shadow-inner">
                 {selectedMemberQr && (
                   <QRCodeSVG 
@@ -842,7 +845,7 @@ function MembersContent() {
                 )}
               </div>
               <div className="space-y-1">
-                <div className="font-black text-2xl leading-tight uppercase tracking-tight">{selectedMemberQr?.name ?? ""}</div>
+                <div className="font-black text-2xl leading-tight uppercase tracking-tight text-slate-900">{selectedMemberQr?.name ?? ""}</div>
                 <div className="font-mono text-primary font-black text-xl">{selectedMemberQr?.memberId || "-"}</div>
                 <div className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
                   {selectedMemberQr?.type === 'Teacher' ? 'GURU' : selectedMemberQr?.type === 'Staff' ? 'PEGAWAI' : 'KELAS'}: {selectedMemberQr?.classOrSubject || '-'}
@@ -850,12 +853,12 @@ function MembersContent() {
               </div>
             </div>
           </div>
-          <DialogFooter className="p-6 pt-0 grid grid-cols-2 gap-3"><Button variant="outline" onClick={() => { setIsQrOpen(false); forceUnlockUI(); }} className="h-12 rounded-xl font-bold">Tutup</Button><Button onClick={() => handlePrintSingleCard(selectedMemberQr)} className="h-12 gap-2 shadow-lg shadow-primary/20 rounded-xl font-bold"><Printer className="h-4 w-4" /> Cetak Kartu</Button></DialogFooter>
+          <DialogFooter className="p-6 pt-0 grid grid-cols-2 gap-3 bg-white dark:bg-slate-900"><Button variant="outline" onClick={() => { setIsQrOpen(false); forceUnlockUI(); }} className="h-12 rounded-xl font-bold">Tutup</Button><Button onClick={() => handlePrintSingleCard(selectedMemberQr)} className="h-12 gap-2 shadow-lg shadow-primary/20 rounded-xl font-bold"><Printer className="h-4 w-4" /> Cetak Kartu</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={(v) => { setIsDeleteDialogOpen(v); if(!v) forceUnlockUI(); }}>
-        <AlertDialogContent className="rounded-3xl border-none">
+        <AlertDialogContent className="rounded-[2.5rem] border-none shadow-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-black text-primary uppercase tracking-tight">Hapus Anggota?</AlertDialogTitle>
             <AlertDialogDescription>Data identitas akan dihapus secara permanen dari database.</AlertDialogDescription>
@@ -884,3 +887,4 @@ export default function MembersPage() {
     </Suspense>
   )
 }
+

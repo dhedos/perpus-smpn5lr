@@ -632,7 +632,7 @@ function BooksContent() {
   const handlePrintSingleQr = (book: any) => {
     if (!book) return
     const printWindow = window.open('', '_blank')
-    if (!printWindow) return
+    if (!book) return
 
     const totalCopies = Number(book.totalStock || 1);
     let allStickersHtml = '';
@@ -738,7 +738,7 @@ function BooksContent() {
           
           <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="rounded-xl border-slate-300 dark:border-white/20">
                 <Printer className="h-4 w-4 mr-2" /> Opsi Cetak
               </Button>
             </DropdownMenuTrigger>
@@ -752,18 +752,18 @@ function BooksContent() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button size="sm" onClick={handleOpenAdd}>
+          <Button size="sm" onClick={handleOpenAdd} className="rounded-xl px-6 shadow-lg shadow-primary/20">
             <Plus className="h-4 w-4 mr-2" />Tambah Buku
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 bg-card p-4 rounded-xl shadow-sm border border-slate-100">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 bg-transparent p-4 rounded-[2rem] border border-slate-200 dark:border-white/20 transition-all">
         <div className="lg:col-span-2 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input 
             placeholder="Cari Judul, Kode, Rekening..." 
-            className="pl-10 bg-white border-slate-300 h-11" 
+            className="pl-11 bg-white dark:bg-white border-none h-12 rounded-full text-slate-900 placeholder:text-slate-400 font-medium" 
             value={search ?? ""} 
             onChange={e => setSearch(e.target.value)}
             onKeyDown={(e) => {
@@ -775,8 +775,8 @@ function BooksContent() {
         </div>
         <div className="flex gap-2 lg:col-span-2">
           <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="bg-white border-slate-300 h-11 flex-1">
-              <div className="flex items-center gap-2"><Filter className="h-3 w-3 text-primary" /><SelectValue placeholder="Kategori" /></div>
+            <SelectTrigger className="bg-white dark:bg-white border-none h-12 rounded-full flex-1 text-slate-900 font-medium">
+              <div className="flex items-center gap-2"><Filter className="h-3 w-3 text-slate-400" /><SelectValue placeholder="Kategori" /></div>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Semua Jenis</SelectItem>
@@ -784,28 +784,28 @@ function BooksContent() {
             </SelectContent>
           </Select>
           <Select value={filterYear} onValueChange={setFilterYear}>
-            <SelectTrigger className="bg-white border-slate-300 h-11 flex-1">
-              <div className="flex items-center gap-2"><CalendarIcon className="h-3 w-3 text-primary" /><SelectValue placeholder="Tahun" /></div>
+            <SelectTrigger className="bg-white dark:bg-white border-none h-12 rounded-full flex-1 text-slate-900 font-medium">
+              <div className="flex items-center gap-2"><CalendarIcon className="h-3 w-3 text-slate-400" /><SelectValue placeholder="Tahun" /></div>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Semua Tahun</SelectItem>
               {years.map(yr => <SelectItem key={yr} value={yr}>{yr}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button variant="secondary" className="h-11 px-4" onClick={startScanner} title="Buka Kamera"><ScanBarcode className="h-4 w-4" /></Button>
+          <Button variant="secondary" className="h-12 w-12 p-0 rounded-2xl bg-[#33CCF7] hover:bg-[#2BB8E0] text-white shadow-md transition-all active:scale-95" onClick={startScanner} title="Buka Kamera"><ScanBarcode className="h-5 w-5" /></Button>
         </div>
       </div>
 
-      <Card className="border-none shadow-sm overflow-hidden">
+      <Card className="border-none shadow-sm overflow-hidden bg-transparent">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="w-12 text-center">No.</TableHead>
-              <TableHead>Kode</TableHead>
-              <TableHead>Judul & Info</TableHead>
-              <TableHead>Thn Terbit</TableHead>
-              <TableHead>Stok</TableHead>
-              <TableHead className="text-right">Aksi</TableHead>
+            <TableRow className="bg-muted/50 border-b dark:border-white/10">
+              <TableHead className="w-12 text-center text-[10px] font-black uppercase tracking-widest">No.</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest">Kode</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest">Judul & Info</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest">Thn Terbit</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest">Stok</TableHead>
+              <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -814,28 +814,28 @@ function BooksContent() {
             ) : filteredBooks.length === 0 ? (
               <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Tidak ada buku ditemukan.</TableCell></TableRow>
             ) : filteredBooks.map((book, index) => (
-              <TableRow key={book.id}>
+              <TableRow key={book.id} className="hover:bg-muted/30 border-b dark:border-white/5">
                 <TableCell className="text-center text-xs text-muted-foreground">{index + 1}</TableCell>
                 <TableCell className="font-mono text-xs font-bold text-primary">{book.code}</TableCell>
                 <TableCell>
                   <div className="space-y-0.5">
                     <div className="font-semibold leading-none">{book.title}</div>
-                    <div className="text-[10px] text-muted-foreground">
+                    <div className="text-[10px] text-muted-foreground font-medium opacity-70">
                        Sumber: {book.budgetSource || '-'} | Rek: {book.accountCode || '-'}
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="text-xs">{book.publicationYear}</TableCell>
+                <TableCell className="text-xs font-medium">{book.publicationYear}</TableCell>
                 <TableCell>
                    <div className="flex items-center gap-1">
-                    <Badge variant={book.availableStock === 0 ? "destructive" : "secondary"} className="h-5 px-1.5 text-[10px] border-none">
+                    <Badge variant="secondary" className="h-5 px-2 text-[10px] bg-[#33CCF7]/20 text-[#33CCF7] border-none font-bold">
                       {book.availableStock}/{book.totalStock}
                     </Badge>
                    </div>
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
-                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/10"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="z-50">
                       <DropdownMenuItem onSelect={(e) => { 
                         e.preventDefault();
@@ -896,7 +896,7 @@ function BooksContent() {
 
       {/* DIALOG TAMBAH BUKU */}
       <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-50 border-none">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-50 dark:bg-slate-900 border-none rounded-[2rem]">
           <DialogHeader>
             <DialogTitle className="text-xl font-black text-primary uppercase">Registrasi Buku Baru</DialogTitle>
             <DialogDescription>Lengkapi formulir di bawah untuk menambahkan buku ke dalam antrean pendaftaran.</DialogDescription>
@@ -905,16 +905,16 @@ function BooksContent() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">Judul Buku *</Label>
-                <Input value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Judul Lengkap..." />
+                <Input value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="bg-white dark:bg-white border-slate-300 dark:border-white/10 h-11 text-slate-900" placeholder="Judul Lengkap..." />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">Kode Buku (Stiker) *</Label>
-                  <Input value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} className="bg-white border-slate-300 h-11 font-mono uppercase" placeholder="Cth: 001/P" />
+                  <Input value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} className="bg-white dark:bg-white border-slate-300 dark:border-white/10 h-11 font-mono uppercase text-slate-900" placeholder="Cth: 001/P" />
                 </div>
                 <div className="space-y-2">
                   <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">ISBN (Barcode)</Label>
-                  <Input value={formData.isbn} onChange={e => setFormData({...formData, isbn: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="978-..." />
+                  <Input value={formData.isbn} onChange={e => setFormData({...formData, isbn: e.target.value})} className="bg-white dark:bg-white border-slate-300 dark:border-white/10 h-11 text-slate-900" placeholder="978-..." />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -924,12 +924,12 @@ function BooksContent() {
                     <Input 
                       value={formData.budgetSource} 
                       onChange={e => setFormData({...formData, budgetSource: e.target.value})} 
-                      className="bg-white border-slate-300 h-11" 
+                      className="bg-white dark:bg-white border-slate-300 dark:border-white/10 h-11 text-slate-900" 
                       placeholder="Ketik sumber..." 
                     />
                   ) : (
                     <Select value={formData.budgetSource} onValueChange={v => setFormData({...formData, budgetSource: v})}>
-                      <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue placeholder="Pilih Sumber..." /></SelectTrigger>
+                      <SelectTrigger className="bg-white dark:bg-white border-slate-300 dark:border-white/10 h-11 text-slate-900"><SelectValue placeholder="Pilih Sumber..." /></SelectTrigger>
                       <SelectContent>
                         {budgetSourcesList.map(source => (
                           <SelectItem key={source} value={source}>{source}</SelectItem>
@@ -940,7 +940,7 @@ function BooksContent() {
                 </div>
                 <div className="space-y-2">
                   <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">Kode Rekening</Label>
-                  <Input value={formData.accountCode} onChange={e => setFormData({...formData, accountCode: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Cth: 5.1.02.01" />
+                  <Input value={formData.accountCode} onChange={e => setFormData({...formData, accountCode: e.target.value})} className="bg-white dark:bg-white border-slate-300 dark:border-white/10 h-11 text-slate-900" placeholder="Cth: 5.1.02.01" />
                 </div>
               </div>
             </div>
@@ -948,11 +948,11 @@ function BooksContent() {
                <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">Tahun Terbit</Label>
-                  <Input value={formData.publicationYear} onChange={e => setFormData({...formData, publicationYear: e.target.value})} className="bg-white border-slate-300 h-11" />
+                  <Input value={formData.publicationYear} onChange={e => setFormData({...formData, publicationYear: e.target.value})} className="bg-white dark:bg-white border-slate-300 dark:border-white/10 h-11 text-slate-900" />
                 </div>
                 <div className="space-y-2">
                   <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">Kategori</Label>
-                  <Input value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Fiksi, Umum, dsb" />
+                  <Input value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="bg-white dark:bg-white border-slate-300 dark:border-white/10 h-11 text-slate-900" placeholder="Fiksi, Umum, dsb" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -961,11 +961,11 @@ function BooksContent() {
                   <Input type="number" value={formData.totalStock} onChange={e => {
                     const val = Number(e.target.value);
                     setFormData({...formData, totalStock: val, availableStock: val})
-                  }} className="bg-white border-slate-300 h-11" />
+                  }} className="bg-white dark:bg-white border-slate-300 dark:border-white/10 h-11 text-slate-900" />
                 </div>
                 <div className="space-y-2">
                   <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">Lokasi Rak</Label>
-                  <Input value={formData.rackLocation} onChange={e => setFormData({...formData, rackLocation: e.target.value})} className="bg-white border-slate-300 h-11" placeholder="Cth: A-1" />
+                  <Input value={formData.rackLocation} onChange={e => setFormData({...formData, rackLocation: e.target.value})} className="bg-white dark:bg-white border-slate-300 dark:border-white/10 h-11 text-slate-900" placeholder="Cth: A-1" />
                 </div>
               </div>
               <div className="space-y-2 relative">
@@ -975,39 +975,39 @@ function BooksContent() {
                     {isGenerating ? <span className="animate-pulse">Memuat AI...</span> : <><Sparkles className="h-2 w-2" /> Deskripsi AI</>}
                   </Button>
                 </div>
-                <Textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="bg-white border-slate-300 min-h-[100px]" placeholder="Ringkasan cerita atau konten buku..." />
+                <Textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="bg-white dark:bg-white border-slate-300 dark:border-white/10 min-h-[100px] text-slate-900" placeholder="Ringkasan cerita atau konten buku..." />
               </div>
             </div>
           </div>
           <DialogFooter className="border-t pt-4">
-            <Button variant="outline" onClick={() => { setIsOpen(false); forceUnlockUI(); }}>Batal</Button>
-            <Button onClick={handleSaveToLocalQueue} disabled={isLockedForUser} className="px-8 shadow-lg shadow-primary/20">Simpan ke Antrean</Button>
+            <Button variant="outline" onClick={() => { setIsOpen(false); forceUnlockUI(); }} className="rounded-xl">Batal</Button>
+            <Button onClick={handleSaveToLocalQueue} disabled={isLockedForUser} className="px-8 shadow-lg shadow-primary/20 rounded-xl">Simpan ke Antrean</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* DIALOG UBAH BUKU */}
       <Dialog open={isEditOpen} onOpenChange={(v) => { setIsEditOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-50 border-none">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-50 dark:bg-slate-900 border-none rounded-[2rem]">
           <DialogHeader>
             <DialogTitle className="text-xl font-black text-primary uppercase">Ubah Data Koleksi</DialogTitle>
             <DialogDescription>Perbarui rincian informasi buku ini untuk sinkronisasi ke database pusat.</DialogDescription>
           </DialogHeader>
           <div className="grid md:grid-cols-2 gap-6 py-4">
             <div className="space-y-4">
-              <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Judul Buku</Label><Input value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="bg-white border-slate-300 h-11" /></div>
+              <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Judul Buku</Label><Input value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="bg-white dark:bg-white border-slate-300 dark:border-white/10 h-11 text-slate-900" /></div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Kode Buku</Label><Input value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} className="bg-white border-slate-300 h-11 font-mono uppercase" /></div>
-                <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">ISBN</Label><Input value={formData.isbn} onChange={e => setFormData({...formData, isbn: e.target.value})} className="bg-white border-slate-300 h-11" /></div>
+                <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Kode Buku</Label><Input value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} className="bg-white dark:bg-white border-slate-300 dark:border-white/10 h-11 font-mono uppercase text-slate-900" /></div>
+                <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">ISBN</Label><Input value={formData.isbn} onChange={e => setFormData({...formData, isbn: e.target.value})} className="bg-white dark:bg-white border-slate-300 dark:border-white/10 h-11 text-slate-900" /></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Stok Tersedia</Label>
-                  <Input type="number" value={formData.availableStock} onChange={e => setFormData({...formData, availableStock: Number(e.target.value)})} className="bg-white border-slate-300 h-11" />
+                  <Input type="number" value={formData.availableStock} onChange={e => setFormData({...formData, availableStock: Number(e.target.value)})} className="bg-white dark:bg-white border-slate-300 dark:border-white/10 h-11 text-slate-900" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Stok Total</Label>
-                  <Input type="number" value={formData.totalStock} onChange={e => setFormData({...formData, totalStock: Number(e.target.value)})} className="bg-white border-slate-300 h-11" />
+                  <Input type="number" value={formData.totalStock} onChange={e => setFormData({...formData, totalStock: Number(e.target.value)})} className="bg-white dark:bg-white border-slate-300 dark:border-white/10 h-11 text-slate-900" />
                 </div>
               </div>
             </div>
@@ -1019,11 +1019,11 @@ function BooksContent() {
                     <Input 
                       value={formData.budgetSource} 
                       onChange={e => setFormData({...formData, budgetSource: e.target.value})} 
-                      className="bg-white border-slate-300 h-11" 
+                      className="bg-white dark:bg-white border-slate-300 dark:border-white/10 h-11 text-slate-900" 
                     />
                   ) : (
                     <Select value={formData.budgetSource} onValueChange={v => setFormData({...formData, budgetSource: v})}>
-                      <SelectTrigger className="bg-white border-slate-300 h-11"><SelectValue placeholder="Pilih Sumber..." /></SelectTrigger>
+                      <SelectTrigger className="bg-white dark:bg-white border-slate-300 dark:border-white/10 h-11 text-slate-900"><SelectValue placeholder="Pilih Sumber..." /></SelectTrigger>
                       <SelectContent>
                         {budgetSourcesList.map(source => (
                           <SelectItem key={source} value={source}>{source}</SelectItem>
@@ -1032,22 +1032,22 @@ function BooksContent() {
                     </Select>
                   )}
                 </div>
-                <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Rekening</Label><Input value={formData.accountCode} onChange={e => setFormData({...formData, accountCode: e.target.value})} className="bg-white border-slate-300 h-11" /></div>
+                <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Rekening</Label><Input value={formData.accountCode} onChange={e => setFormData({...formData, accountCode: e.target.value})} className="bg-white dark:bg-white border-slate-300 dark:border-white/10 h-11 text-slate-900" /></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Kategori</Label><Input value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="bg-white border-slate-300 h-11" /></div>
-                <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Lokasi Rak</Label><Input value={formData.rackLocation} onChange={e => setFormData({...formData, rackLocation: e.target.value})} className="bg-white border-slate-300 h-11" /></div>
+                <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Kategori</Label><Input value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="bg-white dark:bg-white border-slate-300 dark:border-white/10 h-11 text-slate-900" /></div>
+                <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Lokasi Rak</Label><Input value={formData.rackLocation} onChange={e => setFormData({...formData, rackLocation: e.target.value})} className="bg-white dark:bg-white border-slate-300 dark:border-white/10 h-11 text-slate-900" /></div>
               </div>
-              <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Deskripsi</Label><Textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="bg-white border-slate-300 min-h-[100px]" /></div>
+              <div className="space-y-2"><Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Deskripsi</Label><Textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="bg-white dark:bg-white border-slate-300 dark:border-white/10 min-h-[100px] text-slate-900" /></div>
             </div>
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => { setIsEditOpen(false); forceUnlockUI(); }}>Batal</Button><Button onClick={handleUpdateBook}>Simpan Perubahan</Button></DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => { setIsEditOpen(false); forceUnlockUI(); }} className="rounded-xl">Batal</Button><Button onClick={handleUpdateBook} className="rounded-xl px-6">Simpan Perubahan</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* DIALOG DETAIL BUKU */}
       <Dialog open={isDetailOpen} onOpenChange={(v) => { setIsDetailOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="max-w-2xl bg-white border-none rounded-3xl overflow-hidden p-0">
+        <DialogContent className="max-w-2xl bg-white dark:bg-slate-900 border-none rounded-[2.5rem] overflow-hidden p-0">
           <DialogHeader className="sr-only">
             <DialogTitle>Detail Buku</DialogTitle>
             <DialogDescription>Menampilkan informasi rinci dari buku yang dipilih.</DialogDescription>
@@ -1065,12 +1065,12 @@ function BooksContent() {
               </div>
               <div className="p-8 space-y-6">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-slate-50 rounded-2xl border">
+                  <div className="p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border dark:border-white/10">
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Inventaris</p>
                     <p className="text-sm font-bold mt-1">Sumber: {selectedBookDetail.budgetSource || '-'}</p>
                     <p className="text-[10px] font-mono mt-0.5 text-muted-foreground">Rek: {selectedBookDetail.accountCode || '-'}</p>
                   </div>
-                  <div className="p-4 bg-slate-50 rounded-2xl border text-center">
+                  <div className="p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border dark:border-white/10 text-center">
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Ketersediaan</p>
                     <p className="text-2xl font-black text-primary mt-1">{selectedBookDetail.availableStock} / {selectedBookDetail.totalStock}</p>
                     <p className="text-[10px] font-bold text-muted-foreground">UNIT FISIK</p>
@@ -1078,11 +1078,11 @@ function BooksContent() {
                 </div>
                 <div className="space-y-2">
                   <h4 className="font-bold text-xs uppercase tracking-widest text-primary">Deskripsi Buku</h4>
-                  <p className="text-sm text-slate-600 leading-relaxed italic">
+                  <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed italic">
                     {selectedBookDetail.description || "Belum ada ringkasan untuk buku ini."}
                   </p>
                 </div>
-                <Button className="w-full h-12 rounded-xl" variant="outline" onClick={() => { setIsDetailOpen(false); forceUnlockUI(); }}>Tutup Detail</Button>
+                <Button className="w-full h-12 rounded-2xl" variant="outline" onClick={() => { setIsDetailOpen(false); forceUnlockUI(); }}>Tutup Detail</Button>
               </div>
             </div>
           )}
@@ -1091,12 +1091,12 @@ function BooksContent() {
 
       {/* DIALOG PRATINJAU CETAK LABEL */}
       <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="max-w-xl text-center p-0 border-none rounded-3xl overflow-hidden">
-          <DialogHeader className="p-6 border-b bg-white">
+        <DialogContent className="max-w-xl text-center p-0 border-none rounded-[2rem] overflow-hidden">
+          <DialogHeader className="p-6 border-b bg-white dark:bg-slate-900">
             <DialogTitle className="text-center font-bold text-primary">Pratinjau Label Stiker</DialogTitle>
             <DialogDescription className="text-center text-xs">Akan mencetak sebanyak <b>{selectedBookQr?.totalStock || 1} stiker</b> sesuai jumlah fisik buku.</DialogDescription>
           </DialogHeader>
-          <div className="p-10 space-y-6 bg-slate-100 flex flex-col items-center">
+          <div className="p-10 space-y-6 bg-slate-100 dark:bg-black flex flex-col items-center">
             {selectedBookQr && (
               <div className="bg-white w-full max-w-[420px] aspect-[8/3.5] rounded-xl border border-slate-200 shadow-2xl flex flex-col p-2 ring-1 ring-black/5">
                 <div className="flex-1 flex items-center">
@@ -1104,7 +1104,7 @@ function BooksContent() {
                     <QRCodeSVG value={selectedBookQr.code} size={105} level="H" includeMargin />
                   </div>
                   <div className="flex-1 pl-4 text-left flex flex-col justify-center min-w-0">
-                    <div className="font-black text-[9.5pt] leading-tight uppercase truncate mb-1.5">{selectedBookQr.title}</div>
+                    <div className="font-black text-[9.5pt] leading-tight uppercase truncate mb-1.5 text-slate-900">{selectedBookQr.title}</div>
                     <div className="font-mono text-[#2E6ECE] font-black text-xl leading-none mb-3">{selectedBookQr.code}</div>
                     
                     <div className="space-y-0.5">
@@ -1125,16 +1125,16 @@ function BooksContent() {
               </div>
             )}
           </div>
-          <DialogFooter className="p-6 bg-white grid grid-cols-2 gap-3">
-             <Button variant="outline" onClick={() => { setIsQrOpen(false); forceUnlockUI(); }}>Tutup</Button>
-             <Button className="gap-2 shadow-lg shadow-primary/20" onClick={() => handlePrintSingleQr(selectedBookQr)}><Printer className="h-4 w-4" /> Cetak Semua ({selectedBookQr?.totalStock || 1})</Button>
+          <DialogFooter className="p-6 bg-white dark:bg-slate-900 grid grid-cols-2 gap-3">
+             <Button variant="outline" onClick={() => { setIsQrOpen(false); forceUnlockUI(); }} className="rounded-xl">Tutup</Button>
+             <Button className="gap-2 shadow-lg shadow-primary/20 rounded-xl" onClick={() => handlePrintSingleQr(selectedBookQr)}><Printer className="h-4 w-4" /> Cetak Semua ({selectedBookQr?.totalStock || 1})</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* DIALOG ANTREAN SINKRONISASI */}
       <Dialog open={isQueueOpen} onOpenChange={(v) => { setIsQueueOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="max-w-md bg-white border-none rounded-2xl overflow-hidden">
+        <DialogContent className="max-w-md bg-white dark:bg-slate-900 border-none rounded-[2rem] overflow-hidden">
           <DialogHeader className="p-6 border-b">
             <DialogTitle className="flex items-center gap-2 text-orange-600">
               <Database className="h-5 w-5" /> Antrean Sinkronisasi ({localQueue.length})
@@ -1143,7 +1143,7 @@ function BooksContent() {
           </DialogHeader>
           <div className="max-h-[300px] overflow-y-auto p-4 space-y-2">
             {localQueue.map(item => (
-              <div key={item.tempId} className="p-3 border rounded-lg flex justify-between items-center bg-slate-50">
+              <div key={item.tempId} className="p-3 border rounded-xl flex justify-between items-center bg-slate-50 dark:bg-white/5">
                 <div className="min-w-0">
                   <p className="text-sm font-bold truncate">{item.title}</p>
                   <p className="text-[10px] font-mono text-muted-foreground">{item.code}</p>
@@ -1152,7 +1152,7 @@ function BooksContent() {
               </div>
             ))}
           </div>
-          <DialogFooter className="p-6 bg-slate-50 flex gap-2">
+          <DialogFooter className="p-6 bg-slate-50 dark:bg-black/20 flex gap-2">
             <Button variant="ghost" className="flex-1" onClick={() => { setIsQueueOpen(false); forceUnlockUI(); }}>Nanti Saja</Button>
             <Button className="flex-1 bg-orange-600 hover:bg-orange-700 gap-2" onClick={handleSyncToDatabase} disabled={isSyncing}>
               {isSyncing ? <span className="animate-pulse">Sinkronisasi...</span> : <><CloudUpload className="h-4 w-4" /> Kirim Semua</>}
@@ -1163,7 +1163,7 @@ function BooksContent() {
 
       {/* SCANNER DIALOG */}
       <Dialog open={isScannerOpen} onOpenChange={(v) => { if(!v) stopScanner(); }}>
-        <DialogContent className="sm:max-w-xl p-0 h-[100dvh] sm:h-auto border-none bg-black overflow-hidden rounded-none sm:rounded-3xl">
+        <DialogContent className="sm:max-w-xl p-0 h-[100dvh] sm:h-auto border-none bg-black overflow-hidden rounded-none sm:rounded-[2rem]">
            <DialogHeader className="sr-only">
              <DialogTitle>Pemindai Barcode</DialogTitle>
              <DialogDescription>Arahkan kamera ke QR Code atau Barcode buku.</DialogDescription>
@@ -1187,7 +1187,7 @@ function BooksContent() {
 
       {/* ALERT DELETE */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={(v) => { setIsDeleteDialogOpen(v); if(!v) forceUnlockUI(); }}>
-        <AlertDialogContent className="rounded-3xl border-none shadow-2xl">
+        <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-black text-primary uppercase">Hapus Koleksi?</AlertDialogTitle>
             <AlertDialogDescription>Data buku akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.</AlertDialogDescription>
@@ -1219,3 +1219,4 @@ export default function BooksPage() {
     </Suspense>
   )
 }
+

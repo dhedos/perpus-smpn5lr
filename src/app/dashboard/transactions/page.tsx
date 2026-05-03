@@ -474,20 +474,20 @@ function TransactionsContent() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-primary flex items-center gap-2"><ArrowRightLeft className="h-6 w-6" /> Sirkulasi Siswa</h1>
           <p className="text-sm text-muted-foreground">Fokus peminjaman dan pengembalian buku untuk siswa.</p>
         </div>
         <div className="text-right flex items-center gap-2">
-           <Button variant="outline" size="sm" onClick={handlePrintReport}>
+           <Button variant="outline" size="sm" onClick={handlePrintReport} className="rounded-xl border-slate-300 dark:border-white/20">
              <Printer className="h-4 w-4 mr-2" /> Cetak
            </Button>
            <div className="flex flex-col gap-1">
-             <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold gap-2 py-1 px-3">
+             <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-black gap-2 py-1 px-3 text-[9px]">
               <CalendarDays className="h-3 w-3" /> Pribadi: {loanDays} Hari
             </Badge>
-            <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 font-bold gap-2 py-1 px-3">
+            <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 font-black gap-2 py-1 px-3 text-[9px]">
               <Clock className="h-3 w-3" /> Kolektif: {collHours} Jam
             </Badge>
            </div>
@@ -495,42 +495,36 @@ function TransactionsContent() {
       </div>
 
       <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); forceUnlockUI(); }} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 h-14 p-1 bg-muted/80 backdrop-blur-sm">
-          <TabsTrigger value="borrow" className="text-base font-bold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Peminjaman</TabsTrigger>
-          <TabsTrigger value="return" className="text-base font-bold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Pengembalian</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 h-14 p-1 bg-muted/80 backdrop-blur-sm rounded-2xl">
+          <TabsTrigger value="borrow" className="text-base font-bold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-xl">Peminjaman</TabsTrigger>
+          <TabsTrigger value="return" className="text-base font-bold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-xl">Pengembalian</TabsTrigger>
         </TabsList>
         
         <div className="mt-8">
           <TabsContent value="borrow" className="space-y-6">
-            <Card className="bg-primary/5 border-primary/20 overflow-hidden">
+            <Card className="bg-primary/5 border-primary/20 overflow-hidden rounded-[2rem]">
               <CardContent className="pt-8 pb-8 text-center space-y-4">
-                <Button size="lg" className="h-16 px-12 gap-3 shadow-xl hover:shadow-2xl transition-all" onClick={startScanner}><ScanBarcode className="h-6 w-6" /> Smart Scan</Button>
-                <div className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Scan Kartu Siswa atau Buku</div>
+                <Button size="lg" className="h-16 px-12 gap-3 shadow-xl hover:shadow-2xl transition-all rounded-2xl" onClick={startScanner}><ScanBarcode className="h-6 w-6" /> Smart Scan</Button>
+                <div className="text-xs text-muted-foreground font-black uppercase tracking-[0.2em]">Scan Kartu Siswa atau Buku</div>
               </CardContent>
             </Card>
 
             <div className="grid lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1 space-y-6">
-                <Card className="border-none shadow-sm">
-                  <CardHeader className="bg-accent/5 pb-4 border-b">
-                    <CardTitle className="text-sm flex items-center gap-2 text-primary uppercase tracking-wider font-bold">
-                      Jenis & Jumlah
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-6 space-y-6">
-                    <div className="space-y-3">
-                      <Label className="text-[10px] font-bold text-muted-foreground uppercase">Jenis Peminjaman</Label>
-                      <div className="flex gap-2 p-1 bg-muted rounded-lg">
+                <div className="bg-transparent p-6 rounded-[2.5rem] border border-slate-200 dark:border-white/20 space-y-6">
+                   <div className="space-y-3">
+                      <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-2">Jenis Peminjaman</Label>
+                      <div className="flex gap-2 p-1 bg-muted/50 rounded-2xl">
                         <Button 
                           variant={borrowType === "Pribadi" ? "default" : "ghost"} 
-                          className="flex-1 h-9 text-xs font-bold"
+                          className="flex-1 h-10 text-xs font-bold rounded-xl"
                           onClick={() => setBorrowType("Pribadi")}
                         >
                           <User className="h-3 w-3 mr-2" /> Pribadi
                         </Button>
                         <Button 
                           variant={borrowType === "Kolektif" ? "default" : "ghost"} 
-                          className="flex-1 h-9 text-xs font-bold"
+                          className="flex-1 h-10 text-xs font-bold rounded-xl"
                           onClick={() => setBorrowType("Kolektif")}
                         >
                           <Users className="h-3 w-3 mr-2" /> Kolektif
@@ -539,24 +533,24 @@ function TransactionsContent() {
                     </div>
 
                     <div className="space-y-3">
-                      <Label className="text-[10px] font-bold text-muted-foreground uppercase">Jumlah Buku</Label>
-                      <div className="flex items-center justify-between p-2 border rounded-xl bg-background">
+                      <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-2">Jumlah Unit</Label>
+                      <div className="flex items-center justify-between p-2 border rounded-[1.5rem] bg-white dark:bg-white/5 border-slate-200 dark:border-white/10">
                         <Button 
                           variant="outline" 
                           size="icon" 
-                          className="h-10 w-10 rounded-lg"
+                          className="h-12 w-12 rounded-xl border-none bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white"
                           onClick={() => setBorrowQuantity(q => Math.max(1, q - 1))}
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
                         <div className="flex flex-col items-center">
-                          <span className="text-2xl font-black">{borrowQuantity}</span>
-                          <span className="text-[9px] font-bold text-muted-foreground uppercase">Unit</span>
+                          <span className="text-3xl font-black">{borrowQuantity}</span>
+                          <span className="text-[8px] font-black text-muted-foreground uppercase tracking-tighter">Buku</span>
                         </div>
                         <Button 
                           variant="outline" 
                           size="icon" 
-                          className="h-10 w-10 rounded-lg"
+                          className="h-12 w-12 rounded-xl border-none bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white"
                           onClick={() => setBorrowQuantity(q => q + 1)}
                           disabled={selectedBook && borrowQuantity >= (selectedBook.availableStock || 0)}
                         >
@@ -564,19 +558,14 @@ function TransactionsContent() {
                         </Button>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                </div>
 
-                <Card className="border-none shadow-sm relative">
-                  <CardHeader className="bg-accent/5 pb-4 border-b">
-                    <CardTitle className="text-sm flex items-center gap-2 text-primary uppercase tracking-wider font-bold"><User className="h-4 w-4" /> Data Siswa</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-6 space-y-4">
+                <div className="bg-transparent p-4 rounded-[2rem] border border-slate-200 dark:border-white/20 space-y-4">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <Input 
-                        placeholder="Cari Nama Siswa / NIS..." 
-                        className="pl-10 h-12" 
+                        placeholder="Cari Siswa / NIS..." 
+                        className="pl-11 h-12 bg-white dark:bg-white border-none rounded-full text-slate-900 font-medium placeholder:text-slate-400" 
                         value={memberSearch} 
                         onChange={e => {
                           setMemberSearch(e.target.value);
@@ -586,11 +575,11 @@ function TransactionsContent() {
                         onKeyDown={e => e.key === 'Enter' && handleLookup(memberSearch)}
                       />
                       {showMemberSuggestions && memberSuggestions.length > 0 && (
-                        <div className="absolute z-[100] left-0 right-0 top-full mt-1 bg-card border rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 max-h-[250px] overflow-y-auto">
+                        <div className="absolute z-[100] left-0 right-0 top-full mt-2 bg-card border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 max-h-[250px] overflow-y-auto">
                           {memberSuggestions.map(m => (
                             <div 
                               key={m.id} 
-                              className="p-3 hover:bg-accent/10 cursor-pointer flex items-center justify-between border-b last:border-0"
+                              className="p-3 hover:bg-primary/5 cursor-pointer flex items-center justify-between border-b last:border-0"
                               onClick={() => {
                                 setSelectedMember(m);
                                 setMemberSearch("");
@@ -608,29 +597,22 @@ function TransactionsContent() {
                       )}
                     </div>
                     {selectedMember && (
-                      <div className="p-4 bg-primary/5 rounded-xl border border-primary/20 flex flex-col gap-2 animate-in slide-in-from-left-2">
+                      <div className="p-4 bg-primary/5 rounded-2xl border border-primary/20 flex flex-col gap-2 animate-in slide-in-from-left-2">
                         <div className="flex justify-between items-center">
                           <div className="flex-1">
-                            <div className="font-bold text-primary text-lg">{selectedMember.name}</div>
-                            <div className="text-xs font-mono text-muted-foreground">{selectedMember.memberId}</div>
+                            <div className="font-black text-primary text-lg leading-tight">{selectedMember.name}</div>
+                            <div className="text-[10px] font-black text-muted-foreground uppercase mt-1 tracking-widest">{selectedMember.memberId}</div>
                           </div>
-                          <Button variant="ghost" size="icon" onClick={() => setSelectedMember(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => setSelectedMember(null)} className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive"><X className="h-4 w-4" /></Button>
                         </div>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
 
-                <Card className="border-none shadow-sm relative">
-                  <CardHeader className="bg-accent/5 pb-4 border-b">
-                    <CardTitle className="text-sm flex items-center gap-2 text-secondary uppercase tracking-wider font-bold"><BookOpen className="h-4 w-4" /> Data Buku</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-6 space-y-4">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <Input 
                         placeholder="Judul atau Kode Buku..." 
-                        className="pl-10 h-12" 
+                        className="pl-11 h-12 bg-white dark:bg-white border-none rounded-full text-slate-900 font-medium placeholder:text-slate-400" 
                         value={bookSearch} 
                         onChange={e => {
                           setBookSearch(e.target.value);
@@ -640,11 +622,11 @@ function TransactionsContent() {
                         onKeyDown={e => e.key === 'Enter' && handleLookup(bookSearch)}
                       />
                       {showBookSuggestions && bookSuggestions.length > 0 && (
-                        <div className="absolute z-[100] left-0 right-0 top-full mt-1 bg-card border rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 max-h-[250px] overflow-y-auto">
+                        <div className="absolute z-[100] left-0 right-0 top-full mt-2 bg-card border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 max-h-[250px] overflow-y-auto">
                           {bookSuggestions.map(b => (
                             <div 
                               key={b.id} 
-                              className="p-3 hover:bg-accent/10 cursor-pointer flex items-center justify-between border-b last:border-0"
+                              className="p-3 hover:bg-secondary/5 cursor-pointer flex items-center justify-between border-b last:border-0"
                               onClick={() => {
                                 setSelectedBook(b);
                                 setBookSearch("");
@@ -662,56 +644,54 @@ function TransactionsContent() {
                       )}
                     </div>
                     {selectedBook && (
-                      <div className="p-4 bg-secondary/5 rounded-xl border border-secondary/20 space-y-4 animate-in slide-in-from-right-2">
+                      <div className="p-4 bg-secondary/5 rounded-2xl border border-secondary/20 space-y-4 animate-in slide-in-from-right-2">
                         <div className="flex justify-between items-center">
                           <div className="flex-1">
-                            <div className="font-bold text-secondary-foreground leading-tight">{selectedBook.title}</div>
-                            <div className="text-xs font-mono text-muted-foreground">{selectedBook.code}</div>
+                            <div className="font-black text-secondary-foreground leading-tight">{selectedBook.title}</div>
+                            <div className="text-[10px] font-black text-muted-foreground uppercase mt-1 tracking-widest">{selectedBook.code}</div>
                           </div>
-                          <Button variant="ghost" size="icon" onClick={() => setSelectedBook(null)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => setSelectedBook(null)} className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive"><X className="h-4 w-4" /></Button>
                         </div>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                </div>
 
-                <Button className="w-full h-16 text-lg font-black shadow-lg shadow-primary/20" disabled={!selectedMember || !selectedBook || isProcessing} onClick={handleProcessBorrow}>
-                  {isProcessing ? <Loader2 className="animate-spin h-6 w-6" /> : "PINJAM SEKARANG"}
+                <Button className="w-full h-16 text-lg font-black shadow-lg shadow-primary/20 rounded-[1.5rem] tracking-tight transition-all active:scale-95" disabled={!selectedMember || !selectedBook || isProcessing} onClick={handleProcessBorrow}>
+                  {isProcessing ? <Loader2 className="animate-spin h-6 w-6" /> : "KONFIRMASI PINJAM"}
                 </Button>
               </div>
 
               <div className="lg:col-span-2">
-                <Card className="border-none shadow-sm overflow-hidden h-full">
-                  <CardHeader className="bg-accent/5 border-b">
-                    <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                      <History className="h-4 w-4 text-primary" /> Riwayat Bulan Berjalan
+                <Card className="border-none shadow-sm overflow-hidden h-full bg-transparent">
+                  <CardHeader className="bg-muted/30 border-b dark:border-white/10 px-6">
+                    <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 text-primary">
+                      <History className="h-4 w-4" /> Riwayat Bulan Berjalan
                     </CardTitle>
-                    <CardDescription className="text-[10px]">Menampilkan aktivitas sirkulasi untuk bulan {format(new Date(), 'MMMM yyyy')}.</CardDescription>
                   </CardHeader>
                   <CardContent className="p-0">
                     <Table>
                       <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-12 text-center">No.</TableHead>
-                          <TableHead>Nama Siswa</TableHead>
-                          <TableHead>Buku</TableHead>
-                          <TableHead>Pinjam</TableHead>
-                          <TableHead>Kembali</TableHead>
-                          <TableHead className="text-right">Status</TableHead>
+                        <TableRow className="border-b dark:border-white/10">
+                          <TableHead className="w-12 text-center text-[9px] font-black uppercase tracking-widest">No.</TableHead>
+                          <TableHead className="text-[9px] font-black uppercase tracking-widest">Siswa</TableHead>
+                          <TableHead className="text-[9px] font-black uppercase tracking-widest">Buku</TableHead>
+                          <TableHead className="text-[9px] font-black uppercase tracking-widest">Pinjam</TableHead>
+                          <TableHead className="text-[9px] font-black uppercase tracking-widest">Kembali</TableHead>
+                          <TableHead className="text-right text-[9px] font-black uppercase tracking-widest">Status</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {historyTrans?.length === 0 ? (
-                          <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground italic">Belum ada riwayat di bulan ini.</TableCell></TableRow>
+                          <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground italic text-xs">Belum ada riwayat di bulan ini.</TableCell></TableRow>
                         ) : historyTrans?.slice(0, 50).map((t, index) => (
-                          <TableRow key={t.id}>
-                            <TableCell className="text-center text-xs">{index + 1}</TableCell>
+                          <TableRow key={t.id} className="hover:bg-muted/20 border-b dark:border-white/5">
+                            <TableCell className="text-center text-xs text-muted-foreground">{index + 1}</TableCell>
                             <TableCell className="font-bold text-xs">{t.memberName}</TableCell>
-                            <TableCell className="text-xs truncate max-w-[150px]">{t.bookTitle}</TableCell>
-                            <TableCell className="text-xs text-muted-foreground">{t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yy') : '-'}</TableCell>
-                            <TableCell className="text-xs font-semibold">{t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yy') : '-'}</TableCell>
+                            <TableCell className="text-xs truncate max-w-[150px] font-medium">{t.bookTitle}</TableCell>
+                            <TableCell className="text-[10px] font-mono text-muted-foreground">{t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yy') : '-'}</TableCell>
+                            <TableCell className="text-xs font-black">{t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yy') : '-'}</TableCell>
                             <TableCell className="text-right text-xs">
-                              <Badge variant="outline" className="text-[8px] bg-green-500/10 text-green-500 border-none uppercase font-black">KEMBALI</Badge>
+                              <Badge variant="secondary" className="text-[8px] bg-green-500/10 text-green-500 border-none uppercase font-black px-2">KEMBALI</Badge>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -725,33 +705,32 @@ function TransactionsContent() {
 
           <TabsContent value="return" className="space-y-6">
             <div className="grid md:grid-cols-3 gap-6">
-              <Card className="md:col-span-1 border-none shadow-sm bg-accent/10 flex flex-col items-center justify-center p-8 gap-4">
-                <Button variant="secondary" className="h-20 w-full gap-3 shadow-md font-bold" onClick={startScanner}><ScanBarcode className="h-8 w-8" /> Scan Buku/Kartu</Button>
-                <div className="w-full space-y-2">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Pencarian Manual Siswa</Label>
-                  <Input placeholder="Cari Nama/NIS..." className="h-12 bg-background" value={returnSearch} onChange={e => setReturnSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLookup(returnSearch)} />
+              <div className="md:col-span-1 bg-transparent p-6 rounded-[2.5rem] border border-slate-200 dark:border-white/20 flex flex-col gap-6">
+                <Button variant="secondary" className="h-20 w-full gap-3 shadow-md font-black text-base rounded-[1.5rem] bg-[#33CCF7] hover:bg-[#2BB8E0] text-white" onClick={startScanner}><ScanBarcode className="h-8 w-8" /> SCAN KARTU/BUKU</Button>
+                <div className="w-full space-y-2 px-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Pencarian Manual</Label>
+                  <Input placeholder="Cari Nama/NIS..." className="h-12 bg-white dark:bg-white border-none rounded-full text-slate-900 font-medium placeholder:text-slate-400" value={returnSearch} onChange={e => setReturnSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLookup(returnSearch)} />
                 </div>
-              </Card>
+              </div>
 
-              <Card className="md:col-span-2 border-none shadow-sm overflow-hidden">
-                <CardHeader className="pb-3 border-b">
-                  <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Peminjaman Siswa Aktif</CardTitle>
-                  <CardDescription>Daftar buku yang saat ini masih dipinjam oleh siswa.</CardDescription>
+              <Card className="md:col-span-2 border-none shadow-sm overflow-hidden bg-transparent">
+                <CardHeader className="pb-3 border-b dark:border-white/10 px-6 bg-muted/20">
+                  <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Pinjaman Siswa Aktif</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="max-h-[500px] overflow-y-auto">
                     <Table>
-                      <TableHeader className="bg-accent/5 sticky top-0 z-10">
-                        <TableRow>
-                          <TableHead className="w-12 text-center">No.</TableHead>
-                          <TableHead>Peminjam & Buku</TableHead>
-                          <TableHead className="w-32">Status Waktu</TableHead>
-                          <TableHead className="w-24 text-right">Aksi</TableHead>
+                      <TableHeader className="bg-muted/50 sticky top-0 z-10">
+                        <TableRow className="border-b dark:border-white/10">
+                          <TableHead className="w-12 text-center text-[9px] font-black uppercase tracking-widest">No.</TableHead>
+                          <TableHead className="text-[9px] font-black uppercase tracking-widest">Peminjam & Buku</TableHead>
+                          <TableHead className="w-32 text-[9px] font-black uppercase tracking-widest">Durasi</TableHead>
+                          <TableHead className="w-24 text-right text-[9px] font-black uppercase tracking-widest">Aksi</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredActiveTrans.length === 0 ? (
-                          <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground italic">Tidak ada peminjaman siswa aktif.</TableCell></TableRow>
+                          <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground italic text-xs">Tidak ada peminjaman aktif.</TableCell></TableRow>
                         ) : filteredActiveTrans.map((t, index) => {
                           const now = new Date();
                           const borrowDate = parseISO(t.borrowDate);
@@ -768,28 +747,28 @@ function TransactionsContent() {
                             isUrdue = now > dueDate;
                           }
                           return (
-                            <TableRow key={t.id}>
+                            <TableRow key={t.id} className="hover:bg-muted/20 border-b dark:border-white/5">
                               <TableCell className="text-center text-xs text-muted-foreground font-medium">{index + 1}</TableCell>
                               <TableCell>
                                 <div className="space-y-1">
                                   <div className="flex items-center gap-2">
                                     <div className="font-bold text-sm leading-tight">{t.bookTitle}</div>
                                     {t.borrowType === 'Kolektif' && (
-                                      <Badge variant="outline" className="h-4 text-[7px] bg-blue-900 text-white border-none flex items-center gap-1 font-black">
+                                      <Badge variant="secondary" className="h-4 text-[7px] bg-blue-900 text-white border-none font-black px-1.5">
                                         KOLEKTIF
                                       </Badge>
                                     )}
                                   </div>
-                                  <div className="text-xs font-semibold">{t.memberName} <span className="text-muted-foreground font-normal">/ {t.memberId}</span></div>
+                                  <div className="text-xs font-semibold opacity-70">{t.memberName} <span className="text-muted-foreground font-normal">/ {t.memberId}</span></div>
                                 </div>
                               </TableCell>
                               <TableCell>
-                                <Badge variant={isUrdue ? "destructive" : "secondary"} className="h-5 text-[9px] font-bold">
+                                <Badge variant={isUrdue ? "destructive" : "secondary"} className="h-5 text-[9px] font-bold border-none">
                                   <Clock className="h-2.5 w-2.5 mr-1" /> {durationDisplay}
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-right">
-                                <Button size="sm" variant="outline" className="h-8 text-xs font-bold" onClick={() => prepareReturn(t)}>
+                                <Button size="sm" variant="outline" className="h-8 text-xs font-bold rounded-xl border-slate-300 dark:border-white/20 hover:bg-primary/10" onClick={() => prepareReturn(t)}>
                                   Terima
                                 </Button>
                               </TableCell>
@@ -807,63 +786,63 @@ function TransactionsContent() {
       </Tabs>
 
       <Dialog open={isReturnConfirmOpen} onOpenChange={(v) => { setIsReturnConfirmOpen(v); if(!v) forceUnlockUI(); }}>
-        <DialogContent className="max-w-md bg-card border-none shadow-2xl">
+        <DialogContent className="max-w-md bg-white dark:bg-slate-900 border-none shadow-2xl rounded-[2.5rem]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-primary font-bold">
-              <CheckCircle className="h-5 w-5" /> Konfirmasi Pengembalian
+              <CheckCircle className="h-5 w-5" /> Konfirmasi Terima
             </DialogTitle>
-            <DialogDescription>Lengkapi data kondisi fisik buku saat pengembalian untuk menghitung denda otomatis.</DialogDescription>
+            <DialogDescription>Lengkapi data kondisi fisik buku saat pengembalian.</DialogDescription>
           </DialogHeader>
           {pendingReturnTrans && (
             <div className="space-y-6 py-4">
-              <div className="p-4 bg-accent/10 rounded-xl border space-y-3">
+              <div className="p-4 bg-muted/20 rounded-2xl border dark:border-white/10 space-y-3">
                 <div className="flex-1">
-                  <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Buku & Peminjam</div>
-                  <div className="text-sm font-black">{pendingReturnTrans.bookTitle}</div>
+                  <div className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Buku & Peminjam</div>
+                  <div className="text-sm font-black mt-1 leading-tight">{pendingReturnTrans.bookTitle}</div>
                   <div className="text-xs font-bold text-primary mt-1">{pendingReturnTrans.memberName} / {pendingReturnTrans.memberId}</div>
                 </div>
               </div>
               <div className="space-y-4">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Kondisi Pengembalian</div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-2">Kondisi Pengembalian</div>
                 <div className="grid gap-3">
-                  <div className="flex items-center justify-between p-3 rounded-xl border bg-green-500/10">
+                  <div className="flex items-center justify-between p-3 rounded-2xl border dark:border-white/10 bg-green-500/5">
                     <Label className="font-bold text-sm">Kembali Baik</Label>
-                    <div className="w-16 h-8 flex items-center justify-center font-bold bg-background rounded border">
+                    <div className="w-16 h-10 flex items-center justify-center font-black bg-white dark:bg-black/40 rounded-xl border-none text-green-600">
                       {returnNormalQty}
                     </div>
                   </div>
-                  <div className="flex items-center justify-between p-3 rounded-xl border bg-orange-500/10">
+                  <div className="flex items-center justify-between p-3 rounded-2xl border dark:border-white/10 bg-orange-500/5">
                     <Label className="font-bold text-sm">Rusak</Label>
-                    <Input type="number" className="w-16 h-8 text-center font-bold" value={returnDamagedQty} onChange={(e) => handleDamagedQtyChange(Number(e.target.value))} />
+                    <Input type="number" className="w-16 h-10 text-center font-black rounded-xl bg-white dark:bg-black/40 border-none text-orange-600" value={returnDamagedQty} onChange={(e) => handleDamagedQtyChange(Number(e.target.value))} />
                   </div>
-                  <div className="flex items-center justify-between p-3 rounded-xl border bg-red-500/10">
+                  <div className="flex items-center justify-between p-3 rounded-2xl border dark:border-white/10 bg-red-500/5">
                     <Label className="font-bold text-sm">Hilang</Label>
-                    <Input type="number" className="w-16 h-8 text-center font-bold" value={returnLostQty} onChange={(e) => handleLostQtyChange(Number(e.target.value))} />
+                    <Input type="number" className="w-16 h-10 text-center font-black rounded-xl bg-white dark:bg-black/40 border-none text-red-600" value={returnLostQty} onChange={(e) => handleLostQtyChange(Number(e.target.value))} />
                   </div>
                 </div>
               </div>
               {calculatedFine > 0 && (
-                <div className="p-4 bg-orange-500/10 rounded-xl border border-orange-500/20 flex items-center justify-between animate-in fade-in zoom-in-95">
+                <div className="p-4 bg-orange-500/10 rounded-2xl border border-orange-500/20 flex items-center justify-between animate-in fade-in zoom-in-95">
                   <div className="flex items-center gap-3">
-                    <Coins className="h-5 w-5 text-orange-600" />
-                    <div className="text-xl font-black text-orange-600">Rp {calculatedFine.toLocaleString()}</div>
+                    <Coins className="h-6 w-6 text-orange-600" />
+                    <div className="text-2xl font-black text-orange-600">Rp {calculatedFine.toLocaleString()}</div>
                   </div>
-                  <Badge variant="outline" className="border-orange-500/30 text-orange-600 text-[8px] font-bold">DENDA</Badge>
+                  <Badge variant="outline" className="border-orange-500/30 text-orange-600 text-[8px] font-black px-2 py-0.5">DENDA TERHITUNG</Badge>
                 </div>
               )}
             </div>
           )}
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setIsReturnConfirmOpen(false); forceUnlockUI(); }} disabled={isProcessing} className="flex-1">Batal</Button>
-            <Button onClick={handleConfirmReturn} disabled={isProcessing} className="flex-1 shadow-lg shadow-primary/20">
-              {isProcessing ? <Loader2 className="animate-spin" /> : "Simpan"}
+            <Button variant="outline" onClick={() => { setIsReturnConfirmOpen(false); forceUnlockUI(); }} disabled={isProcessing} className="flex-1 rounded-xl h-12 font-bold">Batal</Button>
+            <Button onClick={handleConfirmReturn} disabled={isProcessing} className="flex-1 shadow-lg shadow-primary/20 rounded-xl h-12 font-black">
+              {isProcessing ? <Loader2 className="animate-spin" /> : "PROSES TERIMA"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isScannerOpen} onOpenChange={o => { if(!o) stopScanner(); }}>
-        <DialogContent className="p-0 border-none bg-black max-w-xl h-[100dvh] sm:h-[450px] overflow-hidden rounded-none sm:rounded-3xl">
+        <DialogContent className="p-0 border-none bg-black max-w-xl h-[100dvh] sm:h-[450px] overflow-hidden rounded-none sm:rounded-[2.5rem]">
           <DialogHeader className="sr-only">
             <DialogTitle>Pemindai</DialogTitle>
             <DialogDescription>Arahkan kamera pada kode QR kartu siswa atau barcode buku.</DialogDescription>
@@ -893,8 +872,9 @@ function TransactionsContent() {
 
 export default function TransactionsPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center h-full"><p className="text-xs font-black animate-pulse uppercase tracking-[0.3em]">Memuat Modul...</p></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center h-full py-20"><p className="text-[10px] font-black animate-pulse uppercase tracking-[0.3em] text-primary">Memuat Sirkulasi...</p></div>}>
       <TransactionsContent />
     </Suspense>
   )
 }
+
