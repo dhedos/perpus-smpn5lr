@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -25,7 +25,8 @@ import {
   UserX,
   Lock,
   KeyRound,
-  Send
+  Send,
+  X
 } from "lucide-react"
 import { 
   Dialog, 
@@ -77,6 +78,19 @@ export default function StaffPage() {
     role: "Staff" as "Admin" | "Staff"
   })
 
+  const forceUnlockUI = useCallback(() => {
+    if (typeof document !== 'undefined') {
+      document.body.style.pointerEvents = 'auto';
+      document.body.style.overflow = 'auto';
+      const focusGuards = document.querySelectorAll('[data-radix-focus-guard]');
+      focusGuards.forEach(el => (el as HTMLElement).remove());
+    }
+  }, []);
+
+  useEffect(() => {
+    forceUnlockUI();
+  }, [forceUnlockUI]);
+
   const usersCollectionRef = useMemoFirebase(() => {
     if (!db) return null
     return collection(db, 'users')
@@ -127,13 +141,14 @@ export default function StaffPage() {
 
       toast({ 
         title: "Berhasil!", 
-        description: `Petugas ${formData.name} telah didaftarkan. Email reset password akan dikirimkan otomatis.` 
+        description: `Petugas ${formData.name} telah didaftarkan.` 
       })
       
       await sendPasswordResetEmail(auth, formData.email)
       
       setIsOpen(false)
       setFormData({ name: "", email: "", password: "", role: "Staff" })
+      forceUnlockUI()
     } catch (error: any) {
       toast({ 
         title: "Pendaftaran Gagal", 
@@ -168,8 +183,6 @@ export default function StaffPage() {
 
   const handleDeleteStaff = (id: string) => {
     if (!db) return
-    if (!confirm("Hapus petugas ini secara permanen?")) return
-    
     const userDocRef = doc(db, 'users', id)
     deleteDoc(userDocRef).catch(async (error) => {
        const permissionError = new FirestorePermissionError({
@@ -178,48 +191,48 @@ export default function StaffPage() {
       } satisfies SecurityRuleContext);
       errorEmitter.emit('permission-error', permissionError);
     })
+    toast({ title: "Terhapus", description: "Petugas telah dihapus dari sistem." })
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold font-headline tracking-tight text-primary">Petugas Perpustakaan</h1>
           <p className="text-muted-foreground text-sm">Kelola akses petugas dan kirim instruksi pemulihan via email.</p>
         </div>
         
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) forceUnlockUI(); }}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
+            <Button className="gap-2 rounded-xl px-6 shadow-lg shadow-primary/20">
               <UserPlus className="h-4 w-4" />
               Daftarkan Petugas
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md bg-white">
+          <DialogContent className="max-w-md bg-white dark:bg-slate-900 border-none rounded-[2rem]">
             <DialogHeader>
-              <DialogTitle>Pendaftaran Petugas Baru</DialogTitle>
+              <DialogTitle className="text-primary font-black uppercase">Pendaftaran Petugas</DialogTitle>
               <DialogDescription>
                 Petugas akan menerima email untuk mengatur kata sandi mereka sendiri.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name" className="font-bold text-xs uppercase text-muted-foreground">Nama Lengkap</Label>
+                <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest px-1">Nama Lengkap</Label>
                 <Input 
-                  id="name" 
                   placeholder="Nama Lengkap..." 
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="bg-white h-11 border-slate-200"
+                  className="h-11 rounded-xl bg-muted/20 border-slate-200 dark:border-white/10"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="role" className="font-bold text-xs uppercase text-muted-foreground">Peran / Hak Akses</Label>
+                <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest px-1">Peran Akses</Label>
                 <Select 
                   value={formData.role} 
                   onValueChange={(v: any) => setFormData({ ...formData, role: v })}
                 >
-                  <SelectTrigger className="h-11 bg-white border-slate-200">
+                  <SelectTrigger className="h-11 rounded-xl bg-muted/20 border-slate-200 dark:border-white/10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -229,68 +242,62 @@ export default function StaffPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email" className="font-bold text-xs uppercase text-muted-foreground">Email Login</Label>
+                <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest px-1">Email Login</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input 
-                    id="email" 
                     type="email"
                     placeholder="nama@email.com" 
-                    className="pl-10 h-11 bg-white border-slate-200"
+                    className="pl-10 h-11 rounded-xl bg-muted/20 border-slate-200 dark:border-white/10"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="font-bold text-xs uppercase text-muted-foreground">Kata Sandi Awal</Label>
+                <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest px-1">Kata Sandi Awal</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input 
-                    id="password" 
                     type="password"
                     placeholder="Minimal 6 karakter" 
-                    className="pl-10 h-11 bg-white border-slate-200"
+                    className="pl-10 h-11 rounded-xl bg-muted/20 border-slate-200 dark:border-white/10"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   />
                 </div>
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsOpen(false)}>Batal</Button>
-              <Button onClick={handleRegisterStaff} disabled={isRegistering}>
-                {isRegistering ? (
-                  <span className="animate-pulse">MEMPROSES...</span>
-                ) : (
-                  "Konfirmasi Pendaftaran"
-                )}
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => { setIsOpen(false); forceUnlockUI(); }} className="rounded-xl">Batal</Button>
+              <Button onClick={handleRegisterStaff} disabled={isRegistering} className="rounded-xl px-8 shadow-lg shadow-primary/20">
+                {isRegistering ? <span className="animate-pulse">MEMPROSES...</span> : "Konfirmasi"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="flex items-center gap-4 bg-card p-4 rounded-xl shadow-sm border-none">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="bg-transparent p-4 rounded-[2rem] border border-slate-200 dark:border-white/20">
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input 
             placeholder="Cari berdasarkan nama atau email..." 
-            className="pl-10 bg-white" 
+            className="pl-11 h-12 bg-background dark:bg-muted/20 border-slate-200 dark:border-white/10 rounded-full text-foreground font-medium" 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
       </div>
 
-      <Card className="border-none shadow-sm overflow-hidden">
+      <Card className="border-none shadow-sm overflow-hidden bg-transparent">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead>Petugas</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead className="text-right">Aksi</TableHead>
+            <TableRow className="bg-muted/50 border-b dark:border-white/10">
+              <TableHead className="text-[10px] font-black uppercase tracking-widest">Petugas</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest">Role</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest">Email</TableHead>
+              <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -302,25 +309,27 @@ export default function StaffPage() {
               </TableRow>
             ) : filteredStaff.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-10 text-muted-foreground">
+                <TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">
                   Tidak ada petugas ditemukan.
                 </TableCell>
               </TableRow>
             ) : filteredStaff.map((person) => (
-              <TableRow key={person.id}>
+              <TableRow key={person.id} className="hover:bg-muted/30 border-b dark:border-white/5">
                 <TableCell>
-                  <div className="font-semibold">{person.name}</div>
+                  <div className="font-bold">{person.name}</div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={person.role === 'Admin' ? 'default' : 'secondary'} className="gap-1">
-                    <Shield className="h-3 w-3" />
+                  <Badge variant="outline" className={cn(
+                    "h-5 px-2 text-[9px] font-black border-none uppercase",
+                    person.role === 'Admin' ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
+                  )}>
                     {person.role.toUpperCase()}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="h-3 w-3" />
-                    <span className="text-sm">{person.email}</span>
+                  <div className="flex items-center gap-2 text-muted-foreground font-medium">
+                    <Mail className="h-3 w-3 opacity-60" />
+                    <span className="text-xs">{person.email}</span>
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
@@ -328,25 +337,28 @@ export default function StaffPage() {
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="text-primary hover:text-primary hover:bg-primary/10 gap-2"
+                      className="h-8 text-primary hover:bg-primary/10 gap-2 font-bold text-xs rounded-lg"
                       onClick={() => handleSendResetEmail(person.email, person.id)}
                       disabled={isSendingReset === person.id}
                     >
                       {isSendingReset === person.id ? (
-                         <span className="animate-pulse">Mengirim...</span>
+                         <Loader2 className="h-3 w-3 animate-spin" />
                       ) : (
-                        <KeyRound className="h-4 w-4" />
+                        <KeyRound className="h-3 w-3" />
                       )}
-                      <span className="hidden sm:inline">Reset Email</span>
+                      <span>Reset Email</span>
                     </Button>
-                    <DropdownMenu>
+                    <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem className="gap-2 text-destructive" onClick={() => handleDeleteStaff(person.id)}>
+                      <DropdownMenuContent align="end" className="z-50">
+                        <DropdownMenuItem className="gap-2 text-destructive font-bold" onSelect={(e) => {
+                          e.preventDefault();
+                          if(confirm("Hapus petugas ini?")) handleDeleteStaff(person.id);
+                        }}>
                           <Trash2 className="h-4 w-4" /> Hapus
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -358,6 +370,9 @@ export default function StaffPage() {
           </TableBody>
         </Table>
       </Card>
+      <div className="text-center py-6 opacity-30">
+        <p className="text-[10px] font-black uppercase tracking-widest">© 2026 Lantera Baca</p>
+      </div>
     </div>
   )
 }
