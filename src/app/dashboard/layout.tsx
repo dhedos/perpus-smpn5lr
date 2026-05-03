@@ -1,4 +1,3 @@
-
 "use client"
 
 import { SidebarNav } from "@/components/dashboard/SidebarNav"
@@ -21,7 +20,6 @@ export default function DashboardLayout({
   const [isMounted, setIsMounted] = useState(false)
   const [logoLoaded, setLogoLoaded] = useState(false)
 
-  // Pre-load branding from window object
   const [branding, setBranding] = useState<{logoUrl: string, libraryName: string, librarySubtitle: string} | null>(null)
 
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])

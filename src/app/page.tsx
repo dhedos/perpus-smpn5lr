@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -43,7 +42,6 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState("")
   const [isSendingReset, setIsSendingReset] = useState(false)
 
-  // Pre-load branding from window object injected by layout.tsx
   const [branding, setBranding] = useState<{logoUrl: string, libraryName: string, librarySubtitle: string} | null>(null)
 
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
@@ -51,13 +49,11 @@ export default function LoginPage() {
 
   useEffect(() => {
     setIsMounted(true)
-    // Instant load from window object
     if (typeof window !== 'undefined' && (window as any).__BRANDING__) {
       setBranding((window as any).__BRANDING__)
     }
   }, [])
 
-  // Sync settings when they arrive from Firestore
   useEffect(() => {
     if (settings) {
       setBranding({

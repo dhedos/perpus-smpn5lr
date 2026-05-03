@@ -1,4 +1,3 @@
-
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
@@ -19,7 +18,7 @@ async function getBranding() {
       const fields = data.fields;
       if (fields) {
         return {
-          logoUrl: fields.libraryLogoUrl?.stringValue || 'https://picsum.photos/seed/librarylogo/128/128',
+          logoUrl: fields.libraryLogoUrl?.stringValue || '',
           libraryName: fields.libraryName?.stringValue || 'LANTERA BACA',
           librarySubtitle: fields.librarySubtitle?.stringValue || 'SMPN 5 LANGKE REMBONG'
         };
@@ -29,7 +28,7 @@ async function getBranding() {
     console.warn('Branding fetch failed, using defaults');
   }
   return {
-    logoUrl: 'https://picsum.photos/seed/librarylogo/128/128',
+    logoUrl: '',
     libraryName: 'LANTERA BACA',
     librarySubtitle: 'SMPN 5 LANGKE REMBONG'
   };
@@ -41,13 +40,11 @@ export async function generateMetadata(): Promise<Metadata> {
     title: `${branding.libraryName} - ${branding.librarySubtitle}`,
     description: `Sistem Informasi Perpustakaan Modern ${branding.libraryName} ${branding.librarySubtitle}.`,
     icons: {
-      icon: [
+      icon: branding.logoUrl ? [
         { url: branding.logoUrl, sizes: '32x32' },
         { url: branding.logoUrl, sizes: '192x192' },
         { url: branding.logoUrl, sizes: '512x512' }
-      ],
-      shortcut: branding.logoUrl,
-      apple: branding.logoUrl,
+      ] : [],
     },
   };
 }

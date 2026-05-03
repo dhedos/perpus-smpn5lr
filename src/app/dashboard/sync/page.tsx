@@ -1,4 +1,3 @@
-
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -14,7 +13,6 @@ import {
   MousePointer2, 
   Globe, 
   FileSpreadsheet, 
-  Loader2,
   ExternalLink,
   Table as TableIcon,
   Users,
@@ -130,18 +128,18 @@ export default function SyncPage() {
         if (authError.code === 'auth/unauthorized-domain') {
           toast({ 
             title: "Domain Belum Diizinkan", 
-            description: "Domain Anda belum ditambahkan ke list 'Authorized Domains' di Firebase Console.",
+            description: "Silakan tambahkan domain vercel ke 'Authorized Domains' di Firebase Console.",
             variant: "destructive"
           });
-          throw new Error("Domain tidak diizinkan. Cek Firebase Console.");
+          return;
         }
         if (authError.code === 'auth/popup-blocked') {
           setShowPopupGuide(true);
-          throw new Error("Popup diblokir browser.");
+          return;
         }
         if (authError.code === 'auth/popup-closed-by-user') {
           setShowUnverifiedGuide(true);
-          throw new Error("Proses login ditutup.");
+          return;
         }
         throw authError;
       }
@@ -218,13 +216,11 @@ export default function SyncPage() {
 
     } catch (error: any) {
       console.error("Sheets Sync Error:", error);
-      if (error.message !== "Popup diblokir browser." && error.message !== "Proses login ditutup.") {
-        toast({ 
-          title: "Status Sinkronisasi", 
-          description: error.message || "Gagal menghubungi Google Cloud.", 
-          variant: "destructive" 
-        });
-      }
+      toast({ 
+        title: "Sinkronisasi Gagal", 
+        description: error.message || "Terjadi kesalahan koneksi.", 
+        variant: "destructive" 
+      });
     } finally {
       setIsSyncingToSheets(false);
     }
@@ -388,7 +384,7 @@ export default function SyncPage() {
                   onClick={handleSyncToGoogleSheets}
                   disabled={isSyncingToSheets || !books || !members}
                 >
-                  {isSyncingToSheets ? <Loader2 className="h-5 w-5 animate-spin" /> : <RefreshCw className="h-5 w-5" />}
+                  {isSyncingToSheets ? <RefreshCw className="h-5 w-5 animate-spin" /> : <RefreshCw className="h-5 w-5" />}
                   {isSyncingToSheets ? "Menyambungkan..." : "Mulai Sinkronisasi"}
                 </Button>
                 {lastSheetUrl && (
