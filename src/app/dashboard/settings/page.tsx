@@ -220,6 +220,23 @@ export default function SettingsPage() {
                       <Input type="number" value={settings.fineAmount} onChange={(e) => setSettings({ ...settings, fineAmount: Number(e.target.value) })} className="bg-background border-orange-200 dark:border-orange-800 h-14 text-xl font-black text-orange-600 rounded-l-none rounded-r-2xl border-l-0" />
                     </div>
                   </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-primary/10 mt-2">
+                    <div className="grid gap-3">
+                      <Label className="flex items-center gap-2 font-black text-[10px] uppercase tracking-widest text-orange-600"><ShieldAlert className="h-3 w-3" /> Denda Buku Rusak</Label>
+                      <div className="flex items-center">
+                        <div className="bg-orange-50 dark:bg-orange-950/50 px-3 h-12 flex items-center rounded-l-xl font-black text-orange-600 border-y border-l border-orange-200 dark:border-orange-800">Rp</div>
+                        <Input type="number" value={settings.damagedBookFine} onChange={(e) => setSettings({ ...settings, damagedBookFine: Number(e.target.value) })} className="bg-background border-orange-200 dark:border-orange-800 h-12 text-base font-black text-orange-600 rounded-l-none rounded-r-xl border-l-0" />
+                      </div>
+                    </div>
+                    <div className="grid gap-3">
+                      <Label className="flex items-center gap-2 font-black text-[10px] uppercase tracking-widest text-red-600"><Ghost className="h-3 w-3" /> Denda Buku Hilang</Label>
+                      <div className="flex items-center">
+                        <div className="bg-red-50 dark:bg-red-950/50 px-3 h-12 flex items-center rounded-l-xl font-black text-red-600 border-y border-l border-red-200 dark:border-red-800">Rp</div>
+                        <Input type="number" value={settings.lostBookFine} onChange={(e) => setSettings({ ...settings, lostBookFine: Number(e.target.value) })} className="bg-background border-red-200 dark:border-red-800 h-12 text-base font-black text-red-600 rounded-l-none rounded-r-xl border-l-0" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
               
