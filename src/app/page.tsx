@@ -5,10 +5,10 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ShieldCheck, AlertCircle, Chrome, Library } from "lucide-react"
+import { ShieldCheck, AlertCircle, Library } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth, useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from "@/firebase"
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from "firebase/auth"
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth"
 import { collection, doc, setDoc, query, limit, getDoc } from "firebase/firestore"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
@@ -87,34 +87,11 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password)
     } catch (error: any) {
-      toast({ title: "Gagal Masuk", description: "Email atau kata sandi salah.", variant: "destructive" })
-      setLoading(false)
-    }
-  }
-
-  const handleGoogleLogin = async () => {
-    if (!auth || !db) return
-    setLoading(true)
-    try {
-      const provider = new GoogleAuthProvider()
-      const result = await signInWithPopup(auth, provider)
-      const userResult = result.user
-      const userDocRef = doc(db, "users", userResult.uid)
-      const userDoc = await getDoc(userDocRef)
-      
-      if (!userDoc.exists()) {
-        const role = noUsersExist ? "Admin" : "Staff"
-        await setDoc(userDocRef, {
-          id: userResult.uid,
-          name: userResult.displayName || "User Baru",
-          email: userResult.email,
-          role: role,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        })
-      }
-    } catch (error: any) {
-      toast({ title: "Gagal Login Google", description: error.message, variant: "destructive" })
+      toast({ 
+        title: "Gagal Masuk", 
+        description: "Email atau kata sandi salah. Pastikan akun sudah didaftarkan oleh Administrator.", 
+        variant: "destructive" 
+      })
       setLoading(false)
     }
   }
@@ -145,7 +122,7 @@ export default function LoginPage() {
     setIsSendingReset(true)
     try {
       await sendPasswordResetEmail(auth, resetEmail)
-      toast({ title: "Email Terkirim", description: "Cek kotak masuk Anda." })
+      toast({ title: "Email Terkirim", description: "Tautan pengaturan ulang kata sandi telah dikirim ke email Anda." })
       setIsResetOpen(false)
     } catch (error: any) {
       toast({ title: "Gagal", description: error.message, variant: "destructive" })
@@ -247,20 +224,6 @@ export default function LoginPage() {
               {loading ? <span className="animate-pulse">MEMPROSES...</span> : isSetupMode ? "AKTIFKAN ADMIN UTAMA" : "MASUK KE SISTEM"}
             </Button>
           </form>
-
-          {!isSetupMode && (
-            <>
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-100 dark:border-white/5"></span></div>
-                <div className="relative flex justify-center text-[10px] uppercase font-black text-muted-foreground/40">
-                  <span className="bg-card px-3">Atau Akses Cepat</span>
-                </div>
-              </div>
-              <Button variant="outline" className="w-full h-12 gap-2 font-bold rounded-xl border-slate-200 dark:border-white/10 hover:bg-muted" onClick={handleGoogleLogin} disabled={loading}>
-                <Chrome className="h-5 w-5 text-red-500" /> Masuk dengan Google
-              </Button>
-            </>
-          )}
         </CardContent>
 
         <CardFooter className="flex flex-col gap-4 bg-muted/30 p-6 border-t dark:border-white/5">
@@ -279,7 +242,7 @@ export default function LoginPage() {
           <form onSubmit={handleSendResetEmail}>
             <DialogHeader>
               <DialogTitle className="font-black uppercase tracking-tight text-primary">Reset Kata Sandi</DialogTitle>
-              <DialogDescription className="text-xs">Kami akan mengirimkan tautan pemulihan ke email Anda.</DialogDescription>
+              <DialogDescription className="text-xs">Kami akan mengirimkan tautan pemulihan ke email Anda jika sudah terdaftar.</DialogDescription>
             </DialogHeader>
             <div className="py-6 space-y-4">
               <div className="space-y-2">
@@ -289,7 +252,7 @@ export default function LoginPage() {
             </div>
             <DialogFooter>
               <Button type="submit" disabled={isSendingReset} className="w-full h-11 font-bold rounded-xl">
-                {isSendingReset ? "Mengirim..." : "Kirim Tautan"}
+                {isSendingReset ? "Mengirim..." : "Kirim Tautan Pemulihan"}
               </Button>
             </DialogFooter>
           </form>
