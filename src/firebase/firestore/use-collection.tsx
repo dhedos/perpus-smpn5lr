@@ -84,24 +84,29 @@ export function useCollection<T = any>(
         setError(null);
         setIsLoading(false);
       },
-      (error: FirestoreError) => {
+      (fError: FirestoreError) => {
         // This logic extracts the path from either a ref or a query
         const path: string =
           memoizedTargetRefOrQuery.type === 'collection'
             ? (memoizedTargetRefOrQuery as CollectionReference).path
             : (memoizedTargetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString()
 
-        const contextualError = new FirestorePermissionError({
-          operation: 'list',
-          path,
-        })
-
-        setError(contextualError)
-        setData(null)
-        setIsLoading(false)
-
-        // trigger global error propagation
-        errorEmitter.emit('permission-error', contextualError);
+        // HANYA lempar galat keamanan ke listener global. 
+        // Galat jaringan (seperti timeout) ditangani secara lokal tanpa menghentikan aplikasi.
+        if (fError.code === 'permission-denied') {
+          const contextualError = new FirestorePermissionError({
+            operation: 'list',
+            path,
+          });
+          setError(contextualError);
+          errorEmitter.emit('permission-error', contextualError);
+        } else {
+          setError(fError);
+          // Log peringatan jaringan di konsol (bukan error fatal)
+          console.warn(`Firestore network issue (${fError.code}): ${fError.message}`);
+        }
+        
+        setIsLoading(false);
       }
     );
 

@@ -16,6 +16,7 @@ export function initializeFirebase() {
 
     if (typeof window !== 'undefined') {
       try {
+        // Inisialisasi Firestore dengan polling panjang untuk stabilitas koneksi di lingkungan workstation/proxy
         initializeFirestore(firebaseApp, {
           localCache: persistentLocalCache({
             tabManager: persistentMultipleTabManager()
@@ -23,7 +24,7 @@ export function initializeFirebase() {
           experimentalForceLongPolling: true,
         });
       } catch (e) {
-        console.warn('Firestore initialization adjustment failed:', e);
+        console.warn('Firestore initialization adjustment skipped (already initialized):', e);
       }
     }
 
