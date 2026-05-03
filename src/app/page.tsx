@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { ShieldCheck, AlertCircle, Library } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth, useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from "@/firebase"
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth"
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, updateProfile } from "firebase/auth"
 import { collection, doc, setDoc, query, limit, getDoc } from "firebase/firestore"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
@@ -89,7 +89,7 @@ export default function LoginPage() {
     } catch (error: any) {
       toast({ 
         title: "Gagal Masuk", 
-        description: "Email atau kata sandi salah. Pastikan akun sudah didaftarkan oleh Administrator.", 
+        description: "Email atau kata sandi salah. Silakan hubungi Administrator untuk mendaftarkan akun.", 
         variant: "destructive" 
       })
       setLoading(false)
@@ -102,6 +102,13 @@ export default function LoginPage() {
     setLoading(true)
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      
+      // Update profile di Firebase Auth
+      await updateProfile(userCredential.user, {
+        displayName: adminName
+      })
+
+      // Simpan di Firestore
       await setDoc(doc(db, "users", userCredential.user.uid), {
         id: userCredential.user.uid,
         name: adminName,
@@ -110,6 +117,8 @@ export default function LoginPage() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       })
+      
+      toast({ title: "Admin Siap!", description: "Akun Admin Utama telah terdaftar." })
     } catch (error: any) {
       toast({ title: "Setup Gagal", description: error.message, variant: "destructive" })
       setLoading(false)
@@ -125,7 +134,7 @@ export default function LoginPage() {
       toast({ title: "Email Terkirim", description: "Tautan pengaturan ulang kata sandi telah dikirim ke email Anda." })
       setIsResetOpen(false)
     } catch (error: any) {
-      toast({ title: "Gagal", description: error.message, variant: "destructive" })
+      toast({ title: "Gagal", description: "Email tidak ditemukan atau terjadi gangguan koneksi.", variant: "destructive" })
     } finally {
       setIsSendingReset(false)
     }
@@ -242,7 +251,7 @@ export default function LoginPage() {
           <form onSubmit={handleSendResetEmail}>
             <DialogHeader>
               <DialogTitle className="font-black uppercase tracking-tight text-primary">Reset Kata Sandi</DialogTitle>
-              <DialogDescription className="text-xs">Kami akan mengirimkan tautan pemulihan ke email Anda jika sudah terdaftar.</DialogDescription>
+              <DialogDescription className="text-xs">Tautan pemulihan akan dikirim ke email terdaftar.</DialogDescription>
             </DialogHeader>
             <div className="py-6 space-y-4">
               <div className="space-y-2">

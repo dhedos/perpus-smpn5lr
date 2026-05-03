@@ -60,7 +60,7 @@ import { collection, doc, deleteDoc, updateDoc, setDoc, query, where } from "fir
 import { FirestorePermissionError, type SecurityRuleContext } from "@/firebase/errors"
 import { useToast } from "@/hooks/use-toast"
 import { initializeApp, deleteApp } from "firebase/app"
-import { sendPasswordResetEmail, getAuth, createUserWithEmailAndPassword } from "firebase/auth"
+import { sendPasswordResetEmail, getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth"
 import { firebaseConfig } from "@/firebase/config"
 
 export default function StaffPage() {
@@ -123,6 +123,7 @@ export default function StaffPage() {
     const secondaryAuth = getAuth(secondaryApp)
 
     try {
+      // 1. Buat Akun di Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
         secondaryAuth, 
         formData.email, 
@@ -130,6 +131,12 @@ export default function StaffPage() {
       )
       const uid = userCredential.user.uid
 
+      // 2. Set Profile Display Name di Auth
+      await updateProfile(userCredential.user, {
+        displayName: formData.name
+      })
+
+      // 3. Simpan Detail Lengkap ke Database Firestore
       const userDocRef = doc(db, 'users', uid)
       await setDoc(userDocRef, {
         id: uid,
@@ -142,9 +149,10 @@ export default function StaffPage() {
 
       toast({ 
         title: "Berhasil!", 
-        description: `Petugas ${formData.name} telah didaftarkan.` 
+        description: `Petugas ${formData.name} telah terdaftar permanen di database.` 
       })
       
+      // Kirim email instruksi pemulihan jika diperlukan
       await sendPasswordResetEmail(auth, formData.email)
       
       setIsOpen(false)
@@ -200,7 +208,7 @@ export default function StaffPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold font-headline tracking-tight text-primary">Petugas Perpustakaan</h1>
-          <p className="text-muted-foreground text-sm">Kelola akses petugas dan kirim instruksi pemulihan via email.</p>
+          <p className="text-muted-foreground text-sm">Kelola akses petugas dan sinkronisasi database akun.</p>
         </div>
         
         <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) forceUnlockUI(); }}>
@@ -210,11 +218,11 @@ export default function StaffPage() {
               Daftarkan Petugas
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md bg-white dark:bg-slate-900 border-none rounded-[2rem]">
+          <DialogContent className="max-w-md bg-background border-none rounded-[2rem]">
             <DialogHeader>
-              <DialogTitle className="text-primary font-black uppercase">Pendaftaran Petugas</DialogTitle>
+              <DialogTitle className="text-primary font-black uppercase">Pendaftaran Petugas Baru</DialogTitle>
               <DialogDescription>
-                Petugas akan menerima email untuk mengatur kata sandi mereka sendiri.
+                Akun akan langsung terdaftar di database utama dan Firebase Auth.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -272,7 +280,7 @@ export default function StaffPage() {
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={() => { setIsOpen(false); forceUnlockUI(); }} className="rounded-xl">Batal</Button>
               <Button onClick={handleRegisterStaff} disabled={isRegistering} className="rounded-xl px-8 shadow-lg shadow-primary/20">
-                {isRegistering ? <span className="animate-pulse">MEMPROSES...</span> : "Konfirmasi"}
+                {isRegistering ? <span className="animate-pulse">MENDAFTARKAN...</span> : "Konfirmasi Daftar"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -305,7 +313,7 @@ export default function StaffPage() {
             {loading ? (
               <TableRow>
                 <TableCell colSpan={4} className="text-center py-20">
-                   <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] animate-pulse duration-[2000ms]">Memuat Data...</p>
+                   <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] animate-pulse duration-[2000ms]">Memuat Database...</p>
                 </TableCell>
               </TableRow>
             ) : filteredStaff.length === 0 ? (
@@ -347,7 +355,7 @@ export default function StaffPage() {
                       ) : (
                         <KeyRound className="h-3 w-3" />
                       )}
-                      <span>Reset Email</span>
+                      <span>Reset Sandi</span>
                     </Button>
                     <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
                       <DropdownMenuTrigger asChild>
@@ -358,9 +366,9 @@ export default function StaffPage() {
                       <DropdownMenuContent align="end" className="z-50">
                         <DropdownMenuItem className="gap-2 text-destructive font-bold" onSelect={(e) => {
                           e.preventDefault();
-                          if(confirm("Hapus petugas ini?")) handleDeleteStaff(person.id);
+                          if(confirm("Hapus petugas ini dari database?")) handleDeleteStaff(person.id);
                         }}>
-                          <Trash2 className="h-4 w-4" /> Hapus
+                          <Trash2 className="h-4 w-4" /> Hapus Permanen
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
