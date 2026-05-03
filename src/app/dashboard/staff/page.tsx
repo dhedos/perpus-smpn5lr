@@ -30,7 +30,9 @@ import {
   Loader2,
   Eye,
   EyeOff,
-  AlertCircle
+  AlertCircle,
+  RefreshCcw,
+  ShieldAlert
 } from "lucide-react"
 import { 
   Dialog, 
@@ -103,10 +105,10 @@ export default function StaffPage() {
 
   const { data: allUsers, loading } = useCollection(usersCollectionRef)
   
+  // TAMPILKAN SEMUA PENGGUNA (Hapus filter role agar akun yang datanya rusak tetap terlihat)
   const staffMembers = useMemo(() => {
     if (!allUsers) return []
-    // Menampilkan semua yang memiliki role, agar Admin bisa melihat siapa saja yang aktif
-    return allUsers.filter(u => u.role === 'Admin' || u.role === 'Staff')
+    return allUsers;
   }, [allUsers])
 
   const filteredStaff = useMemo(() => {
@@ -123,69 +125,61 @@ export default function StaffPage() {
       return
     }
 
-    // CEK DUPLIKASI DI DATABASE (FIRESTORE)
-    // Ini mencegah Admin tidak sengaja menimpa akunnya sendiri atau orang lain
-    const isEmailExistsInDb = allUsers?.some(u => u.email?.toLowerCase() === formData.email.toLowerCase())
-    if (isEmailExistsInDb) {
-      toast({ 
-        title: "Email Sudah Terdaftar", 
-        description: `Petugas dengan email ${formData.email} sudah ada di database. Silakan gunakan email lain.`, 
-        variant: "destructive" 
-      })
-      return
-    }
-
+    const existingUserInDb = allUsers?.find(u => u.email?.toLowerCase() === formData.email.toLowerCase())
+    
     setIsRegistering(true)
     const secondaryApp = initializeApp(firebaseConfig, 'SecondaryRegistration')
     const secondaryAuth = getAuth(secondaryApp)
 
     try {
-      let uid = ""
-      try {
-        // Mencoba membuat user baru di Firebase Auth
-        const userCredential = await createUserWithEmailAndPassword(
-          secondaryAuth, 
-          formData.email, 
-          formData.password
-        )
-        uid = userCredential.user.uid
+      let uid = existingUserInDb?.id || ""
+      
+      // Jika akun tidak ada di DB, kita coba buat di Auth
+      if (!uid) {
+        try {
+          const userCredential = await createUserWithEmailAndPassword(
+            secondaryAuth, 
+            formData.email, 
+            formData.password
+          )
+          uid = userCredential.user.uid
 
-        await updateProfile(userCredential.user, {
-          displayName: formData.name
-        })
-      } catch (authError: any) {
-        // KASUS KHUSUS: Email sudah ada di Auth (kunci login ada) tapi tidak ada di Database (Firestore)
-        if (authError.code === 'auth/email-already-in-use') {
-          try {
-            // Kita coba login dengan email/pass yang baru diketik untuk mendapatkan UID
-            const loginResult = await signInWithEmailAndPassword(secondaryAuth, formData.email, formData.password)
-            uid = loginResult.user.uid
-          } catch (loginError: any) {
-            // Jika login gagal, berarti password salah atau ada error lain
-            if (loginError.code === 'auth/wrong-password' || loginError.code === 'auth/invalid-credential') {
-              throw new Error("Email ini sudah terdaftar di sistem keamanan, namun kata sandi yang Anda masukkan salah untuk melakukan sinkronisasi ulang.")
+          await updateProfile(userCredential.user, {
+            displayName: formData.name
+          })
+        } catch (authError: any) {
+          // Jika email sudah ada di Auth (stuck/yatim)
+          if (authError.code === 'auth/email-already-in-use') {
+            try {
+              // Coba login untuk dapat UID agar bisa nulis ke Firestore
+              const loginResult = await signInWithEmailAndPassword(secondaryAuth, formData.email, formData.password)
+              uid = loginResult.user.uid
+            } catch (loginError: any) {
+              if (loginError.code === 'auth/wrong-password' || loginError.code === 'auth/invalid-credential') {
+                throw new Error("Akun ini sudah ada di sistem keamanan. Masukkan kata sandi yang benar untuk memulihkan datanya ke database.")
+              }
+              throw authError
             }
+          } else {
             throw authError
           }
-        } else {
-          throw authError
         }
       }
 
-      // TULIS/SINKRONKAN KE DATABASE (FIRESTORE)
+      // TULIS / PERBARUI KE DATABASE
       const userDocRef = doc(db, 'users', uid)
       await setDoc(userDocRef, {
         id: uid,
         name: formData.name,
         email: formData.email,
         role: formData.role,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        createdAt: existingUserInDb?.createdAt || new Date().toISOString()
       }, { merge: true })
 
       toast({ 
-        title: "Berhasil!", 
-        description: `Akun ${formData.name} telah aktif dan terdaftar di database.` 
+        title: existingUserInDb ? "Profil Diperbarui" : "Pendaftaran Berhasil", 
+        description: `Akun ${formData.name} kini terdaftar aktif di database.` 
       })
       
       setIsOpen(false)
@@ -196,7 +190,7 @@ export default function StaffPage() {
       console.error("Registration error:", error)
       toast({ 
         title: "Pendaftaran Gagal", 
-        description: error.message || "Terjadi kesalahan saat menghubungi server.", 
+        description: error.message || "Terjadi kesalahan saat sinkronisasi.", 
         variant: "destructive" 
       })
     } finally {
@@ -212,14 +206,10 @@ export default function StaffPage() {
       await sendPasswordResetEmail(auth, email)
       toast({ 
         title: "Email Terkirim", 
-        description: `Tautan pemulihan kata sandi telah dikirim ke alamat: ${email}.` 
+        description: `Tautan reset sandi telah dikirim ke: ${email}.` 
       })
     } catch (error: any) {
-      toast({ 
-        title: "Gagal Mengirim", 
-        description: error.message, 
-        variant: "destructive" 
-      })
+      toast({ title: "Gagal Mengirim", description: error.message, variant: "destructive" })
     } finally {
       setIsSendingReset(null)
     }
@@ -229,13 +219,9 @@ export default function StaffPage() {
     if (!db) return
     const userDocRef = doc(db, 'users', id)
     deleteDoc(userDocRef).catch(async (error) => {
-       const permissionError = new FirestorePermissionError({
-        path: userDocRef.path,
-        operation: 'delete',
-      } satisfies SecurityRuleContext);
-      errorEmitter.emit('permission-error', permissionError);
+      errorEmitter.emit('permission-error', new FirestorePermissionError({path: userDocRef.path, operation: 'delete'}));
     })
-    toast({ title: "Terhapus", description: "Petugas telah dihapus dari database." })
+    toast({ title: "Terhapus", description: "Akun telah dihapus dari database." })
   }
 
   return (
@@ -243,7 +229,7 @@ export default function StaffPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold font-headline tracking-tight text-primary">Petugas Perpustakaan</h1>
-          <p className="text-muted-foreground text-sm">Kelola akses petugas dan verifikasi status database akun.</p>
+          <p className="text-muted-foreground text-sm">Manajemen akses dan sinkronisasi profil database petugas.</p>
         </div>
         
         <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) forceUnlockUI(); }}>
@@ -255,9 +241,9 @@ export default function StaffPage() {
           </DialogTrigger>
           <DialogContent className="max-w-md bg-background border-none rounded-[2rem] shadow-2xl">
             <DialogHeader>
-              <DialogTitle className="text-primary font-black uppercase text-xl">Pendaftaran Petugas Baru</DialogTitle>
+              <DialogTitle className="text-primary font-black uppercase text-xl">Registrasi / Pemulihan Akun</DialogTitle>
               <DialogDescription>
-                Data akan langsung disinkronkan ke Cloud Firestore dan sistem keamanan.
+                Jika akun sudah ada di Authentication namun tidak muncul, masukkan email dan sandinya untuk sinkronisasi ulang.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-5 py-4">
@@ -322,7 +308,7 @@ export default function StaffPage() {
             <DialogFooter className="gap-2 border-t pt-5">
               <Button variant="outline" onClick={() => { setIsOpen(false); forceUnlockUI(); }} className="rounded-xl">Batal</Button>
               <Button onClick={handleRegisterStaff} disabled={isRegistering} className="rounded-xl px-8 shadow-lg shadow-primary/20 font-black transition-all active:scale-95">
-                {isRegistering ? <span className="animate-pulse">SINKRONISASI...</span> : "Konfirmasi Daftar"}
+                {isRegistering ? <span className="animate-pulse">SINKRONISASI...</span> : "Konfirmasi Data"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -333,7 +319,7 @@ export default function StaffPage() {
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input 
-            placeholder="Cari berdasarkan nama atau email petugas..." 
+            placeholder="Cari petugas berdasarkan nama atau email..." 
             className="pl-11 h-12 bg-background dark:bg-muted/10 border-slate-300 dark:border-white/10 rounded-full text-foreground font-medium" 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -346,36 +332,34 @@ export default function StaffPage() {
           <TableHeader>
             <TableRow className="bg-muted/50 border-b dark:border-white/10">
               <TableHead className="text-[10px] font-black uppercase tracking-widest">Nama Petugas</TableHead>
-              <TableHead className="text-[10px] font-black uppercase tracking-widest">Peran</TableHead>
-              <TableHead className="text-[10px] font-black uppercase tracking-widest">Email</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest">Peran / Status</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest">Email Terdaftar</TableHead>
               <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center py-20">
-                   <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] animate-pulse duration-[2000ms]">Memuat Database...</p>
-                </TableCell>
-              </TableRow>
+              <TableRow><TableCell colSpan={4} className="text-center py-20"><p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] animate-pulse">Memuat Database...</p></TableCell></TableRow>
             ) : filteredStaff.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">
-                  Belum ada petugas terdaftar di database.
-                </TableCell>
-              </TableRow>
+              <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">Belum ada akun di database.</TableCell></TableRow>
             ) : filteredStaff.map((person) => (
               <TableRow key={person.id} className="hover:bg-muted/30 border-b dark:border-white/5">
                 <TableCell>
-                  <div className="font-bold">{person.name}</div>
+                  <div className="font-bold">{person.name || person.email?.split('@')[0] || "Tanpa Nama"}</div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline" className={cn(
-                    "h-5 px-2 text-[9px] font-black border-none uppercase",
-                    person.role === 'Admin' ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
-                  )}>
-                    {person.role?.toUpperCase()}
-                  </Badge>
+                  {person.role ? (
+                    <Badge variant="outline" className={cn(
+                      "h-5 px-2 text-[9px] font-black border-none uppercase",
+                      person.role === 'Admin' ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
+                    )}>
+                      {person.role?.toUpperCase()}
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive" className="h-5 px-2 text-[8px] font-black animate-pulse border-none uppercase">
+                      TIDAK ADA AKSES
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2 text-muted-foreground font-medium">
@@ -385,6 +369,19 @@ export default function StaffPage() {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
+                    {!person.role && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 text-orange-600 hover:bg-orange-50 gap-2 font-bold text-[10px] rounded-lg"
+                        onClick={() => {
+                          setFormData({ ...formData, email: person.email, name: person.name || "" });
+                          setIsOpen(true);
+                        }}
+                      >
+                        <RefreshCcw className="h-3 w-3" /> Sinkron
+                      </Button>
+                    )}
                     <Button 
                       variant="ghost" 
                       size="sm" 
@@ -392,25 +389,19 @@ export default function StaffPage() {
                       onClick={() => handleSendResetEmail(person.email, person.id)}
                       disabled={isSendingReset === person.id}
                     >
-                      {isSendingReset === person.id ? (
-                         <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <KeyRound className="h-3 w-3" />
-                      )}
-                      <span>Reset Sandi</span>
+                      {isSendingReset === person.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <KeyRound className="h-3 w-3" />}
+                      <span className="hidden sm:inline">Reset</span>
                     </Button>
                     <DropdownMenu onOpenChange={(open) => { if(!open) forceUnlockUI(); }}>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
+                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted"><MoreVertical className="h-4 w-4" /></Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="z-50">
                         <DropdownMenuItem className="gap-2 text-destructive font-bold" onSelect={(e) => {
                           e.preventDefault();
-                          if(confirm(`Hapus ${person.name} dari database?`)) handleDeleteStaff(person.id);
+                          if(confirm(`Hapus ${person.name || person.email} dari database?`)) handleDeleteStaff(person.id);
                         }}>
-                          <Trash2 className="h-4 w-4" /> Hapus Petugas
+                          <Trash2 className="h-4 w-4" /> Hapus Akun
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -422,14 +413,13 @@ export default function StaffPage() {
         </Table>
       </Card>
       
-      {allUsers && allUsers.length > 0 && allUsers.some(u => !u.role) && (
-        <div className="p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900 rounded-2xl flex items-center gap-4">
-           <AlertCircle className="h-5 w-5 text-orange-600" />
-           <p className="text-xs text-orange-800 dark:text-orange-300 font-medium">
-             Terdapat akun di database tanpa peran (*role*). Gunakan tombol "Daftarkan Petugas" dengan email yang sama untuk memulihkan profil mereka.
-           </p>
-        </div>
-      )}
+      <Alert className="bg-blue-50 border-blue-200 text-blue-800 rounded-2xl">
+         <ShieldAlert className="h-5 w-5 text-blue-600" />
+         <AlertTitle className="font-bold text-xs">INFO DATABASE</AlertTitle>
+         <AlertDescription className="text-[10px] font-medium leading-relaxed">
+           Halaman ini menampilkan seluruh pengguna yang terdaftar di Firestore. Jika sebuah akun ada di Firebase Authentication namun datanya tidak masuk ke database, gunakan tombol <b>Daftarkan Petugas</b> dengan email yang sama untuk memulihkan aksesnya secara otomatis.
+         </AlertDescription>
+      </Alert>
 
       <div className="text-center py-6 opacity-30">
         <p className="text-[10px] font-black uppercase tracking-widest">© 2026 Lantera Baca</p>
