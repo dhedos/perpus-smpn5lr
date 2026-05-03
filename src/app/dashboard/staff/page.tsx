@@ -27,7 +27,9 @@ import {
   KeyRound,
   Send,
   X,
-  Loader2
+  Loader2,
+  Eye,
+  EyeOff
 } from "lucide-react"
 import { 
   Dialog, 
@@ -71,6 +73,7 @@ export default function StaffPage() {
   const [isOpen, setIsOpen] = useState(false)
   const [isRegistering, setIsRegistering] = useState(false)
   const [isSendingReset, setIsSendingReset] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
 
   const [formData, setFormData] = useState({
     name: "",
@@ -137,12 +140,10 @@ export default function StaffPage() {
         })
       } catch (authError: any) {
         if (authError.code === 'auth/email-already-in-use') {
-          // AUTO-REPAIR: Coba login di secondary app untuk ambil UID dan tulis Firestore
           try {
             const loginResult = await signInWithEmailAndPassword(secondaryAuth, formData.email, formData.password)
             uid = loginResult.user.uid
           } catch (loginError: any) {
-            // Jika login gagal (sandi salah), lempar error asli
             throw authError
           }
         } else {
@@ -167,15 +168,12 @@ export default function StaffPage() {
       
       setIsOpen(false)
       setFormData({ name: "", email: "", password: "", role: "Staff" })
+      setShowPassword(false)
       forceUnlockUI()
     } catch (error: any) {
-      let msg = error.message;
-      if (error.code === 'auth/email-already-in-use') {
-        msg = "Email sudah digunakan. Jika akun Firestore hilang, hapus dulu email ini di Firebase Console.";
-      }
       toast({ 
         title: "Pendaftaran Gagal", 
-        description: msg, 
+        description: "Firebase: Error (auth/email-already-in-use).", 
         variant: "destructive" 
       })
     } finally {
@@ -227,19 +225,19 @@ export default function StaffPage() {
         
         <Dialog open={isOpen} onOpenChange={(v) => { setIsOpen(v); if(!v) forceUnlockUI(); }}>
           <DialogTrigger asChild>
-            <Button className="gap-2 rounded-xl px-6 shadow-lg shadow-primary/20">
+            <Button className="gap-2 rounded-xl px-6 shadow-lg shadow-primary/20 transition-all active:scale-95">
               <UserPlus className="h-4 w-4" />
               Daftarkan Petugas
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md bg-background border-none rounded-[2rem]">
+          <DialogContent className="max-w-md bg-background border-none rounded-[2rem] shadow-2xl">
             <DialogHeader>
-              <DialogTitle className="text-primary font-black uppercase">Pendaftaran Petugas Baru</DialogTitle>
+              <DialogTitle className="text-primary font-black uppercase text-xl">Pendaftaran Petugas Baru</DialogTitle>
               <DialogDescription>
                 Akun akan langsung terdaftar di database utama dan Firebase Auth.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-5 py-4">
               <div className="space-y-2">
                 <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest px-1">Nama Lengkap</Label>
                 <Input 
@@ -282,18 +280,25 @@ export default function StaffPage() {
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
                   <Input 
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="Minimal 6 karakter" 
-                    className="pl-11 h-12 rounded-xl bg-muted/20 border-slate-300 dark:border-white/10"
+                    className="pl-11 pr-12 h-12 rounded-xl bg-muted/20 border-slate-300 dark:border-white/10"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   />
+                  <button 
+                    type="button" 
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-primary transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
                 </div>
               </div>
             </div>
-            <DialogFooter className="gap-2">
+            <DialogFooter className="gap-2 border-t pt-5">
               <Button variant="outline" onClick={() => { setIsOpen(false); forceUnlockUI(); }} className="rounded-xl">Batal</Button>
-              <Button onClick={handleRegisterStaff} disabled={isRegistering} className="rounded-xl px-8 shadow-lg shadow-primary/20 font-black">
+              <Button onClick={handleRegisterStaff} disabled={isRegistering} className="rounded-xl px-8 shadow-lg shadow-primary/20 font-black transition-all active:scale-95">
                 {isRegistering ? <span className="animate-pulse">MENDAFTARKAN...</span> : "Konfirmasi Daftar"}
               </Button>
             </DialogFooter>
@@ -306,7 +311,7 @@ export default function StaffPage() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input 
             placeholder="Cari berdasarkan nama atau email..." 
-            className="pl-11 h-12 bg-background dark:bg-muted/20 border-slate-300 dark:border-white/10 rounded-full text-foreground font-medium" 
+            className="pl-11 h-12 bg-background dark:bg-muted/10 border-slate-300 dark:border-white/10 rounded-full text-foreground font-medium" 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ShieldCheck, AlertCircle, Library, Mail, Lock } from "lucide-react"
+import { ShieldCheck, AlertCircle, Library, Mail, Lock, Eye, EyeOff } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth, useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from "@/firebase"
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, updateProfile } from "firebase/auth"
@@ -34,6 +34,7 @@ export default function LoginPage() {
   const [isMounted, setIsMounted] = useState(false)
   const [isSetupMode, setIsSetupMode] = useState(false)
   const [logoLoaded, setLogoLoaded] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -111,7 +112,6 @@ export default function LoginPage() {
         })
       } catch (authError: any) {
         if (authError.code === 'auth/email-already-in-use') {
-          // AUTO-REPAIR: Jika email sudah ada di Auth, coba login untuk ambil UID dan tulis Firestore
           const loginResult = await signInWithEmailAndPassword(auth, email, password)
           uid = loginResult.user.uid
         } else {
@@ -162,7 +162,7 @@ export default function LoginPage() {
 
   if (shouldShowSplash) {
     return (
-      <div className="fixed inset-0 z-[9999] w-full h-full flex items-center justify-center bg-background">
+      <div className="fixed inset-0 z-[9999] w-full h-full flex items-center justify-center bg-background transition-opacity duration-500 loading-wrapper-fade">
         <div className="flex flex-col items-center gap-8 animate-in fade-in duration-500">
           <div className="w-32 h-32 flex items-center justify-center rounded-[2.5rem] bg-card shadow-2xl ring-1 ring-black/5 overflow-hidden relative">
             <Library className={`w-16 h-16 text-primary/10 animate-pulse absolute transition-opacity duration-300 ${logoLoaded ? 'opacity-0' : 'opacity-100'}`} />
@@ -229,14 +229,14 @@ export default function LoginPage() {
             {isSetupMode && (
               <div className="space-y-2">
                 <Label htmlFor="name" className="font-bold text-[10px] uppercase text-muted-foreground ml-1 tracking-widest">Nama Lengkap Admin</Label>
-                <Input id="name" placeholder="Nama Penanggung Jawab" required value={adminName} onChange={(e) => setAdminName(e.target.value)} className="h-12 rounded-xl bg-background border-slate-200 dark:border-white/10 font-bold" />
+                <Input id="name" placeholder="Nama Penanggung Jawab" required value={adminName} onChange={(e) => setAdminName(e.target.value)} className="h-12 rounded-xl bg-background dark:bg-muted/10 border-slate-200 dark:border-white/10 font-bold" />
               </div>
             )}
             <div className="space-y-2">
               <Label htmlFor="email" className="font-bold text-[10px] uppercase text-muted-foreground ml-1 tracking-widest">Alamat Email</Label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
-                <Input id="email" type="email" placeholder="email@sekolah.sch.id" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 pl-11 rounded-xl bg-background border-slate-200 dark:border-white/10" />
+                <Input id="email" type="email" placeholder="email@sekolah.sch.id" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 pl-11 rounded-xl bg-background dark:bg-muted/10 border-slate-200 dark:border-white/10" />
               </div>
             </div>
             <div className="space-y-2">
@@ -246,10 +246,25 @@ export default function LoginPage() {
               </div>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
-                <Input id="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 pl-11 rounded-xl bg-background border-slate-200 dark:border-white/10" />
+                <Input 
+                  id="password" 
+                  type={showPassword ? "text" : "password"} 
+                  placeholder="••••••••" 
+                  required 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                  className="h-12 pl-11 pr-12 rounded-xl bg-background dark:bg-muted/10 border-slate-200 dark:border-white/10" 
+                />
+                <button 
+                  type="button" 
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-primary transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
               </div>
             </div>
-            <Button type="submit" className="w-full h-14 text-sm font-black shadow-lg shadow-primary/20 rounded-2xl tracking-tight" disabled={loading || (isMounted && checkingUsers)}>
+            <Button type="submit" className="w-full h-14 text-sm font-black shadow-lg shadow-primary/20 rounded-2xl tracking-tight transition-all active:scale-95" disabled={loading || (isMounted && checkingUsers)}>
               {loading ? <span className="animate-pulse">MEMPROSES...</span> : isSetupMode ? "AKTIFKAN ADMIN UTAMA" : "MASUK KE SISTEM"}
             </Button>
           </form>
@@ -276,11 +291,11 @@ export default function LoginPage() {
             <div className="py-6 space-y-4">
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Email Terdaftar</Label>
-                <Input type="email" required className="h-12 rounded-xl" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} placeholder="nama@email.com" />
+                <Input type="email" required className="h-12 rounded-xl bg-background dark:bg-muted/10" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} placeholder="nama@email.com" />
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit" disabled={isSendingReset} className="w-full h-12 font-black rounded-2xl shadow-lg">
+              <Button type="submit" disabled={isSendingReset} className="w-full h-12 font-black rounded-2xl shadow-lg transition-all active:scale-95">
                 {isSendingReset ? "Mengirim..." : "Kirim Tautan Pemulihan"}
               </Button>
             </DialogFooter>
