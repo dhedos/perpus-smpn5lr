@@ -56,11 +56,11 @@ import {
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection, useMemoFirebase, errorEmitter, useAuth } from "@/firebase"
-import { collection, doc, deleteDoc, updateDoc, setDoc, query, where } from "firebase/firestore"
+import { collection, doc, deleteDoc, updateDoc, setDoc, query, where, getDoc } from "firebase/firestore"
 import { FirestorePermissionError, type SecurityRuleContext } from "@/firebase/errors"
 import { useToast } from "@/hooks/use-toast"
 import { initializeApp, deleteApp } from "firebase/app"
-import { sendPasswordResetEmail, getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth"
+import { sendPasswordResetEmail, getAuth, createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword } from "firebase/auth"
 import { firebaseConfig } from "@/firebase/config"
 
 export default function StaffPage() {
@@ -123,16 +123,32 @@ export default function StaffPage() {
     const secondaryAuth = getAuth(secondaryApp)
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        secondaryAuth, 
-        formData.email, 
-        formData.password
-      )
-      const uid = userCredential.user.uid
+      let uid = ""
+      try {
+        const userCredential = await createUserWithEmailAndPassword(
+          secondaryAuth, 
+          formData.email, 
+          formData.password
+        )
+        uid = userCredential.user.uid
 
-      await updateProfile(userCredential.user, {
-        displayName: formData.name
-      })
+        await updateProfile(userCredential.user, {
+          displayName: formData.name
+        })
+      } catch (authError: any) {
+        if (authError.code === 'auth/email-already-in-use') {
+          // AUTO-REPAIR: Coba login di secondary app untuk ambil UID dan tulis Firestore
+          try {
+            const loginResult = await signInWithEmailAndPassword(secondaryAuth, formData.email, formData.password)
+            uid = loginResult.user.uid
+          } catch (loginError: any) {
+            // Jika login gagal (sandi salah), lempar error asli
+            throw authError
+          }
+        } else {
+          throw authError
+        }
+      }
 
       const userDocRef = doc(db, 'users', uid)
       await setDoc(userDocRef, {
@@ -142,14 +158,12 @@ export default function StaffPage() {
         role: formData.role,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
-      })
+      }, { merge: true })
 
       toast({ 
         title: "Berhasil!", 
-        description: `Petugas ${formData.name} telah terdaftar permanen di database.` 
+        description: `Akun ${formData.name} telah disinkronkan dengan database.` 
       })
-      
-      await sendPasswordResetEmail(auth, formData.email)
       
       setIsOpen(false)
       setFormData({ name: "", email: "", password: "", role: "Staff" })
@@ -157,7 +171,7 @@ export default function StaffPage() {
     } catch (error: any) {
       let msg = error.message;
       if (error.code === 'auth/email-already-in-use') {
-        msg = "Firebase: Error (auth/email-already-in-use).";
+        msg = "Email sudah digunakan. Jika akun Firestore hilang, hapus dulu email ini di Firebase Console.";
       }
       toast({ 
         title: "Pendaftaran Gagal", 
@@ -232,7 +246,7 @@ export default function StaffPage() {
                   placeholder="Nama Lengkap..." 
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="h-11 rounded-xl bg-muted/20 border-slate-300 dark:border-white/10 font-bold"
+                  className="h-12 rounded-xl bg-muted/20 border-slate-300 dark:border-white/10 font-bold"
                 />
               </div>
               <div className="space-y-2">
@@ -241,7 +255,7 @@ export default function StaffPage() {
                   value={formData.role} 
                   onValueChange={(v: any) => setFormData({ ...formData, role: v })}
                 >
-                  <SelectTrigger className="h-11 rounded-xl bg-muted/20 border-slate-300 dark:border-white/10 font-bold">
+                  <SelectTrigger className="h-12 rounded-xl bg-muted/20 border-slate-300 dark:border-white/10 font-bold">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -253,11 +267,11 @@ export default function StaffPage() {
               <div className="space-y-2">
                 <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest px-1">Email Login</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
                   <Input 
                     type="email"
                     placeholder="nama@email.com" 
-                    className="pl-10 h-11 rounded-xl bg-muted/20 border-slate-300 dark:border-white/10"
+                    className="pl-11 h-12 rounded-xl bg-muted/20 border-slate-300 dark:border-white/10"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   />
@@ -266,11 +280,11 @@ export default function StaffPage() {
               <div className="space-y-2">
                 <Label className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest px-1">Kata Sandi Awal</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
                   <Input 
                     type="password"
                     placeholder="Minimal 6 karakter" 
-                    className="pl-10 h-11 rounded-xl bg-muted/20 border-slate-300 dark:border-white/10"
+                    className="pl-11 h-12 rounded-xl bg-muted/20 border-slate-300 dark:border-white/10"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   />

@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ShieldCheck, AlertCircle, Library } from "lucide-react"
+import { ShieldCheck, AlertCircle, Library, Mail, Lock } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth, useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from "@/firebase"
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, updateProfile } from "firebase/auth"
@@ -89,7 +89,7 @@ export default function LoginPage() {
     } catch (error: any) {
       toast({ 
         title: "Gagal Masuk", 
-        description: "Email atau kata sandi salah. Jika akun baru dihapus dari Console, silakan lakukan Inisialisasi ulang.", 
+        description: "Email atau kata sandi salah. Pastikan akun sudah terdaftar secara resmi.", 
         variant: "destructive" 
       })
       setLoading(false)
@@ -101,14 +101,26 @@ export default function LoginPage() {
     if (!auth || !db) return
     setLoading(true)
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-      
-      await updateProfile(userCredential.user, {
-        displayName: adminName
-      })
+      let uid = ""
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+        uid = userCredential.user.uid
+        
+        await updateProfile(userCredential.user, {
+          displayName: adminName
+        })
+      } catch (authError: any) {
+        if (authError.code === 'auth/email-already-in-use') {
+          // AUTO-REPAIR: Jika email sudah ada di Auth, coba login untuk ambil UID dan tulis Firestore
+          const loginResult = await signInWithEmailAndPassword(auth, email, password)
+          uid = loginResult.user.uid
+        } else {
+          throw authError
+        }
+      }
 
-      await setDoc(doc(db, "users", userCredential.user.uid), {
-        id: userCredential.user.uid,
+      await setDoc(doc(db, "users", uid), {
+        id: uid,
         name: adminName,
         email: email,
         role: "Admin",
@@ -116,13 +128,13 @@ export default function LoginPage() {
         updatedAt: new Date().toISOString()
       })
       
-      toast({ title: "Admin Siap!", description: "Akun Admin Utama telah terdaftar di database." })
+      toast({ title: "Admin Siap!", description: "Akun Admin Utama telah disinkronkan ke database." })
     } catch (error: any) {
-      let msg = error.message;
-      if (error.code === 'auth/email-already-in-use') {
-        msg = "Email sudah terdaftar di sistem pusat. Jika data Firestore kosong, silakan hapus dulu email ini di Firebase Console lalu ulangi pendaftaran.";
-      }
-      toast({ title: "Setup Gagal", description: msg, variant: "destructive" })
+      toast({ 
+        title: "Setup Gagal", 
+        description: "Email sudah digunakan dengan sandi berbeda, atau koneksi terputus.", 
+        variant: "destructive" 
+      })
       setLoading(false)
     }
   }
@@ -222,14 +234,20 @@ export default function LoginPage() {
             )}
             <div className="space-y-2">
               <Label htmlFor="email" className="font-bold text-[10px] uppercase text-muted-foreground ml-1 tracking-widest">Alamat Email</Label>
-              <Input id="email" type="email" placeholder="email@sekolah.sch.id" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 rounded-xl bg-background border-slate-200 dark:border-white/10" />
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
+                <Input id="email" type="email" placeholder="email@sekolah.sch.id" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 pl-11 rounded-xl bg-background border-slate-200 dark:border-white/10" />
+              </div>
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password" className="font-bold text-[10px] uppercase text-muted-foreground ml-1 tracking-widest">Kata Sandi</Label>
                 {!isSetupMode && <button type="button" onClick={() => setIsResetOpen(true)} className="text-[10px] font-black text-primary hover:underline uppercase tracking-tighter">Lupa Sandi?</button>}
               </div>
-              <Input id="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 rounded-xl bg-background border-slate-200 dark:border-white/10" />
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
+                <Input id="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 pl-11 rounded-xl bg-background border-slate-200 dark:border-white/10" />
+              </div>
             </div>
             <Button type="submit" className="w-full h-14 text-sm font-black shadow-lg shadow-primary/20 rounded-2xl tracking-tight" disabled={loading || (isMounted && checkingUsers)}>
               {loading ? <span className="animate-pulse">MEMPROSES...</span> : isSetupMode ? "AKTIFKAN ADMIN UTAMA" : "MASUK KE SISTEM"}
