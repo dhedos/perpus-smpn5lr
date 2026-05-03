@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ShieldCheck, AlertCircle, Library, Mail, Lock, Eye, EyeOff } from "lucide-react"
+import { ShieldCheck, AlertCircle, Library, Mail, Lock, Eye, EyeOff, KeyRound, Send } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth, useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from "@/firebase"
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, updateProfile } from "firebase/auth"
@@ -112,8 +112,13 @@ export default function LoginPage() {
         })
       } catch (authError: any) {
         if (authError.code === 'auth/email-already-in-use') {
-          const loginResult = await signInWithEmailAndPassword(auth, email, password)
-          uid = loginResult.user.uid
+          // Robust Sinkronisasi: Jika akun ada di Auth tapi tidak di Firestore
+          try {
+            const loginResult = await signInWithEmailAndPassword(auth, email, password)
+            uid = loginResult.user.uid
+          } catch (loginError: any) {
+            throw authError
+          }
         } else {
           throw authError
         }
@@ -126,7 +131,7 @@ export default function LoginPage() {
         role: "Admin",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
-      })
+      }, { merge: true })
       
       toast({ title: "Admin Siap!", description: "Akun Admin Utama telah disinkronkan ke database." })
     } catch (error: any) {
@@ -145,10 +150,14 @@ export default function LoginPage() {
     setIsSendingReset(true)
     try {
       await sendPasswordResetEmail(auth, resetEmail)
-      toast({ title: "Email Terkirim", description: "Tautan pengaturan ulang kata sandi telah dikirim ke email Anda." })
+      toast({ 
+        title: "Email Terkirim", 
+        description: "Tautan pengaturan ulang kata sandi telah dikirim ke email Anda. Silakan cek kotak masuk (atau spam).",
+      })
       setIsResetOpen(false)
+      setResetEmail("")
     } catch (error: any) {
-      toast({ title: "Gagal", description: "Email tidak ditemukan atau terjadi gangguan koneksi.", variant: "destructive" })
+      toast({ title: "Gagal Mengirim", description: "Email tidak ditemukan atau terjadi gangguan koneksi.", variant: "destructive" })
     } finally {
       setIsSendingReset(false)
     }
@@ -236,13 +245,12 @@ export default function LoginPage() {
               <Label htmlFor="email" className="font-bold text-[10px] uppercase text-muted-foreground ml-1 tracking-widest">Alamat Email</Label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
-                <Input id="email" type="email" placeholder="email@sekolah.sch.id" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 pl-11 rounded-xl bg-background dark:bg-muted/10 border-slate-200 dark:border-white/10" />
+                <Input id="email" type="email" placeholder="nama@email.com" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 pl-11 rounded-xl bg-background dark:bg-muted/10 border-slate-200 dark:border-white/10" />
               </div>
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password" className="font-bold text-[10px] uppercase text-muted-foreground ml-1 tracking-widest">Kata Sandi</Label>
-                {!isSetupMode && <button type="button" onClick={() => setIsResetOpen(true)} className="text-[10px] font-black text-primary hover:underline uppercase tracking-tighter">Lupa Sandi?</button>}
               </div>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
@@ -258,12 +266,26 @@ export default function LoginPage() {
                 <button 
                   type="button" 
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-primary transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-primary transition-colors focus:outline-none"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
             </div>
+
+            {!isSetupMode && (
+              <div className="flex justify-end px-1">
+                <button 
+                  type="button" 
+                  onClick={() => setIsResetOpen(true)} 
+                  className="text-[10px] font-black text-primary hover:underline uppercase tracking-tight flex items-center gap-1.5 opacity-80 hover:opacity-100"
+                >
+                  <KeyRound className="h-3 w-3" />
+                  Lupa Sandi?
+                </button>
+              </div>
+            )}
+
             <Button type="submit" className="w-full h-14 text-sm font-black shadow-lg shadow-primary/20 rounded-2xl tracking-tight transition-all active:scale-95" disabled={loading || (isMounted && checkingUsers)}>
               {loading ? <span className="animate-pulse">MEMPROSES...</span> : isSetupMode ? "AKTIFKAN ADMIN UTAMA" : "MASUK KE SISTEM"}
             </Button>
@@ -281,22 +303,37 @@ export default function LoginPage() {
         </CardFooter>
       </Card>
 
-      <Dialog open={isResetOpen} onOpenChange={setIsResetOpen}>
-        <DialogContent className="bg-card rounded-[2.5rem] max-w-sm border-none shadow-2xl">
+      <Dialog open={isResetOpen} onOpenChange={(v) => { setIsResetOpen(v); if(!v) setResetEmail(""); }}>
+        <DialogContent className="bg-card rounded-[2.5rem] max-w-sm border-none shadow-2xl p-0 overflow-hidden">
           <form onSubmit={handleSendResetEmail}>
-            <DialogHeader>
-              <DialogTitle className="font-black uppercase tracking-tight text-primary">Reset Kata Sandi</DialogTitle>
-              <DialogDescription className="text-xs">Tautan pemulihan akan dikirim ke email terdaftar.</DialogDescription>
+            <DialogHeader className="p-8 pb-4">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-4">
+                <KeyRound className="h-6 w-6" />
+              </div>
+              <DialogTitle className="font-black uppercase tracking-tight text-primary text-xl">Pemulihan Akun</DialogTitle>
+              <DialogDescription className="text-xs font-medium leading-relaxed">
+                Tautan pengaturan ulang kata sandi akan dikirim ke email terdaftar Anda.
+              </DialogDescription>
             </DialogHeader>
-            <div className="py-6 space-y-4">
+            <div className="px-8 py-4 space-y-4">
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Email Terdaftar</Label>
-                <Input type="email" required className="h-12 rounded-xl bg-background dark:bg-muted/10" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} placeholder="nama@email.com" />
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">Email Terdaftar</Label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
+                  <Input 
+                    type="email" 
+                    required 
+                    className="h-12 pl-11 rounded-xl bg-background dark:bg-muted/10 border-slate-200 dark:border-white/10" 
+                    value={resetEmail} 
+                    onChange={(e) => setResetEmail(e.target.value)} 
+                    placeholder="nama@email.com" 
+                  />
+                </div>
               </div>
             </div>
-            <DialogFooter>
-              <Button type="submit" disabled={isSendingReset} className="w-full h-12 font-black rounded-2xl shadow-lg transition-all active:scale-95">
-                {isSendingReset ? "Mengirim..." : "Kirim Tautan Pemulihan"}
+            <DialogFooter className="p-8 pt-4">
+              <Button type="submit" disabled={isSendingReset || !resetEmail} className="w-full h-14 font-black rounded-2xl shadow-xl shadow-primary/20 transition-all active:scale-95 gap-2">
+                {isSendingReset ? <span className="animate-pulse">Mengirim...</span> : <><Send className="h-4 w-4" /> Kirim Tautan</>}
               </Button>
             </DialogFooter>
           </form>
