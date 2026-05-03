@@ -662,13 +662,13 @@ function MembersContent() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input 
             placeholder="Cari anggota berdasarkan nama, ID, atau kelas..." 
-            className="pl-11 h-12 bg-white dark:bg-white border-none rounded-full text-slate-900 font-medium placeholder:text-slate-400" 
+            className="pl-11 h-12 bg-background dark:bg-muted/20 border-slate-200 dark:border-white/10 rounded-full text-foreground font-medium" 
             value={search ?? ""} 
             onChange={e => setSearch(e.target.value)} 
           />
         </div>
         <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="w-full h-12 bg-white dark:bg-white border-none rounded-full text-slate-900 font-medium">
+          <SelectTrigger className="w-full h-12 bg-background dark:bg-muted/20 border-slate-200 dark:border-white/10 rounded-full text-foreground font-medium">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-slate-400" />
               <SelectValue placeholder="Semua Kategori" />
@@ -887,4 +887,3 @@ export default function MembersPage() {
     </Suspense>
   )
 }
-

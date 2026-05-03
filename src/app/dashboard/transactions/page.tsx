@@ -534,7 +534,7 @@ function TransactionsContent() {
 
                     <div className="space-y-3">
                       <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-2">Jumlah Unit</Label>
-                      <div className="flex items-center justify-between p-2 border rounded-[1.5rem] bg-white dark:bg-white/5 border-slate-200 dark:border-white/10">
+                      <div className="flex items-center justify-between p-2 border rounded-[1.5rem] bg-background dark:bg-muted/20 border-slate-200 dark:border-white/10">
                         <Button 
                           variant="outline" 
                           size="icon" 
@@ -565,7 +565,7 @@ function TransactionsContent() {
                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <Input 
                         placeholder="Cari Siswa / NIS..." 
-                        className="pl-11 h-12 bg-white dark:bg-white border-none rounded-full text-slate-900 font-medium placeholder:text-slate-400" 
+                        className="pl-11 h-12 bg-background dark:bg-muted/20 border-slate-200 dark:border-white/10 rounded-full text-foreground font-medium" 
                         value={memberSearch} 
                         onChange={e => {
                           setMemberSearch(e.target.value);
@@ -612,7 +612,7 @@ function TransactionsContent() {
                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <Input 
                         placeholder="Judul atau Kode Buku..." 
-                        className="pl-11 h-12 bg-white dark:bg-white border-none rounded-full text-slate-900 font-medium placeholder:text-slate-400" 
+                        className="pl-11 h-12 bg-background dark:bg-muted/20 border-slate-200 dark:border-white/10 rounded-full text-foreground font-medium" 
                         value={bookSearch} 
                         onChange={e => {
                           setBookSearch(e.target.value);
@@ -709,7 +709,7 @@ function TransactionsContent() {
                 <Button variant="secondary" className="h-20 w-full gap-3 shadow-md font-black text-base rounded-[1.5rem] bg-[#33CCF7] hover:bg-[#2BB8E0] text-white" onClick={startScanner}><ScanBarcode className="h-8 w-8" /> SCAN KARTU/BUKU</Button>
                 <div className="w-full space-y-2 px-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Pencarian Manual</Label>
-                  <Input placeholder="Cari Nama/NIS..." className="h-12 bg-white dark:bg-white border-none rounded-full text-slate-900 font-medium placeholder:text-slate-400" value={returnSearch} onChange={e => setReturnSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLookup(returnSearch)} />
+                  <Input placeholder="Cari Nama/NIS..." className="h-12 bg-background dark:bg-muted/20 border-slate-200 dark:border-white/10 rounded-full text-foreground font-medium" value={returnSearch} onChange={e => setReturnSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLookup(returnSearch)} />
                 </div>
               </div>
 
@@ -877,4 +877,3 @@ export default function TransactionsPage() {
     </Suspense>
   )
 }
-

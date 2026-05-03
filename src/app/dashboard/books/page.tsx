@@ -763,7 +763,7 @@ function BooksContent() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input 
             placeholder="Cari Judul, Kode, Rekening..." 
-            className="pl-11 bg-white dark:bg-white border-none h-12 rounded-full text-slate-900 placeholder:text-slate-400 font-medium" 
+            className="pl-11 bg-background dark:bg-muted/20 border-slate-200 dark:border-white/10 h-12 rounded-full text-foreground font-medium" 
             value={search ?? ""} 
             onChange={e => setSearch(e.target.value)}
             onKeyDown={(e) => {
@@ -775,7 +775,7 @@ function BooksContent() {
         </div>
         <div className="flex gap-2 lg:col-span-2">
           <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="bg-white dark:bg-white border-none h-12 rounded-full flex-1 text-slate-900 font-medium">
+            <SelectTrigger className="bg-background dark:bg-muted/20 border-slate-200 dark:border-white/10 h-12 rounded-full flex-1 text-foreground font-medium">
               <div className="flex items-center gap-2"><Filter className="h-3 w-3 text-slate-400" /><SelectValue placeholder="Kategori" /></div>
             </SelectTrigger>
             <SelectContent>
@@ -784,7 +784,7 @@ function BooksContent() {
             </SelectContent>
           </Select>
           <Select value={filterYear} onValueChange={setFilterYear}>
-            <SelectTrigger className="bg-white dark:bg-white border-none h-12 rounded-full flex-1 text-slate-900 font-medium">
+            <SelectTrigger className="bg-background dark:bg-muted/20 border-slate-200 dark:border-white/10 h-12 rounded-full flex-1 text-foreground font-medium">
               <div className="flex items-center gap-2"><CalendarIcon className="h-3 w-3 text-slate-400" /><SelectValue placeholder="Tahun" /></div>
             </SelectTrigger>
             <SelectContent>
@@ -1219,4 +1219,3 @@ export default function BooksPage() {
     </Suspense>
   )
 }
-
