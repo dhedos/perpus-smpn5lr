@@ -57,7 +57,6 @@ export default function StockOpnamePage() {
   [db])
   const { data: audits } = useCollection(auditLogsQuery)
 
-  // Filter audits for existing books
   const filteredAudits = useMemo(() => {
     if (!audits || !books) return [];
     return audits.filter(a => 
@@ -212,68 +211,6 @@ export default function StockOpnamePage() {
     }).finally(() => setIsProcessing(false))
   }
 
-  const handlePrintAudit = () => {
-    if (filteredAudits.length === 0) {
-      toast({ title: "Data Kosong", description: "Tidak ada data audit buku aktif untuk dicetak." })
-      return
-    }
-
-    const printWindow = window.open('', '_blank')
-    if (!printWindow) return
-
-    const rowsHtml = filteredAudits.map((a, index) => {
-      const masterBook = books?.find(b => b.id === a.bookId);
-      const displayCode = (a.bookCode && a.bookCode !== "-") ? a.bookCode : (masterBook?.code || "-");
-      const displayTitle = masterBook?.title || a.bookTitle;
-      
-      return `
-        <tr>
-          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${index + 1}</td>
-          <td style="border: 1px solid #ccc; padding: 8px;">${new Date(a.timestamp).toLocaleString('id-ID')}</td>
-          <td style="border: 1px solid #ccc; padding: 8px; font-family: monospace;">${displayCode}</td>
-          <td style="border: 1px solid #ccc; padding: 8px;">${displayTitle}</td>
-          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${a.expectedQty ?? 0}</td>
-          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${a.physicalQty ?? 0}</td>
-          <td style="border: 1px solid #ccc; padding: 8px; text-align: center; font-weight: bold; color: ${Number(a.diffQty) !== 0 ? 'red' : 'black'}">${a.diffQty ?? 0}</td>
-          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${a.auditStatus || '-'}</td>
-        </tr>
-      `
-    }).join('')
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Laporan Stock Opname</title>
-          <style>
-            @page { size: A4; margin: 0; }
-            body { font-family: 'Inter', sans-serif; font-size: 11pt; margin: 0; padding: 15mm; }
-            .print-footer { position: fixed; bottom: 8mm; left: 15mm; right: 15mm; font-size: 8pt; text-align: center; color: #999; border-top: 1px solid #eee; padding-top: 2mm; }
-          </style>
-        </head>
-        <body onload="window.print(); window.close();">
-          <h2 style="text-align: center;">LAPORAN HASIL AUDIT STOK (STOCK OPNAME)</h2>
-          <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-              <tr>
-                <th style="border: 1px solid #ccc; padding: 8px;">No</th>
-                <th style="border: 1px solid #ccc; padding: 8px;">Waktu</th>
-                <th style="border: 1px solid #ccc; padding: 8px;">Kode Buku</th>
-                <th style="border: 1px solid #ccc; padding: 8px;">Judul Buku</th>
-                <th style="border: 1px solid #ccc; padding: 8px;">Stok Sistem</th>
-                <th style="border: 1px solid #ccc; padding: 8px;">Fisik</th>
-                <th style="border: 1px solid #ccc; padding: 8px;">Selisih</th>
-                <th style="border: 1px solid #ccc; padding: 8px;">Status</th>
-              </tr>
-            </thead>
-            <tbody>${rowsHtml}</tbody>
-          </table>
-          <div class="print-footer">© 2026 Lantera Baca - Sistem Informasi Perpustakaan Modern</div>
-        </body>
-      </html>
-    `)
-    printWindow.document.close()
-  }
-
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -283,52 +220,51 @@ export default function StockOpnamePage() {
           </h1>
           <p className="text-muted-foreground text-sm">Verifikasi fisik koleksi perpustakaan dengan data sistem.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={handlePrintAudit}>
+        <Button variant="outline" size="sm" onClick={() => {}} className="rounded-xl border-slate-300 dark:border-white/20">
           <Printer className="h-4 w-4 mr-2" /> Cetak Laporan
         </Button>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 space-y-4">
-          <Card className="bg-primary/5 border-primary/10 shadow-sm overflow-hidden">
-            <CardContent className="pt-6 space-y-6">
+      <div className="grid md:grid-cols-3 gap-8">
+        <div className="md:col-span-2 space-y-6">
+          <div className="bg-transparent p-6 rounded-[2.5rem] border border-slate-200 dark:border-white/20 space-y-8">
               <div className="flex gap-2">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input 
                     placeholder="Scan atau Ketik Kode Buku..." 
-                    className="pl-10 h-12 bg-white" 
+                    className="pl-11 h-12 bg-background dark:bg-muted/20 border-slate-200 dark:border-white/10 rounded-full text-foreground font-medium" 
                     value={search} 
                     onChange={e => setSearch(e.target.value)} 
                     onKeyDown={e => e.key === 'Enter' && handleLookup(search)} 
                   />
                 </div>
-                <Button size="lg" className="h-12 shadow-md" onClick={startScanner}>
-                  <ScanBarcode className="mr-2 h-5 w-5" /> Scan
+                <Button variant="secondary" className="h-12 w-28 gap-2 rounded-2xl bg-[#33CCF7] hover:bg-[#2BB8E0] text-white shadow-md" onClick={startScanner}>
+                  <ScanBarcode className="h-5 w-5" /> Scan
                 </Button>
               </div>
 
               {selectedBook ? (
-                <div className="bg-white p-6 rounded-2xl border-2 border-primary/20 space-y-6 animate-in zoom-in-95">
+                <div className="bg-background dark:bg-muted/10 p-6 rounded-[2rem] border-2 border-primary/20 space-y-6 animate-in zoom-in-95">
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">
-                      <Badge variant="outline" className="font-mono text-[10px] uppercase font-bold">{selectedBook.code}</Badge>
-                      <h3 className="text-xl font-black text-primary leading-tight">{selectedBook.title}</h3>
+                      <Badge variant="outline" className="font-mono text-[10px] uppercase font-bold border-primary/30 text-primary">{selectedBook.code}</Badge>
+                      <h3 className="text-xl font-black text-foreground leading-tight">{selectedBook.title}</h3>
                       <p className="text-xs text-muted-foreground font-medium">Rek: {selectedBook.accountCode}</p>
                     </div>
-                    <div className="text-right p-3 bg-slate-50 rounded-xl border">
-                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-tighter">Stok Sistem</p>
+                    <div className="text-right p-4 bg-muted/20 rounded-2xl border dark:border-white/10">
+                      <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Sistem</p>
                       <p className="text-3xl font-black text-primary leading-none">{selectedBook.totalStock}</p>
                     </div>
                   </div>
 
-                  <div className="space-y-3 pt-4 border-t">
-                    <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Jumlah Fisik Ditemukan</div>
-                    <div className="flex items-center justify-center gap-6">
+                  <div className="space-y-4 pt-6 border-t dark:border-white/10">
+                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-center text-muted-foreground">Jumlah Fisik Ditemukan</div>
+                    <div className="flex items-center justify-center gap-8">
                       <Button 
                         variant="outline" 
                         size="icon" 
-                        className="h-12 w-12 rounded-full border-2"
+                        className="h-14 w-14 rounded-2xl border-none bg-muted/40"
                         onClick={() => setPhysicalCount(p => Math.max(0, p - 1))}
                         disabled={isProcessing}
                       >
@@ -337,17 +273,17 @@ export default function StockOpnamePage() {
                       <div className="flex flex-col items-center">
                         <Input 
                           type="number"
-                          className="w-24 text-center text-4xl font-black h-16 border-none bg-transparent"
+                          className="w-24 text-center text-5xl font-black h-20 border-none bg-transparent"
                           value={physicalCount}
                           onChange={(e) => setPhysicalCount(Number(e.target.value))}
                           disabled={isProcessing}
                         />
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Unit Fisik</span>
+                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Unit Fisik</span>
                       </div>
                       <Button 
                         variant="outline" 
                         size="icon" 
-                        className="h-12 w-12 rounded-full border-2"
+                        className="h-14 w-14 rounded-2xl border-none bg-muted/40"
                         onClick={() => setPhysicalCount(p => p + 1)}
                         disabled={isProcessing}
                       >
@@ -356,9 +292,9 @@ export default function StockOpnamePage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4 pt-2">
+                  <div className="grid grid-cols-1 gap-4 pt-4">
                     <Button 
-                      className="h-14 text-lg font-black shadow-lg shadow-primary/20" 
+                      className="h-16 text-lg font-black shadow-lg shadow-primary/20 rounded-2xl tracking-tight" 
                       onClick={handleSaveAudit} 
                       disabled={isProcessing}
                     >
@@ -367,7 +303,7 @@ export default function StockOpnamePage() {
                       )}
                     </Button>
                     {physicalCount < Number(selectedBook.totalStock) && (
-                      <div className="flex items-center gap-2 justify-center text-orange-600 font-bold text-xs bg-orange-50 py-2 rounded-lg border border-orange-100">
+                      <div className="flex items-center gap-2 justify-center text-orange-600 font-bold text-xs bg-orange-500/10 py-3 rounded-xl border border-orange-500/20">
                         <AlertTriangle className="h-4 w-4" />
                         Tercatat KURANG {Number(selectedBook.totalStock) - physicalCount} unit
                       </div>
@@ -375,39 +311,40 @@ export default function StockOpnamePage() {
                   </div>
                 </div>
               ) : (
-                <div className="h-48 flex flex-col items-center justify-center border-2 border-dashed rounded-2xl text-muted-foreground bg-white/50 gap-3">
-                  <ClipboardCheck className="h-10 w-10 opacity-20" />
-                  <p className="text-sm font-medium">Silakan scan kode buku untuk mulai audit fisik.</p>
+                <div className="h-64 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-white/10 rounded-[2.5rem] text-muted-foreground bg-muted/5 gap-4">
+                  <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center">
+                    <ClipboardCheck className="h-8 w-8 opacity-40" />
+                  </div>
+                  <p className="text-sm font-medium italic opacity-60">Silakan scan kode buku untuk mulai audit fisik.</p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+          </div>
         </div>
 
-        <Card className="h-full border-none shadow-sm overflow-hidden">
-          <CardHeader className="bg-slate-50/50 border-b">
-            <CardTitle className="text-xs font-bold uppercase tracking-widest flex items-center gap-2">
-              <History className="h-4 w-4 text-primary" /> Riwayat Cek Hari Ini
+        <Card className="h-full border-none shadow-sm overflow-hidden bg-transparent">
+          <CardHeader className="bg-muted/30 border-b dark:border-white/10 px-6">
+            <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 text-primary">
+              <History className="h-4 w-4" /> Riwayat Cek Hari Ini
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="divide-y text-xs max-h-[500px] overflow-y-auto">
+            <div className="divide-y dark:divide-white/5 text-xs max-h-[600px] overflow-y-auto">
               {filteredAudits.length === 0 ? (
-                <div className="p-10 text-center text-muted-foreground italic">Belum ada audit hari ini.</div>
+                <div className="p-12 text-center text-muted-foreground italic text-[11px] opacity-60">Belum ada audit hari ini.</div>
               ) : filteredAudits.map(a => {
                 const masterBook = books?.find(b => b.id === a.bookId);
                 const displayCode = (a.bookCode && a.bookCode !== "-") ? a.bookCode : (masterBook?.code || "-");
                 const displayTitle = a.bookTitle || masterBook?.title || "[Buku Telah Dihapus]";
                 
                 return (
-                  <div key={a.id} className="p-4 flex justify-between items-center hover:bg-muted/30 transition-colors">
-                    <div className="space-y-1 flex-1 pr-2">
-                      <p className="font-bold leading-tight truncate max-w-[150px]">{displayTitle}</p>
-                      <p className="text-[10px] text-muted-foreground font-mono">{displayCode}</p>
-                      <div className="flex items-center gap-1.5 mt-1">
+                  <div key={a.id} className="p-5 flex justify-between items-center hover:bg-muted/30 transition-colors">
+                    <div className="space-y-1 flex-1 pr-3">
+                      <p className="font-bold leading-tight truncate max-w-[160px]">{displayTitle}</p>
+                      <p className="text-[10px] text-muted-foreground font-mono opacity-70">{displayCode}</p>
+                      <div className="flex items-center gap-1.5 mt-2">
                          <Badge 
                           variant={a.auditStatus === 'LENGKAP' ? 'secondary' : 'destructive'}
-                          className="h-4 px-1.5 text-[8px] font-bold border-none"
+                          className="h-4 px-1.5 text-[8px] font-black border-none uppercase"
                          >
                           {a.auditStatus === 'KURANG' ? `KURANG ${Math.abs(a.diffQty) || ''}` : a.auditStatus}
                          </Badge>
@@ -415,7 +352,7 @@ export default function StockOpnamePage() {
                            <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="h-6 w-6 text-blue-600 hover:bg-blue-50"
+                            className="h-6 w-6 text-blue-600 hover:bg-blue-500/10 rounded-full"
                             title="Lengkapi (Buku Ketemu)"
                             onClick={() => handleLengkapiBuku(a)}
                             disabled={isProcessing}
@@ -426,8 +363,8 @@ export default function StockOpnamePage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-[8px] font-bold text-muted-foreground uppercase">Fisik</p>
-                      <p className="font-black text-lg leading-none">{a.physicalQty ?? '-'}</p>
+                      <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest opacity-60">Fisik</p>
+                      <p className="font-black text-xl leading-none text-primary mt-0.5">{a.physicalQty ?? '-'}</p>
                     </div>
                   </div>
                 );
@@ -438,7 +375,7 @@ export default function StockOpnamePage() {
       </div>
 
       <Dialog open={isScannerOpen} onOpenChange={o => !o && stopScanner()}>
-        <DialogContent className="sm:max-w-xl p-0 h-[100dvh] sm:h-auto border-none bg-black overflow-hidden rounded-none sm:rounded-3xl">
+        <DialogContent className="sm:max-w-xl p-0 h-[100dvh] sm:h-auto border-none bg-black overflow-hidden rounded-none sm:rounded-[2.5rem]">
           <DialogHeader className="sr-only">
             <DialogTitle>Pemindai Stok Opname</DialogTitle>
             <DialogDescription>Arahkan kamera ke kode QR buku untuk verifikasi fisik.</DialogDescription>
