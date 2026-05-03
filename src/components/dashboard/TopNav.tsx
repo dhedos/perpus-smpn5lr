@@ -1,6 +1,7 @@
+
 "use client"
 
-import { Bell, Search, User, Globe, Globe as GlobeIcon, Wifi, WifiOff, LogOut, Menu, UserCircle, Lock, Loader2, CheckCircle2, BookOpen, Users as UsersIcon, ArrowRight, X, Image as ImageIcon, Upload, Sun, Moon } from "lucide-react"
+import { Bell, Search, User, Globe, Globe as GlobeIcon, Wifi, WifiOff, LogOut, Menu, UserCircle, Lock, CheckCircle2, BookOpen, Users as UsersIcon, ArrowRight, X, Image as ImageIcon, Upload, Sun, Moon } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { 
@@ -11,7 +12,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { Badge } from "@/components/ui/badge"
 import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
@@ -499,7 +500,7 @@ export function TopNav() {
           <DialogFooter>
             <Button variant="outline" onClick={() => { setIsProfileOpen(false); forceUnlockUI(); }}>Batal</Button>
             <Button onClick={handleUpdateProfile} disabled={isSaving} className="gap-2">
-              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              {isSaving ? <CheckCircle2 className="h-4 w-4 animate-pulse" /> : <CheckCircle2 className="h-4 w-4" />}
               Simpan Perubahan
             </Button>
           </DialogFooter>
@@ -517,7 +518,7 @@ export function TopNav() {
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => forceUnlockUI()}>Batal</AlertDialogCancel>
             <AlertDialogAction onClick={handleLogout} disabled={isLoggingOut} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 min-w-[100px]">
-              {isLoggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : "Ya, Keluar"}
+              {isLoggingOut ? <CheckCircle2 className="h-4 w-4 animate-pulse" /> : "Ya, Keluar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

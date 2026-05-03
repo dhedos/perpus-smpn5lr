@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button"
 import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { signOut } from "firebase/auth"
 import { doc } from "firebase/firestore"
+import { useState, useEffect } from "react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,9 +60,26 @@ export function SidebarNav({ onItemClick }: SidebarNavProps) {
   const auth = useAuth()
   const db = useFirestore()
   const { isAdmin } = useUser()
+  const [branding, setBranding] = useState<{logoUrl: string, libraryName: string, librarySubtitle: string} | null>(null)
 
   const settingsRef = useMemoFirebase(() => db ? doc(db, 'settings', 'general') : null, [db])
-  const { data: settings, isLoading } = useDoc(settingsRef)
+  const { data: settings } = useDoc(settingsRef)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).__BRANDING__) {
+      setBranding((window as any).__BRANDING__)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (settings) {
+      setBranding({
+        logoUrl: settings.libraryLogoUrl || branding?.logoUrl || '',
+        libraryName: settings.libraryName || branding?.libraryName || 'LANTERA BACA',
+        librarySubtitle: settings.librarySubtitle || branding?.librarySubtitle || 'SMPN 5 LANGKE REMBONG'
+      })
+    }
+  }, [settings])
 
   const handleLogout = async () => {
     if (auth) {
@@ -70,33 +88,26 @@ export function SidebarNav({ onItemClick }: SidebarNavProps) {
     }
   }
 
-  const displayTitle = settings?.libraryName;
-  const displaySubtitle = settings?.librarySubtitle;
-  const displayLogo = settings?.libraryLogoUrl;
+  const displayTitle = branding?.libraryName || "LANTERA BACA";
+  const displaySubtitle = branding?.librarySubtitle || "SMPN 5 LANGKE REMBONG";
+  const displayLogo = branding?.logoUrl;
 
   return (
     <div className="flex h-full flex-col bg-card text-card-foreground border-r">
       <div className="flex h-20 items-center px-4 shrink-0 gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary overflow-hidden">
-          {displayLogo ? (
-            <img src={displayLogo} alt="Logo" className="w-9 h-9 object-contain" />
-          ) : (
-            <Library className="w-7 h-7 text-primary/20 animate-pulse" />
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary overflow-hidden relative">
+          <Library className="w-7 h-7 text-primary/10 absolute z-0" />
+          {displayLogo && (
+            <img src={displayLogo} alt="Logo" className="w-9 h-9 object-contain relative z-10" />
           )}
         </div>
         <div className="flex flex-col overflow-hidden min-h-[32px] justify-center">
-          {displayTitle ? (
-             <>
-               <span className="text-sm font-black leading-tight text-primary tracking-tight uppercase truncate">
-                 {displayTitle}
-               </span>
-               <span className="text-[10px] font-bold leading-tight text-secondary uppercase tracking-widest truncate">
-                 {displaySubtitle}
-               </span>
-             </>
-          ) : (
-             <div className="w-32 h-4 bg-primary/5 animate-pulse rounded" />
-          )}
+          <span className="text-sm font-black leading-tight text-primary tracking-tight uppercase truncate">
+            {displayTitle}
+          </span>
+          <span className="text-[10px] font-bold leading-tight text-secondary uppercase tracking-widest truncate">
+            {displaySubtitle}
+          </span>
         </div>
       </div>
       
@@ -173,7 +184,7 @@ export function SidebarNav({ onItemClick }: SidebarNavProps) {
         </AlertDialog>
         <div className="text-center pt-2">
            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">
-             © 2026 {displayTitle || "Sistem Perpustakaan"}
+             © 2026 {displayTitle}
            </p>
         </div>
       </div>
