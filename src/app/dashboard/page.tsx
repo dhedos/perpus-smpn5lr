@@ -31,7 +31,7 @@ import {
 } from "recharts"
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
 import { collection, query, where, orderBy, limit, doc } from "firebase/firestore"
-import { isAfter, parseISO, differenceInDays, differenceInHours, startOfDay, addHours, isToday, lastDayOfMonth } from "date-fns"
+import { isAfter, parseISO, differenceInDays, differenceInHours, startOfDay, addHours, isToday, lastDayOfMonth, subDays, format, getDay } from "date-fns"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
@@ -65,7 +65,7 @@ export default function DashboardPage() {
   [db])
 
   const latestTransQuery = useMemoFirebase(() => 
-    db ? query(collection(db, 'transactions'), orderBy('createdAt', 'desc'), limit(100)) : null, 
+    db ? query(collection(db, 'transactions'), orderBy('createdAt', 'desc'), limit(150)) : null, 
   [db])
 
   const { data: books, isLoading: loadingBooks } = useCollection(booksRef)
@@ -84,7 +84,7 @@ export default function DashboardPage() {
   const filteredLatestTransactions = useMemo(() => {
     if (!latestTransactions || !books || !members) return []
     return latestTransactions.filter(t => {
-      const transDate = t.createdAt ? new Date(t.createdAt.seconds * 1000) : new Date();
+      const transDate = t.createdAt?.seconds ? new Date(t.createdAt.seconds * 1000) : new Date();
       return (
         isToday(transDate) &&
         books.some(b => b.id === t.bookId) &&
@@ -129,7 +129,6 @@ export default function DashboardPage() {
   }, [filteredActiveTransactions, mounted, settings])
 
   const chartData = useMemo(() => {
-    const daysIndo = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
     const result = [
       { name: "Sen", value: 0 },
       { name: "Sel", value: 0 },
@@ -140,20 +139,29 @@ export default function DashboardPage() {
       { name: "Min", value: 0 },
     ];
 
-    if (!latestTransactions) return result;
+    if (!latestTransactions || !mounted) return result;
+
+    const sevenDaysAgo = subDays(startOfDay(new Date()), 7);
+    const dayMap: Record<number, string> = {
+      1: "Sen", 2: "Sel", 3: "Rab", 4: "Kam", 5: "Jum", 6: "Sab", 0: "Min"
+    };
 
     latestTransactions.forEach(t => {
-      // Hitung hanya transaksi peminjaman (borrow)
-      if (t.type === 'borrow' || t.type === 'teacher_handbook' || t.status === 'active') {
-        const date = t.createdAt ? new Date(t.createdAt.seconds * 1000) : new Date();
-        const dayName = daysIndo[date.getDay()];
+      const transDate = t.createdAt?.seconds ? new Date(t.createdAt.seconds * 1000) : new Date();
+      
+      // Hanya hitung transaksi peminjaman (status aktif atau type borrow) dalam 7 hari terakhir
+      if ((t.status === 'active' || t.type === 'borrow' || t.type === 'teacher_handbook') && isAfter(transDate, sevenDaysAgo)) {
+        const dayIdx = getDay(transDate); // 0 (Min) - 6 (Sab)
+        const dayName = dayMap[dayIdx];
         const target = result.find(r => r.name === dayName);
-        if (target) target.value++;
+        if (target) {
+          target.value++;
+        }
       }
     });
 
     return result;
-  }, [latestTransactions]);
+  }, [latestTransactions, mounted]);
 
   const stats = [
     { 
@@ -341,7 +349,7 @@ export default function DashboardPage() {
                         )}>{t.bookTitle}</p>
                         {t.borrowType === 'Kolektif' && <Badge className="h-3.5 text-[6px] bg-blue-600 border-none font-black uppercase">Kolektif</Badge>}
                       </div>
-                      <p className="text-[10px] text-muted-foreground truncate">{t.memberName} • {t.createdAt ? new Date(t.createdAt.seconds * 1000).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Baru saja'}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{t.memberName} • {t.createdAt?.seconds ? new Date(t.createdAt.seconds * 1000).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Baru saja'}</p>
                     </div>
                   </div>
                   <Badge variant={t.status === 'returned' ? "outline" : "secondary"} className="text-[8px] font-bold uppercase">
