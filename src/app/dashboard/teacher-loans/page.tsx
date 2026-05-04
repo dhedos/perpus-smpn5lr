@@ -77,7 +77,7 @@ export default function TeacherLoansPage() {
   const [selectedMember, setSelectedMember] = useState<any>(null)
   const [selectedBook, setSelectedBook] = useState<any>(null)
   const [borrowQuantity, setBorrowQuantity] = useState(1)
-  const [borrowType, setBorrowType] = useState<"Pribadi" | "Kolektif">("Pribadi")
+  const [borrowType, setBorrowType] = useState<"Pribadi" | "Kolektif">("Kolektif")
 
   const [showMemberSuggestions, setShowMemberSuggestions] = useState(false)
   const [showBookSuggestions, setShowBookSuggestions] = useState(false)
@@ -412,8 +412,8 @@ export default function TeacherLoansPage() {
                   <div className="space-y-3">
                     <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Jenis Peminjaman</Label>
                     <div className="flex gap-2 p-1 bg-muted rounded-lg">
-                      <Button variant={borrowType === "Pribadi" ? "default" : "ghost"} className="flex-1 h-9 text-xs font-bold" onClick={() => setBorrowType("Pribadi")}><User className="h-3 w-3 mr-2" /> Pribadi</Button>
                       <Button variant={borrowType === "Kolektif" ? "default" : "ghost"} className="flex-1 h-9 text-xs font-bold" onClick={() => setBorrowType("Kolektif")}><Users className="h-3 w-3 mr-2" /> Kolektif</Button>
+                      <Button variant={borrowType === "Pribadi" ? "default" : "ghost"} className="flex-1 h-9 text-xs font-bold" onClick={() => setBorrowType("Pribadi")}><User className="h-3 w-3 mr-2" /> Pribadi</Button>
                     </div>
                   </div>
                   <div className="space-y-3">
