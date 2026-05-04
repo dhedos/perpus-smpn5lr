@@ -46,7 +46,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setMounted(true)
-    // Logika Pengingat Backup: 4 hari terakhir di setiap bulan
     const now = new Date();
     const lastDay = lastDayOfMonth(now).getDate();
     const reminderStartDay = lastDay - 3; 
@@ -66,7 +65,7 @@ export default function DashboardPage() {
   [db])
 
   const latestTransQuery = useMemoFirebase(() => 
-    db ? query(collection(db, 'transactions'), orderBy('createdAt', 'desc'), limit(50)) : null, 
+    db ? query(collection(db, 'transactions'), orderBy('createdAt', 'desc'), limit(100)) : null, 
   [db])
 
   const { data: books, isLoading: loadingBooks } = useCollection(booksRef)
@@ -129,6 +128,33 @@ export default function DashboardPage() {
       })
   }, [filteredActiveTransactions, mounted, settings])
 
+  const chartData = useMemo(() => {
+    const daysIndo = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+    const result = [
+      { name: "Sen", value: 0 },
+      { name: "Sel", value: 0 },
+      { name: "Rab", value: 0 },
+      { name: "Kam", value: 0 },
+      { name: "Jum", value: 0 },
+      { name: "Sab", value: 0 },
+      { name: "Min", value: 0 },
+    ];
+
+    if (!latestTransactions) return result;
+
+    latestTransactions.forEach(t => {
+      // Hitung hanya transaksi peminjaman (borrow)
+      if (t.type === 'borrow' || t.type === 'teacher_handbook' || t.status === 'active') {
+        const date = t.createdAt ? new Date(t.createdAt.seconds * 1000) : new Date();
+        const dayName = daysIndo[date.getDay()];
+        const target = result.find(r => r.name === dayName);
+        if (target) target.value++;
+      }
+    });
+
+    return result;
+  }, [latestTransactions]);
+
   const stats = [
     { 
       title: "Koleksi Buku", 
@@ -162,15 +188,6 @@ export default function DashboardPage() {
       color: "text-destructive",
       bgColor: "bg-destructive/10"
     },
-  ]
-
-  const chartData = [
-    { name: "Sen", value: 4 },
-    { name: "Sel", value: 7 },
-    { name: "Rab", value: 5 },
-    { name: "Kam", value: 9 },
-    { name: "Jum", value: 12 },
-    { name: "Sab", value: 3 },
   ]
 
   return (
@@ -218,7 +235,7 @@ export default function DashboardPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {overdueTransactions.slice(0, 6).map((t) => (
-                <div key={t.id} className="bg-white/70 p-3 rounded-lg border border-destructive/10 flex flex-col gap-1 shadow-sm relative overflow-hidden">
+                <div key={t.id} className="bg-white/70 dark:bg-black/40 p-3 rounded-lg border border-destructive/10 flex flex-col gap-1 shadow-sm relative overflow-hidden">
                   {t.borrowType === 'Kolektif' && (
                     <div className="absolute top-0 right-0 bg-blue-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded-bl-md uppercase">
                       Kolektif
@@ -270,7 +287,7 @@ export default function DashboardPage() {
                   <YAxis axisLine={false} tickLine={false} />
                   <Tooltip 
                     cursor={{ fill: 'hsl(var(--accent))' }}
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))' }}
                   />
                   <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -300,10 +317,10 @@ export default function DashboardPage() {
                   key={t.id} 
                   className={cn(
                     "flex items-center justify-between px-6 py-4 hover:bg-muted/50 transition-colors group",
-                    t.type !== 'return' && "cursor-pointer"
+                    t.status === 'active' && "cursor-pointer"
                   )}
                   onClick={() => {
-                    if (t.type === 'return') return;
+                    if (t.status === 'returned') return;
                     
                     const targetPage = t.type === 'teacher_handbook' 
                       ? `/dashboard/teacher-loans?tab=return&q=${encodeURIComponent(t.memberName || '')}`
@@ -313,22 +330,22 @@ export default function DashboardPage() {
                   }}
                 >
                   <div className="flex items-center gap-4">
-                    <div className={t.type === 'return' ? "bg-green-100 text-green-600 p-2 rounded-full" : "bg-blue-100 text-blue-600 p-2 rounded-full"}>
-                      {t.type === 'return' ? <ArrowDownLeft className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
+                    <div className={t.status === 'returned' ? "bg-green-100 dark:bg-green-900/30 text-green-600 p-2 rounded-full" : "bg-blue-100 dark:bg-blue-900/30 text-blue-600 p-2 rounded-full"}>
+                      {t.status === 'returned' ? <ArrowDownLeft className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <p className={cn(
                           "text-sm font-bold truncate max-w-[150px]",
-                          t.type !== 'return' && "group-hover:text-primary transition-colors"
+                          t.status === 'active' && "group-hover:text-primary transition-colors"
                         )}>{t.bookTitle}</p>
                         {t.borrowType === 'Kolektif' && <Badge className="h-3.5 text-[6px] bg-blue-600 border-none font-black uppercase">Kolektif</Badge>}
                       </div>
                       <p className="text-[10px] text-muted-foreground truncate">{t.memberName} • {t.createdAt ? new Date(t.createdAt.seconds * 1000).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Baru saja'}</p>
                     </div>
                   </div>
-                  <Badge variant={t.type === 'return' ? "outline" : "secondary"} className="text-[8px] font-bold">
-                    {t.type === 'return' ? "KEMBALI" : "PINJAM"}
+                  <Badge variant={t.status === 'returned' ? "outline" : "secondary"} className="text-[8px] font-bold uppercase">
+                    {t.status === 'returned' ? "KEMBALI" : "PINJAM"}
                   </Badge>
                 </div>
               ))}
