@@ -139,7 +139,7 @@ export default function DashboardPage() {
       { name: "Min", value: 0 },
     ];
 
-    if (!latestTransactions || !mounted) return result;
+    if (!latestTransactions || !mounted || !books || !members) return result;
 
     const sevenDaysAgo = subDays(startOfDay(new Date()), 7);
     const dayMap: Record<number, string> = {
@@ -147,11 +147,16 @@ export default function DashboardPage() {
     };
 
     latestTransactions.forEach(t => {
+      // Pastikan transaksi memiliki data referensi yang valid (Buku & Anggota ada)
+      const isRecordValid = books.some(b => b.id === t.bookId) && members.some(m => m.memberId === t.memberId);
+      if (!isRecordValid) return;
+
       const transDate = t.createdAt?.seconds ? new Date(t.createdAt.seconds * 1000) : new Date();
       
       // Hanya hitung transaksi peminjaman (status aktif atau type borrow) dalam 7 hari terakhir
-      if ((t.status === 'active' || t.type === 'borrow' || t.type === 'teacher_handbook') && isAfter(transDate, sevenDaysAgo)) {
-        const dayIdx = getDay(transDate); // 0 (Min) - 6 (Sab)
+      // Kita cek status 'active' untuk memastikan data tidak double jika sudah dikembalikan hari ini
+      if ((t.status === 'active') && isAfter(transDate, sevenDaysAgo)) {
+        const dayIdx = getDay(transDate); 
         const dayName = dayMap[dayIdx];
         const target = result.find(r => r.name === dayName);
         if (target) {
@@ -161,7 +166,7 @@ export default function DashboardPage() {
     });
 
     return result;
-  }, [latestTransactions, mounted]);
+  }, [latestTransactions, mounted, books, members]);
 
   const stats = [
     { 
@@ -292,7 +297,7 @@ export default function DashboardPage() {
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                  <YAxis axisLine={false} tickLine={false} />
+                  <YAxis axisLine={false} tickLine={false} allowDecimals={false} />
                   <Tooltip 
                     cursor={{ fill: 'hsl(var(--accent))' }}
                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))' }}
