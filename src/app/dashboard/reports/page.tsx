@@ -294,7 +294,7 @@ export default function ReportsPage() {
       </div>
 
       {showMonthlyReminder && (
-        <Alert className="bg-orange-50 border-orange-200 text-orange-800 animate-in slide-in-from-top-4">
+        <Alert className="bg-orange-50 border-orange-200 text-orange-800 animate-in slide-in-from-top-4 rounded-2xl">
           <DatabaseBackup className="h-5 w-5 text-orange-600" />
           <AlertTitle className="font-bold">PENGINGAT BACKUP BULANAN!</AlertTitle>
           <AlertDescription className="text-sm">
@@ -304,7 +304,7 @@ export default function ReportsPage() {
       )}
 
       <div className="grid gap-6 md:grid-cols-3">
-        <Card className="md:col-span-2 border-none shadow-sm">
+        <Card className="md:col-span-2 border-none shadow-sm bg-transparent">
           <CardHeader>
             <CardTitle>Ringkasan Kondisi Pengembalian</CardTitle>
             <CardDescription>Visualisasi kualitas perawatan buku oleh siswa (kumulatif).</CardDescription>

@@ -67,6 +67,7 @@ import { useToast } from "@/hooks/use-toast"
 import { initializeApp, deleteApp } from "firebase/app"
 import { sendPasswordResetEmail, getAuth, createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword } from "firebase/auth"
 import { firebaseConfig } from "@/firebase/config"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function StaffPage() {
   const db = useFirestore()
@@ -105,7 +106,6 @@ export default function StaffPage() {
 
   const { data: allUsers, loading } = useCollection(usersCollectionRef)
   
-  // TAMPILKAN SEMUA PENGGUNA (Hapus filter role agar akun yang datanya rusak tetap terlihat)
   const staffMembers = useMemo(() => {
     if (!allUsers) return []
     return allUsers;
@@ -134,7 +134,6 @@ export default function StaffPage() {
     try {
       let uid = existingUserInDb?.id || ""
       
-      // Jika akun tidak ada di DB, kita coba buat di Auth
       if (!uid) {
         try {
           const userCredential = await createUserWithEmailAndPassword(
@@ -148,10 +147,8 @@ export default function StaffPage() {
             displayName: formData.name
           })
         } catch (authError: any) {
-          // Jika email sudah ada di Auth (stuck/yatim)
           if (authError.code === 'auth/email-already-in-use') {
             try {
-              // Coba login untuk dapat UID agar bisa nulis ke Firestore
               const loginResult = await signInWithEmailAndPassword(secondaryAuth, formData.email, formData.password)
               uid = loginResult.user.uid
             } catch (loginError: any) {
@@ -166,7 +163,6 @@ export default function StaffPage() {
         }
       }
 
-      // TULIS / PERBARUI KE DATABASE
       const userDocRef = doc(db, 'users', uid)
       await setDoc(userDocRef, {
         id: uid,
@@ -413,10 +409,10 @@ export default function StaffPage() {
         </Table>
       </Card>
       
-      <Alert className="bg-blue-50 border-blue-200 text-blue-800 rounded-2xl">
-         <ShieldAlert className="h-5 w-5 text-blue-600" />
+      <Alert className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200 rounded-2xl">
+         <ShieldAlert className="h-5 w-5 text-blue-600 dark:text-blue-400" />
          <AlertTitle className="font-bold text-xs">INFO DATABASE</AlertTitle>
-         <AlertDescription className="text-[10px] font-medium leading-relaxed">
+         <AlertDescription className="text-[10px] font-medium leading-relaxed opacity-90">
            Halaman ini menampilkan seluruh pengguna yang terdaftar di Firestore. Jika sebuah akun ada di Firebase Authentication namun datanya tidak masuk ke database, gunakan tombol <b>Daftarkan Petugas</b> dengan email yang sama untuk memulihkan aksesnya secara otomatis.
          </AlertDescription>
       </Alert>
