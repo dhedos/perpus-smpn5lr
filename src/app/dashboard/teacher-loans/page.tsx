@@ -2,6 +2,7 @@
 "use client"
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -62,6 +63,7 @@ export default function TeacherLoansPage() {
   const db = useFirestore()
   const { user, isAdmin } = useUser()
   const { toast } = useToast()
+  const searchParams = useSearchParams()
   
   const [activeTab, setActiveTab] = useState("borrow")
   const [memberSearch, setMemberSearch] = useState("")
@@ -77,7 +79,7 @@ export default function TeacherLoansPage() {
   const [selectedMember, setSelectedMember] = useState<any>(null)
   const [selectedBook, setSelectedBook] = useState<any>(null)
   const [borrowQuantity, setBorrowQuantity] = useState(1)
-  const [borrowType, setBorrowType] = useState<"Pribadi" | "Kolektif">("Kolektif")
+  const [borrowType, setBorrowType] = useState<"Kolektif" | "Pribadi">("Kolektif")
 
   const [showMemberSuggestions, setShowMemberSuggestions] = useState(false)
   const [showBookSuggestions, setShowBookSuggestions] = useState(false)
@@ -92,6 +94,21 @@ export default function TeacherLoansPage() {
   const { data: settings } = useDoc(settingsRef)
   
   const isLockedForUser = Boolean(settings?.isDataLocked && !isAdmin);
+
+  const forceUnlockUI = useCallback(() => {
+    if (typeof document !== 'undefined') {
+      document.body.style.pointerEvents = 'auto';
+      document.body.style.overflow = 'auto';
+    }
+  }, []);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    const q = searchParams.get('q')
+    if (tab === 'return') setActiveTab('return')
+    if (q) setReturnSearch(q)
+    forceUnlockUI()
+  }, [searchParams, forceUnlockUI])
 
   const membersRef = useMemoFirebase(() => (db && user) ? collection(db, 'members') : null, [db, !!user])
   const booksRef = useMemoFirebase(() => (db && user) ? collection(db, 'books') : null, [db, !!user])
@@ -172,13 +189,6 @@ export default function TeacherLoansPage() {
       t.memberId?.toLowerCase().includes(s)
     )
   }, [activeTransactions, returnSearch])
-
-  const forceUnlockUI = useCallback(() => {
-    if (typeof document !== 'undefined') {
-      document.body.style.pointerEvents = 'auto';
-      document.body.style.overflow = 'auto';
-    }
-  }, []);
 
   const handleLookup = (text: string): boolean => {
     if (!text) return false

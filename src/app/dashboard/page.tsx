@@ -35,6 +35,7 @@ import { isAfter, parseISO, differenceInDays, differenceInHours, startOfDay, add
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
+import { cn } from "@/lib/utils"
 
 export default function DashboardPage() {
   const { user } = useUser()
@@ -45,7 +46,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setMounted(true)
-    // Logika Pengingat Backup: 4 hari terakhir di setiap bulan (Contoh: 27, 28, 29, 30 jika bulan berakhir di 30)
+    // Logika Pengingat Backup: 4 hari terakhir di setiap bulan
     const now = new Date();
     const lastDay = lastDayOfMonth(now).getDate();
     const reminderStartDay = lastDay - 3; 
@@ -187,7 +188,6 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* INDIKATOR KEDIPAN WARNING BACKUP (POJOK KANAN ATAS HEADER) */}
         {mounted && showMonthlyReminder && (
           <Button 
             variant="outline" 
@@ -296,14 +296,32 @@ export default function DashboardPage() {
                    <p className="text-xs text-muted-foreground font-medium italic">Belum ada sirkulasi hari ini.</p>
                 </div>
               ) : filteredLatestTransactions.map((t) => (
-                <div key={t.id} className="flex items-center justify-between px-6 py-4 hover:bg-muted/50 transition-colors">
+                <div 
+                  key={t.id} 
+                  className={cn(
+                    "flex items-center justify-between px-6 py-4 hover:bg-muted/50 transition-colors group",
+                    t.type !== 'return' && "cursor-pointer"
+                  )}
+                  onClick={() => {
+                    if (t.type === 'return') return;
+                    
+                    const targetPage = t.type === 'teacher_handbook' 
+                      ? `/dashboard/teacher-loans?tab=return&q=${encodeURIComponent(t.memberName || '')}`
+                      : `/dashboard/transactions?tab=return&q=${encodeURIComponent(t.memberName || '')}`;
+                    
+                    router.push(targetPage);
+                  }}
+                >
                   <div className="flex items-center gap-4">
                     <div className={t.type === 'return' ? "bg-green-100 text-green-600 p-2 rounded-full" : "bg-blue-100 text-blue-600 p-2 rounded-full"}>
                       {t.type === 'return' ? <ArrowDownLeft className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-bold truncate max-w-[150px]">{t.bookTitle}</p>
+                        <p className={cn(
+                          "text-sm font-bold truncate max-w-[150px]",
+                          t.type !== 'return' && "group-hover:text-primary transition-colors"
+                        )}>{t.bookTitle}</p>
                         {t.borrowType === 'Kolektif' && <Badge className="h-3.5 text-[6px] bg-blue-600 border-none font-black uppercase">Kolektif</Badge>}
                       </div>
                       <p className="text-[10px] text-muted-foreground truncate">{t.memberName} • {t.createdAt ? new Date(t.createdAt.seconds * 1000).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Baru saja'}</p>
