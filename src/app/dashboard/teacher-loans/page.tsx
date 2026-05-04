@@ -146,19 +146,18 @@ export default function TeacherLoansPage() {
 
     return allTransactions
       .filter(t => {
-        const dateToUse = t.returnDate ? parseISO(t.returnDate) : (t.createdAt?.seconds ? new Date(t.createdAt.seconds * 1000) : new Date());
-        return (
-          t.status === 'returned' && 
-          (t.memberType === 'Teacher' || t.memberType === 'Staff' || t.type === 'teacher_handbook') &&
-          isWithinInterval(dateToUse, { start, end }) &&
-          allBooksData.some(b => b.id === t.bookId) &&
-          allMembersData.some(m => m.memberId === t.memberId)
-        )
+        const createDate = t.createdAt?.seconds ? new Date(t.createdAt.seconds * 1000) : new Date();
+        const returnDate = t.returnDate ? parseISO(t.returnDate) : null;
+        
+        const isStaff = (t.memberType === 'Teacher' || t.memberType === 'Staff' || t.type === 'teacher_handbook');
+        const matchesDate = isWithinInterval(createDate, { start, end }) || (returnDate && isWithinInterval(returnDate, { start, end }));
+
+        return isStaff && matchesDate && allBooksData.some(b => b.id === t.bookId) && allMembersData.some(m => m.memberId === t.memberId);
       })
       .sort((a, b) => {
-        const dateA = a.returnDate ? new Date(a.returnDate).getTime() : 0;
-        const dateB = b.returnDate ? new Date(b.returnDate).getTime() : 0;
-        return dateB - dateA;
+        const timeA = a.returnDate ? new Date(a.returnDate).getTime() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
+        const timeB = b.returnDate ? new Date(b.returnDate).getTime() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
+        return timeB - timeA;
       })
   }, [allTransactions, allBooksData, allMembersData])
 
@@ -539,7 +538,13 @@ export default function TeacherLoansPage() {
                         <TableCell className="text-xs font-medium">{t.bookTitle} ({t.quantity || 1} Unit)</TableCell>
                         <TableCell className="text-xs text-muted-foreground font-mono">{t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yy') : '-'}</TableCell>
                         <TableCell className="text-xs font-black">{t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yy') : '-'}</TableCell>
-                        <TableCell className="text-right"><Badge variant="outline" className="bg-green-500/10 text-green-500 border-none text-[8px] font-black">KEMBALI</Badge></TableCell>
+                        <TableCell className="text-right">
+                          {t.status === 'returned' ? (
+                            <Badge variant="outline" className="bg-green-500/10 text-green-500 border-none text-[8px] font-black">KEMBALI</Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-none text-[8px] font-black">PINJAM</Badge>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

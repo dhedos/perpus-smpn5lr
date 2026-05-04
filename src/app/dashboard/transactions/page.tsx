@@ -149,20 +149,18 @@ function TransactionsContent() {
 
     return allTransactions
       .filter(t => {
-        const dateToUse = t.returnDate ? parseISO(t.returnDate) : (t.createdAt?.seconds ? new Date(t.createdAt.seconds * 1000) : new Date());
-        return (
-          t.status === 'returned' && 
-          (t.memberType === 'Student' || t.type === 'borrow' || t.type === 'return') &&
-          t.type !== 'teacher_handbook' &&
-          isWithinInterval(dateToUse, { start, end }) &&
-          allBooksData.some(b => b.id === t.bookId) &&
-          allMembersData.some(m => m.memberId === t.memberId)
-        )
+        const createDate = t.createdAt?.seconds ? new Date(t.createdAt.seconds * 1000) : new Date();
+        const returnDate = t.returnDate ? parseISO(t.returnDate) : null;
+        
+        const isStudent = (t.memberType === 'Student' || t.type === 'borrow' || t.type === 'return') && t.type !== 'teacher_handbook';
+        const matchesDate = isWithinInterval(createDate, { start, end }) || (returnDate && isWithinInterval(returnDate, { start, end }));
+
+        return isStudent && matchesDate && allBooksData.some(b => b.id === t.bookId) && allMembersData.some(m => m.memberId === t.memberId);
       })
       .sort((a, b) => {
-        const dateA = a.returnDate ? new Date(a.returnDate).getTime() : 0;
-        const dateB = b.returnDate ? new Date(b.returnDate).getTime() : 0;
-        return dateB - dateA;
+        const timeA = a.returnDate ? new Date(a.returnDate).getTime() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
+        const timeB = b.returnDate ? new Date(b.returnDate).getTime() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
+        return timeB - timeA;
       });
   }, [allTransactions, allBooksData, allMembersData]);
 
@@ -329,7 +327,7 @@ function TransactionsContent() {
   }
 
   const handlePrintReport = () => {
-    const targetData = activeTab === "borrow" ? (historyTrans || []) : filteredActiveTrans;
+    const targetData = historyTrans || [];
     if (targetData.length === 0) return
 
     const printWindow = window.open('', '_blank')
@@ -695,11 +693,15 @@ function TransactionsContent() {
                           <TableRow key={t.id} className="hover:bg-muted/20 border-b dark:border-white/5">
                             <TableCell className="text-center text-xs text-muted-foreground">{index + 1}</TableCell>
                             <TableCell className="font-bold text-xs">{t.memberName}</TableCell>
-                            <TableCell className="text-xs truncate max-w-[150px] font-medium">{t.bookTitle}</TableCell>
+                            <TableCell className="text-xs truncate max-w-[150px] font-medium">{t.bookTitle} ({t.quantity || 1} Unit)</TableCell>
                             <TableCell className="text-[10px] font-mono text-muted-foreground">{t.borrowDate ? format(parseISO(t.borrowDate), 'dd/MM/yy') : '-'}</TableCell>
                             <TableCell className="text-xs font-black">{t.returnDate ? format(parseISO(t.returnDate), 'dd/MM/yy') : '-'}</TableCell>
                             <TableCell className="text-right text-xs">
-                              <Badge variant="secondary" className="text-[8px] bg-green-500/10 text-green-500 border-none uppercase font-black px-2">KEMBALI</Badge>
+                              {t.status === 'returned' ? (
+                                <Badge variant="secondary" className="text-[8px] bg-green-500/10 text-green-500 border-none uppercase font-black px-2">KEMBALI</Badge>
+                              ) : (
+                                <Badge variant="secondary" className="text-[8px] bg-blue-500/10 text-blue-500 border-none uppercase font-black px-2">PINJAM</Badge>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -760,7 +762,7 @@ function TransactionsContent() {
                               <TableCell>
                                 <div className="space-y-1">
                                   <div className="flex items-center gap-2">
-                                    <div className="font-bold text-sm leading-tight">{t.bookTitle}</div>
+                                    <div className="font-bold text-sm leading-tight">{t.bookTitle} ({t.quantity || 1} Unit)</div>
                                     {t.borrowType === 'Kolektif' && (
                                       <Badge variant="secondary" className="h-4 text-[7px] bg-blue-900 text-white border-none font-black px-1.5">
                                         KOLEKTIF
@@ -850,7 +852,7 @@ function TransactionsContent() {
       </Dialog>
 
       <Dialog open={isScannerOpen} onOpenChange={o => { if(!o) stopScanner(); }}>
-        <DialogContent className="p-0 border-none bg-black max-w-xl h-[100dvh] sm:h-[450px] overflow-hidden rounded-none sm:rounded-[2.5rem]">
+        <DialogContent className="p-0 border-none bg-black max-xl h-[100dvh] sm:h-[450px] overflow-hidden rounded-none sm:rounded-[2.5rem]">
           <DialogHeader className="sr-only">
             <DialogTitle>Pemindai</DialogTitle>
             <DialogDescription>Arahkan kamera pada kode QR kartu siswa atau barcode buku.</DialogDescription>
