@@ -543,9 +543,17 @@ function TransactionsContent() {
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
-                        <div className="flex flex-col items-center">
-                          <span className="text-3xl font-black">{borrowQuantity}</span>
-                          <span className="text-[8px] font-black text-muted-foreground uppercase tracking-tighter">Buku</span>
+                        <div className="flex flex-col items-center flex-1">
+                          <Input 
+                            type="number"
+                            className="w-full text-center text-3xl font-black h-10 border-none bg-transparent focus-visible:ring-0"
+                            value={borrowQuantity}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              if (val >= 1) setBorrowQuantity(val);
+                            }}
+                          />
+                          <span className="text-[8px] font-black text-muted-foreground uppercase tracking-tighter -mt-1">Buku</span>
                         </div>
                         <Button 
                           variant="outline" 

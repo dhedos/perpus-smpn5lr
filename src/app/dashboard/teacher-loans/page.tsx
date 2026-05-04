@@ -420,8 +420,16 @@ export default function TeacherLoansPage() {
                     <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Jumlah Buku</Label>
                     <div className="flex items-center justify-between p-2 border rounded-xl bg-card">
                       <Button variant="outline" size="icon" className="h-10 w-10 rounded-lg" onClick={() => setBorrowQuantity(q => Math.max(1, q - 1))}><Minus className="h-4 w-4" /></Button>
-                      <div className="flex flex-col items-center">
-                        <span className="text-2xl font-black">{borrowQuantity}</span>
+                      <div className="flex flex-col items-center flex-1">
+                        <Input 
+                          type="number"
+                          className="w-full text-center text-2xl font-black h-10 border-none bg-transparent focus-visible:ring-0"
+                          value={borrowQuantity}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            if (val >= 1) setBorrowQuantity(val);
+                          }}
+                        />
                         <span className="text-[9px] font-bold text-muted-foreground uppercase">Unit</span>
                       </div>
                       <Button variant="outline" size="icon" className="h-10 w-10 rounded-lg" onClick={() => setBorrowQuantity(q => q + 1)} disabled={selectedBook && borrowQuantity >= (selectedBook.availableStock || 0)}><Plus className="h-4 w-4" /></Button>
