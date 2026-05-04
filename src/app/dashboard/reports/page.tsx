@@ -316,11 +316,30 @@ export default function ReportsPage() {
               <div className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                    <YAxis axisLine={false} tickLine={false} />
-                    <Tooltip cursor={{ fill: '#f1f5f9' }} />
-                    <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
+                    <XAxis 
+                      dataKey="name" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 700 }}
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 700 }}
+                    />
+                    <Tooltip 
+                      cursor={{ fill: 'hsl(var(--muted))', opacity: 0.2 }} 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))', 
+                        borderColor: 'hsl(var(--border))',
+                        borderRadius: '12px',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                        fontSize: '12px',
+                        fontWeight: 'bold'
+                      }}
+                    />
+                    <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={60}>
                       {chartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
@@ -368,19 +387,23 @@ export default function ReportsPage() {
               <CardDescription>Buku yang hilang atau perlu diganti.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-               <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-100">
+               <div className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-500/10 rounded-[1.5rem] border border-red-100 dark:border-red-900/30">
                  <div className="flex items-center gap-3">
-                   <Ghost className="h-5 w-5 text-red-600" />
-                   <span className="text-sm font-semibold">Total Unit Hilang</span>
+                   <div className="p-2 bg-red-100 dark:bg-red-500/20 rounded-xl">
+                    <Ghost className="h-5 w-5 text-red-600 dark:text-red-400" />
+                   </div>
+                   <span className="text-xs font-black uppercase tracking-tight text-red-900 dark:text-red-100">Total Unit Hilang</span>
                  </div>
-                 <span className="text-xl font-bold text-red-700">{conditionStats.lost}</span>
+                 <span className="text-2xl font-black text-red-700 dark:text-red-400">{conditionStats.lost}</span>
                </div>
-               <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-100">
+               <div className="flex items-center justify-between p-4 bg-orange-50 dark:bg-orange-500/10 rounded-[1.5rem] border border-orange-100 dark:border-orange-900/30">
                  <div className="flex items-center gap-3">
-                   <ShieldAlert className="h-5 w-5 text-orange-600" />
-                   <span className="text-sm font-semibold">Total Unit Rusak</span>
+                   <div className="p-2 bg-orange-100 dark:bg-orange-500/20 rounded-xl">
+                    <ShieldAlert className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                   </div>
+                   <span className="text-xs font-black uppercase tracking-tight text-orange-900 dark:text-orange-100">Total Unit Rusak</span>
                  </div>
-                 <span className="text-xl font-bold text-orange-700">{conditionStats.damaged}</span>
+                 <span className="text-2xl font-black text-orange-700 dark:text-orange-400">{conditionStats.damaged}</span>
                </div>
             </CardContent>
           </Card>
