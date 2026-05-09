@@ -1,4 +1,4 @@
-# Pustaka Nusantara - SMPN 5 LANGKE REMBONG
+p# Pustaka Nusantara - SMPN 5 LANGKE REMBONG
 
 Sistem Informasi Perpustakaan Modern dengan integrasi AI, Scan QR, dan Sinkronisasi Cloud.
 
