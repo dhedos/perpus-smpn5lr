@@ -151,11 +151,15 @@ export default function DashboardPage() {
       const isRecordValid = books.some(b => b.id === t.bookId) && members.some(m => m.memberId === t.memberId);
       if (!isRecordValid) return;
 
-      const transDate = t.createdAt?.seconds ? new Date(t.createdAt.seconds * 1000) : new Date();
+      // Gunakan waktu pembuatan dokumen sebagai penentu hari aktivitas
+      const dateSeconds = t.createdAt?.seconds;
+      if (!dateSeconds) return;
+
+      const transDate = new Date(dateSeconds * 1000);
       
-      // Hanya hitung transaksi peminjaman (status aktif atau type borrow) dalam 7 hari terakhir
-      // Kita cek status 'active' untuk memastikan data tidak double jika sudah dikembalikan hari ini
-      if ((t.status === 'active') && isAfter(transDate, sevenDaysAgo)) {
+      // Grafik menghitung seluruh volume aktivitas peminjaman (baik yang masih Aktif maupun sudah Kembali)
+      // agar grafik tidak kosong saat petugas rajin memproses pengembalian.
+      if (isAfter(transDate, sevenDaysAgo)) {
         const dayIdx = getDay(transDate); 
         const dayName = dayMap[dayIdx];
         const target = result.find(r => r.name === dayName);
@@ -289,7 +293,7 @@ export default function DashboardPage() {
         <Card className="border-none shadow-sm">
           <CardHeader>
             <CardTitle>Statistik Mingguan</CardTitle>
-            <CardDescription>Aktivitas peminjaman 7 hari terakhir.</CardDescription>
+            <CardDescription>Aktivitas peminjaman 7 hari terakhir (Termasuk yang sudah kembali).</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full">
