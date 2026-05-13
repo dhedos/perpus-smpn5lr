@@ -1032,4 +1032,132 @@ function BooksContent() {
         </DialogContent>
       </Dialog>
 
-      {/* ... (rest of the file remains the same) */}
+      <Dialog open={isDetailOpen} onOpenChange={(v) => { setIsDetailOpen(v); if(!v) forceUnlockUI(); }}>
+        <DialogContent className="max-w-md p-0 overflow-hidden bg-white dark:bg-slate-900 border-none rounded-[2rem]">
+          <div className="bg-primary p-8 text-white relative">
+            <Badge className="mb-4 bg-white/20 border-none text-white font-mono uppercase text-xs">{selectedBookDetail?.code}</Badge>
+            <h2 className="text-2xl font-black leading-tight">{selectedBookDetail?.title}</h2>
+            <p className="text-white/70 text-sm mt-2 font-medium">Rek: {selectedBookDetail?.accountCode}</p>
+          </div>
+          <div className="p-8 space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 bg-muted/30 rounded-2xl border dark:border-white/5"><p className="text-[10px] font-black text-muted-foreground uppercase mb-1">Penerbit</p><p className="font-bold text-sm">{selectedBookDetail?.publisher || '-'}</p></div>
+              <div className="p-4 bg-muted/30 rounded-2xl border dark:border-white/5"><p className="text-[10px] font-black text-muted-foreground uppercase mb-1">Tahun</p><p className="font-bold text-sm">{selectedBookDetail?.publicationYear || '-'}</p></div>
+              <div className="p-4 bg-muted/30 rounded-2xl border dark:border-white/5"><p className="text-[10px] font-black text-muted-foreground uppercase mb-1">Kategori</p><p className="font-bold text-sm">{selectedBookDetail?.category || '-'}</p></div>
+              <div className="p-4 bg-muted/30 rounded-2xl border dark:border-white/5"><p className="text-[10px] font-black text-muted-foreground uppercase mb-1">Lokasi Rak</p><p className="font-bold text-sm text-primary">{selectedBookDetail?.rackLocation || '-'}</p></div>
+            </div>
+            <div className="space-y-2"><p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-2">Ringkasan / Deskripsi</p><p className="text-xs leading-relaxed text-muted-foreground px-2 bg-muted/10 p-3 rounded-xl border dark:border-white/5">{selectedBookDetail?.description || 'Belum ada deskripsi.'}</p></div>
+          </div>
+          <DialogFooter className="p-6 pt-0"><Button variant="secondary" className="w-full rounded-xl h-12 font-bold" onClick={() => { setIsDetailOpen(false); forceUnlockUI(); }}>Tutup Detail</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isQrOpen} onOpenChange={(v) => { setIsQrOpen(v); if(!v) forceUnlockUI(); }}>
+        <DialogContent className="max-w-md text-center border-none p-0 overflow-hidden rounded-[2.5rem]">
+          <DialogHeader className="p-6 bg-white dark:bg-slate-900 shrink-0 border-b dark:border-white/10">
+            <DialogTitle className="text-center font-bold text-primary">Label Digital Buku</DialogTitle>
+            <DialogDescription className="text-center">QR Code ini digunakan untuk pemindaian sirkulasi cepat.</DialogDescription>
+          </DialogHeader>
+          <div className="p-6 space-y-6 dark:bg-black/20">
+            <div className="bg-white p-8 rounded-[2.5rem] border-2 border-primary/20 space-y-4 shadow-xl flex flex-col items-center">
+              <div className="p-4 bg-white rounded-2xl border shadow-inner">
+                {selectedBookQr && (
+                  <QRCodeSVG 
+                    value={selectedBookQr.code} 
+                    size={200} 
+                    level="H" 
+                    includeMargin 
+                  />
+                )}
+              </div>
+              <div className="space-y-1">
+                <div className="font-black text-2xl leading-tight uppercase tracking-tight text-slate-900">{selectedBookQr?.title ?? ""}</div>
+                <div className="font-mono text-primary font-black text-xl">{selectedBookQr?.code || "-"}</div>
+                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">RAK: {selectedBookQr?.rackLocation || '-'}</div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="p-6 pt-0 grid grid-cols-2 gap-3 bg-white dark:bg-slate-900"><Button variant="outline" onClick={() => { setIsQrOpen(false); forceUnlockUI(); }} className="h-12 rounded-xl font-bold">Tutup</Button><Button onClick={() => handlePrintSingleQr(selectedBookQr)} className="h-12 gap-2 shadow-lg shadow-primary/20 rounded-xl font-bold"><Printer className="h-4 w-4" /> Cetak Stiker</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isScannerOpen} onOpenChange={(v) => { if(!v) stopScanner(); }}>
+        <DialogContent className="p-0 border-none bg-black max-w-xl h-[100dvh] sm:h-[450px] overflow-hidden rounded-none sm:rounded-[2.5rem]">
+          <div id="scanner-view" className="w-full h-full bg-black flex items-center justify-center relative min-h-[300px]">
+            {hasCameraPermission === false && (
+              <div className="p-6 w-full max-w-sm animate-in fade-in zoom-in-95 duration-300">
+                <Alert variant="destructive" className="bg-white/10 border-white/20 text-white">
+                  <CameraOff className="h-4 w-4 text-white" />
+                  <AlertTitle>Akses Kamera Ditolak</AlertTitle>
+                  <AlertDescription className="text-xs opacity-80">
+                    Izin kamera diblokir browser. Silakan aktifkan izin kamera di pengaturan browser Anda.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+          </div>
+          <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20 z-50 rounded-full h-12 w-12" onClick={stopScanner}><X className="h-6 w-6" /></Button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isQueueOpen} onOpenChange={(v) => { setIsQueueOpen(v); if(!v) forceUnlockUI(); }}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0 border-none bg-slate-50 dark:bg-slate-900 rounded-[2rem] overflow-hidden">
+          <DialogHeader className="p-6 bg-white dark:bg-slate-900 border-b dark:border-white/10">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-xl font-black text-primary uppercase">Antrean Pendaftaran</DialogTitle>
+                <DialogDescription>Buku-buku yang tersimpan secara lokal dan siap dikirim ke cloud.</DialogDescription>
+              </div>
+              <Badge className="bg-primary/10 text-primary h-8 px-4 rounded-full border-none font-black">{localQueue.length} Buku</Badge>
+            </div>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto p-4 space-y-2">
+            {localQueue.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center py-20 text-muted-foreground opacity-50"><Database className="h-12 w-12 mb-4" /><p className="font-bold">Antrean Kosong</p></div>
+            ) : localQueue.map((item) => (
+              <div key={item.tempId} className="bg-white dark:bg-muted/10 p-4 rounded-2xl border dark:border-white/5 flex items-center justify-between group">
+                <div className="space-y-1">
+                  <p className="font-bold text-sm group-hover:text-primary transition-colors">{item.title}</p>
+                  <p className="text-[10px] font-mono text-muted-foreground">{item.code} | {item.budgetSource}</p>
+                </div>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setLocalQueue(localQueue.filter(q => q.tempId !== item.tempId))}><Trash2 className="h-4 w-4" /></Button>
+              </div>
+            ))}
+          </div>
+          <DialogFooter className="p-6 bg-white dark:bg-slate-900 border-t dark:border-white/10 flex flex-col sm:flex-row gap-3">
+             <Button variant="outline" className="flex-1 rounded-xl h-12 font-bold" onClick={() => setIsQueueOpen(false)}>Tutup</Button>
+             <Button className="flex-1 rounded-xl h-12 font-black shadow-lg shadow-primary/20 gap-2" disabled={localQueue.length === 0 || isSyncing} onClick={handleSyncToDatabase}>
+                {isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CloudUpload className="h-4 w-4" />}
+                Sync ke Database Cloud
+             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={(v) => { setIsDeleteDialogOpen(v); if(!v) forceUnlockUI(); }}>
+        <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-black text-primary uppercase">Hapus Koleksi Buku?</AlertDialogTitle>
+            <AlertDialogDescription>Tindakan ini permanen. Seluruh data sirkulasi terkait buku ini mungkin akan kehilangan referensi.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl font-bold" onClick={() => { setBookToDelete(null); forceUnlockUI(); }}>Batal</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl font-bold" onClick={handleDeleteBook}>Hapus Selamanya</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <div className="text-center py-6 opacity-30">
+        <p className="text-[10px] font-black uppercase tracking-widest">© 2026 Lantera Baca</p>
+      </div>
+    </div>
+  )
+}
+
+export default function BooksPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-full py-20"><p className="text-[10px] font-black animate-pulse uppercase tracking-[0.3em] text-primary">Memuat Katalog...</p></div>}>
+      <BooksContent />
+    </Suspense>
+  )
+}
