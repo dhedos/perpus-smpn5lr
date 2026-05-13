@@ -17,7 +17,9 @@ import {
   RefreshCcw,
   AlertTriangle,
   Printer,
-  CameraOff
+  CameraOff,
+  ChevronRight,
+  BookOpen
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
@@ -38,6 +40,7 @@ export default function StockOpnamePage() {
   const { user } = useUser()
   
   const [search, setSearch] = useState("")
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -65,6 +68,16 @@ export default function StockOpnamePage() {
     );
   }, [audits, books]);
 
+  const bookSuggestions = useMemo(() => {
+    if (!search || search.length < 1 || !books) return []
+    const s = search.toLowerCase()
+    return books.filter(b => 
+      b.title?.toLowerCase().includes(s) || 
+      b.code?.toLowerCase().includes(s) ||
+      b.isbn?.toLowerCase().includes(s)
+    ).slice(0, 5)
+  }, [search, books])
+
   const forceUnlockUI = useCallback(() => {
     if (typeof document !== 'undefined') {
       document.body.style.pointerEvents = 'auto';
@@ -72,15 +85,26 @@ export default function StockOpnamePage() {
     }
   }, []);
 
+  const handleSelectBook = (b: any) => {
+    setSelectedBook(b);
+    setPhysicalCount(Number(b.totalStock || 0));
+    setSearch(b.title);
+    setShowSuggestions(false);
+  }
+
   const handleLookup = (code: string) => {
     if (!books) return;
-    const b = books.find(bk => bk.code === code || bk.isbn === code)
+    const b = books.find(bk => bk.code?.toLowerCase() === code.toLowerCase() || bk.isbn === code)
     if (b) { 
-      setSelectedBook(b); 
-      setPhysicalCount(Number(b.totalStock || 0));
-      setSearch(b.title); 
+      handleSelectBook(b);
+    } else {
+      // Jika tidak ketemu exact code, tapi ada di saran, ambil yang pertama
+      if (bookSuggestions.length > 0) {
+        handleSelectBook(bookSuggestions[0]);
+      } else {
+        toast({ title: "Buku Tidak Ditemukan", variant: "destructive" })
+      }
     }
-    else toast({ title: "Buku Tidak Ditemukan", variant: "destructive" })
   }
 
   const startScanner = async () => {
@@ -232,12 +256,34 @@ export default function StockOpnamePage() {
                 <div className="relative flex-1">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input 
-                    placeholder="Scan atau Ketik Kode Buku..." 
+                    placeholder="Ketik Judul atau Kode Buku..." 
                     className="pl-11 h-12 bg-background dark:bg-muted/20 border-slate-200 dark:border-white/10 rounded-full text-foreground font-medium" 
                     value={search} 
-                    onChange={e => setSearch(e.target.value)} 
+                    onChange={e => {
+                      setSearch(e.target.value);
+                      setShowSuggestions(true);
+                    }}
+                    onFocus={() => setShowSuggestions(true)}
                     onKeyDown={e => e.key === 'Enter' && handleLookup(search)} 
                   />
+                  
+                  {showSuggestions && bookSuggestions.length > 0 && (
+                    <div className="absolute z-[100] left-0 right-0 top-full mt-2 bg-card border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 max-h-[300px] overflow-y-auto">
+                      {bookSuggestions.map(b => (
+                        <div 
+                          key={b.id} 
+                          className="p-4 hover:bg-primary/5 cursor-pointer flex items-center justify-between border-b last:border-0"
+                          onClick={() => handleSelectBook(b)}
+                        >
+                          <div className="flex flex-col gap-1">
+                            <span className="font-bold text-sm leading-tight text-foreground">{b.title}</span>
+                            <span className="text-[10px] font-mono text-primary font-bold uppercase tracking-wider">{b.code}</span>
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground opacity-30" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <Button variant="secondary" className="h-12 w-28 gap-2 rounded-2xl bg-[#33CCF7] hover:bg-[#2BB8E0] text-white shadow-md" onClick={startScanner}>
                   <ScanBarcode className="h-5 w-5" /> Scan
@@ -315,7 +361,7 @@ export default function StockOpnamePage() {
                   <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center">
                     <ClipboardCheck className="h-8 w-8 opacity-40" />
                   </div>
-                  <p className="text-sm font-medium italic opacity-60">Silakan scan kode buku untuk mulai audit fisik.</p>
+                  <p className="text-sm font-medium italic opacity-60">Silakan cari atau scan kode buku untuk mulai audit fisik.</p>
                 </div>
               )}
           </div>
@@ -329,7 +375,9 @@ export default function StockOpnamePage() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y dark:divide-white/5 text-xs max-h-[600px] overflow-y-auto">
-              {filteredAudits.length === 0 ? (
+              {!audits ? (
+                <div className="p-12 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground/30" /></div>
+              ) : filteredAudits.length === 0 ? (
                 <div className="p-12 text-center text-muted-foreground italic text-[11px] opacity-60">Belum ada audit hari ini.</div>
               ) : filteredAudits.map(a => {
                 const masterBook = books?.find(b => b.id === a.bookId);
