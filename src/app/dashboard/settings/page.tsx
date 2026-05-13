@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Library, Bell, Shield, Save, Loader2, Coins, CalendarDays, FileText, MapPin, UserCheck, Type, Wallet, LockKeyhole, Image as ImageIcon, Upload, Fingerprint, Clock, ShieldAlert, Ghost } from "lucide-react"
+import { Library, Bell, Shield, Save, Loader2, Coins, CalendarDays, FileText, MapPin, UserCheck, Type, Wallet, LockKeyhole, Image as ImageIcon, Upload, Fingerprint, Clock, ShieldAlert, Ghost, Landmark } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 
@@ -177,6 +177,19 @@ export default function SettingsPage() {
                       onChange={(e) => setSettings({ ...settings, librarySubtitle: e.target.value })}
                       className="bg-background dark:bg-muted/20 border-slate-200 dark:border-white/10 h-12 rounded-xl font-bold"
                     />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label className="font-black text-[10px] uppercase text-muted-foreground tracking-widest flex items-center gap-2">
+                      <Landmark className="h-3 w-3" /> Daftar Sumber Anggaran (Pisahkan Koma)
+                    </Label>
+                    <Input 
+                      value={settings.budgetSources} 
+                      onChange={(e) => setSettings({ ...settings, budgetSources: e.target.value })}
+                      className="bg-background dark:bg-muted/20 border-slate-200 dark:border-white/10 h-12 rounded-xl font-bold"
+                      placeholder="Cth: BOSP, DAK, Hibah"
+                    />
+                    <p className="text-[9px] text-muted-foreground italic px-1">Sumber ini akan muncul sebagai pilihan saat pendaftaran buku baru.</p>
                   </div>
 
                   <div className="grid gap-2">
