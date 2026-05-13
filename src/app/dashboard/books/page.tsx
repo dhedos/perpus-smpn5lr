@@ -591,6 +591,8 @@ function BooksContent() {
               padding: 1.5mm;
               background: #fff;
               overflow: hidden;
+              break-inside: avoid;
+              page-break-inside: avoid;
             }
             .top-section { flex: 1; display: flex; align-items: center; min-height: 0; }
             .qr-side { width: 22mm; height: 22mm; display: flex; align-items: center; justify-content: center; }
@@ -689,6 +691,8 @@ function BooksContent() {
               padding: 1.5mm;
               background: #fff;
               overflow: hidden;
+              break-inside: avoid;
+              page-break-inside: avoid;
             }
             .top-section { flex: 1; display: flex; align-items: center; min-height: 0; }
             .qr-side { width: 22mm; height: 22mm; display: flex; align-items: center; justify-content: center; }
