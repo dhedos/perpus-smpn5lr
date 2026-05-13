@@ -31,7 +31,7 @@ import {
 } from "recharts"
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
 import { collection, query, where, orderBy, limit, doc } from "firebase/firestore"
-import { isAfter, parseISO, differenceInDays, differenceInHours, startOfDay, addHours, isToday, lastDayOfMonth, subDays, format, getDay } from "date-fns"
+import { isAfter, parseISO, differenceInDays, differenceInHours, startOfDay, addHours, isToday, lastDayOfMonth, subDays, format, getDay, startOfWeek } from "date-fns"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
@@ -141,25 +141,26 @@ export default function DashboardPage() {
 
     if (!latestTransactions || !mounted || !books || !members) return result;
 
-    const sevenDaysAgo = subDays(startOfDay(new Date()), 7);
+    // Logika Minggu Berjalan: Mulai dari hari Senin
+    const now = new Date();
+    const startOfCurrentWeek = startOfWeek(now, { weekStartsOn: 1 });
+    
     const dayMap: Record<number, string> = {
       1: "Sen", 2: "Sel", 3: "Rab", 4: "Kam", 5: "Jum", 6: "Sab", 0: "Min"
     };
 
     latestTransactions.forEach(t => {
-      // Pastikan transaksi memiliki data referensi yang valid (Buku & Anggota ada)
+      // Pastikan transaksi memiliki data referensi yang valid
       const isRecordValid = books.some(b => b.id === t.bookId) && members.some(m => m.memberId === t.memberId);
       if (!isRecordValid) return;
 
-      // Gunakan waktu pembuatan dokumen sebagai penentu hari aktivitas
       const dateSeconds = t.createdAt?.seconds;
       if (!dateSeconds) return;
 
       const transDate = new Date(dateSeconds * 1000);
       
-      // Grafik menghitung seluruh volume aktivitas peminjaman (baik yang masih Aktif maupun sudah Kembali)
-      // agar grafik tidak kosong saat petugas rajin memproses pengembalian.
-      if (isAfter(transDate, sevenDaysAgo)) {
+      // Hanya hitung jika berada di dalam minggu berjalan (sejak Senin)
+      if (isAfter(transDate, startOfCurrentWeek)) {
         const dayIdx = getDay(transDate); 
         const dayName = dayMap[dayIdx];
         const target = result.find(r => r.name === dayName);
@@ -293,7 +294,7 @@ export default function DashboardPage() {
         <Card className="border-none shadow-sm">
           <CardHeader>
             <CardTitle>Statistik Mingguan</CardTitle>
-            <CardDescription>Aktivitas peminjaman 7 hari terakhir (Termasuk yang sudah kembali).</CardDescription>
+            <CardDescription>Aktivitas peminjaman minggu kalender ini (Reset setiap Senin).</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full">
